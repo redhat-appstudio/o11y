@@ -1,0 +1,13 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  labels:
+    openshift.io/prometheus-rule-evaluation-scope: leaf-prometheus
+  name: o11y-example-rule
+  namespace: o11y
+spec:
+  groups:
+    - name: example
+      rules:
+        - record: o11y_prometheus_http_requests_total
+          expr: sum by (code) (prometheus_http_requests_total)
