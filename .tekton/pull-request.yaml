@@ -12,11 +12,15 @@ spec:
       value: "{{repo_url}}"
     - name: revision
       value: "{{revision}}"
+    - name: target-branch
+      value: "{{target_branch}}"
   pipelineSpec:
     params:
       - name: git-url
         type: string
       - name: revision
+        type: string
+      - name: target-branch
         type: string
     workspaces:
       - name: workspace
@@ -46,6 +50,30 @@ spec:
             - name: run-tests
               image: registry.access.redhat.com/ubi8/ubi:latest
               script: cd $(workspaces.workspace.path) && ./automation/test.sh
+      - name: run-gitlint
+        params:
+          - name: target-branch
+            value: $(params.target-branch)
+        workspaces:
+          - name: workspace
+            workspace: workspace
+        runAfter:
+          - clone-repository
+        taskSpec:
+          params:
+            - name: target-branch
+          workspaces:
+            - name: workspace
+          steps:
+            - name: run-gitlint
+              image: registry.access.redhat.com/ubi9/python-39:latest
+              workingDir: $(workspaces.workspace.path)
+              script: |
+                #!/bin/bash -ex
+
+                python -m pip install gitlint
+                git fetch --unshallow
+                gitlint --commits "origin/$(params.target-branch)..HEAD"
   workspaces:
     - name: workspace
       volumeClaimTemplate:
