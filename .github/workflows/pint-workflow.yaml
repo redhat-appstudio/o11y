@@ -1,0 +1,27 @@
+name: pint
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  pull-requests: write
+  
+jobs:
+  pint:
+    name: Run pint checks
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Run pint
+        uses: prymitive/pint-action@v1
+        with:
+          token: ${{ github.token }}

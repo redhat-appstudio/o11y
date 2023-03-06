@@ -12,12 +12,16 @@ spec:
       value: "{{repo_url}}"
     - name: revision
       value: "{{revision}}"
+    - name: target-branch
+      value: "{{target_branch}}"
   pipelineSpec:
     params:
       - name: git-url
         type: string
       - name: revision
         type: string
+      - name: target-branch
+        type: string           
     workspaces:
       - name: workspace
     tasks:
@@ -33,7 +37,8 @@ spec:
         taskRef:
           bundle: quay.io/redhat-appstudio/appstudio-tasks:510fa6e99f1fa1f816c96354bbaf1ad155c6d9c3-1
           name: git-clone
-      - name: run-tests
+
+      - name: run-rules-linting
         workspaces:
           - name: workspace
             workspace: workspace
@@ -42,10 +47,73 @@ spec:
         taskSpec:
           workspaces:
             - name: workspace
+          params:
+            - name: "CONFIG"              
+              type: string
+              default: ""
+            - name: "WORKDIR"
+              type: string
+              default: ""              
+            - name: "LOGLEVEL"
+              type: string
+              default: ""
+            - name: "MIN_SEVERITY"
+              type: string
+              default: ""
+            - name: "REQUIRE_OWNER"
+              type: string
+              default: ""
+          steps:
+            - name: run-pint
+              image: ghcr.io/cloudflare/pint:0.42.1
+              workingDir: $(workspaces.workspace.path)         
+              script: |
+                #!/bin/bash -ex
+
+                if [ "$CONFIG" != "" ]; then
+                    CONFIG="--config=$CONFIG"
+                fi
+
+                if  [ "$LOGLEVEL" != "" ]; then
+                    LOGLEVEL="--log-level=$LOGLEVEL"
+                fi
+
+                if  [ "$MIN_SEVERITY" != "" ]; then
+                    MIN_SEVERITY="--min-severity=$MIN_SEVERITY"
+                fi
+
+                if  [ "$(params.REQUIRE_OWNER)" != "" ]; then
+                    REQUIRE_OWNER="--require-owner"
+                fi
+                
+                git fetch origin main
+                git checkout main
+                git fetch origin temp-test
+                git checkout temp-test
+
+                # TODO: fetch base branch name from Tekton
+                # BASEBRANCH="main"            
+                # PRBRANCH="$(params.target-branch)"
+                # echo ">>> BASE BRANCH: $BASEBRANCH"
+                # echo ">>> PR BRANCH: $PRBRANCH"
+
+                git branch
+                pint ci
+
+      - name: run-tests
+        workspaces:
+          - name: workspace
+            workspace: workspace
+        runAfter:
+          - run-rules-linting
+        taskSpec:
+          workspaces:
+            - name: workspace
           steps:
             - name: run-tests
               image: registry.access.redhat.com/ubi8/ubi:latest
               script: cd $(workspaces.workspace.path) && ./automation/test.sh
+
   workspaces:
     - name: workspace
       volumeClaimTemplate:
