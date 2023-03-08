@@ -79,6 +79,20 @@ spec:
               image: registry.access.redhat.com/ubi8/ubi:latest
               workingDir: $(workspaces.workspace.path)
               script: ./automation/promtool_tests.sh lint
+      - name: lint-prometheus-rules
+        workspaces:
+          - name: workspace
+            workspace: workspace
+        runAfter:
+          - prepare-for-prometheus-tests
+        taskSpec:
+          workspaces:
+            - name: workspace
+          steps:
+            - name: lint-rules
+              image: registry.access.redhat.com/ubi8/ubi:latest
+              workingDir: $(workspaces.workspace.path)
+              script: ./automation/pint_lint.sh
       - name: run-gitlint
         params:
           - name: target-branch
