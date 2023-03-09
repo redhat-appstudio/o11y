@@ -15,3 +15,22 @@ spec:
             * on (namespace, pod)
             group_left (label_pipelines_appstudio_openshift_io_type)
             kube_pod_labels
+        # containers and init containers resource limits with added pod labels
+        - record: appstudio_container_resource_limits_with_additional_labels
+          expr: |
+            {__name__=~"kube_pod_.*container_resource_limits"}
+            * on (namespace, pod)
+            group_left(label_pipelines_appstudio_openshift_io_type) kube_pod_labels
+        - record: labeled_containers:resource_minutes:2w
+          expr: |
+            last_over_time(appstudio_container_resource_limits_with_additional_labels[2w])
+            * on (namespace, pod, container) group_left ()
+            (sum by (namespace, pod, container) (increase(container_last_seen[2w] )) / 60)
+    - name: resource_gauge
+      interval: 5m
+      rules:
+        - record: appstudio_container_resource_minutes_gauge
+          expr: |
+            last_over_time(appstudio_container_resource_limits_with_additional_labels[5m])
+            * on (namespace, pod, container) group_left ()
+            (sum by (namespace, pod, container) (increase(container_last_seen[5m] )) / 60)
