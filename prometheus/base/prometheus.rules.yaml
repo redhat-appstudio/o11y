@@ -9,5 +9,9 @@ spec:
   groups:
     - name: example
       rules:
-        - record: o11y_prometheus_http_requests_total
-          expr: sum by (code) (prometheus_http_requests_total)
+        - record: appstudio_container_network_transmit_bytes_total
+          expr: |
+            container_network_transmit_bytes_total
+            * on (namespace, pod)
+            group_left (label_pipelines_appstudio_openshift_io_type)
+            kube_pod_labels
