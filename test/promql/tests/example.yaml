@@ -7,15 +7,15 @@ tests:
   # base query - query will be made by the rule
   - interval: 30s
     input_series:
-        - series: 'container_network_transmit_bytes_total{namespace="mynamespace", pod="mypod"}'
-          values: '0 1 2 3 4 5 6 7 8 9 10'
-        - series: 'kube_pod_labels{label_pipelines_appstudio_openshift_io_type="mypipe", namespace="mynamespace", pod="mypod"}'
-          values: '1 1 1 1 1 1 1 1 1 1 1'
+      - series: 'container_network_transmit_bytes_total{namespace="mynamespace", pod="mypod"}'
+        values: '0 1 2 3 4 5 6 7 8 9 10'
+      - series: 'kube_pod_labels{label_pipelines_appstudio_openshift_io_type="mypipe", namespace="mynamespace", pod="mypod"}'
+        values: '1 1 1 1 1 1 1 1 1 1 1'
 
     # Unit tests for promql expressions.
     promql_expr_test:
-        - expr: appstudio_container_network_transmit_bytes_total
-          eval_time: 4m
-          exp_samples:
-          - labels: 'appstudio_container_network_transmit_bytes_total{namespace="mynamespace", pod="mypod", label_pipelines_appstudio_openshift_io_type="mypipe"}'
-            value: 8
+      - expr: appstudio_container_network_transmit_bytes_total
+        eval_time: 4m
+        exp_samples:
+        - labels: 'appstudio_container_network_transmit_bytes_total{namespace="mynamespace", pod="mypod", label_pipelines_appstudio_openshift_io_type="mypipe"}'
+          value: 8
