@@ -74,6 +74,24 @@ spec:
                 python -m pip install gitlint
                 git fetch --unshallow
                 gitlint --commits "origin/$(params.target-branch)..HEAD"
+      - name: yaml-lint
+        workspaces:
+          - name: workspace
+            workspace: workspace
+        runAfter:
+          - clone-repository
+        taskSpec:
+          workspaces:
+            - name: workspace
+          steps:
+            - name: yaml-lint
+              image: registry.access.redhat.com/ubi9/python-39:latest
+              workingDir: $(workspaces.workspace.path)
+              script: |
+                #!/bin/bash -ex
+
+                python -m pip install yamllint
+                yamllint .
   workspaces:
     - name: workspace
       volumeClaimTemplate:
