@@ -31,6 +31,8 @@ spec:
             value: $(params.git-url)
           - name: revision
             value: $(params.revision)
+          - name: depth
+            value: 20
         workspaces:
           - name: output
             workspace: workspace
@@ -101,8 +103,8 @@ spec:
                 #!/bin/bash -ex
 
                 python -m pip install gitlint
-                git fetch --unshallow
-                gitlint --commits "origin/$(params.target-branch)..HEAD"
+                git fetch origin "$(params.target-branch)"
+                gitlint --fail-without-commits --commits "origin/$(params.target-branch)..HEAD"
       - name: yaml-lint
         workspaces:
           - name: workspace
