@@ -1,14 +1,36 @@
 #!/bin/bash -ex
 
+set -o pipefail
+
 main() {
-    install_promtool
-    install_yq
+    local rule_file=prometheus/base/prometheus.rules.yaml
+    local extracted_rule_file=test/promql/extracted-rules.yaml
 
-    echo "Extract Prometheus rules"
-    ./yq ".spec" prometheus/base/prometheus.rules.yaml > test/promql/extracted-rules.yaml
+    case "$1" in
 
-    echo "Running tests"
-    ./promtool test rules test/promql/tests/*
+    prepare)
+        install_promtool
+        install_yq
+
+        echo "Extract Prometheus rules"
+        ./yq ".spec" $rule_file > $extracted_rule_file
+        ;;
+
+    lint)
+        echo "Running Prometheus rules linter tests"
+        ./promtool check rules $extracted_rule_file
+        ;;
+
+    test_rules)
+        echo "Running Prometheus rules unit tests"
+        ./promtool test rules test/promql/tests/*
+        ;;
+
+    *)
+        echo "Unrecognized option $1"
+        exit 1
+        ;;
+    esac
 }
 
 install_promtool() {

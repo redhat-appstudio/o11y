@@ -37,7 +37,7 @@ spec:
         taskRef:
           bundle: quay.io/redhat-appstudio/appstudio-tasks:510fa6e99f1fa1f816c96354bbaf1ad155c6d9c3-1
           name: git-clone
-      - name: run-tests
+      - name: prepare-for-prometheus-tests
         workspaces:
           - name: workspace
             workspace: workspace
@@ -49,7 +49,36 @@ spec:
           steps:
             - name: run-tests
               image: registry.access.redhat.com/ubi8/ubi:latest
-              script: cd $(workspaces.workspace.path) && ./automation/test.sh
+              workingDir: $(workspaces.workspace.path)
+              script: ./automation/promtool_tests.sh prepare
+      - name: run-prometheus-rules-unit-tests
+        workspaces:
+          - name: workspace
+            workspace: workspace
+        runAfter:
+          - prepare-for-prometheus-tests
+        taskSpec:
+          workspaces:
+            - name: workspace
+          steps:
+            - name: run-tests
+              image: registry.access.redhat.com/ubi8/ubi:latest
+              workingDir: $(workspaces.workspace.path)
+              script: ./automation/promtool_tests.sh test_rules
+      - name: run-prometheus-rules-lint-tests
+        workspaces:
+          - name: workspace
+            workspace: workspace
+        runAfter:
+          - prepare-for-prometheus-tests
+        taskSpec:
+          workspaces:
+            - name: workspace
+          steps:
+            - name: run-tests
+              image: registry.access.redhat.com/ubi8/ubi:latest
+              workingDir: $(workspaces.workspace.path)
+              script: ./automation/promtool_tests.sh lint
       - name: run-gitlint
         params:
           - name: target-branch
