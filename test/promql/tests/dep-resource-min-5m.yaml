@@ -1,0 +1,38 @@
+# This is the main input for unit testing.
+# Only this file is passed as command line argument.
+
+evaluation_interval: 5m
+
+rule_files:
+  - ../extracted-rules.yaml
+
+tests:
+  # Test 1.
+  - interval: 1m
+    # Series data.
+    input_series:
+      - series: 'kube_pod_container_resource_limits{resource="memory", namespace="ns1", pod="ns1p1", container="ns1p1c1"}'
+        values: '2x10'
+      - series: 'kube_pod_init_container_resource_limits{resource="memory", namespace="ns1", pod="ns1p1", container="ns1p1c2"}'
+        values: '2x10'
+      - series: 'kube_pod_container_resource_limits{resource="cpu", namespace="ns1", pod="ns1p1", container="ns1p1c1"}'
+        values: '0.5x10'
+      - series: 'kube_pod_init_container_resource_limits{resource="cpu", namespace="ns1", pod="ns1p1", container="ns1p1c2"}'
+        values: '0.5x10'
+      - series: 'container_last_seen{namespace="ns1", pod="ns1p1", container="ns1p1c1"}'
+        values: '200+60x10'
+      - series: 'container_last_seen{namespace="ns1", pod="ns1p1", container="ns1p1c2"}'
+        values: '100+60x10'
+      - series: 'kube_pod_labels{label_pipelines_appstudio_openshift_io_type="t1", namespace="ns1", pod="ns1p1"}'
+        values: '1x10'
+
+    # Unit tests for promql expressions.
+    promql_expr_test:
+      - expr: |
+          sum_over_time(appstudio_container_resource_minutes_gauge{resource="memory",label_pipelines_appstudio_openshift_io_type="t1", namespace="ns1"}[10m])
+        eval_time: 10m
+        exp_samples:
+          - labels: '{resource="memory", namespace="ns1", pod="ns1p1", container="ns1p1c1", label_pipelines_appstudio_openshift_io_type="t1"}'
+            value: 20
+          - labels: '{resource="memory", namespace="ns1", pod="ns1p1", container="ns1p1c2", label_pipelines_appstudio_openshift_io_type="t1"}'
+            value: 20
