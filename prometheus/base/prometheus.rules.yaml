@@ -7,11 +7,12 @@ metadata:
   namespace: o11y
 spec:
   groups:
-    - name: example
-      rules:
-        - record: appstudio_container_network_transmit_bytes_total
-          expr: |
-            container_network_transmit_bytes_total
-            * on (namespace, pod)
-            group_left (label_pipelines_appstudio_openshift_io_type)
-            kube_pod_labels
+  - name: stonesoup-metering
+    interval: 30s
+    rules:
+      - record: appstudio_container_network_transmit_bytes_total
+        expr: |
+          container_network_transmit_bytes_total
+          * on (namespace, pod)
+          group_left (label_pipelines_appstudio_openshift_io_type)
+          kube_pod_labels
