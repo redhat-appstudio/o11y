@@ -1,17 +1,17 @@
-apiVersion: monitoring.coreos.com/v1
-kind: PrometheusRule
-metadata:
-  labels:
-    openshift.io/prometheus-rule-evaluation-scope: leaf-prometheus
-  name: o11y-example-rule
-  namespace: o11y
-spec:
-  groups:
-    - name: example
+groups:
+    - name: container_labeling
       rules:
-        - record: appstudio_container_network_transmit_bytes_total
+        # containers and init containers resource limits with added pod labels
+        - record: appstudio_container_resource_limits_with_additional_labels
           expr: |
-            container_network_transmit_bytes_total
+            {__name__=~"kube_pod_.*container_resource_limits"}
             * on (namespace, pod)
-            group_left (label_pipelines_appstudio_openshift_io_type)
-            kube_pod_labels
+            group_left(label_pipelines_appstudio_openshift_io_type) kube_pod_labels
+    - name: resource_gauge
+      interval: 1m
+      rules:
+        - record: appstudio_container_resource_minutes_gauge
+          expr: |
+            last_over_time(appstudio_container_resource_limits_with_additional_labels[1m])
+            * on (namespace, pod, container) group_left ()
+            (sum by (namespace, pod, container) (increase(container_last_seen[1m] )) / 60)

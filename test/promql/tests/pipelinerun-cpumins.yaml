@@ -1,0 +1,127 @@
+# This is the main input for unit testing.
+# Only this file is passed as command line argument.
+
+evaluation_interval: 1m
+
+rule_files:
+  - ../../../prometheus/base/prometheus.rules.yaml
+
+tests:
+  # Test 1.
+  - interval: 1m
+    # Series data.
+    input_series:
+      - series: 'kube_pod_container_resource_limits{resource="memory", namespace="ns1", pod="ns1p1", container="ns1p1c1"}'
+        values: '2x10'
+      - series: 'kube_pod_container_resource_limits{resource="cpu", namespace="ns1", pod="ns1p1", container="ns1p1c1"}'
+        values: '0.5x10'
+      - series: 'kube_pod_labels{label_pipelines_appstudio_openshift_io_type="t1", namespace="ns1", pod="ns1p1"}'
+        values: '1x10'
+      - series: 'container_last_seen{namespace="ns1", pod="ns1p1", container="ns1p1c1"}'
+        values: '200+60x10'
+
+      - series: 'kube_pod_init_container_resource_limits{resource="memory", namespace="ns1", pod="ns1p1", container="ns1p1c2"}'
+        values: '2x10'
+      - series: 'kube_pod_init_container_resource_limits{resource="cpu", namespace="ns1", pod="ns1p1", container="ns1p1c2"}'
+        values: '0.5x10'
+      - series: 'container_last_seen{namespace="ns1", pod="ns1p1", container="ns1p1c2"}'
+        values: '100+60x10'
+
+      - series: 'kube_pod_container_resource_limits{resource="memory", namespace="ns2", pod="ns2p1", container="ns2p1c1"}'
+        values: '1 1 1 4 _ 5 _ 7 9 10 _'
+      - series: 'kube_pod_container_resource_limits{resource="cpu", namespace="ns2", pod="ns2p1", container="ns2p1c1"}'
+        values: '0 5 8 1 _ 10 11 12 12 _ 13'
+      - series: 'kube_pod_labels{label_pipelines_appstudio_openshift_io_type="test", namespace="ns2", pod="ns2p1"}'
+        values: '1x10'
+      - series: 'container_last_seen{namespace="ns2", pod="ns2p1", container="ns2p1c2"}'
+        values: '60 120 180 240 _ 360 480 _ 600'
+      - series: 'container_last_seen{namespace="ns2", pod="ns2p1", container="ns2p1c1"}'
+        values: '60 120 180 240 300 360 480 _ 600'
+
+    # Unit tests for promql expressions.
+    promql_expr_test:
+      - expr: |
+          appstudio_container_resource_limits_with_additional_labels
+        eval_time: 4m
+        exp_samples:
+          - labels: 'appstudio_container_resource_limits_with_additional_labels{resource="memory", namespace="ns1", pod="ns1p1", container="ns1p1c1", label_pipelines_appstudio_openshift_io_type="t1"}'
+            value: 2
+          - labels: 'appstudio_container_resource_limits_with_additional_labels{resource="memory", namespace="ns2", pod="ns2p1", container="ns2p1c1", label_pipelines_appstudio_openshift_io_type="test"}'
+            value: 4
+          - labels: 'appstudio_container_resource_limits_with_additional_labels{resource="memory", namespace="ns1", pod="ns1p1", container="ns1p1c2", label_pipelines_appstudio_openshift_io_type="t1"}'
+            value: 2
+          - labels: 'appstudio_container_resource_limits_with_additional_labels{resource="cpu", namespace="ns1", pod="ns1p1", container="ns1p1c1", label_pipelines_appstudio_openshift_io_type="t1"}'
+            value: 0.5
+          - labels: 'appstudio_container_resource_limits_with_additional_labels{resource="cpu", namespace="ns1", pod="ns1p1", container="ns1p1c2", label_pipelines_appstudio_openshift_io_type="t1"}'
+            value: 0.5
+          - labels: 'appstudio_container_resource_limits_with_additional_labels{resource="cpu", namespace="ns2", pod="ns2p1", container="ns2p1c1", label_pipelines_appstudio_openshift_io_type="test"}'
+            value: 1
+
+      - expr: |
+          increase(container_last_seen{namespace="ns1"}[4m])
+        eval_time: 4m
+        exp_samples:
+          - labels: '{namespace="ns1", pod="ns1p1", container="ns1p1c1"}'
+            value: 240
+          - labels: '{namespace="ns1", pod="ns1p1", container="ns1p1c2"}'
+            value: 240
+
+      - expr: |
+          increase(container_last_seen{namespace="ns2"}[4m])
+        eval_time: 4m
+        exp_samples:
+          - labels: '{namespace="ns2", pod="ns2p1", container="ns2p1c2"}'
+            value: 240
+          - labels: '{namespace="ns2", pod="ns2p1", container="ns2p1c1"}'
+            value: 240
+
+      - expr: |
+          sum by (namespace, pod, container) (increase(container_last_seen[4m] )) / 60
+        eval_time: 4m
+        exp_samples:
+          - labels: '{namespace="ns1", pod="ns1p1", container="ns1p1c1"}'
+            value: 4
+          - labels: '{namespace="ns1", pod="ns1p1", container="ns1p1c2"}'
+            value: 4
+          - labels: '{namespace="ns2", pod="ns2p1", container="ns2p1c2"}'
+            value: 4
+          - labels: '{namespace="ns2", pod="ns2p1", container="ns2p1c1"}'
+            value: 4
+
+      - expr: |
+          last_over_time({__name__=~"kube_pod_.*container_resource_limits", resource="cpu"}[4m])
+        eval_time: 4m
+        exp_samples:
+          - labels: '{__name__="kube_pod_container_resource_limits", resource="cpu", namespace="ns1", pod="ns1p1", container="ns1p1c1"}'
+            value: 0.5
+          - labels: '{__name__="kube_pod_init_container_resource_limits", resource="cpu", namespace="ns1", pod="ns1p1", container="ns1p1c2"}'
+            value: 0.5
+          - labels: '{__name__="kube_pod_container_resource_limits", resource="cpu", namespace="ns2", pod="ns2p1", container="ns2p1c1"}'
+            value: 1
+
+      - expr: |
+          last_over_time({__name__=~"kube_pod_.*container_resource_limits", resource="cpu"}[4m])
+          * on(namespace, pod, container)
+          (sum by (namespace, pod, container) (increase(container_last_seen[4m] )) / 60)
+        eval_time: 4m
+        exp_samples:
+          - labels: '{namespace="ns1", pod="ns1p1", container="ns1p1c1"}'
+            value: 2
+          - labels: '{namespace="ns1", pod="ns1p1", container="ns1p1c2"}'
+            value: 2
+          - labels: '{namespace="ns2", pod="ns2p1", container="ns2p1c1"}'
+            value: 4
+
+      # The one below will be deleted
+      - expr: |
+          last_over_time({__name__=~"kube_pod_.*container_resource_limits", resource="memory"}[4m])
+          * on(namespace, pod, container)
+          (sum by (namespace, pod, container) (increase(container_last_seen[4m] )) / 60)
+        eval_time: 4m
+        exp_samples:
+          - labels: '{namespace="ns1", pod="ns1p1", container="ns1p1c1"}'
+            value: 8
+          - labels: '{namespace="ns1", pod="ns1p1", container="ns1p1c2"}'
+            value: 8
+          - labels: '{namespace="ns2", pod="ns2p1", container="ns2p1c1"}'
+            value: 16
