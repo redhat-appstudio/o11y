@@ -50,7 +50,7 @@ spec:
             - name: run-tests
               image: registry.access.redhat.com/ubi8/ubi:latest
               workingDir: $(workspaces.workspace.path)
-              script: ./automation/promtool_tests.sh prepare
+              script: yum install -y make && make prepare
       - name: run-prometheus-rules-unit-tests
         workspaces:
           - name: workspace
@@ -64,7 +64,7 @@ spec:
             - name: run-tests
               image: registry.access.redhat.com/ubi8/ubi:latest
               workingDir: $(workspaces.workspace.path)
-              script: ./automation/promtool_tests.sh test_rules
+              script: yum install -y make && make test_rules
       - name: run-prometheus-rules-lint-tests
         workspaces:
           - name: workspace
@@ -78,7 +78,7 @@ spec:
             - name: run-tests
               image: registry.access.redhat.com/ubi8/ubi:latest
               workingDir: $(workspaces.workspace.path)
-              script: ./automation/promtool_tests.sh lint
+              script: yum install -y make && make lint
       - name: lint-prometheus-rules
         workspaces:
           - name: workspace
@@ -92,7 +92,7 @@ spec:
             - name: lint-rules
               image: registry.access.redhat.com/ubi8/ubi:latest
               workingDir: $(workspaces.workspace.path)
-              script: ./automation/pint_lint.sh
+              script: yum install -y make && make pint
       - name: run-gitlint
         params:
           - name: target-branch
