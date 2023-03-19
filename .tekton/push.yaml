@@ -1,0 +1,40 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: o11y-on-push
+  annotations:
+    pipelinesascode.tekton.dev/on-event: '[push]'
+    pipelinesascode.tekton.dev/on-target-branch: '[main]'
+    pipelinesascode.tekton.dev/max-keep-runs: "3"
+spec:
+  params:
+  - name: git-url
+    value: '{{repo_url}}'
+  - name: revision
+    value: '{{revision}}'
+  - name: infra-deployment-update-script
+    value: |
+        sed -i -e 's|\(https://github.com/redhat-appstudio/o11y/.*?ref=\)\(.*\)|\1{{ revision }}|' components/o11y/base/kustomization.yaml
+  pipelineSpec:
+    params:
+    - name: git-url
+      type: string
+      description: Source Repository URL
+    - name: revision
+      type: string
+      description: Revision of the Source Repository
+      default: ""
+    - name: infra-deployment-update-script
+      default: ""
+    tasks:
+    - name: infra-deployments-mr
+      params:
+      - name: ORIGIN_REPO
+        value: $(params.git-url)
+      - name: REVISION
+        value: $(params.revision)
+      - name: SCRIPT
+        value: $(params.infra-deployment-update-script)
+      taskRef:
+        bundle: quay.io/redhat-appstudio-tekton-catalog/task-update-infra-deployments:0.1
+        name: update-infra-deployments

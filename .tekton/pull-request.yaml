@@ -31,6 +31,8 @@ spec:
             value: $(params.git-url)
           - name: revision
             value: $(params.revision)
+          - name: depth
+            value: 20
         workspaces:
           - name: output
             workspace: workspace
@@ -79,6 +81,20 @@ spec:
               image: registry.access.redhat.com/ubi8/ubi:latest
               workingDir: $(workspaces.workspace.path)
               script: ./automation/promtool_tests.sh lint
+      - name: lint-prometheus-rules
+        workspaces:
+          - name: workspace
+            workspace: workspace
+        runAfter:
+          - prepare-for-prometheus-tests
+        taskSpec:
+          workspaces:
+            - name: workspace
+          steps:
+            - name: lint-rules
+              image: registry.access.redhat.com/ubi8/ubi:latest
+              workingDir: $(workspaces.workspace.path)
+              script: ./automation/pint_lint.sh
       - name: run-gitlint
         params:
           - name: target-branch
@@ -101,8 +117,8 @@ spec:
                 #!/bin/bash -ex
 
                 python -m pip install gitlint
-                git fetch --unshallow
-                gitlint --commits "origin/$(params.target-branch)..HEAD"
+                git fetch origin "$(params.target-branch)"
+                gitlint --fail-without-commits --commits "origin/$(params.target-branch)..HEAD"
       - name: yaml-lint
         workspaces:
           - name: workspace
