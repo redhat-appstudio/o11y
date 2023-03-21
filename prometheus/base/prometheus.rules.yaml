@@ -7,12 +7,26 @@ metadata:
   namespace: o11y
 spec:
   groups:
-  - name: appstudio-metering
-    interval: 30s
-    rules:
-      - record: appstudio_container_network_transmit_bytes_total
-        expr: |
-          container_network_transmit_bytes_total
-          * on (namespace, pod)
-          group_left (label_pipelines_appstudio_openshift_io_type)
-          kube_pod_labels
+    - name: appstudio-container-labeling
+      interval: 30s
+      rules:
+        - record: appstudio_container_network_transmit_bytes_total
+          expr: |
+            container_network_transmit_bytes_total
+            * on (namespace, pod)
+            group_left (label_pipelines_appstudio_openshift_io_type)
+            kube_pod_labels
+        # containers and init containers resource limits with added pod labels
+        - record: appstudio_container_resource_limits
+          expr: |
+            {__name__=~"kube_pod_.*container_resource_limits"}
+            * on (namespace, pod)
+            group_left(label_pipelines_appstudio_openshift_io_type) kube_pod_labels
+    - name: appstudio-resource-gauge
+      interval: 1m
+      rules:
+        - record: appstudio_container_resource_minutes_gauge
+          expr: |
+            last_over_time(appstudio_container_resource_limits[1m])
+            * on (namespace, pod, container) group_left ()
+            (sum by (namespace, pod, container) (increase(container_last_seen[1m] )) / 60)
