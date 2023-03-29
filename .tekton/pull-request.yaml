@@ -132,11 +132,7 @@ spec:
             - name: yaml-lint
               image: registry.access.redhat.com/ubi9/python-39:latest
               workingDir: $(workspaces.workspace.path)
-              script: |
-                #!/bin/bash -ex
-
-                python -m pip install yamllint
-                yamllint .
+              script: make install_pipenv sync_pipenv lint_yamls
   workspaces:
     - name: workspace
       volumeClaimTemplate:

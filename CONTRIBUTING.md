@@ -13,6 +13,7 @@ This section describes the main steps required before you can add your code and 
 ### Prerequisites
 * Linux machine with x86-64 architecture with bash installed.
 * Basic tools: curl, tar, make.
+* Python3 and pipenv.
 
 ### Running the Automated Tests
 1. Clone your fork of the project.
