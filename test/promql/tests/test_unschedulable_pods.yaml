@@ -1,0 +1,48 @@
+evaluation_interval: 1m
+
+rule_files:
+  - ../extracted-rules.yaml
+
+tests:
+  - interval: 1m
+    input_series:
+
+      # Initially pod is unscheduled but later status changed to scheduled so it's not alerted
+      - series: 'kube_pod_status_unschedulable{namespace="prod", pod="prod-pod-1"}'
+        values: '1x40 0x20'
+
+      # The pod is in unscheduled status whole time, so this is alerted
+      - series: 'kube_pod_status_unschedulable{namespace="prod-test", pod="prod-pod-2"}'
+        values: '1x60'
+
+      # The pod is unscheduled most of the time but there is some window where pod is scheduled so it's not alerted
+      - series: 'kube_pod_status_unschedulable{namespace="prod-test", pod="prod-pod-3"}'
+        values: '1x29 0 1x28'
+
+      # The pod is in unscheduled status whole time but the namespace ends with tenant so it's ignored
+      - series: 'kube_pod_status_unschedulable{namespace="prod-tenant", pod="prod-pod-3"}'
+        values: '1x60'
+
+      # The pod is in unscheduled status whole time but the namespace starts with openshift so it's ignored
+      - series: 'kube_pod_status_unschedulable{namespace="openshift-prod-test", pod="oc-pod"}'
+        values: '1x60'
+
+      # The pod is in unscheduled status whole time but the namespace starts with kube so it's ignored
+      - series: 'kube_pod_status_unschedulable{namespace="kube-test", pod="kube-pod"}'
+        values: '1x60'
+
+      # The pod is in unscheduled status whole time but the namespace is default so it's ignored
+      - series: 'kube_pod_status_unschedulable{namespace="default", pod="test-pod"}'
+        values: '1x60'
+
+    alert_rule_test:
+      - eval_time: 60m
+        alertname: UnschedulablePods
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: prod-test
+              pod: prod-pod-2
+            exp_annotations:
+              summary: "Pod prod-pod-2 cannot be scheduled."
+              description: "Pod prod-pod-2 for namespace prod-test is unscheduled for more than 30 minutes."
