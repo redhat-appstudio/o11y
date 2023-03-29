@@ -5,7 +5,7 @@ EXTRACTED_RULE_FILE = test/promql/extracted-rules.yaml
 RULE_FILE = prometheus/base/prometheus.rules.yaml
 
 .PHONY: all
-all: prepare lint test_rules pint_lint
+all: prepare sync_pipenv lint test_rules pint_lint lint_yamls
 
 .PHONY: prepare
 prepare: pint promtool yq
@@ -46,3 +46,15 @@ yq:
 pint_lint:
 	echo "Linting Prometheus rules..."
 	./pint --no-color lint ${EXTRACTED_RULE_FILE}
+
+.PHONY: install_pipenv
+install_pipenv:
+	python3 -m pip install pipenv
+
+.PHONY: sync_pipenv
+sync_pipenv:
+	python3 -m pipenv sync --dev
+
+.PHONY: lint_yamls
+lint_yamls:
+	python3 -m pipenv run yamllint . && echo "lint_yamls: SUCCESS"
