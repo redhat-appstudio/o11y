@@ -5,10 +5,10 @@ EXTRACTED_RULE_FILE = test/promql/extracted-rules.yaml
 RULE_FILE = prometheus/base/prometheus.rules.yaml
 
 .PHONY: all
-all: prepare sync_pipenv lint test_rules pint_lint lint_yamls
+all: prepare sync_pipenv lint test_rules pint_lint lint_yamls kustomize_build
 
 .PHONY: prepare
-prepare: pint promtool yq
+prepare: pint promtool yq kustomize
 	echo "Extract Prometheus rules"
 	./yq ".spec" ${RULE_FILE} > ${EXTRACTED_RULE_FILE}
 
@@ -42,6 +42,9 @@ yq:
 	rm -f yq_linux_amd64.tar.gz
 	mv yq_linux_amd64 yq
 
+kustomize:
+	curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash
+
 .PHONY: pint_lint
 pint_lint:
 	echo "Linting Prometheus rules..."
@@ -58,3 +61,10 @@ sync_pipenv:
 .PHONY: lint_yamls
 lint_yamls:
 	python3 -m pipenv run yamllint . && echo "lint_yamls: SUCCESS"
+
+.PHONY: kustomize_build
+kustomize_build:
+	# This validates that the build command passes and not its output's validity.
+	# It will fail once we have more than one subdirectory, which will prevent us from
+	# adding untested configurations (this target will have to chage when that happens).
+	./kustomize build prometheus/* 1>/dev/null
