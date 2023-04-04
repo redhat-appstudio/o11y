@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  labels:
+    openshift.io/prometheus-rule-evaluation-scope: leaf-prometheus
+  name: o11y-alerting-rules
+  namespace: o11y
+spec:
+  groups:
+  - name: pod_alerts
+    rules:
+    - alert: UnschedulablePods
+      expr: last_over_time(kube_pod_status_unschedulable{namespace!~"(.*-tenant|openshift-.*|kube-.*|default)"}[5m]) == 1
+      for: 30m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Pod {{ $labels.pod }} cannot be scheduled."
+        description: "Pod {{ $labels.pod }} for namespace {{ $labels.namespace }} is unscheduled for more than 30 minutes."
