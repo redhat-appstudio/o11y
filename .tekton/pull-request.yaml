@@ -39,7 +39,7 @@ spec:
         taskRef:
           bundle: quay.io/redhat-appstudio/appstudio-tasks:510fa6e99f1fa1f816c96354bbaf1ad155c6d9c3-1
           name: git-clone
-      - name: prepare-for-prometheus-tests
+      - name: prepare-for-tests
         workspaces:
           - name: workspace
             workspace: workspace
@@ -58,7 +58,7 @@ spec:
           - name: workspace
             workspace: workspace
         runAfter:
-          - prepare-for-prometheus-tests
+          - prepare-for-tests
         taskSpec:
           workspaces:
             - name: workspace
@@ -72,7 +72,7 @@ spec:
           - name: workspace
             workspace: workspace
         runAfter:
-          - prepare-for-prometheus-tests
+          - prepare-for-tests
         taskSpec:
           workspaces:
             - name: workspace
@@ -86,7 +86,7 @@ spec:
           - name: workspace
             workspace: workspace
         runAfter:
-          - prepare-for-prometheus-tests
+          - prepare-for-tests
         taskSpec:
           workspaces:
             - name: workspace
@@ -95,6 +95,20 @@ spec:
               image: registry.access.redhat.com/ubi8/ubi:latest
               workingDir: $(workspaces.workspace.path)
               script: yum install -y make && make pint_lint
+      - name: test-kustomize-build
+        workspaces:
+          - name: workspace
+            workspace: workspace
+        runAfter:
+          - prepare-for-tests
+        taskSpec:
+          workspaces:
+            - name: workspace
+          steps:
+            - name: kustomize-build
+              image: registry.access.redhat.com/ubi8/ubi:latest
+              workingDir: $(workspaces.workspace.path)
+              script: yum install -y make && make kustomize_build
       - name: run-gitlint
         params:
           - name: target-branch
