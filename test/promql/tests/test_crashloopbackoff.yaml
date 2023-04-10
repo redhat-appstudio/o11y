@@ -1,0 +1,63 @@
+evaluation_interval: 1m
+
+rule_files:
+  - ../extracted-rules.yaml
+
+tests:
+  - interval: 1m
+    input_series:
+
+      # Pod failing with ImagePullBackOff error so it's not alerted
+      - series: 'kube_pod_container_status_waiting_reason{namespace="prod", pod="prod-pod-1", container="test-container", reason="ImagePullBackOff"}'
+        values: '1x15'
+
+      # Pod failing with CrashLoopBackOff error so it's alerted
+      - series: 'kube_pod_container_status_waiting_reason{namespace="test-ns", pod="prod-pod-2", container="test-container", reason="CrashLoopBackOff"}'
+        values: '1x15'
+
+      # Pod failing with CrashLoopBackOff error but it recovered in between so this is not alerted
+      - series: 'kube_pod_container_status_waiting_reason{namespace="prod-test", pod="prod-pod-3", container="test-container", reason="CrashLoopBackOff"}'
+        values: '1x5 0x5 1x5'
+
+      # Pod failing with CrashLoopBackOff error for first 10 minutes so it's alerted
+      - series: 'kube_pod_container_status_waiting_reason{namespace="prod-ns", pod="prod-pod-4", container="test-container", reason="CrashLoopBackOff"}'
+        values: '1x10 0x5'
+
+      # Pod failing with CrashLoopBackOff error but the namespace ends with tenant so it's ignored
+      - series: 'kube_pod_container_status_waiting_reason{namespace="prod-tenant", pod="prod-pod-5", container="test-container", reason="CrashLoopBackOff"}'
+        values: '1x15'
+
+      # Pod failing with CrashLoopBackOff error but the namespace starts with openshift so it's ignored
+      - series: 'kube_pod_container_status_waiting_reason{namespace="openshift-prod-test", pod="oc-pod", container="test-container", reason="CrashLoopBackOff"}'
+        values: '1x15'
+
+      # Pod failing with CrashLoopBackOff error but the namespace starts with kube so it's ignored
+      - series: 'kube_pod_container_status_waiting_reason{namespace="kube-test", pod="kube-pod", container="test-container", reason="CrashLoopBackOff"}'
+        values: '1x15'
+
+      # Pod failing with CrashLoopBackOff error but the namespace is default so it's ignored
+      - series: 'kube_pod_container_status_waiting_reason{namespace="default", pod="test-pod", container="test-container", reason="CrashLoopBackOff"}'
+        values: '1x15'
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: CrashLoopBackOff
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: test-ns
+              pod: prod-pod-2
+              container: test-container
+              reason: CrashLoopBackOff
+            exp_annotations:
+              summary: "Pod prod-pod-2 is crash looping"
+              description: "Pod test-ns/prod-pod-2 (test-container) is in waiting state (reason: 'CrashLoopBackOff') for more than 15 minutes."
+          - exp_labels:
+              severity: warning
+              namespace: prod-ns
+              pod: prod-pod-4
+              container: test-container
+              reason: CrashLoopBackOff
+            exp_annotations:
+              summary: "Pod prod-pod-4 is crash looping"
+              description: "Pod prod-ns/prod-pod-4 (test-container) is in waiting state (reason: 'CrashLoopBackOff') for more than 15 minutes."
