@@ -1,0 +1,38 @@
+evaluation_interval: 1m
+
+rule_files:
+  - ../extracted-rules.yaml
+
+tests:
+  - interval: 1m
+    input_series:
+
+      # namespace does not reach its quota limits
+      - series: 'kube_resourcequota{type="hard", namespace="not-reaching-limits", resourcequota="test-quota", resource="example-resource"}'
+        values: '2x15'
+      - series: 'kube_resourcequota{type="used", namespace="not-reaching-limits", resourcequota="test-quota", resource="example-resource"}'
+        values: '0x15'
+
+      # namespace reaches its quota limits
+      - series: 'kube_resourcequota{type="hard", namespace="reaching-limits", resourcequota="test-quota", resource="example-resource"}'
+        values: '2x15'
+      - series: 'kube_resourcequota{type="used", namespace="reaching-limits", resourcequota="test-quota", resource="example-resource"}'
+        values: '2x15'
+
+      # namespace exceeds its quota limits
+      - series: 'kube_resourcequota{type="hard", namespace="exceeding-limits", resourcequota="test-quota", resource="example-resource"}'
+        values: '2x15'
+      - series: 'kube_resourcequota{type="used", namespace="exceeding-limits", resourcequota="test-quota", resource="example-resource"}'
+        values: '5x15'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: QuotaExceeded
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: exceeding-limits
+              resource: example-resource
+              resourcequota: test-quota
+            exp_annotations:
+              summary: "Resource example-resource in namespace exceeding-limits exceeded quota test-quota"
+              description: "Resource example-resource in namespace exceeding-limits exceeded quota test-quota"
