@@ -1,0 +1,127 @@
+evaluation_interval: 1m
+
+rule_files:
+  - ../extracted-rules.yaml
+
+tests:
+
+  # Alerted test cases
+  - interval: 1m
+    input_series:
+      # Controller with continuous errors greater than 1% so this is alerted
+      - series: 'controller_runtime_reconcile_errors_total{controller="c1-controller", namespace="prod-ns1", pod="pod-1", container="c1", service="s1"}'
+        values: '1 2 3'
+      - series: 'controller_runtime_reconcile_total{controller="c1-controller", namespace="prod-ns1", pod="pod-1", container="c1", service="s1"}'
+        values: '1 2 3'
+
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: ControllerReconciliationErrors
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: prod-ns1
+              pod: pod-1
+              controller: c1-controller
+              container: c1
+              service: s1
+            exp_annotations:
+              summary: "Controller c1-controller has reconciliation errors greater than 1%"
+              description: "Controller c1-controller with Pod pod-1 for namespace prod-ns1 has total reconciliation errors greater than 1% compared to total reconciliations in last 2 minutes."
+
+  - interval: 1m
+    input_series:
+      # Controller without error at start and then error starts. This is alerted because there is always an increase in error value
+      - series: 'controller_runtime_reconcile_errors_total{controller="c2-controller", namespace="prod-ns2", pod="pod-2", container="c2", service="s2"}'
+        values: '0 1 2'
+      - series: 'controller_runtime_reconcile_total{controller="c2-controller", namespace="prod-ns2", pod="pod-2", container="c2", service="s2"}'
+        values: '1 2 3'
+
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: ControllerReconciliationErrors
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: prod-ns2
+              pod: pod-2
+              controller: c2-controller
+              container: c2
+              service: s2
+            exp_annotations:
+              summary: "Controller c2-controller has reconciliation errors greater than 1%"
+              description: "Controller c2-controller with Pod pod-2 for namespace prod-ns2 has total reconciliation errors greater than 1% compared to total reconciliations in last 2 minutes."
+
+  - interval: 1m
+    input_series:
+      # Controller with large spikes in error values and pause in reconcile total,
+      # since the error rate is always greater than 1% in 2min window this is alerted
+      - series: 'controller_runtime_reconcile_errors_total{controller="c10-controller", namespace="prod-ns10", pod="pod-10", container="c10", service="s10"}'
+        values: '1 150 390'
+      - series: 'controller_runtime_reconcile_total{controller="c10-controller", namespace="prod-ns10", pod="pod-10", container="c10", service="s10"}'
+        values: '1 500 740'
+
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: ControllerReconciliationErrors
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: prod-ns10
+              pod: pod-10
+              controller: c10-controller
+              container: c10
+              service: s10
+            exp_annotations:
+              summary: "Controller c10-controller has reconciliation errors greater than 1%"
+              description: "Controller c10-controller with Pod pod-10 for namespace prod-ns10 has total reconciliation errors greater than 1% compared to total reconciliations in last 2 minutes."
+
+  # Not Alerted test cases
+  - interval: 1m
+    input_series:
+      # Controller with no reconciliation events throughout the test time frame so this is not alerted
+      - series: 'controller_runtime_reconcile_errors_total{controller="c5-controller", namespace="prod-ns5", pod="pod-5", container="c1", service="s1"}'
+        values: '1 1 1'
+      - series: 'controller_runtime_reconcile_total{controller="c5-controller", namespace="prod-ns5", pod="pod-5", container="c1", service="s1"}'
+        values: '10 10 10'
+
+      # Controller with errors during parts of the test period
+      - series: 'controller_runtime_reconcile_errors_total{controller="c3-controller", namespace="prod-ns3", pod="pod-3", container="c1", service="s1"}'
+        values: '0 2 2'
+      - series: 'controller_runtime_reconcile_total{controller="c3-controller", namespace="prod-ns3", pod="pod-3", container="c1", service="s1"}'
+        values: '1 3 3'
+
+      # Controller with error throughout but their total sum is less than 1% of the total number of
+      # reconciliation events at the test period so this is not alerted
+      - series: 'controller_runtime_reconcile_errors_total{controller="c4-controller", namespace="prod-ns4", pod="pod-4", container="c1", service="s1"}'
+        values: '1 2 3'
+      - series: 'controller_runtime_reconcile_total{controller="c4-controller", namespace="prod-ns4", pod="pod-4", container="c1", service="s1"}'
+        values: '1 1000 1001'
+
+      # Controller with error throughout but namespace starts with openshift so this is not alerted
+      - series: 'controller_runtime_reconcile_errors_total{controller="c7-controller", namespace="openshift-ns", pod="pod-1", container="c1", service="s1"}'
+        values: '1 2 3'
+      - series: 'controller_runtime_reconcile_total{controller="c7-controller", namespace="openshift-ns", pod="pod-1", container="c1", service="s1"}'
+        values: '1 2 3'
+
+      # Controller with error throughout but namespace starts with kube so this is not alerted
+      - series: 'controller_runtime_reconcile_errors_total{controller="c8-controller", namespace="kube-ns", pod="pod-1", container="c1", service="s1"}'
+        values: '1 2 3'
+      - series: 'controller_runtime_reconcile_total{controller="c8-controller", namespace="kube-ns", pod="pod-1", container="c1", service="s1"}'
+        values: '1 2 3'
+
+      # Controller with error throughout but namespace ends with tenant so this is not alerted
+      - series: 'controller_runtime_reconcile_errors_total{controller="c9-controller", namespace="ns-tenant", pod="pod-1", container="c1", service="s1"}'
+        values: '1 2 3'
+      - series: 'controller_runtime_reconcile_total{controller="c9-controller", namespace="ns-tenant", pod="pod-1", container="c1", service="s1"}'
+        values: '1 2 3'
+
+      # Controller with error throughout but has default as namespace so this is not alerted
+      - series: 'controller_runtime_reconcile_errors_total{controller="c0-controller", namespace="default", pod="pod-1", container="c1", service="s1"}'
+        values: '1 2 3'
+      - series: 'controller_runtime_reconcile_total{controller="c0-controller", namespace="default", pod="pod-1", container="c1", service="s1"}'
+        values: '1 2 3'
+
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: ControllerReconciliationErrors
