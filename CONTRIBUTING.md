@@ -90,6 +90,14 @@ and add the label_pipelines_appstudio_openshift_io_type to it.
 Signed-off-by: Avi Biton <abiton@redhat.com>
 ```
 
+### Pull Request Description
+The PR description (the first comment at the top of the PR) can usually be derived from
+the commit message body - especially if the PR consists of a single commit.
+
+On top of that, the PR description should include a bit of context, so that reviewers
+won't have to perform extensive research just to be able to provide relevant code
+review.
+
 ### Code Review Guidelines
 * Each PR should be approved by at least 2 team members. Those approvals are only
 relevant if given since the last major change in the PR content.
