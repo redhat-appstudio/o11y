@@ -2,15 +2,16 @@ PINT_VERSION = 0.42.2
 PROMTOOL_VERSION = 2.42.0
 YQ_VERSION = 4.31.2
 EXTRACTED_RULE_FILE = test/promql/extracted-rules.yaml
-RULE_FILE = prometheus/base/prometheus.rules.yaml
+RECORDING_RULE_FILES = prometheus/base/recording/*.yaml
+ALERTING_RULE_FILES = prometheus/base/alerting/*.yaml
 
 .PHONY: all
-all: prepare lint test_rules pint_lint
+all: prepare sync_pipenv lint test_rules pint_lint lint_yamls kustomize_build
 
 .PHONY: prepare
-prepare: pint promtool yq
+prepare: pint promtool yq kustomize
 	echo "Extract Prometheus rules"
-	./yq ".spec" ${RULE_FILE} > ${EXTRACTED_RULE_FILE}
+	(./yq eval-all '. as $$item ireduce ({}; . *+ $$item)' ${RECORDING_RULE_FILES} ${ALERTING_RULE_FILES} | ./yq ".spec" ) > ${EXTRACTED_RULE_FILE}
 
 .PHONY: lint
 lint:
@@ -42,7 +43,29 @@ yq:
 	rm -f yq_linux_amd64.tar.gz
 	mv yq_linux_amd64 yq
 
+kustomize:
+	curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash
+
 .PHONY: pint_lint
 pint_lint:
 	echo "Linting Prometheus rules..."
 	./pint --no-color lint ${EXTRACTED_RULE_FILE}
+
+.PHONY: install_pipenv
+install_pipenv:
+	python3 -m pip install pipenv
+
+.PHONY: sync_pipenv
+sync_pipenv:
+	python3 -m pipenv sync --dev
+
+.PHONY: lint_yamls
+lint_yamls:
+	python3 -m pipenv run yamllint . && echo "lint_yamls: SUCCESS"
+
+.PHONY: kustomize_build
+kustomize_build:
+	# This validates that the build command passes and not its output's validity.
+	# It will fail once we have more than one subdirectory, which will prevent us from
+	# adding untested configurations (this target will have to chage when that happens).
+	./kustomize build prometheus/* 1>/dev/null
