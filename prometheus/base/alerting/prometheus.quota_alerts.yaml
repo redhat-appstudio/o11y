@@ -1,0 +1,22 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  labels:
+    openshift.io/prometheus-rule-evaluation-scope: leaf-prometheus
+  name: o11y-quota-alerting-rules
+  namespace: o11y
+spec:
+  groups:
+  - name: quota_alerts
+    rules:
+    - alert: QuotaExceeded
+      expr: |
+        kube_resourcequota{type="used", namespace!~"(.*-tenant|openshift-.*|kube-.*|default)"} /
+        ignoring (type)
+        (kube_resourcequota{type="hard", namespace!~"(.*-tenant|openshift-.*|kube-.*|default)"} > 0) > 1
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Resource {{ $labels.resource }} in namespace {{ $labels.namespace }} exceeded quota {{ $labels.resourcequota }}"
+        description: "Resource {{ $labels.resource }} in namespace {{ $labels.namespace }} exceeded quota {{ $labels.resourcequota }}"
