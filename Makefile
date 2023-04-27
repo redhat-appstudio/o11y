@@ -6,7 +6,7 @@ RECORDING_RULE_FILES = prometheus/base/recording/*.yaml
 ALERTING_RULE_FILES = prometheus/base/alerting/*.yaml
 
 .PHONY: all
-all: prepare sync_pipenv lint test_rules pint_lint lint_yamls kustomize_build
+all: prepare sync_pipenv lint test_rules pint_lint lint_yamls kustomize_build lint_shellscript
 
 .PHONY: prepare
 prepare: pint promtool yq kustomize
@@ -69,3 +69,12 @@ kustomize_build:
 	# It will fail once we have more than one subdirectory, which will prevent us from
 	# adding untested configurations (this target will have to chage when that happens).
 	./kustomize build prometheus/* 1>/dev/null
+
+.PHONY: install_shellcheck
+install_shellcheck:
+	yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
+	yum install -y ShellCheck
+
+.PHONY: lint_shellscript
+lint_shellscript:
+	find . -type f -name "*.sh" -exec shellcheck {} + && echo "lint_shellcheck: SUCCESS"

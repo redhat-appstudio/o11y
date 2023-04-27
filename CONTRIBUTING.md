@@ -14,6 +14,7 @@ This section describes the main steps required before you can add your code and 
 * Linux machine with x86-64 architecture with bash installed.
 * Basic tools: curl, tar, make.
 * Python3 and pipenv. (run: `python3 -m pip install pipenv --user`)
+* shellcheck
 
 ### Running the Automated Tests
 1. Clone your fork of the project.
@@ -25,6 +26,7 @@ The following tools are currently used for automated testing within the project:
 * [pint](https://cloudflare.github.io/pint) - PromQL linting
 * [gitlint](https://jorisroovers.com/gitlint/) - commit message linting
 * [yamllint](https://yamllint.readthedocs.io) - YAML linting
+* [shellcheck](https://github.com/koalaman/shellcheck) - Shell script linting
 
 ### Unit Tests
 PromQL unit tests are stored in YAML files under [test/promql/tests](test/promql/tests).
