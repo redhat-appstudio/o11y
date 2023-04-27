@@ -1,0 +1,125 @@
+evaluation_interval: 1m
+
+rule_files:
+  - ../extracted-rules.yaml
+
+tests:
+  # Alerted cases:
+  - interval: 1m
+    input_series:
+
+      # Persistent volume is in the Pending state so it will be alerted.
+      - series: 'kube_persistentvolume_status_phase{persistentvolume="pv-1", namespace="ns-1", phase="Pending"}'
+        values: '1x4'
+      - series: 'kube_persistentvolume_status_phase{persistentvolume="pv-1", namespace="ns-1", phase="Available"}'
+        values: '0x4'
+      - series: 'kube_persistentvolume_status_phase{persistentvolume="pv-1", namespace="ns-1", phase="Bound"}'
+        values: '0x4'
+      - series: 'kube_persistentvolume_status_phase{persistentvolume="pv-1", namespace="ns-1", phase="Released"}'
+        values: '0x4'
+      - series: 'kube_persistentvolume_status_phase{persistentvolume="pv-1", namespace="ns-1", phase="Failed"}'
+        values: '0x4'
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: PersistentVolumeIssues
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: ns-1
+              persistentvolume: pv-1
+              phase: Pending
+            exp_annotations:
+              summary: "Persistent Volume pv-1 is in Pending phase for more than 5 minutes"
+              description: "Persistent Volume pv-1 in namespace ns-1 is in Pending phase for more than 5 minutes"
+
+  - interval: 1m
+    input_series:
+      # Persistent volume is in the Failed state so it will be alerted.
+      - series: 'kube_persistentvolume_status_phase{persistentvolume="pv-2", namespace="ns-2", phase="Pending"}'
+        values: '0x4'
+      - series: 'kube_persistentvolume_status_phase{persistentvolume="pv-2", namespace="ns-2", phase="Available"}'
+        values: '0x4'
+      - series: 'kube_persistentvolume_status_phase{persistentvolume="pv-2", namespace="ns-2", phase="Bound"}'
+        values: '0x4'
+      - series: 'kube_persistentvolume_status_phase{persistentvolume="pv-2", namespace="ns-2", phase="Released"}'
+        values: '0x4'
+      - series: 'kube_persistentvolume_status_phase{persistentvolume="pv-2", namespace="ns-2", phase="Failed"}'
+        values: '1x4'
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: PersistentVolumeIssues
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: ns-2
+              persistentvolume: pv-2
+              phase: Failed
+            exp_annotations:
+              summary: "Persistent Volume pv-2 is in Failed phase for more than 5 minutes"
+              description: "Persistent Volume pv-2 in namespace ns-2 is in Failed phase for more than 5 minutes"
+
+  # Not Alerted cases:
+  - interval: 1m
+    input_series:
+
+      # Persistent volume is in the Bound state so it will not be alerted.
+      - series: 'kube_persistentvolume_status_phase{persistentvolume="pv-4", namespace="ns-4", phase="Pending"}'
+        values: '0x4'
+      - series: 'kube_persistentvolume_status_phase{persistentvolume="pv-4", namespace="ns-4", phase="Available"}'
+        values: '0x4'
+      - series: 'kube_persistentvolume_status_phase{persistentvolume="pv-4", namespace="ns-4", phase="Bound"}'
+        values: '1x4'
+      - series: 'kube_persistentvolume_status_phase{persistentvolume="pv-4", namespace="ns-4", phase="Released"}'
+        values: '0x4'
+      - series: 'kube_persistentvolume_status_phase{persistentvolume="pv-4", namespace="ns-4", phase="Failed"}'
+        values: '0x4'
+
+      # Persistent volume is in the Released state so it will not be alerted.
+      - series: 'kube_persistentvolume_status_phase{persistentvolume="pv-5", namespace="ns-5", phase="Pending"}'
+        values: '0x4'
+      - series: 'kube_persistentvolume_status_phase{persistentvolume="pv-5", namespace="ns-5", phase="Available"}'
+        values: '0x4'
+      - series: 'kube_persistentvolume_status_phase{persistentvolume="pv-5", namespace="ns-5", phase="Bound"}'
+        values: '0x4'
+      - series: 'kube_persistentvolume_status_phase{persistentvolume="pv-5", namespace="ns-5", phase="Released"}'
+        values: '1x4'
+      - series: 'kube_persistentvolume_status_phase{persistentvolume="pv-5", namespace="ns-5", phase="Failed"}'
+        values: '0x4'
+
+      # Persistent volume is in the Available state for the first 4 minutes and in the bound state for the last 1 minute, so it won't be alerted.
+      - series: 'kube_persistentvolume_status_phase{persistentvolume="pv-6", namespace="ns-6", phase="Pending"}'
+        values: '0x4'
+      - series: 'kube_persistentvolume_status_phase{persistentvolume="pv-6", namespace="ns-6", phase="Available"}'
+        values: '1x3 0'
+      - series: 'kube_persistentvolume_status_phase{persistentvolume="pv-6", namespace="ns-6", phase="Bound"}'
+        values: '0x3 1'
+      - series: 'kube_persistentvolume_status_phase{persistentvolume="pv-6", namespace="ns-6", phase="Released"}'
+        values: '0x4'
+      - series: 'kube_persistentvolume_status_phase{persistentvolume="pv-6", namespace="ns-6", phase="Failed"}'
+        values: '0x4'
+
+      # Persistent volume is in the Failed state but it has a namespace that ends
+      # with 'tenant' so it's ignored.
+      - series: 'kube_persistentvolume_status_phase{persistentvolume="pv-7", namespace="prod-tenant", phase="Failed"}'
+        values: '1x4'
+
+      # Persistent volume is in the Pending state but it has a namespace that starts
+      # with 'openshift' so it's ignored.
+      - series: 'kube_persistentvolume_status_phase{persistentvolume="pv-8", namespace="openshift-prod-test", phase="Pending"}'
+        values: '1x4'
+
+      # Persistent volume is in the Failed state but it has a namespace that starts
+      # with 'kube' so it's ignored.
+      - series: 'kube_persistentvolume_status_phase{persistentvolume="pv-9", namespace="kube-test", phase="Failed"}'
+        values: '1x4'
+
+      # Persistent volume is in the Pending state but it has a namespace
+      # 'default' so it's ignored.
+      - series: 'kube_persistentvolume_status_phase{persistentvolume="pv-a", namespace="default", phase="Pending"}'
+        values: '1x4'
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: PersistentVolumeIssues
