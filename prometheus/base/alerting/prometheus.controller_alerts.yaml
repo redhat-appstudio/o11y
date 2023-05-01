@@ -1,0 +1,23 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  labels:
+    openshift.io/prometheus-rule-evaluation-scope: leaf-prometheus
+  name: o11y-controller-alerting-rules
+  namespace: o11y
+spec:
+  groups:
+  - name: controller_alerts
+    rules:
+    - alert: ControllerReconciliationErrors
+      expr: |
+        sum(increase(controller_runtime_reconcile_errors_total{namespace!~"(.*-tenant|openshift-.*|kube-.*|default)"}[2m]))
+        by(container, controller, namespace, pod, service) /
+        sum(increase(controller_runtime_reconcile_total{namespace!~"(.*-tenant|openshift-.*|kube-.*|default)"}[2m]))
+        by(container, controller, namespace, pod, service) > 0.01
+      for: 2m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Controller {{ $labels.controller }} has reconciliation errors greater than 1%"
+        description: "Controller {{ $labels.controller }} with Pod {{ $labels.pod }} for namespace {{ $labels.namespace }} has total reconciliation errors greater than 1% compared to total reconciliations in last 2 minutes."
