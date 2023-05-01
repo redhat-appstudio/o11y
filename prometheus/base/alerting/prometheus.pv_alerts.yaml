@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  labels:
+    openshift.io/prometheus-rule-evaluation-scope: leaf-prometheus
+  name: o11y-pv-alerting-rules
+  namespace: o11y
+spec:
+  groups:
+  - name: pv_alerts
+    rules:
+    - alert: PersistentVolumeIssues
+      expr: kube_persistentvolume_status_phase{phase=~"Failed|Pending", namespace!~"(.*-tenant|openshift-.*|kube-.*|default)"} == 1
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Persistent Volume {{ $labels.persistentvolume }} is in {{ $labels.phase }} phase for more than 5 minutes"
+        description: "Persistent Volume {{ $labels.persistentvolume }} in namespace {{ $labels.namespace }} is in {{ $labels.phase }} phase for more than 5 minutes"
