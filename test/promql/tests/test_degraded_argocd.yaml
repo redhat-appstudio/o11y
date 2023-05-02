@@ -1,0 +1,54 @@
+evaluation_interval: 1m
+
+rule_files:
+  - ../extracted-rules.yaml
+
+tests:
+  - interval: 1m
+    input_series:
+
+      # no argocd app is degraded
+      - series: 'argocd_app_info{health_status="Degraded", name="first-test-app", dest_namespace="not-degraded"}'
+        values: '0x15'
+
+      # argocd has a degraded app
+      - series: 'argocd_app_info{health_status="Degraded", name="second-test-app", dest_namespace="has-degraded"}'
+        values: '1x15'
+
+      # an app is flapping and alerts triggers
+      - series: 'argocd_app_info{health_status="Degraded", name="third-test-app", dest_namespace="is-flapping"}'
+        values: 1 _ 1 _ 1 _ 1 _ 1 _ 1 _ 1 _
+
+      # an app is in another health status which is not 'Degraded' - the rule shouldn't alert.
+      - series: 'argocd_app_info{health_status="Progressing", name="fourth-test-app", dest_namespace="nothing-wrong"}'
+        values: 1x15
+
+    promql_expr_test:
+      - expr: |
+          max_over_time(argocd_app_info{health_status="Degraded", dest_namespace!~".+-tenant"}[5m]) == 1
+        eval_time: 5m
+        exp_samples:
+          - labels: '{health_status="Degraded", name="second-test-app", dest_namespace="has-degraded"}'
+            value: 1
+          - labels: '{health_status="Degraded", name="third-test-app", dest_namespace="is-flapping"}'
+            value: 1
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: DegradedArgocdApp
+        exp_alerts:
+          - exp_labels:
+              severity: Critical
+              dest_namespace: has-degraded
+              health_status: Degraded
+              name: second-test-app
+            exp_annotations:
+              summary: "Application second-test-app in namespace has-degraded was 'Degraded'"
+              description: "Application second-test-app in namespace has-degraded was 'Degraded' in the last 5 minutes"
+          - exp_labels:
+              severity: Critical
+              dest_namespace: is-flapping
+              health_status: Degraded
+              name: third-test-app
+            exp_annotations:
+              summary: "Application third-test-app in namespace is-flapping was 'Degraded'"
+              description: "Application third-test-app in namespace is-flapping was 'Degraded' in the last 5 minutes"
