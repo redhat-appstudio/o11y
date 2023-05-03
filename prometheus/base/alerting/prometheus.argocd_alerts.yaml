@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  labels:
+    openshift.io/prometheus-rule-evaluation-scope: leaf-prometheus
+  name: o11y-argocd-alerting-rules
+  namespace: o11y
+spec:
+  groups:
+  - name: argocd_alerts
+    rules:
+    - alert: DegradedArgocdApp
+      expr: max_over_time(argocd_app_info{health_status="Degraded", dest_namespace!~".+-tenant"}[5m]) == 1
+      for: 5m
+      labels:
+        severity: Critical
+      annotations:
+        summary: "Application {{ $labels.name }} in namespace {{ $labels.dest_namespace }} was 'Degraded'"
+        description: "Application {{ $labels.name }} in namespace {{ $labels.dest_namespace }} was 'Degraded' in the last 5 minutes"
