@@ -131,6 +131,7 @@ spec:
                 #!/bin/bash -ex
 
                 python -m pip install gitlint
+                git config --global --add safe.directory '*'
                 git fetch origin "$(params.target-branch)"
                 gitlint --fail-without-commits --commits "origin/$(params.target-branch)..HEAD"
       - name: yaml-lint
