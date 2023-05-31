@@ -17,3 +17,16 @@ spec:
       annotations:
         summary: "Application {{ $labels.name }} in namespace {{ $labels.dest_namespace }} was 'Degraded'"
         description: "Application {{ $labels.name }} in namespace {{ $labels.dest_namespace }} was 'Degraded' in the last 5 minutes"
+    - alert: ProgressingArgocdApp
+      expr: |
+        (count_over_time(argocd_app_info{health_status="Progressing", dest_namespace!~".+-tenant"}[20m]) or vector(0)
+        > ignoring (health_status)
+        count_over_time(argocd_app_info{health_status="Healthy", dest_namespace!~".+-tenant"}[20m]) or vector(0))
+        and ignoring (health_status)
+        max_over_time(argocd_app_info{health_status!="Healthy", dest_namespace!~".+-tenant"}[4m]) == 1
+      for: 0m
+      labels:
+        severity: Critical
+      annotations:
+        summary: "Application {{ $labels.name }} in namespace {{ $labels.dest_namespace }} was in 'Progressing' state in the last 20 minutes."
+        description: "Application {{ $labels.name }} in namespace {{ $labels.dest_namespace }} was in 'Progressing' state in the last 20 minutes."
