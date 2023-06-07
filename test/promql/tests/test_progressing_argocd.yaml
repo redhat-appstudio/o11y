@@ -1,0 +1,104 @@
+evaluation_interval: 1m
+
+rule_files:
+  - ../extracted-rules.yaml
+
+tests:
+
+  # test cases where it shouldn't alert
+  - interval: 1m
+    input_series:
+      # app was progessing and then Healthy for the last 5 min, should not alert
+      - series: 'argocd_app_info{health_status="Progressing", name="first-test-app", dest_namespace="Progressing-Healthy-5min"}'
+        values: 1x14 _x4
+      - series: 'argocd_app_info{health_status="Healthy", name="first-test-app", dest_namespace="Progressing-Healthy-5min"}'
+        values: _x14 1x4
+
+  # test cases where it should alert
+  - interval: 1m
+    input_series:
+      # app is always progressing, should alert
+      - series: 'argocd_app_info{health_status="Progressing", name="second-test-app", dest_namespace="Still-Progressing"}'
+        values: 1x19
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: ProgressingArgocdApp
+        exp_alerts:
+          - exp_labels:
+              severity: Critical
+              dest_namespace: Still-Progressing
+              health_status: Progressing
+              name: second-test-app
+            exp_annotations:
+              summary: "Application second-test-app in namespace Still-Progressing was in 'Progressing' state in the last 20 minutes."
+              description: "Application second-test-app in namespace Still-Progressing was in 'Progressing' state in the last 20 minutes."
+
+  - interval: 1m
+    input_series:
+      # app was progessing and then Healthy for the last 3 min, should alert
+      - series: 'argocd_app_info{health_status="Progressing", name="third-test-app", dest_namespace="Progressing-Healthy-3min"}'
+        values: 1x16 _ _ _
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: ProgressingArgocdApp
+        exp_alerts:
+          - exp_labels:
+              severity: Critical
+              dest_namespace: Progressing-Healthy-3min
+              health_status: Progressing
+              name: third-test-app
+            exp_annotations:
+              summary: "Application third-test-app in namespace Progressing-Healthy-3min was in 'Progressing' state in the last 20 minutes."
+              description: "Application third-test-app in namespace Progressing-Healthy-3min was in 'Progressing' state in the last 20 minutes."
+
+  - interval: 1m
+    input_series:
+      # the app is switching health states, alert should be triggered
+      - series: 'argocd_app_info{health_status="Progressing", name="fourth-test-app", dest_namespace="Flapping-Should-Alert"}'
+        values: '_ 1 _ 1 1 _ 1 1 1 _ _ _ _ 1 _ 1 1 1 1 _'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: ProgressingArgocdApp
+        exp_alerts:
+          - exp_labels:
+              severity: Critical
+              dest_namespace: Flapping-Should-Alert
+              health_status: Progressing
+              name: fourth-test-app
+            exp_annotations:
+              summary: "Application fourth-test-app in namespace Flapping-Should-Alert was in 'Progressing' state in the last 20 minutes."
+              description: "Application fourth-test-app in namespace Flapping-Should-Alert was in 'Progressing' state in the last 20 minutes."
+
+  # two apps at the same time:
+  - interval: 1m
+    input_series:
+      # app 1: Progressing all of the time, should alert
+      - series: 'argocd_app_info{health_status="Progressing", name="fifth-test-app", dest_namespace="Progressing_first"}'
+        values: 1x19
+      - series: 'argocd_app_info{health_status="Healthy", name="fifth-test-app", dest_namespace="Progressing_first"}'
+        values: _x19
+      # app 2: Progressing for 17 minutes and then healthy for 3 minutes, should alert
+      - series: 'argocd_app_info{health_status="Progressing", name="sixth-test-app", dest_namespace="Progressing_second"}'
+        values: 1x16 _ _ _
+      - series: 'argocd_app_info{health_status="Healthy", name="sixth-test-app", dest_namespace="Progressing_second"}'
+        values: _x16 1 1 1
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: ProgressingArgocdApp
+        exp_alerts:
+          - exp_labels:
+              severity: Critical
+              dest_namespace: Progressing_first
+              health_status: Progressing
+              name: fifth-test-app
+            exp_annotations:
+              summary: "Application fifth-test-app in namespace Progressing_first was in 'Progressing' state in the last 20 minutes."
+              description: "Application fifth-test-app in namespace Progressing_first was in 'Progressing' state in the last 20 minutes."
+          - exp_labels:
+              severity: Critical
+              dest_namespace: Progressing_second
+              health_status: Progressing
+              name: sixth-test-app
+            exp_annotations:
+              summary: "Application sixth-test-app in namespace Progressing_second was in 'Progressing' state in the last 20 minutes."
+              description: "Application sixth-test-app in namespace Progressing_second was in 'Progressing' state in the last 20 minutes."
