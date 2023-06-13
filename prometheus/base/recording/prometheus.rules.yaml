@@ -21,7 +21,7 @@ spec:
           expr: |
             {__name__=~"kube_pod_.*container_resource_limits"}
             * on (namespace, pod)
-            group_left(label_pipelines_appstudio_openshift_io_type) kube_pod_labels
+            group_left(label_pipelines_appstudio_openshift_io_type, label_app_kubernetes_io_managed_by) kube_pod_labels
     - name: appstudio-resource-gauge
       interval: 1m
       rules:

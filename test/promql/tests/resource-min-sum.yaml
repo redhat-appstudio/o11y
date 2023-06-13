@@ -19,24 +19,24 @@ tests:
         values: '200+60x10'
       - series: 'container_last_seen{namespace="ns1", pod="ns1p1", container="ns1p1c2"}'
         values: '100+60x10'
-      - series: 'kube_pod_labels{label_pipelines_appstudio_openshift_io_type="t1", namespace="ns1", pod="ns1p1"}'
+      - series: 'kube_pod_labels{label_pipelines_appstudio_openshift_io_type="t1", label_app_kubernetes_io_managed_by="tekton-pipelines", namespace="ns1", pod="ns1p1"}'
         values: '1x10'
 
     promql_expr_test:
       - expr: |
-          sum_over_time(appstudio_container_resource_minutes_gauge{resource="memory",label_pipelines_appstudio_openshift_io_type="t1", namespace="ns1"}[10m])
+          sum_over_time(appstudio_container_resource_minutes_gauge{resource="memory",label_pipelines_appstudio_openshift_io_type="t1", label_app_kubernetes_io_managed_by="tekton-pipelines", namespace="ns1"}[10m])
         eval_time: 10m
         exp_samples:
-          - labels: '{resource="memory", namespace="ns1", pod="ns1p1", container="ns1p1c1", label_pipelines_appstudio_openshift_io_type="t1"}'
+          - labels: '{resource="memory", namespace="ns1", pod="ns1p1", container="ns1p1c1", label_pipelines_appstudio_openshift_io_type="t1", label_app_kubernetes_io_managed_by="tekton-pipelines"}'
             value: 20
-          - labels: '{resource="memory", namespace="ns1", pod="ns1p1", container="ns1p1c2", label_pipelines_appstudio_openshift_io_type="t1"}'
+          - labels: '{resource="memory", namespace="ns1", pod="ns1p1", container="ns1p1c2", label_pipelines_appstudio_openshift_io_type="t1", label_app_kubernetes_io_managed_by="tekton-pipelines"}'
             value: 20
 
       - expr: |
-          sum_over_time(appstudio_container_resource_minutes_gauge{resource="cpu",label_pipelines_appstudio_openshift_io_type="t1", namespace="ns1", container="ns1p1c2"}[10m])
+          sum_over_time(appstudio_container_resource_minutes_gauge{resource="cpu",label_pipelines_appstudio_openshift_io_type="t1", label_app_kubernetes_io_managed_by="tekton-pipelines", namespace="ns1", container="ns1p1c2"}[10m])
         eval_time: 10m
         exp_samples:
-          - labels: '{resource="cpu", namespace="ns1", pod="ns1p1", container="ns1p1c2", label_pipelines_appstudio_openshift_io_type="t1"}'
+          - labels: '{resource="cpu", namespace="ns1", pod="ns1p1", container="ns1p1c2", label_pipelines_appstudio_openshift_io_type="t1", label_app_kubernetes_io_managed_by="tekton-pipelines"}'
             value: 5
 
   # container created within the time window and dies after it ends
