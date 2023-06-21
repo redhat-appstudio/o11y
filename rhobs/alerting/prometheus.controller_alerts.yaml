@@ -1,13 +1,13 @@
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
+  name: rhtap-controller-alerting-rules
   labels:
-    openshift.io/prometheus-rule-evaluation-scope: leaf-prometheus
-  name: o11y-controller-alerting-rules
-  namespace: o11y
+    tenant: rhtap
 spec:
   groups:
   - name: controller_alerts
+    interval: 1m
     rules:
     - alert: ControllerReconciliationErrors
       expr: |

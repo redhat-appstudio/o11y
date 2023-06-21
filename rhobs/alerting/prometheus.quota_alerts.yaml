@@ -1,13 +1,13 @@
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
+  name: rhtap-quota-alerting-rules
   labels:
-    openshift.io/prometheus-rule-evaluation-scope: leaf-prometheus
-  name: o11y-quota-alerting-rules
-  namespace: o11y
+    tenant: rhtap
 spec:
   groups:
   - name: quota_alerts
+    interval: 1m
     rules:
     - alert: QuotaExceeded
       expr: |

@@ -1,13 +1,13 @@
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
+  name: rhtap-pod-alerting-rules
   labels:
-    openshift.io/prometheus-rule-evaluation-scope: leaf-prometheus
-  name: o11y-pod-alerting-rules
-  namespace: o11y
+    tenant: rhtap
 spec:
   groups:
   - name: pod_alerts
+    interval: 1m
     rules:
     - alert: UnschedulablePods
       expr: last_over_time(kube_pod_status_unschedulable{namespace!~"(.*-tenant|openshift-.*|kube-.*|default)"}[5m]) == 1
