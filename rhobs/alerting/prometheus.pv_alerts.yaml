@@ -1,13 +1,13 @@
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
+  name: rhtap-pv-alerting-rules
   labels:
-    openshift.io/prometheus-rule-evaluation-scope: leaf-prometheus
-  name: o11y-pv-alerting-rules
-  namespace: o11y
+    tenant: rhtap
 spec:
   groups:
   - name: pv_alerts
+    interval: 1m
     rules:
     - alert: PersistentVolumeIssues
       expr: kube_persistentvolume_status_phase{phase=~"Failed|Pending", namespace!~"(.*-tenant|openshift-.*|kube-.*|default)"} == 1
