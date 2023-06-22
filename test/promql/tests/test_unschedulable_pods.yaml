@@ -8,31 +8,31 @@ tests:
     input_series:
 
       # Initially pod is unscheduled but later status changed to scheduled so it's not alerted
-      - series: 'kube_pod_status_unschedulable{namespace="prod", pod="prod-pod-1"}'
+      - series: 'kube_pod_status_unschedulable{namespace="prod", pod="prod-pod-1", source_cluster="cluster01"}'
         values: '1x40 0x20'
 
       # The pod is in unscheduled status whole time, so this is alerted
-      - series: 'kube_pod_status_unschedulable{namespace="prod-test", pod="prod-pod-2"}'
+      - series: 'kube_pod_status_unschedulable{namespace="prod-test", pod="prod-pod-2", source_cluster="cluster02"}'
         values: '1x60'
 
       # The pod is unscheduled most of the time but there is some window where pod is scheduled so it's not alerted
-      - series: 'kube_pod_status_unschedulable{namespace="prod-test", pod="prod-pod-3"}'
+      - series: 'kube_pod_status_unschedulable{namespace="prod-test", pod="prod-pod-3", source_cluster="cluster03"}'
         values: '1x29 0 1x28'
 
       # The pod is in unscheduled status whole time but the namespace ends with tenant so it's ignored
-      - series: 'kube_pod_status_unschedulable{namespace="prod-tenant", pod="prod-pod-3"}'
+      - series: 'kube_pod_status_unschedulable{namespace="prod-tenant", pod="prod-pod-3", source_cluster="cluster04"}'
         values: '1x60'
 
       # The pod is in unscheduled status whole time but the namespace starts with openshift so it's ignored
-      - series: 'kube_pod_status_unschedulable{namespace="openshift-prod-test", pod="oc-pod"}'
+      - series: 'kube_pod_status_unschedulable{namespace="openshift-prod-test", pod="oc-pod", source_cluster="cluster05"}'
         values: '1x60'
 
       # The pod is in unscheduled status whole time but the namespace starts with kube so it's ignored
-      - series: 'kube_pod_status_unschedulable{namespace="kube-test", pod="kube-pod"}'
+      - series: 'kube_pod_status_unschedulable{namespace="kube-test", pod="kube-pod", source_cluster="cluster06"}'
         values: '1x60'
 
       # The pod is in unscheduled status whole time but the namespace is default so it's ignored
-      - series: 'kube_pod_status_unschedulable{namespace="default", pod="test-pod"}'
+      - series: 'kube_pod_status_unschedulable{namespace="default", pod="test-pod", source_cluster="cluster07"}'
         values: '1x60'
 
     alert_rule_test:
@@ -43,6 +43,7 @@ tests:
               severity: warning
               namespace: prod-test
               pod: prod-pod-2
+              source_cluster: cluster02
             exp_annotations:
               summary: "Pod prod-pod-2 cannot be scheduled."
-              description: "Pod prod-pod-2 for namespace prod-test is unscheduled for more than 30 minutes."
+              description: "Pod prod-pod-2 for namespace prod-test on cluster cluster02 is unscheduled for more than 30 minutes."
