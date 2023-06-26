@@ -16,7 +16,7 @@ spec:
         severity: warning
       annotations:
         summary: "Pod {{ $labels.pod }} cannot be scheduled."
-        description: "Pod {{ $labels.pod }} for namespace {{ $labels.namespace }} is unscheduled for more than 30 minutes."
+        description: "Pod {{ $labels.pod }} for namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} is unscheduled for more than 30 minutes."
     - alert: CrashLoopBackOff
       expr: max_over_time(kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff", namespace!~"(.*-tenant|openshift-.*|kube-.*|default)"}[5m]) >= 1
       for: 15m
@@ -24,7 +24,7 @@ spec:
         severity: warning
       annotations:
         summary: "Pod {{ $labels.pod }} is crash looping"
-        description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} ({{ $labels.container }}) is in waiting state (reason: 'CrashLoopBackOff') for more than 15 minutes."
+        description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} ({{ $labels.container }}) is in waiting state (reason: 'CrashLoopBackOff') on cluster {{ $labels.source_cluster }} for more than 15 minutes."
     - alert: PodsNotReady
       expr: |
             kube_pod_status_phase{phase=~"Pending|Unknown|Failed", namespace!~"(.*-tenant|openshift-.*|kube-.*|default)"} == 1
@@ -34,4 +34,4 @@ spec:
         severity: warning
       annotations:
         summary: "Pod {{ $labels.pod }} is not ready"
-        description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is not ready for more than 15 minutes."
+        description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} is not ready for more than 15 minutes."
