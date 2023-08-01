@@ -39,7 +39,7 @@ spec:
         taskRef:
           bundle: quay.io/redhat-appstudio/appstudio-tasks:510fa6e99f1fa1f816c96354bbaf1ad155c6d9c3-1
           name: git-clone
-      - name: prepare-for-tests
+      - name: check-and-test-prometheus-rules
         workspaces:
           - name: workspace
             workspace: workspace
@@ -49,58 +49,16 @@ spec:
           workspaces:
             - name: workspace
           steps:
-            - name: run-tests
-              image: registry.access.redhat.com/ubi8/ubi:latest
+            - name: check-and-test
+              image: quay.io/rhobs/obsctl-reloader-rules-checker:1.0.4
               workingDir: $(workspaces.workspace.path)
-              script: yum install -y make && make prepare
-      - name: run-prometheus-rules-unit-tests
-        workspaces:
-          - name: workspace
-            workspace: workspace
-        runAfter:
-          - prepare-for-tests
-        taskSpec:
-          workspaces:
-            - name: workspace
-          steps:
-            - name: run-tests
-              image: registry.access.redhat.com/ubi8/ubi:latest
-              workingDir: $(workspaces.workspace.path)
-              script: yum install -y make && make test_rules
-      - name: run-prometheus-rules-lint-tests
-        workspaces:
-          - name: workspace
-            workspace: workspace
-        runAfter:
-          - prepare-for-tests
-        taskSpec:
-          workspaces:
-            - name: workspace
-          steps:
-            - name: run-tests
-              image: registry.access.redhat.com/ubi8/ubi:latest
-              workingDir: $(workspaces.workspace.path)
-              script: yum install -y make && make lint
-      - name: lint-prometheus-rules
-        workspaces:
-          - name: workspace
-            workspace: workspace
-        runAfter:
-          - prepare-for-tests
-        taskSpec:
-          workspaces:
-            - name: workspace
-          steps:
-            - name: lint-rules
-              image: registry.access.redhat.com/ubi8/ubi:latest
-              workingDir: $(workspaces.workspace.path)
-              script: yum install -y make && make pint_lint
+              script: obsctl-reloader-rules-checker -t rhtap -d rhobs/alerting -y -p --tests-dir test/promql/tests
       - name: test-kustomize-build
         workspaces:
           - name: workspace
             workspace: workspace
         runAfter:
-          - prepare-for-tests
+          - clone-repository
         taskSpec:
           workspaces:
             - name: workspace
@@ -108,7 +66,7 @@ spec:
             - name: kustomize-build
               image: registry.access.redhat.com/ubi8/ubi:latest
               workingDir: $(workspaces.workspace.path)
-              script: yum install -y make && make kustomize_build
+              script: yum install -y make && make kustomize-build
       - name: run-gitlint
         params:
           - name: target-branch
@@ -134,20 +92,6 @@ spec:
                 git config --global --add safe.directory '*'
                 git fetch origin "$(params.target-branch)"
                 gitlint --fail-without-commits --commits "origin/$(params.target-branch)..HEAD"
-      - name: yaml-lint
-        workspaces:
-          - name: workspace
-            workspace: workspace
-        runAfter:
-          - clone-repository
-        taskSpec:
-          workspaces:
-            - name: workspace
-          steps:
-            - name: yaml-lint
-              image: registry.access.redhat.com/ubi9/python-39:latest
-              workingDir: $(workspaces.workspace.path)
-              script: make install_pipenv sync_pipenv lint_yamls
   workspaces:
     - name: workspace
       volumeClaimTemplate:
