@@ -12,8 +12,8 @@ This section describes the main steps required before you can add your code and 
 
 ### Prerequisites
 * Linux machine with x86-64 architecture with bash installed.
-* Basic tools: curl, tar, make.
-* Python3 and pipenv. (run: `python3 -m pip install pipenv --user`)
+* Basic tools: `curl`, `tar`, `make``.
+* Some container engine: either `docker` or `podman`.
 
 ### Running the Automated Tests
 1. Clone your fork of the project.
@@ -21,28 +21,30 @@ This section describes the main steps required before you can add your code and 
 
 ## Automated Tests
 The following tools are currently used for automated testing within the project:
-* [promtool](https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/) - testing PromQL rules, queries and PromQL linting
-* [pint](https://cloudflare.github.io/pint) - PromQL linting
-* [gitlint](https://jorisroovers.com/gitlint/) - commit message linting
-* [yamllint](https://yamllint.readthedocs.io) - YAML linting
+* [`promtool`](https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/) - testing PromQL rules, queries and PromQL linting
+* [`pint`](https://cloudflare.github.io/pint) - PromQL linting
+* [`gitlint`](https://jorisroovers.com/gitlint/) - commit message linting
+* [`yamllint`](https://yamllint.readthedocs.io) - YAML linting
+
+Those tools do not need to be installed on your computer.
+
+All those tools (except `gitlint`) are bundled in the
+[`obsctl-reloader-rules-checker`](https://github.com/rhobs/obsctl-reloader-rules-checker/tree/main)
+container image used by the CI or when testing locally with `make`.
 
 ### Unit Tests
-PromQL unit tests are stored in YAML files under [test/promql/tests](test/promql/tests).
+PromQL unit tests are stored in YAML files under [`test/promql/tests`](test/promql/tests).
 
-Prometheus rules, stored as Kubernetes resources, are defined in
-[prometheus/base/prometheus.rules.yaml](prometheus/base/prometheus.rules.yaml).
-The Prometheus-related tools used for unit tests (and linting) cannot digest this
-directly, so instead, the `prepare` target on the [Makefile](Makefile) extracts the
-Prometheus configurations out of those configurations and stores them to a temporary
-location: `test/promql/extracted-rules.yaml`.
+Those tests reference the rule files to test via the `rule_files` attribute.
+This attribute has to list the names of files in the [`rhobs/alerting`](rhobs/alerting) directory.
 
-The different test procedures should then refer to that temporary location as the 
-location of the Prometheus rules. For example, a `promtool` test file
-`test/promql/tests/my-test.yaml` should point to the rule file as follows:
-
+For example, if a test file, relies on rules in files `rhobs/alerting/some-rules.yaml`
+and `rhobs/alerting/more-rules.yaml`, the test file needs to references the rules
+in the following way:
 ```
 rule_files:
-  - ../extracted-rules.yaml
+  - some-rules.yaml
+  - more-rules.yaml
 ```
 
 ## Pull Requests
