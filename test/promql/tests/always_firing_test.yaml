@@ -1,0 +1,17 @@
+evaluation_interval: 1m
+
+rule_files:
+  - always_firing.yaml
+
+tests:
+  - interval: 1m
+    input_series: []
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: AlwaysFiring
+        exp_alerts:
+          - exp_labels:
+              severity: info
+            exp_annotations:
+              summary: Test alert - please ignore
+              description: Test alert description - please ignore
