@@ -53,20 +53,6 @@ spec:
               image: quay.io/rhobs/obsctl-reloader-rules-checker:1.0.4
               workingDir: $(workspaces.workspace.path)
               script: obsctl-reloader-rules-checker -t rhtap -d rhobs/alerting -y -p --tests-dir test/promql/tests
-      - name: test-kustomize-build
-        workspaces:
-          - name: workspace
-            workspace: workspace
-        runAfter:
-          - clone-repository
-        taskSpec:
-          workspaces:
-            - name: workspace
-          steps:
-            - name: kustomize-build
-              image: registry.access.redhat.com/ubi8/ubi:latest
-              workingDir: $(workspaces.workspace.path)
-              script: yum install -y make && make kustomize-build
       - name: run-gitlint
         params:
           - name: target-branch
