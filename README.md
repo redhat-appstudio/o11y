@@ -1,15 +1,19 @@
 # RHTAP Observability 
 
-This repository is maintained by the RHTAP O11Y team.
+This repository contains the following definitions for RHTAP:
+  * Prometheus alerting rules (deployed to RHOBS)
+  * Grafana dashboards (deployed to AppSRE's Grafana)
+
+## Alerting Rules
 
 The repository contains Prometheus alert rules [files](rhobs/alerting) for monitoring
 RHTAP data plane clusters along with their [tests](test/promql).
 
 Control plane clusters alert rules are maintained by the same team, but are kept in a
 different
-[repository](https://gitlab.cee.redhat.com/service/app-interface/-/tree/master/resources/stonesoup/argocd-control-plane/monitoring)
+[repository](https://gitlab.cee.redhat.com/service/app-interface/-/tree/master/resources/stonesoup/argocd-control-plane/monitoring).
 
-## Updating Data Plane Alerts
+### Updating Data Plane Alerts
 
 Alert rules for data plane clusters are being deployed by app-interface to RHOBS, to where the data plane metrics are also being forwarded. For deploying the alert rules,
 app-interface references the location of the rules together with a git reference -
@@ -28,3 +32,16 @@ Steps for updating the rules:
 reference in app-interface to the commit hash of the changes you made.
 3. Once merged and ready to be promoted to production, update the
 [production environment](https://gitlab.cee.redhat.com/service/app-interface/-/blob/0486ef164e70259e5b85c46ab749529238368414/data/services/osd-operators/cicd/saas/saas-rhtap-rules.yaml#L39) reference in a similar manner.
+
+## Grafana Dashboards
+
+Refer to the app-interface [instructions](
+https://gitlab.cee.redhat.com/service/app-interface/-/blob/master/docs/app-sre/monitoring.md#visualization-with-grafana)
+to learn how to develop AppSRE dashboards for RHTAP. This repository serves as
+versioned storage for the [dashboard definitions](dashboards/) and nothing more.
+
+## Support
+
+The RHTAP o11y team maintains this repository.
+Reach out to us on our [slack channel](https://redhat-internal.slack.com/archives/C04FDFTF8EB)
+for further assistance.
