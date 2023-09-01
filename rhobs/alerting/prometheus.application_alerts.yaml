@@ -1,0 +1,28 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-application-alerting
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: application_alerts
+    interval: 1m
+    rules:
+    - alert: ApplicationDeletionErrors
+      expr: |
+        (sum(increase(has_application_failed_deletion_total[1h]))
+        by(namespace, pod, source_cluster) /
+        sum(increase(has_application_deletion_total[1h]))
+        by(namespace, pod, source_cluster)) > 0.01
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: >-
+          HAS is experiencing application deletion failures of >1%
+        description: >-
+          Application controller in Pod {{ $labels.pod }} for namespace
+          {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} is failing to
+          successfully delete at least 99% of applications over the past hour
+        runbook_url: TBD
