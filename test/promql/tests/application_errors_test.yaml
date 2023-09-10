@@ -1,0 +1,100 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.application_alerts.yaml
+
+tests:
+  # Alerted cases:
+  - interval: 1m
+    input_series:
+
+      # HAS is experiencing application deletion failure rate of 100%, so it will be alerted
+      - series: 'has_application_deletion_total{namespace="application-service", pod="has", source_cluster="cluster01"}'
+        values: '1+1x64'
+      - series: 'has_application_failed_deletion_total{namespace="application-service", pod="has", source_cluster="cluster01"}'
+        values: '1+1x64'
+
+    alert_rule_test:
+      - eval_time: 65m
+        alertname: ApplicationDeletionErrors
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: application-service
+              pod: has
+              source_cluster: cluster01
+            exp_annotations:
+              summary: >-
+                HAS is experiencing application deletion failures of >1%
+              description: >-
+                Application controller in Pod has for namespace
+                application-service on cluster cluster01 is failing to
+                successfully delete at least 99% of applications over the past hour
+              runbook_url: TBD
+
+  - interval: 1m
+    input_series:
+
+      # HAS experienced ~10% (10.9%) deletion failure rate, should still alert
+      - series: 'has_application_deletion_total{namespace="application-service", pod="has", source_cluster="cluster01"}'
+        values: '10+10x64'
+      - series: 'has_application_failed_deletion_total{namespace="application-service", pod="has", source_cluster="cluster01"}'
+        values: '0x20 0+10x7 70x38'
+
+    alert_rule_test:
+      - eval_time: 65m
+        alertname: ApplicationDeletionErrors
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: application-service
+              pod: has
+              source_cluster: cluster01
+            exp_annotations:
+              summary: >-
+                HAS is experiencing application deletion failures of >1%
+              description: >-
+                Application controller in Pod has for namespace
+                application-service on cluster cluster01 is failing to
+                successfully delete at least 99% of applications over the past hour
+              runbook_url: TBD
+
+  - interval: 1m
+    input_series:
+
+      # HAS experienced 5% deletion failure rate, should still alert
+      - series: 'has_application_deletion_total{namespace="application-service", pod="has", source_cluster="cluster01"}'
+        values: '20+20x64'
+      - series: 'has_application_failed_deletion_total{namespace="application-service", pod="has", source_cluster="cluster01"}'
+        values: '1+1x64'
+
+    alert_rule_test:
+      - eval_time: 65m
+        alertname: ApplicationDeletionErrors
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: application-service
+              pod: has
+              source_cluster: cluster01
+            exp_annotations:
+              summary: >-
+                HAS is experiencing application deletion failures of >1%
+              description: >-
+                Application controller in Pod has for namespace
+                application-service on cluster cluster01 is failing to
+                successfully delete at least 99% of applications over the past hour
+              runbook_url: TBD
+
+  - interval: 1m
+    input_series:
+
+      # HAS experienced ~1% deletion failure rate, should not alert
+      - series: 'has_application_deletion_total{namespace="application-service", pod="has", source_cluster="cluster01"}'
+        values: '0+10x64'
+      - series: 'has_application_failed_deletion_total{namespace="application-service", pod="has", source_cluster="cluster01"}'
+        values: '0x9 5x54'
+
+    alert_rule_test:
+      - eval_time: 65m
+        alertname: ApplicationDeletionErrors
