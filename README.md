@@ -13,6 +13,28 @@ Control plane clusters alert rules are maintained by the same team, but are kept
 different
 [repository](https://gitlab.cee.redhat.com/service/app-interface/-/tree/master/resources/stonesoup/argocd-control-plane/monitoring).
 
+The different alerting rules in this repository are:
+
+## Control Plane Alerts
+
+* [**Alert Rule ProgressingArgocdApp**](https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-ProgressingArgocdApp.md)
+
+* [**Alert Rule DegradedArgocdApp**](https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-degradedArgocdApp.md)
+
+## Data Plane Alerts
+
+* [**Alert Rule ControllerReconciliationErrors**](https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-controllerReconciliationErrors.md?ref_type=heads)
+
+* [**Alert Rule Unschedulable**](https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-unschedualablePods.md)
+
+* [**Alert Rule CrashLoopBackOff**](https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-crashLoopBackOff.md?ref_type=heads)
+
+* [**Alert Rule PodsNotReady**](https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-PodsNotReady.md?ref_type=heads)
+
+* [**Alert Rule PersistentVolumeIssues**](https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-pesistentVolumeIssues.md?ref_type=heads)
+
+* [**Alert Rule QuotaExceeded**](https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-QuotaExceeded.md)
+
 ### Updating Data Plane Alerts
 
 Alert rules for data plane clusters are being deployed by app-interface to RHOBS, to where the data plane metrics are also being forwarded. For deploying the alert rules,
