@@ -52,7 +52,7 @@ spec:
             - name: check-and-test-data
               image: quay.io/rhobs/obsctl-reloader-rules-checker:1.0.4
               workingDir: $(workspaces.workspace.path)
-              script: obsctl-reloader-rules-checker -t rhtap -d rhobs/alerting/data_plane -y -p --tests-dir test/promql/tests/data_plane
+              script: yum install -y make && make check-and-test
       - name: check-and-test-prometheus-control-rules
         workspaces:
           - name: workspace
