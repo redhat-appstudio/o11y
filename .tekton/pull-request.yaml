@@ -39,7 +39,7 @@ spec:
         taskRef:
           bundle: quay.io/redhat-appstudio/appstudio-tasks:510fa6e99f1fa1f816c96354bbaf1ad155c6d9c3-1
           name: git-clone
-      - name: check-and-test-prometheus-rules
+      - name: check-and-test-prometheus-data-rules
         workspaces:
           - name: workspace
             workspace: workspace
@@ -49,10 +49,24 @@ spec:
           workspaces:
             - name: workspace
           steps:
-            - name: check-and-test
+            - name: check-and-test-data
               image: quay.io/rhobs/obsctl-reloader-rules-checker:1.0.4
               workingDir: $(workspaces.workspace.path)
-              script: obsctl-reloader-rules-checker -t rhtap -d rhobs/alerting -y -p --tests-dir test/promql/tests
+              script: obsctl-reloader-rules-checker -t rhtap -d rhobs/alerting/data_plane -y -p --tests-dir test/promql/tests/data_plane
+      - name: check-and-test-prometheus-control-rules
+        workspaces:
+          - name: workspace
+            workspace: workspace
+        runAfter:
+          - clone-repository
+        taskSpec:
+          workspaces:
+            - name: workspace
+          steps:
+            - name: check-and-test-control
+              image: quay.io/rhobs/obsctl-reloader-rules-checker:1.0.4
+              workingDir: $(workspaces.workspace.path)
+              script: obsctl-reloader-rules-checker -t rhtap -d rhobs/alerting/control_plane -y -p --tests-dir test/promql/tests/control_plane                          
       - name: run-gitlint
         params:
           - name: target-branch
