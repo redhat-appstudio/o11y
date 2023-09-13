@@ -1,0 +1,40 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-argocd-alerting
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: argocd-alerts
+    interval: 1m
+    rules:
+    - alert: DegradedArgocdApp
+      expr: last_over_time(argocd_app_info{health_status="Degraded"}[2m]) == 1
+      for: 5m
+      labels:
+        severity: medium
+        team: rhtap
+      annotations:
+        message: |
+          Environment: {{ $labels.source_environment }}
+          Application: {{ $labels.name }}
+          Cluster: {{ $labels.dest_server }}
+          Health status Degraded.
+        runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-degradedArgocdApp.md
+    - alert: ProgressingArgocdApp
+      expr: |
+        max_over_time(argocd_app_info{health_status="Progressing", dest_namespace!~".+-tenant"}[20m]) == 1
+        unless ignoring (health_status)
+        max_over_time(argocd_app_info{health_status!="Progressing", dest_namespace!~".+-tenant"}[20m]) == 1
+      for: 0m
+      labels:
+        severity: medium
+        team: rhtap
+      annotations:
+        message: |-
+          Environment: {{ $labels.source_environment }}
+          Application: {{ $labels.name }}
+          Cluster: {{ $labels.dest_server }}
+          App progressing for too long.
+        runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-ProgressingArgocdApp.md

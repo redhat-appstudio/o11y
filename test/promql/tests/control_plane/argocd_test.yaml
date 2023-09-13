@@ -1,0 +1,197 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.argocd_alerts.yaml
+
+tests:
+  # DegradedArgocdApp alert
+  - interval: 1m
+    input_series:
+
+      # no app is degraded - shouldn't trigger alerts
+      - series: 'argocd_app_info{health_status="Degraded", name="not-degraded-app", dest_namespace="not-degraded", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="staging-cluster"}'
+        values: _x9
+
+      # an app is constantly degraded - should trigger alerts
+      - series: 'argocd_app_info{health_status="Degraded", name="degraded-app", dest_namespace="degraded", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="staging-cluster"}'
+        values: 1x9
+
+      # an app with some 1m degraded status - shouldn't trigger alerts
+      - series: 'argocd_app_info{health_status="Degraded", name="degraded-1m-app", dest_namespace="degraded-1m", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="staging-cluster"}'
+        values: 1 _ _ _ 1 _ _ _ _ _
+
+      # an app with a 4m degraded status - shouldn't trigger alerts
+      - series: 'argocd_app_info{health_status="Degraded", name="degraded-4m-app", dest_namespace="degraded-4m", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="staging-cluster"}'
+        values: _ 1 1 1 1 _ _ _ _ _
+
+      # an app is flapping every 1m - should trigger alerts triggers
+      - series: 'argocd_app_info{health_status="Degraded", name="flapping-1m-app", dest_namespace="flapping-1m", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="staging-cluster"}'
+        values: 1 _ 1 _ 1 _ 1 _ 1 _
+
+      # an app is flapping every 2m - should trigger alerts triggers
+      - series: 'argocd_app_info{health_status="Degraded", name="flapping-2m-app", dest_namespace="flapping-2m", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="staging-cluster"}'
+        values: 1 _ _ 1 _ _ 1 _ _ 1
+
+      # an app is in another health status which is not 'Degraded' - the rule shouldn't alert.
+      - series: 'argocd_app_info{health_status="Progressing", name="progressing-app", dest_namespace="nothing-wrong", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="staging-cluster"}'
+        values: 1x9
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: DegradedArgocdApp
+        exp_alerts:
+          - exp_labels:
+              severity: medium
+              dest_server: https://api.foo.openshiftapps.com:6443
+              dest_namespace: degraded
+              health_status: Degraded
+              name: degraded-app
+              source_environment: staging-cluster
+              team: rhtap
+            exp_annotations:
+              message: |
+                Environment: staging-cluster
+                Application: degraded-app
+                Cluster: https://api.foo.openshiftapps.com:6443
+                Health status Degraded.
+              runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-degradedArgocdApp.md
+
+          - exp_labels:
+              severity: medium
+              dest_server: https://api.foo.openshiftapps.com:6443
+              dest_namespace: flapping-1m
+              health_status: Degraded
+              name: flapping-1m-app
+              source_environment: staging-cluster
+              team: rhtap
+            exp_annotations:
+              message: |
+                Environment: staging-cluster
+                Application: flapping-1m-app
+                Cluster: https://api.foo.openshiftapps.com:6443
+                Health status Degraded.
+              runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-degradedArgocdApp.md
+
+          - exp_labels:
+              severity: medium
+              dest_server: https://api.foo.openshiftapps.com:6443
+              dest_namespace: flapping-2m
+              health_status: Degraded
+              name: flapping-2m-app
+              source_environment: staging-cluster
+              team: rhtap
+            exp_annotations:
+              message: |
+                Environment: staging-cluster
+                Application: flapping-2m-app
+                Cluster: https://api.foo.openshiftapps.com:6443
+                Health status Degraded.
+              runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-degradedArgocdApp.md
+
+  # ProgressingArgocdApp alert
+  - interval: 1m
+    input_series:
+      # App was progessing and then healthy for the last 9 min, should not raise an alert
+      - series: 'argocd_app_info{health_status="Progressing", name="Progressing-Healthy-9min-app", dest_namespace="Progressing-Healthy-9min", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="staging-cluster"}'
+        values: 1x10 _x8
+      - series: 'argocd_app_info{health_status="Healthy", name="Progressing-Healthy-9min-app", dest_namespace="Progressing-Healthy-9min", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="staging-cluster"}'
+        values: _x10 1x8
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: ProgressingArgocdApp
+        exp_alerts: []
+
+  - interval: 1m
+    input_series:
+      # App is always progressing, should raise an alert
+      - series: 'argocd_app_info{health_status="Progressing", name="progressing-only-app", dest_namespace="Still-Progressing", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="staging-cluster"}'
+        values: 1x19
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: ProgressingArgocdApp
+        exp_alerts:
+          - exp_labels:
+              severity: medium
+              dest_server: https://api.foo.openshiftapps.com:6443
+              dest_namespace: Still-Progressing
+              health_status: Progressing
+              name: progressing-only-app
+              source_environment: staging-cluster
+              team: rhtap
+            exp_annotations:
+              message: |-
+                Environment: staging-cluster
+                Application: progressing-only-app
+                Cluster: https://api.foo.openshiftapps.com:6443
+                App progressing for too long.
+              runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-ProgressingArgocdApp.md
+
+  - interval: 1m
+    input_series:
+      # Apps are always healthy, should not raise an alert
+      - series: 'argocd_app_info{health_status="Healthy", name="Healthy-only-app", dest_namespace="Still-Progressing", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="staging-cluster"}'
+        values: 1x19
+      - series: 'argocd_app_info{health_status="Progressing", name="Healthy-only-app", dest_namespace="Still-Progressing", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="staging-cluster"}'
+        values: _x19
+      - series: 'argocd_app_info{health_status="Healthy", name="another-Healthy-only-app", dest_namespace="Still-Progressing", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="staging-cluster"}'
+        values: 1x19
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: ProgressingArgocdApp
+        exp_alerts: []
+
+  - interval: 1m
+    input_series:
+      # App was progessing and then healthy for the last 4 min, should not raise an alert
+      - series: 'argocd_app_info{health_status="Progressing", name="progressing-healthy-4min-app", dest_namespace="Progressing-Healthy-4min", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="staging-cluster"}'
+        values: 1x15 _x3
+      - series: 'argocd_app_info{health_status="Healthy", name="progressing-healthy-4min-app", dest_namespace="Progressing-Healthy-4min", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="staging-cluster"}'
+        values: _x15 1x3
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: ProgressingArgocdApp
+        exp_alerts: []
+
+  - interval: 1m
+    input_series:
+      # the app is switching health states (flapping), should not raise an alert
+      - series: 'argocd_app_info{health_status="Progressing", name="flapping-should-not-alert-app", dest_namespace="Flapping-Should-Not-Alert", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="staging-cluster"}'
+        values: '_ 1 _ 1 1 _ 1 1 1 _ _ _ _ 1 _ 1 1 1 1 _'
+      - series: 'argocd_app_info{health_status="Healthy", name="flapping-should-not-alert-app", dest_namespace="Flapping-Should-Not-Alert", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="staging-cluster"}'
+        values: '1 _ 1 _ _ 1 _ _ _ 1 1 1 1 _ 1 _ _ _ _ 1'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: ProgressingArgocdApp
+        exp_alerts: []
+
+  - interval: 1m
+    input_series:
+      # App 1: Progressing all of the time, should raise an alert
+      - series: 'argocd_app_info{health_status="Progressing", name="Progressing_first-app", dest_namespace="Progressing_first", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="staging-cluster"}'
+        values: 1x19
+      - series: 'argocd_app_info{health_status="Healthy", name="Progressing_first-app", dest_namespace="Progressing_first", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="staging-cluster"}'
+        values: _x19
+      # App 2: Progressing for 17 minutes and then healthy for 3 minutes, should not raise an alert
+      - series: 'argocd_app_info{health_status="Progressing", name="Progressing_second-app", dest_namespace="Progressing_second", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="staging-cluster"}'
+        values: 1x16 _ _ _
+      - series: 'argocd_app_info{health_status="Healthy", name="Progressing_second-app", dest_namespace="Progressing_second", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="staging-cluster"}'
+        values: _x16 1 1 1
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: ProgressingArgocdApp
+        exp_alerts:
+          - exp_labels:
+              severity: medium
+              dest_server: https://api.foo.openshiftapps.com:6443
+              dest_namespace: Progressing_first
+              health_status: Progressing
+              name: Progressing_first-app
+              source_environment: staging-cluster
+              team: rhtap
+            exp_annotations:
+              message: |-
+                Environment: staging-cluster
+                Application: Progressing_first-app
+                Cluster: https://api.foo.openshiftapps.com:6443
+                App progressing for too long.
+              runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-ProgressingArgocdApp.md
