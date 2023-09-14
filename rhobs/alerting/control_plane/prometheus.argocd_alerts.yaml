@@ -24,10 +24,10 @@ spec:
         runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-degradedArgocdApp.md
     - alert: ProgressingArgocdApp
       expr: |
-        max_over_time(argocd_app_info{health_status="Progressing", dest_namespace!~".+-tenant"}[20m]) == 1
+        max_over_time(argocd_app_info{health_status="Progressing", dest_namespace!~".+-tenant"}[19m]) == 1
         unless ignoring (health_status)
-        max_over_time(argocd_app_info{health_status!="Progressing", dest_namespace!~".+-tenant"}[20m]) == 1
-      for: 0m
+        max_over_time(argocd_app_info{health_status!="Progressing", dest_namespace!~".+-tenant"}[19m]) == 1
+      for: 1m
       labels:
         severity: medium
         team: rhtap
