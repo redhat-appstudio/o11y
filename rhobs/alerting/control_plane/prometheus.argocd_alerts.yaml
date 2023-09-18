@@ -13,7 +13,7 @@ spec:
       expr: last_over_time(argocd_app_info{health_status="Degraded"}[2m]) == 1
       for: 5m
       labels:
-        severity: medium
+        severity: warning
         team: rhtap
       annotations:
         message: |
@@ -29,7 +29,7 @@ spec:
         max_over_time(argocd_app_info{health_status!="Progressing", dest_namespace!~".+-tenant"}[19m]) == 1
       for: 1m
       labels:
-        severity: medium
+        severity: warning
         team: rhtap
       annotations:
         message: |-
