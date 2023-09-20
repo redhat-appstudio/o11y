@@ -7,11 +7,8 @@ This repository contains the following definitions for RHTAP:
 ## Alerting Rules
 
 The repository contains Prometheus alert rules [files](rhobs/alerting) for monitoring
-RHTAP data plane clusters along with their [tests](test/promql).
+RHTAP data plane and control plane clusters along with their [tests](test/promql).
 
-Control plane clusters alert rules are maintained by the same team, but are kept in a
-different
-[repository](https://gitlab.cee.redhat.com/service/app-interface/-/tree/master/resources/stonesoup/argocd-control-plane/monitoring).
 
 The different alerting rules in this repository are:
 
@@ -35,11 +32,12 @@ The different alerting rules in this repository are:
 
 * [**Alert Rule QuotaExceeded**](https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-QuotaExceeded.md)
 
-### Updating Data Plane Alerts
+### Updating Alerts
 
-Alert rules for data plane clusters are being deployed by app-interface to RHOBS, to where the data plane metrics are also being forwarded. For deploying the alert rules,
-app-interface references the location of the rules together with a git reference -
-branch name or commit hash.
+Alert rules for data plane and control plane clusters are being deployed by app-interface 
+to RHOBS, to where the metrics are also being forwarded. For deploying the 
+alert rules, app-interface references the location of the rules together with a git 
+reference - branch name or commit hash.
 
 It holds separate references to both staging and production RHOBS instances (monitoring
 RHTAP staging and production deployments). For both environments, we maintain the
@@ -50,10 +48,15 @@ Steps for updating the rules:
 
 1. Merge the necessary changes to this repository - alerts and tests.
 2. Update the
-[staging environment](https://gitlab.cee.redhat.com/service/app-interface/-/blob/0486ef164e70259e5b85c46ab749529238368414/data/services/osd-operators/cicd/saas/saas-rhtap-rules.yaml#L35)
+[data plane staging environment](https://gitlab.cee.redhat.com/service/app-interface/-/blob/2a88da3b5ed7589a3954ebb31c484702ef49cd91/data/services/osd-operators/cicd/saas/saas-rhtap-rules.yaml#L35) 
+and/or the
+[control plane staging environment](https://gitlab.cee.redhat.com/service/app-interface/-/blob/2a88da3b5ed7589a3954ebb31c484702ef49cd91/data/services/osd-operators/cicd/saas/saas-rhtap-rules.yaml#L49)
 reference in app-interface to the commit hash of the changes you made.
 3. Once merged and ready to be promoted to production, update the
-[production environment](https://gitlab.cee.redhat.com/service/app-interface/-/blob/0486ef164e70259e5b85c46ab749529238368414/data/services/osd-operators/cicd/saas/saas-rhtap-rules.yaml#L39) reference in a similar manner.
+[data plane production environment](https://gitlab.cee.redhat.com/service/app-interface/-/blob/2a88da3b5ed7589a3954ebb31c484702ef49cd91/data/services/osd-operators/cicd/saas/saas-rhtap-rules.yaml#L39) 
+and/or the
+[control plane production environment](https://gitlab.cee.redhat.com/service/app-interface/-/blob/2a88da3b5ed7589a3954ebb31c484702ef49cd91/data/services/osd-operators/cicd/saas/saas-rhtap-rules.yaml#L53) 
+reference in a similar manner.
 
 ## Grafana Dashboards
 
