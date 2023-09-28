@@ -1,0 +1,66 @@
+# Service account to run the cronjob
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: sa-probe
+  namespace: appstudio-probe-monitoring-grafana
+---
+# ClusterRole to get access to Grafana resources
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: read-grafana
+rules:
+- apiGroups: ['grafana.integreatly.org']
+  resources: ['grafanas']
+  verbs: ['get']
+---
+# Bind the ClusterRole to the Service account, giving aceess only to appstudio-grafana namespace
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: read-grafana-binding
+  namespace: appstudio-grafana
+subjects:
+- kind: ServiceAccount
+  name: sa-probe
+  namespace: appstudio-probe-monitoring-grafana
+roleRef:
+  kind: ClusterRole
+  name: read-grafana
+  apiGroup: rbac.authorization.k8s.io
+---
+# Run a cronjob to every 10 minutes check if the "prometheus-appstudio-ds" datasource 
+# exists in our Grafana instance
+# job will succeed if it exists and will fail if not, with a proper message in the output
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: rhtap-probe-datasource-availability
+  namespace: appstudio-probe-monitoring-grafana
+spec:
+  schedule: "*/10 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          serviceAccountName: sa-probe
+          restartPolicy: Never
+          containers:
+          - name: datasource-availability
+            image: registry.redhat.io/openshift4/ose-cli:latest
+            command: 
+            - /bin/bash
+            - -c
+            - |
+              cd $(mktemp -d)
+              wget -O jq https://github.com/jqlang/jq/releases/download/jq-1.7/jq-linux-i386 && chmod +x jq
+              echo 'Start test'
+              if oc get grafana -n appstudio-grafana grafana-oauth -o jsonpath='{.status.datasources}' | ./jq 'map(select(. | contains("prometheus-appstudio-ds"))) | length > 0'
+              then
+                echo 'Datasource prometheus-appstudio-ds is available'
+                exit 0
+              else
+                echo 'Datasource prometheus-appstudio-ds is not available'
+                exit 1
+              fi
