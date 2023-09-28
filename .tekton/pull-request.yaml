@@ -52,7 +52,9 @@ spec:
             - name: check-and-test-all
               image: quay.io/rhobs/obsctl-reloader-rules-checker:1.0.4
               workingDir: $(workspaces.workspace.path)
-              script: yum install -y make && CMD=obsctl-reloader-rules-checker make all
+              script: |
+                yum install -y make && \
+                CMD=obsctl-reloader-rules-checker make check-and-test
       - name: run-gitlint
         params:
           - name: target-branch
@@ -78,6 +80,20 @@ spec:
                 git config --global --add safe.directory '*'
                 git fetch origin "$(params.target-branch)"
                 gitlint --fail-without-commits --commits "origin/$(params.target-branch)..HEAD"
+      - name: test-kustomize-build
+        workspaces:
+          - name: workspace
+            workspace: workspace
+        runAfter:
+          - clone-repository
+        taskSpec:
+          workspaces:
+            - name: workspace
+          steps:
+            - name: kustomize-build
+              image: registry.access.redhat.com/ubi8/ubi:latest
+              workingDir: $(workspaces.workspace.path)
+              script: yum install -y make && make kustomize-build
   workspaces:
     - name: workspace
       volumeClaimTemplate:
