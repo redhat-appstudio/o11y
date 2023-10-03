@@ -48,15 +48,12 @@ spec:
           restartPolicy: Never
           containers:
           - name: datasource-availability
-            image: registry.redhat.io/openshift4/ose-cli:latest
+            image: registry.redhat.io/openshift4/ose-cli:v4.12.0
             command: 
             - /bin/bash
             - -c
             - |
-              cd $(mktemp -d)
-              wget -O jq https://github.com/jqlang/jq/releases/download/jq-1.7/jq-linux-i386 && chmod +x jq
-              echo 'Start test'
-              if oc get grafana -n appstudio-grafana grafana-oauth -o jsonpath='{.status.datasources}' | ./jq 'map(select(. | contains("prometheus-appstudio-ds"))) | length > 0'
+              if oc get grafanas.grafana.integreatly.org -n appstudio-grafana grafana-oauth -o jsonpath='{.status.datasources}' | grep -q prometheus-appstudio-ds
               then
                 echo 'Datasource prometheus-appstudio-ds is available'
                 exit 0
@@ -64,3 +61,13 @@ spec:
                 echo 'Datasource prometheus-appstudio-ds is not available'
                 exit 1
               fi
+            resources:
+              requests:
+                cpu: 100m
+                memory: 10Mi
+              limits:
+                cpu: 100m
+                memory: 100Mi
+            securityContext:
+              readOnlyRootFilesystem: true
+              runAsNonRoot: true
