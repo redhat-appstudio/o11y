@@ -32,6 +32,30 @@ The different alerting rules in this repository are:
 
 * [**Alert Rule QuotaExceeded**](https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-QuotaExceeded.md)
 
+### SLO Alerts
+
+SLO (Service Level Objective) alert rules are rules defined to monitor and alert 
+when a service or system is not meeting its specified service level objectives.
+
+#### Usage Guidelines:
+
+Apply the `slo: true` label to alerts directly associated with Service Level Objectives.
+These alerts typically indicate issues affecting the performance or reliability of the service.
+
+#### Benefits of using the `slo: true` Label:
+
+Labeling alerts with `slo: true` facilitates quicker incident response by 
+promptly identifying and addressing issues that impact service level objectives.
+  
+#### How to apply the `slo: true` Label: 
+
+Apply `slo: true` under labels section of any alerting rule. 
+  ```
+  labels:
+      severity: warning
+      slo: true   # Apply the slo:true label in here.
+  ```
+
 ### Updating Alerts
 
 Alert rules for data plane and control plane clusters are being deployed by app-interface 
