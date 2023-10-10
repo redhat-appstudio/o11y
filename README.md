@@ -26,7 +26,7 @@ The different alerting rules in this repository are:
 
 * [**Alert Rule CrashLoopBackOff**](https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-crashLoopBackOff.md?ref_type=heads)
 
-* [**Alert Rule PodsNotReady**](https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-PodsNotReady.md?ref_type=heads)
+* [**Alert Rule PodNotReady**](https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-PodNotReady.md?ref_type=heads)
 
 * [**Alert Rule PersistentVolumeIssues**](https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-pesistentVolumeIssues.md?ref_type=heads)
 
