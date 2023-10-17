@@ -72,14 +72,14 @@ Steps for updating the rules:
 
 1. Merge the necessary changes to this repository - alerts and tests.
 2. Update the
-[data plane staging environment](https://gitlab.cee.redhat.com/service/app-interface/-/blob/2a88da3b5ed7589a3954ebb31c484702ef49cd91/data/services/osd-operators/cicd/saas/saas-rhtap-rules.yaml#L35) 
+[data plane staging environment](https://gitlab.cee.redhat.com/service/app-interface/-/blob/master/data/services/osd-operators/cicd/saas/saas-rhtap-rules.yaml#L35) 
 and/or the
-[control plane staging environment](https://gitlab.cee.redhat.com/service/app-interface/-/blob/2a88da3b5ed7589a3954ebb31c484702ef49cd91/data/services/osd-operators/cicd/saas/saas-rhtap-rules.yaml#L49)
+[control plane staging environment](https://gitlab.cee.redhat.com/service/app-interface/-/blob/master/data/services/osd-operators/cicd/saas/saas-rhtap-rules.yaml#L49)
 reference in app-interface to the commit hash of the changes you made.
 3. Once merged and ready to be promoted to production, update the
-[data plane production environment](https://gitlab.cee.redhat.com/service/app-interface/-/blob/2a88da3b5ed7589a3954ebb31c484702ef49cd91/data/services/osd-operators/cicd/saas/saas-rhtap-rules.yaml#L39) 
+[data plane production environment](https://gitlab.cee.redhat.com/service/app-interface/-/blob/master/data/services/osd-operators/cicd/saas/saas-rhtap-rules.yaml#L39) 
 and/or the
-[control plane production environment](https://gitlab.cee.redhat.com/service/app-interface/-/blob/2a88da3b5ed7589a3954ebb31c484702ef49cd91/data/services/osd-operators/cicd/saas/saas-rhtap-rules.yaml#L53) 
+[control plane production environment](https://gitlab.cee.redhat.com/service/app-interface/-/blob/master/data/services/osd-operators/cicd/saas/saas-rhtap-rules.yaml#L53) 
 reference in a similar manner.
 
 ## Grafana Dashboards
