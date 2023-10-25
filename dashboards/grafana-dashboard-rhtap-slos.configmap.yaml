@@ -197,6 +197,19 @@ data:
             "x": 0,
             "y": 11
           },
+          "id": 40,
+          "panels": [],
+          "title": "5xx errors SLO",
+          "type": "row"
+        },
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 20
+          },
           "id": 33,
           "panels": [],
           "title": "SLO Template",
@@ -212,7 +225,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 12
+            "y": 21
           },
           "id": 10,
           "links": [],
@@ -281,7 +294,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 12
+            "y": 21
           },
           "id": 6,
           "links": [],
@@ -356,7 +369,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 15,
-            "y": 12
+            "y": 21
           },
           "id": 29,
           "links": [],
@@ -387,6 +400,108 @@ data:
           ],
           "title": "Error Budget (%)",
           "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "rhtap-observatorium-stage"
+          },
+          "description": "The objective for the given time window.",
+          "gridPos": {
+            "h": 8,
+            "w": 10,
+            "x": 0,
+            "y": 12
+          },
+          "id": 41,
+          "links": [],
+          "options": {
+            "code": {
+              "language": "plaintext",
+              "showLineNumbers": false,
+              "showMiniMap": false
+            },
+            "content": "<h1><center>5xx errors rate for service providers</center></h1>",
+            "mode": "html"
+          },
+          "pluginVersion": "9.3.8",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "rhtap-observatorium-stage"
+              },
+              "refId": "A"
+            }
+          ],
+          "title": "SP 5xx errors SLO",
+          "type": "text"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "The percentage of 5xx responses returned from SPs in general responses count.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "mappings": [
+              ],
+              "max": 1,
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "percentunit"
+            }
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 10,
+            "y": 12
+          },
+          "id": 16,
+          "interval": "1m",
+          "options": {
+            "legend": {
+              "calcs": [
+              ],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": "$datasource",
+              "editorMode": "builder",
+              "expr": "sum(increase(redhat_appstudio_spi_service_provider_response_time_seconds_count{status=~\"5..\"}[24h]) OR on() vector(0)) / sum(increase(redhat_appstudio_spi_service_provider_response_time_seconds_count{}[24h]))",
+              "legendFormat": "SP 5xx percentage",
+              "range": true,
+              "refId": "A",
+              "type": "prometheus"
+            }
+          ],
+          "title": "Service Providers 5xx responses percentage",
+          "type": "timeseries"
         }
       ],
       "schemaVersion": 37,
