@@ -65,6 +65,177 @@ data:
             "x": 0,
             "y": 3
           },
+          "id": 44,
+          "panels": [],
+          "title": "GitOps Service SLOs",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "95% of applications should be in Synced state",
+          "gridPos": {
+            "h": 7,
+            "w": 10,
+            "x": 0,
+            "y": 4
+          },
+          "id": 46,
+          "links": [],
+          "options": {
+            "code": {
+              "language": "plaintext",
+              "showLineNumbers": false,
+              "showMiniMap": false
+            },
+            "content": "<h1><center>95% of applications should be in Synced state</center></h1>",
+            "mode": "html"
+          },
+          "pluginVersion": "9.3.8",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "refId": "A"
+            }
+          ],
+          "title": "% of Synced Apps SLO",
+          "type": "text"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "Percentage",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineStyle": {
+                  "fill": "solid"
+                },
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "dashed+area"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "percentage",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 95
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 10,
+            "y": 4
+          },
+          "id": 48,
+          "maxDataPoints": 30,
+          "options": {
+            "legend": {
+              "calcs": [
+                "last"
+              ],
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum(argocd_app_info{sync_status!=\"\",health_status!=\"\"}) by (sync_status)",
+              "hide": true,
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum(argocd_app_info{sync_status!=\"\",health_status!=\"\"})",
+              "hide": true,
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "B"
+            },
+            {
+              "datasource": {
+                "name": "Expression",
+                "type": "__expr__",
+                "uid": "__expr__"
+              },
+              "expression": "$A / $B * 100",
+              "hide": false,
+              "refId": "%",
+              "type": "math"
+            }
+          ],
+          "title": "Measured",
+          "type": "timeseries"
+        },
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 11
+          },
           "id": 40,
           "panels": [],
           "title": "Application Creation SLO",
@@ -80,7 +251,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 4
+            "y": 12
           },
           "id": 41,
           "links": [],
@@ -155,7 +326,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 4
+            "y": 12
           },
           "id": 42,
           "links": [],
@@ -193,7 +364,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 11
+            "y": 19
           },
           "id": 35,
           "panels": [],
@@ -210,7 +381,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 12
+            "y": 20
           },
           "id": 36,
           "links": [],
@@ -286,7 +457,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 12
+            "y": 20
           },
           "id": 37,
           "links": [],
@@ -324,7 +495,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 19
+            "y": 27
           },
           "id": 33,
           "panels": [],
@@ -341,7 +512,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 20
+            "y": 28
           },
           "id": 10,
           "links": [],
@@ -410,7 +581,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 20
+            "y": 28
           },
           "id": 6,
           "links": [],
@@ -485,7 +656,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 15,
-            "y": 20
+            "y": 28
           },
           "id": 29,
           "links": [],
@@ -576,7 +747,7 @@ data:
       "timezone": "",
       "title": "RHTAP SLOs",
       "uid": "rhtap-slos",
-      "version": 1,
+      "version": 2,
       "weekStart": ""
     }
 kind: ConfigMap
