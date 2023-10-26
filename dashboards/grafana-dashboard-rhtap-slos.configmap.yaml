@@ -28,7 +28,6 @@ data:
       "editable": true,
       "fiscalYearStartMonth": 0,
       "graphTooltip": 0,
-      "id": 174751,
       "links": [],
       "liveNow": false,
       "panels": [
@@ -66,6 +65,136 @@ data:
             "x": 0,
             "y": 3
           },
+          "id": 40,
+          "panels": [],
+          "title": "Application Creation SLO",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "The objective for the given time window.",
+          "gridPos": {
+            "h": 7,
+            "w": 10,
+            "x": 0,
+            "y": 4
+          },
+          "id": 41,
+          "links": [],
+          "options": {
+            "code": {
+              "language": "plaintext",
+              "showLineNumbers": false,
+              "showMiniMap": false
+            },
+            "content": "<h1><center>95% of applications created should have succeeded</center></h1>",
+            "mode": "html"
+          },
+          "pluginVersion": "9.3.8",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "refId": "A"
+            }
+          ],
+          "title": "Application Creation SLO",
+          "type": "text"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "The current measurement for the given time window.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "match": "null",
+                    "result": {
+                      "text": "N/A"
+                    }
+                  },
+                  "type": "special"
+                }
+              ],
+              "max": 1,
+              "min": 0,
+              "thresholds": {
+                "mode": "percentage",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 95
+                  },
+                  {
+                    "color": "green",
+                    "value": 100
+                  }
+                ]
+              },
+              "unit": "percentunit"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 5,
+            "x": 10,
+            "y": 4
+          },
+          "id": 42,
+          "links": [],
+          "maxDataPoints": 100,
+          "options": {
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [],
+              "fields": "",
+              "values": false
+            },
+            "showThresholdLabels": false,
+            "showThresholdMarkers": false
+          },
+          "pluginVersion": "9.3.8",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "1-sum(increase(has_application_failed_creation_total[$__range]))\n/\nsum(increase(has_application_creation_total[$__range]))",
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Measured",
+          "type": "gauge"
+        },
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 11
+          },
           "id": 35,
           "panels": [],
           "title": "Application Deletion SLO",
@@ -81,7 +210,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 4
+            "y": 12
           },
           "id": 36,
           "links": [],
@@ -157,7 +286,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 4
+            "y": 12
           },
           "id": 37,
           "links": [],
@@ -195,7 +324,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 11
+            "y": 19
           },
           "id": 33,
           "panels": [],
@@ -212,7 +341,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 12
+            "y": 20
           },
           "id": 10,
           "links": [],
@@ -281,7 +410,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 12
+            "y": 20
           },
           "id": 6,
           "links": [],
@@ -356,7 +485,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 15,
-            "y": 12
+            "y": 20
           },
           "id": 29,
           "links": [],
@@ -389,6 +518,7 @@ data:
           "type": "stat"
         }
       ],
+      "refresh": "1h",
       "schemaVersion": 37,
       "style": "dark",
       "tags": [],
