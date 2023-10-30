@@ -4,7 +4,7 @@ rule_files:
   - prometheus.application_alerts.yaml
 
 tests:
-  # Alerted cases:
+  # ----- Application Deletion Alerting Tests -----
   - interval: 1m
     input_series:
 
@@ -101,3 +101,86 @@ tests:
     alert_rule_test:
       - eval_time: 65m
         alertname: ApplicationDeletionErrors
+
+  # ----- Application Creation Alerting Tests -----
+  - interval: 1m
+    input_series:
+
+      # HAS is experiencing application creation failure rate of 100%, so it will be alerted
+      - series: 'has_application_creation_total{namespace="application-service", pod="has", source_cluster="cluster01"}'
+        values: '1+1x64'
+      - series: 'has_application_failed_creation_total{namespace="application-service", pod="has", source_cluster="cluster01"}'
+        values: '1+1x64'
+
+    alert_rule_test:
+      - eval_time: 65m
+        alertname: ApplicationCreationErrors
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: true
+              namespace: application-service
+              pod: has
+              source_cluster: cluster01
+            exp_annotations:
+              summary: >-
+                HAS is experiencing application creation failures of >5%
+              description: >-
+                Application controller in Pod has for namespace
+                application-service on cluster cluster01 is failing to
+                successfully create at least 95% of applications over the past hour
+              runbook_url: TBD
+
+  - interval: 1m
+    input_series:
+
+      # HAS experienced ~10% (10.9%) creation failure rate, should still alert
+      - series: 'has_application_creation_total{namespace="application-service", pod="has", source_cluster="cluster01"}'
+        values: '10+10x64'
+      - series: 'has_application_failed_creation_total{namespace="application-service", pod="has", source_cluster="cluster01"}'
+        values: '0x20 0+10x7 70x38'
+
+    alert_rule_test:
+      - eval_time: 65m
+        alertname: ApplicationCreationErrors
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: true
+              namespace: application-service
+              pod: has
+              source_cluster: cluster01
+            exp_annotations:
+              summary: >-
+                HAS is experiencing application creation failures of >5%
+              description: >-
+                Application controller in Pod has for namespace
+                application-service on cluster cluster01 is failing to
+                successfully create at least 95% of applications over the past hour
+              runbook_url: TBD
+
+  - interval: 1m
+    input_series:
+
+      # HAS experienced 5% creation failure rate, should not alert
+      - series: 'has_application_creation_total{namespace="application-service", pod="has", source_cluster="cluster01"}'
+        values: '20+20x64'
+      - series: 'has_application_failed_creation_total{namespace="application-service", pod="has", source_cluster="cluster01"}'
+        values: '1+1x64'
+
+    alert_rule_test:
+      - eval_time: 65m
+        alertname: ApplicationCreationErrors
+
+  - interval: 1m
+    input_series:
+
+      # HAS experienced ~1% creation failure rate, should not alert
+      - series: 'has_application_creation_total{namespace="application-service", pod="has", source_cluster="cluster01"}'
+        values: '0+10x64'
+      - series: 'has_application_failed_creation_total{namespace="application-service", pod="has", source_cluster="cluster01"}'
+        values: '0x9 5x54'
+
+    alert_rule_test:
+      - eval_time: 65m
+        alertname: ApplicationCreationErrors
