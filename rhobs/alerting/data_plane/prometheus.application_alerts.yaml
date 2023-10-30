@@ -11,10 +11,9 @@ spec:
     rules:
     - alert: ApplicationDeletionErrors
       expr: |
-        (sum(increase(has_application_failed_deletion_total[1h]))
-        by(namespace, pod, source_cluster) /
-        sum(increase(has_application_deletion_total[1h]))
-        by(namespace, pod, source_cluster)) > 0.01
+        (increase(has_application_failed_deletion_total[1h]))
+        /
+        (increase(has_application_deletion_total[1h]))  > 0.01
       for: 5m
       labels:
         severity: warning
@@ -26,4 +25,21 @@ spec:
           Application controller in Pod {{ $labels.pod }} for namespace
           {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} is failing to
           successfully delete at least 99% of applications over the past hour
+        runbook_url: TBD
+    - alert: ApplicationCreationErrors
+      expr: |
+        (increase(has_application_failed_creation_total[1h]))
+        /
+        (increase(has_application_creation_total[1h])) > 0.05
+      for: 5m
+      labels:
+        severity: warning
+        slo: true
+      annotations:
+        summary: >-
+          HAS is experiencing application creation failures of >5%
+        description: >-
+          Application controller in Pod {{ $labels.pod }} for namespace
+          {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} is failing to
+          successfully create at least 95% of applications over the past hour
         runbook_url: TBD
