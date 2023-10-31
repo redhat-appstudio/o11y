@@ -65,6 +65,153 @@ data:
             "x": 0,
             "y": 3
           },
+          "id": 50,
+          "panels": [],
+          "title": "SPI service SLOs",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "The objective for the given time window.",
+          "gridPos": {
+            "h": 7,
+            "w": 10,
+            "x": 0,
+            "y": 4
+          },
+          "id": 52,
+          "links": [],
+          "options": {
+            "code": {
+              "language": "plaintext",
+              "showLineNumbers": false,
+              "showMiniMap": false
+            },
+            "content": "<h1><center>5xx errors rate for service providers</center></h1>",
+            "mode": "html"
+          },
+          "pluginVersion": "9.3.8",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "refId": "A"
+            }
+          ],
+          "title": "SP 5xx errors SLO",
+          "type": "text"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "The percentage of 5xx responses returned from SPs in general responses count.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "max": 1,
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "percentunit"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 10,
+            "y": 4
+          },
+          "id": 54,
+          "interval": "1m",
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "builder",
+              "expr": "sum(increase(redhat_appstudio_spi_service_provider_response_time_seconds_count{status=~\"5..\"}[$__range]) OR on() vector(0)) / sum(increase(redhat_appstudio_spi_service_provider_response_time_seconds_count{}[$__range]))",
+              "legendFormat": "SP 5xx percentage",
+              "range": true,
+              "refId": "A",
+              "type": "prometheus"
+            }
+          ],
+          "title": "Measured",
+          "type": "timeseries"
+        },
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 11
+          },
           "id": 44,
           "panels": [],
           "title": "GitOps Service SLOs",
@@ -80,7 +227,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 4
+            "y": 12
           },
           "id": 46,
           "links": [],
@@ -170,7 +317,7 @@ data:
             "h": 7,
             "w": 12,
             "x": 10,
-            "y": 4
+            "y": 12
           },
           "id": 48,
           "maxDataPoints": 30,
@@ -234,7 +381,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 11
+            "y": 19
           },
           "id": 40,
           "panels": [],
@@ -251,7 +398,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 12
+            "y": 20
           },
           "id": 41,
           "links": [],
@@ -326,7 +473,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 12
+            "y": 20
           },
           "id": 42,
           "links": [],
@@ -364,7 +511,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 19
+            "y": 27
           },
           "id": 35,
           "panels": [],
@@ -381,7 +528,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 20
+            "y": 28
           },
           "id": 36,
           "links": [],
@@ -436,8 +583,7 @@ data:
                 "mode": "percentage",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -457,7 +603,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 20
+            "y": 28
           },
           "id": 37,
           "links": [],
@@ -495,7 +641,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 27
+            "y": 35
           },
           "id": 33,
           "panels": [],
@@ -512,7 +658,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 28
+            "y": 36
           },
           "id": 10,
           "links": [],
@@ -564,8 +710,7 @@ data:
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -581,7 +726,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 28
+            "y": 36
           },
           "id": 6,
           "links": [],
@@ -639,8 +784,7 @@ data:
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -656,7 +800,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 15,
-            "y": 28
+            "y": 36
           },
           "id": 29,
           "links": [],
