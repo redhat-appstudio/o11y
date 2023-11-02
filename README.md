@@ -20,7 +20,6 @@ The different alerting rules in this repository are:
 
 ## Data Plane Alerts
 
-* [**Alert Rule ControllerReconciliationErrors**](https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-controllerReconciliationErrors.md?ref_type=heads)
 
 * [**Alert Rule Unschedulable**](https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-unschedualablePods.md)
 
