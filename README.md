@@ -20,7 +20,6 @@ The different alerting rules in this repository are:
 
 ## Data Plane Alerts
 
-
 * [**Alert Rule Unschedulable**](https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-unschedualablePods.md)
 
 * [**Alert Rule CrashLoopBackOff**](https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-crashLoopBackOff.md?ref_type=heads)
@@ -70,16 +69,16 @@ changes to the rules will not take effect until the references are updated.
 Steps for updating the rules:
 
 1. Merge the necessary changes to this repository - alerts and tests.
-2. Update the
+2. The
 [data plane staging environment](https://gitlab.cee.redhat.com/service/app-interface/-/blob/master/data/services/osd-operators/cicd/saas/saas-rhtap-rules.yaml#L35) 
-and/or the
+and the
 [control plane staging environment](https://gitlab.cee.redhat.com/service/app-interface/-/blob/master/data/services/osd-operators/cicd/saas/saas-rhtap-rules.yaml#L49)
-reference in app-interface to the commit hash of the changes you made.
+in app-interface are referencing to the `main` branch in `o11y` repository  and will be automatically updated with the new changes.
 3. Once merged and ready to be promoted to production, update the
 [data plane production environment](https://gitlab.cee.redhat.com/service/app-interface/-/blob/master/data/services/osd-operators/cicd/saas/saas-rhtap-rules.yaml#L39) 
 and/or the
 [control plane production environment](https://gitlab.cee.redhat.com/service/app-interface/-/blob/master/data/services/osd-operators/cicd/saas/saas-rhtap-rules.yaml#L53) 
-reference in a similar manner.
+reference in app-interface to the commit hash of the changes you made.
 
 ## Grafana Dashboards
 
