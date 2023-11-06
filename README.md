@@ -92,6 +92,13 @@ Deploying to [production](https://grafana.app-sre.devshift.net/) requires an upd
 [reference](https://gitlab.cee.redhat.com/service/app-interface/-/blob/b03e4336a3223ec7b90dc9bc69707c9ee0ff9af6/data/services/stonesoup/cicd/saas-stonesoup-dashboards.yml#L37)
 in app-interface.
 
+## Adding Metrics and Labels
+
+Only a subset of the metrics and labels available within the RHTAP clusters is forwarded
+to RHOBS. If additional metrics or labels are needed, add them by following the steps
+described in the
+[monitoring stack documentation](https://github.com/redhat-appstudio/infra-deployments/blob/main/components/monitoring/prometheus/README.md#federation-and-remote-write)
+
 ## Support
 
 The RHTAP o11y team maintains this repository.
