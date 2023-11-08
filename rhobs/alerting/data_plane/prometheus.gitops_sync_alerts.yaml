@@ -11,11 +11,9 @@ spec:
     rules:
     - alert: GitOpsApplicationSyncErrors
       expr: |
-        sum(last_over_time(argocd_app_info{sync_status="Synced"}[5m]))
+        sum(argocd_app_info{sync_status="Synced", namespace="gitops-service-argocd"})
         /
-        (
-          sum(last_over_time(argocd_app_info{sync_status="Synced"}[5m])) + sum(last_over_time(argocd_app_info{sync_status="OutOfSync"}[5m])) + sum(last_over_time(argocd_app_info{sync_status="Unknown"}[5m]))
-        ) < 0.95
+        sum(argocd_app_info{namespace="gitops-service-argocd"}) < 0.95
       for: 5m
       labels:
         severity: warning
