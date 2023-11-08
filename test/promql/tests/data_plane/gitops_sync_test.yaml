@@ -1,0 +1,86 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.gitops_sync_alerts.yaml
+
+tests:
+  # Alerted cases:
+  - interval: 1m
+    input_series:
+
+      # GitOps service is experiencing application sync success rate of less than 95%, so alert
+      - series: 'argocd_app_info{sync_status="Synced"}'
+        values: '1 2 3 4 5 6'
+      - series: 'argocd_app_info{sync_status="OutOfSync"}'
+        values: '1 2 3 4 5 6'
+      - series: 'argocd_app_info{sync_status="Unknown"}'
+        values: '1 2 3 4 5 6'
+
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: GitOpsApplicationSyncErrors
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: true
+            exp_annotations:
+              summary: >-
+                Less than 95% of GitOps applications are in synced state
+              description: >-
+                The percentage total of all Argo CD applications that are in Synced state is less than 95%.
+              runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/deploy-from-git-to-k8s.md
+
+  - interval: 1m
+    input_series:
+
+      # GitOps Service experienced less than 95% synced rate in applications, should alert
+      - series: 'argocd_app_info{sync_status="Synced"}'
+        values: '1 2 3 4 5 6'
+      - series: 'argocd_app_info{sync_status="OutOfSync"}'
+        values: '0 5 6 7 8 9'
+      - series: 'argocd_app_info{sync_status="Unknown"}'
+        values: '0 5 8 9 3 0'
+
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: GitOpsApplicationSyncErrors
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: true
+            exp_annotations:
+              summary: >-
+                Less than 95% of GitOps applications are in synced state
+              description: >-
+                The percentage total of all Argo CD applications that are in Synced state is less than 95%.
+              runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/deploy-from-git-to-k8s.md
+
+  - interval: 1m
+    input_series:
+
+      # GitOps Service experienced greater than 95% synced rate for applications, should not alert
+      - series: 'argocd_app_info{sync_status="Synced"}'
+        values: '1 1 2 2 10 10'
+      - series: 'argocd_app_info{sync_status="OutOfSync"}'
+        values: '0 0 0 0 0 0'
+      - series: 'argocd_app_info{sync_status="Unknown"}'
+        values: '0 0 0 0 0 0'
+
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: GitOpsApplicationSyncErrors
+
+  - interval: 1m
+    input_series:
+
+      # GitOps Service experienced greater than 95% synced rate for applications, should not alert
+      - series: 'argocd_app_info{sync_status="Synced"}'
+        values: '1 1 2 2 10 10'
+      - series: 'argocd_app_info{sync_status="OutOfSync"}'
+        values: '0 0 1 0 1 1'
+      - series: 'argocd_app_info{sync_status="Unknown"}'
+        values: '0 0 0 1 0 1'
+
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: GitOpsApplicationSyncErrors
