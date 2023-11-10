@@ -1420,6 +1420,247 @@ data:
             "x": 0,
             "y": 69
           },
+          "id": 64,
+          "panels": [],
+          "title": "PipelineRun Overhead SLOs",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Proportion of time elapsed waiting for the pipeline controller to receive create events compared to the total duration of successful PipelineRuns is under the defined threshold",
+          "gridPos": {
+            "h": 7,
+            "w": 10,
+            "x": 0,
+            "y": 70
+          },
+          "id": 65,
+          "links": [],
+          "options": {
+            "code": {
+              "language": "plaintext",
+              "showLineNumbers": false,
+              "showMiniMap": false
+            },
+            "content": "<h1><center>Less than 5% overhead</center></h1>",
+            "mode": "html"
+          },
+          "pluginVersion": "9.3.8",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "refId": "A"
+            }
+          ],
+          "title": "Pipeline Scheduling SLO",
+          "type": "text"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "The current measurement for the given time window.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "match": "null",
+                    "result": {
+                      "text": "N/A"
+                    }
+                  },
+                  "type": "special"
+                }
+              ],
+              "max": 1,
+              "min": 0,
+              "noValue": "-",
+              "thresholds": {
+                "mode": "percentage",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 5
+                  }
+                ]
+              },
+              "unit": "percentunit"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 5,
+            "x": 10,
+            "y": 70
+          },
+          "id": 68,
+          "links": [],
+          "maxDataPoints": 100,
+          "options": {
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [],
+              "fields": "",
+              "values": false
+            },
+            "showThresholdLabels": false,
+            "showThresholdMarkers": false
+          },
+          "pluginVersion": "9.3.8",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "(sum(sum_over_time(pipelinerun_duration_scheduled_seconds_sum{status='succeded'}[$__range]))\n/ \nsum(sum_over_time(pipelinerun_duration_scheduled_seconds_count{status='succeded'}[$__range]))) \n/ \n(sum(sum_over_time(tekton_pipelines_controller_pipelinerun_duration_seconds_sum{status='success'}[$__range])) \n/ \nsum(sum_over_time(tekton_pipelines_controller_pipelinerun_duration_seconds_count{status='success'}[$__range])))",
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Scheduling overhead",
+          "type": "gauge"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Proportion of time elapsed between the completion of a TaskRun and the start of the next TaskRun within a PipelineRun to the total duration of successful PipelineRuns is under the defined threshold",
+          "gridPos": {
+            "h": 7,
+            "w": 10,
+            "x": 0,
+            "y": 77
+          },
+          "id": 69,
+          "links": [],
+          "options": {
+            "code": {
+              "language": "plaintext",
+              "showLineNumbers": false,
+              "showMiniMap": false
+            },
+            "content": "<h1><center>Less than 5% overhead</center></h1>",
+            "mode": "html"
+          },
+          "pluginVersion": "9.3.8",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "refId": "A"
+            }
+          ],
+          "title": "Pipeline Execution SLO",
+          "type": "text"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "The current measurement for the given time window.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "match": "null",
+                    "result": {
+                      "text": "N/A"
+                    }
+                  },
+                  "type": "special"
+                }
+              ],
+              "max": 1,
+              "min": 0,
+              "noValue": "-",
+              "thresholds": {
+                "mode": "percentage",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 5
+                  }
+                ]
+              },
+              "unit": "percentunit"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 5,
+            "x": 10,
+            "y": 77
+          },
+          "id": 70,
+          "links": [],
+          "maxDataPoints": 100,
+          "options": {
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [],
+              "fields": "",
+              "values": false
+            },
+            "showThresholdLabels": false,
+            "showThresholdMarkers": false
+          },
+          "pluginVersion": "9.3.8",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "(sum(sum_over_time(pipelinerun_gap_between_taskruns_milliseconds_sum{status='succeded'}[$__range])/1000) \n/ \nsum(sum_over_time(pipelinerun_gap_between_taskruns_milliseconds_count{status='succeded'}[$__range]))) \n/ \n(sum(sum_over_time(tekton_pipelines_controller_pipelinerun_duration_seconds_sum{status='success'}[$__range])) \n/ \nsum(sum_over_time(tekton_pipelines_controller_pipelinerun_duration_seconds_count{status='success'}[$__range])))",
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Execution overhead",
+          "type": "gauge"
+        },
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 84
+          },
           "id": 33,
           "panels": [],
           "title": "SLO Template",
@@ -1435,7 +1676,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 70
+            "y": 85
           },
           "id": 10,
           "links": [],
@@ -1504,7 +1745,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 70
+            "y": 85
           },
           "id": 6,
           "links": [],
@@ -1579,7 +1820,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 15,
-            "y": 70
+            "y": 85
           },
           "id": 29,
           "links": [],
@@ -1670,12 +1911,11 @@ data:
       "timezone": "",
       "title": "RHTAP SLOs",
       "uid": "rhtap-slos",
-      "version": 7,
+      "version": 8,
       "weekStart": ""
     }
 kind: ConfigMap
 metadata:
-  creationTimestamp: null
   name: grafana-dashboard-rhtap-slos
   labels:
     grafana_dashboard: "true"
