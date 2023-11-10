@@ -1,0 +1,259 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.pipeline_alerts.yaml
+
+tests:
+  # ----- Pipeline Schedule Alerting Tests -----
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # Tekton is experiencing scheduling overhead of 100%, so it will be alerted
+      - series: 'pipelinerun_duration_scheduled_seconds_sum{status="succeded",namespace="foo", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'pipelinerun_duration_scheduled_seconds_count{status="succeded",namespace="foo", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_sum{status="success",namespace="foo", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_count{status="success",namespace="foo", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'pipelinerun_duration_scheduled_seconds_sum{status="succeded",namespace="bar", source_cluster="cluster01"}'
+        values: '2+2x780'
+      - series: 'pipelinerun_duration_scheduled_seconds_count{status="succeded",namespace="bar", source_cluster="cluster01"}'
+        values: '2+2x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_sum{status="success",namespace="bar", source_cluster="cluster01"}'
+        values: '2+2x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_count{status="success",namespace="bar", source_cluster="cluster01"}'
+        values: '2+2x780'
+      - series: 'pipelinerun_duration_scheduled_seconds_sum{status="failed",namespace="far", source_cluster="cluster01"}'
+        values: '300+300x780'
+      - series: 'pipelinerun_duration_scheduled_seconds_count{status="failed",namespace="far", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_sum{status="failed",namespace="far", source_cluster="cluster01"}'
+        values: '10000+10000x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_count{status="failed",namespace="far", source_cluster="cluster01"}'
+        values: '1+1x780'
+
+    alert_rule_test:
+      - eval_time: 13h
+        alertname: HighSchedulingOverhead
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: true
+              source_cluster: cluster01
+            exp_annotations:
+              summary: >-
+                Tekton has a scheduling overhead vs. PipelineRun durations of >5%
+              description: >-
+                Tekton controller on cluster cluster01 the percentage of time needed to receive PipelineRun creation
+                events vs. overall PipelineRun execution time is at 100% instead of less than 5%.
+              runbook_url: TBD
+
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # Tekton is experiencing scheduling overhead less than 5%, should not alert
+      - series: 'pipelinerun_duration_scheduled_seconds_sum{status="succeded",namespace="boo", source_cluster="cluster01"}'
+        values: '300+300x780'
+      - series: 'pipelinerun_duration_scheduled_seconds_count{status="succeded",namespace="boo", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_sum{status="success",namespace="boo", source_cluster="cluster01"}'
+        values: '600+600x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_count{status="success",namespace="b00", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'pipelinerun_duration_scheduled_seconds_sum{status="succeded",namespace="far", source_cluster="cluster01"}'
+        values: '300+300x780'
+      - series: 'pipelinerun_duration_scheduled_seconds_count{status="succeded",namespace="far", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_sum{status="success",namespace="far", source_cluster="cluster01"}'
+        values: '600+600x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_count{status="success",namespace="far", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'pipelinerun_duration_scheduled_seconds_sum{status="failed",namespace="far", source_cluster="cluster01"}'
+        values: '300+300x780'
+      - series: 'pipelinerun_duration_scheduled_seconds_count{status="failed",namespace="far", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_sum{status="failed",namespace="far", source_cluster="cluster01"}'
+        values: '10000+10000x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_count{status="failed",namespace="far", source_cluster="cluster01"}'
+        values: '1+1x780'
+
+    alert_rule_test:
+      - eval_time: 13h
+        alertname: HighSchedulingOverhead
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: true
+              source_cluster: cluster01
+            exp_annotations:
+              summary: >-
+                Tekton has a scheduling overhead vs. PipelineRun durations of >5%
+              description: >-
+                Tekton controller on cluster cluster01 the percentage of time needed to receive PipelineRun creation
+                events vs. overall PipelineRun execution time is at 50% instead of less than 5%.
+              runbook_url: TBD
+
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # Tekton is experiencing scheduling overhead less than 5%, should not alert
+      - series: 'pipelinerun_duration_scheduled_seconds_sum{status="succeded",namespace="boo", source_cluster="cluster01"}'
+        values: '300+300x780'
+      - series: 'pipelinerun_duration_scheduled_seconds_count{status="succeded",namespace="boo", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_sum{status="success",namespace="boo", source_cluster="cluster01"}'
+        values: '10000+10000x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_count{status="success",namespace="boo", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'pipelinerun_duration_scheduled_seconds_sum{status="succeded",namespace="far", source_cluster="cluster01"}'
+        values: '300+300x780'
+      - series: 'pipelinerun_duration_scheduled_seconds_count{status="succeded",namespace="far", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_sum{status="success",namespace="far", source_cluster="cluster01"}'
+        values: '10000+10000x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_count{status="success",namespace="far", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'pipelinerun_duration_scheduled_seconds_sum{status="failed",namespace="foo", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'pipelinerun_duration_scheduled_seconds_count{status="failed",namespace="foo", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_sum{status="failed",namespace="foo", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_count{status="failed",namespace="foo", source_cluster="cluster01"}'
+        values: '1+1x780'
+
+    alert_rule_test:
+      - eval_time: 13h
+        alertname: HighSchedulingOverhead
+
+  # ----- Pipeline Execution Alerting Tests -----
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # Tekton is experiencing execution overhead of 100%, so it will be alerted
+      - series: 'pipelinerun_gap_between_taskruns_milliseconds_sum{status="succeded",namespace="foo", source_cluster="cluster01"}'
+        values: '1000+1000x780'
+      - series: 'pipelinerun_gap_between_taskruns_milliseconds_count{status="succeded",namespace="foo", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_sum{status="success",namespace="foo", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_count{status="success",namespace="foo", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'pipelinerun_gap_between_taskruns_milliseconds_sum{status="succeded",namespace="bar", source_cluster="cluster01"}'
+        values: '2000+2000x780'
+      - series: 'pipelinerun_gap_between_taskruns_milliseconds_count{status="succeded",namespace="bar", source_cluster="cluster01"}'
+        values: '2+2x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_sum{status="success",namespace="bar", source_cluster="cluster01"}'
+        values: '2+2x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_count{status="success",namespace="bar", source_cluster="cluster01"}'
+        values: '2+2x780'
+      - series: 'pipelinerun_gap_between_taskruns_milliseconds_sum{status="failed",namespace="far", source_cluster="cluster01"}'
+        values: '300+300x780'
+      - series: 'pipelinerun_gap_between_taskruns_milliseconds_count{status="failed",namespace="far", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_sum{status="failed",namespace="far", source_cluster="cluster01"}'
+        values: '10000+10000x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_count{status="failed",namespace="far", source_cluster="cluster01"}'
+        values: '1+1x780'
+
+    alert_rule_test:
+      - eval_time: 13h
+        alertname: HighExecutionOverhead
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: true
+              source_cluster: cluster01
+            exp_annotations:
+              summary: >-
+                Tekton has a execution overhead vs. PipelineRun durations of >5%
+              description: >-
+                Tekton controller on cluster cluster01 the percentage of the time needed to create
+                underlying TaskRuns vs. overall PipelineRun execution time is at 100% instead of less than 5%.
+              runbook_url: TBD
+
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # Tekton is experiencing scheduling overhead less than 5%, should not alert
+      - series: 'pipelinerun_gap_between_taskruns_milliseconds_sum{status="succeded",namespace="boo", source_cluster="cluster01"}'
+        values: '1000+1000x780'
+      - series: 'pipelinerun_gap_between_taskruns_milliseconds_count{status="succeded",namespace="boo", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_sum{status="success",namespace="boo", source_cluster="cluster01"}'
+        values: '19+19x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_count{status="success",namespace="boo", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'pipelinerun_gap_between_taskruns_milliseconds_sum{status="succeded",namespace="far", source_cluster="cluster01"}'
+        values: '2000+2000x780'
+      - series: 'pipelinerun_gap_between_taskruns_milliseconds_count{status="succeded",namespace="far", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_sum{status="success",namespace="far", source_cluster="cluster01"}'
+        values: '38+38x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_count{status="success",namespace="far", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'pipelinerun_gap_between_taskruns_milliseconds_sum{status="failed",namespace="foo", source_cluster="cluster01"}'
+        values: '300+300x780'
+      - series: 'pipelinerun_gap_between_taskruns_milliseconds_count{status="failed",namespace="foo", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_sum{status="failed",namespace="foo", source_cluster="cluster01"}'
+        values: '10000+10000x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_count{status="failed",namespace="foo", source_cluster="cluster01"}'
+        values: '1+1x780'
+
+    alert_rule_test:
+      - eval_time: 13h
+        alertname: HighExecutionOverhead
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: true
+              source_cluster: cluster01
+            exp_annotations:
+              summary: >-
+                Tekton has a execution overhead vs. PipelineRun durations of >5%
+              description: >-
+                Tekton controller on cluster cluster01 the percentage of the time needed to create
+                underlying TaskRuns vs. overall PipelineRun execution time is at 5.263% instead of less than 5%.
+              runbook_url: TBD
+
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # Tekton is experiencing execution overhead less than 5%, should not alert
+      - series: 'pipelinerun_gap_between_taskruns_milliseconds_sum{status="succeded",namespace="foo", source_cluster="cluster01"}'
+        values: '300+300x780'
+      - series: 'pipelinerun_gap_between_taskruns_milliseconds_count{status="succeded",namespace="foo", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_sum{status="success",namespace="foo", source_cluster="cluster01"}'
+        values: '10000+10000x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_count{status="success",namespace="foo", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'pipelinerun_gap_between_taskruns_milliseconds_sum{status="succeded",namespace="bar", source_cluster="cluster01"}'
+        values: '300+300x780'
+      - series: 'pipelinerun_gap_between_taskruns_milliseconds_count{status="succeded",namespace="bar", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_sum{status="success",namespace="bar", source_cluster="cluster01"}'
+        values: '10000+10000x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_count{status="success",namespace="bar", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'pipelinerun_gap_between_taskruns_milliseconds_sum{status="failed",namespace="bar", source_cluster="cluster01"}'
+        values: '2000+2000x780'
+      - series: 'pipelinerun_gap_between_taskruns_milliseconds_count{status="failed",namespace="bar", source_cluster="cluster01"}'
+        values: '2+2x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_sum{status="failed",namespace="bar", source_cluster="cluster01"}'
+        values: '2+2x780'
+      - series: 'tekton_pipelines_controller_pipelinerun_duration_seconds_count{status="failed",namespace="bar", source_cluster="cluster01"}'
+        values: '2+2x780'
+
+    alert_rule_test:
+      - eval_time: 13h
+        alertname: HighExecutionOverhead
