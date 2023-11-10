@@ -4,6 +4,32 @@ rule_files:
   - prometheus.gitops_sync_alerts.yaml
 
 tests:
+  # One test for situation where no apps are Synced
+  - interval: 1m
+    input_series:
+
+      # All OutOfSync or Unknown apps. No alerts
+      - series: 'argocd_app_info{sync_status="Synced",name="gitopsdepl-001",namespace="gitops-service-argocd"}'
+        values: '_ _ _ _ _ _'
+      - series: 'argocd_app_info{sync_status="OutOfSync",name="gitopsdepl-002",namespace="gitops-service-argocd"}'
+        values: '1 1 1 1 1 1'
+      - series: 'argocd_app_info{sync_status="Unknown",name="gitopsdepl-003",namespace="gitops-service-argocd"}'
+        values: '1 1 1 1 1 1'
+
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: GitOpsApplicationNoSyncApps
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: true
+            exp_annotations:
+              summary: >-
+                There are no apps in Synced state but there are one or more apps in OutOfSync or Unknown states
+              description: >-
+                There are no apps in Synced state but there are one or more apps in OutOfSync or Unknown states
+              runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/deploy-from-git-to-k8s.md
+
   # All of the following tests are for testing the alert rule:
   # GitOps service is experiencing application sync success rate of less than 95%
   - interval: 1m
