@@ -4,16 +4,17 @@ rule_files:
   - prometheus.gitops_sync_alerts.yaml
 
 tests:
-  # Alerted cases:
+  # All of the following tests are for testing the alert rule:
+  # GitOps service is experiencing application sync success rate of less than 95%
   - interval: 1m
     input_series:
 
-      # GitOps service is experiencing application sync success rate of less than 95%, so alert
-      - series: 'argocd_app_info{sync_status="Synced",namespace="gitops-service-argocd"}'
+      # One synced app, but one of each of OutOfSync and Unknown. 33% sync rate, so alert
+      - series: 'argocd_app_info{sync_status="Synced",name="gitopsdepl-001",namespace="gitops-service-argocd"}'
         values: '1 1 1 1 1 1'
-      - series: 'argocd_app_info{sync_status="OutOfSync",namespace="gitops-service-argocd"}'
+      - series: 'argocd_app_info{sync_status="OutOfSync",name="gitopsdepl-002",namespace="gitops-service-argocd"}'
         values: '1 1 1 1 1 1'
-      - series: 'argocd_app_info{sync_status="Unknown",namespace="gitops-service-argocd"}'
+      - series: 'argocd_app_info{sync_status="Unknown",name="gitopsdepl-003",namespace="gitops-service-argocd"}'
         values: '1 1 1 1 1 1'
 
     alert_rule_test:
@@ -33,12 +34,12 @@ tests:
   - interval: 1m
     input_series:
 
-      # GitOps Service experienced less than 95% synced rate in applications, should alert
-      - series: 'argocd_app_info{sync_status="Synced",namespace="gitops-service-argocd"}'
+      # Less than 95% synced rate (at 50%), should alert
+      - series: 'argocd_app_info{sync_status="Synced",name="gitopsdepl-001",namespace="gitops-service-argocd"}'
         values: '1 1 1 1 1 1'
-      - series: 'argocd_app_info{sync_status="OutOfSync",namespace="gitops-service-argocd"}'
+      - series: 'argocd_app_info{sync_status="OutOfSync",name="gitopsdepl-002",namespace="gitops-service-argocd"}'
         values: '1 1 1 1 1 1'
-      - series: 'argocd_app_info{sync_status="Unknown",namespace="gitops-service-argocd"}'
+      - series: 'argocd_app_info{sync_status="Unknown",name="gitopsdepl-003",namespace="gitops-service-argocd"}'
         values: '_ _ _ _ _ _'
 
     alert_rule_test:
@@ -58,12 +59,12 @@ tests:
   - interval: 1m
     input_series:
 
-      # GitOps Service experienced greater than 95% synced rate for applications, should not alert
-      - series: 'argocd_app_info{sync_status="Synced",namespace="gitops-service-argocd"}'
+      # One synced app for entire window perios. Basic scenario. Should not alert
+      - series: 'argocd_app_info{sync_status="Synced",name="gitopsdepl-001",namespace="gitops-service-argocd"}'
         values: '1 1 1 1 1 1'
-      - series: 'argocd_app_info{sync_status="OutOfSync",namespace="gitops-service-argocd"}'
+      - series: 'argocd_app_info{sync_status="OutOfSync",name="gitopsdepl-002",namespace="gitops-service-argocd"}'
         values: '_ _ _ _ _ _'
-      - series: 'argocd_app_info{sync_status="Unknown",namespace="gitops-service-argocd"}'
+      - series: 'argocd_app_info{sync_status="Unknown",name="gitopsdepl-003",namespace="gitops-service-argocd"}'
         values: '_ _ _ _ _ _'
 
     alert_rule_test:
@@ -73,13 +74,13 @@ tests:
   - interval: 1m
     input_series:
 
-      # GitOps Service experienced greater than 95% synced rate for applications, should not alert
-      - series: 'argocd_app_info{sync_status="Synced",namespace="gitops-service-argocd"}'
-        values: '1 1 1 1 1 1'
-      - series: 'argocd_app_info{sync_status="OutOfSync",namespace="gitops-service-argocd"}'
-        values: '_ _ 1 _ 1 _'
-      - series: 'argocd_app_info{sync_status="Unknown",namespace="gitops-service-argocd"}'
-        values: '_ _ _ 1 _ 1'
+      # No apps. No alerts
+      - series: 'argocd_app_info{sync_status="Synced",name="gitopsdepl-001",namespace="gitops-service-argocd"}'
+        values: '_ _ _ _ _ _'
+      - series: 'argocd_app_info{sync_status="OutOfSync",name="gitopsdepl-002",namespace="gitops-service-argocd"}'
+        values: '_ _ _ _ _ _'
+      - series: 'argocd_app_info{sync_status="Unknown",name="gitopsdepl-003",namespace="gitops-service-argocd"}'
+        values: '_ _ _ _ _ _'
 
     alert_rule_test:
       - eval_time: 6m
@@ -88,14 +89,135 @@ tests:
   - interval: 1m
     input_series:
 
-      # GitOps Service experienced greater than 95% synced rate for applications, should not alert
-      - series: 'argocd_app_info{sync_status="Synced",namespace="gitops-service-argocd"}'
-        values: '_ _ _ _ _ 1'
-      - series: 'argocd_app_info{sync_status="OutOfSync",namespace="gitops-service-argocd"}'
-        values: '_ _ _ _ _ _'
-      - series: 'argocd_app_info{sync_status="Unknown",namespace="gitops-service-argocd"}'
-        values: '_ _ _ _ _ _'
+      # Two apps in sync, no OutOfSync or Unknown apps. So, no alert
+      - series: 'argocd_app_info{sync_status="Synced",name="gitopsdepl-001",namespace="gitops-service-argocd"}'
+        values: '_ _ _ _ _ 1 1 1 1 1'
+      - series: 'argocd_app_info{sync_status="Synced",name="gitopsdepl-002",namespace="gitops-service-argocd"}'
+        values: '_ _ _ _ _ 1 1 1 1 1'
+      - series: 'argocd_app_info{sync_status="OutOfSync",name="gitopsdepl-003",namespace="gitops-service-argocd"}'
+        values: '_ _ _ _ _ _ _ _ _ _'
+      - series: 'argocd_app_info{sync_status="Unknown",name="gitopsdepl-004",namespace="gitops-service-argocd"}'
+        values: '_ _ _ _ _ _ _ _ _ _'
 
     alert_rule_test:
-      - eval_time: 6m
+      - eval_time: 10m
         alertname: GitOpsApplicationSyncErrors
+
+  - interval: 1m
+    input_series:
+
+      # One synced app. Two apps periodically go from OutOfSync or Unknown to no state. However
+      # even though the percentage synced is below the threshhold, there is no alert because it falls
+      # outside the alert/evaluation window. Compare this to the next test below.
+      - series: 'argocd_app_info{sync_status="Synced",name="gitopsdepl-001",namespace="gitops-service-argocd"}'
+        values: '1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'
+      - series: 'argocd_app_info{sync_status="OutOfSync",name="gitopsdepl-002",namespace="gitops-service-argocd"}'
+        values: '_ _ 1 _ 1 _ _ _ _ _ _ _ _ _ 1 _ 1 _ _ _ _ _ _'
+      - series: 'argocd_app_info{sync_status="Unknown",name="gitopsdepl-003",namespace="gitops-service-argocd"}'
+        values: '_ _ _ 1 _ 1 _ _ _ _ _ _ _ _ _ 1 _ 1 _ _ _ _ _'
+
+    alert_rule_test:
+      - eval_time: 23m
+        alertname: GitOpsApplicationSyncErrors
+
+  - interval: 1m
+    input_series:
+
+      # One synced app. Two apps periodically go from OutOfSync or Unknown to no state. The
+      # percentage synced is below the threshhold at the point of the active alert/evaluation.
+      # Compare this to the previous test above.
+      - series: 'argocd_app_info{sync_status="Synced",name="gitopsdepl-001",namespace="gitops-service-argocd"}'
+        values: '1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'
+      - series: 'argocd_app_info{sync_status="OutOfSync",name="gitopsdepl-002",namespace="gitops-service-argocd"}'
+        values: '_ _ 1 _ 1 _ _ _ _ _ _ _ _ _ 1 _ 1 _ 1 _ _ _ _'
+      - series: 'argocd_app_info{sync_status="Unknown",name="gitopsdepl-003",namespace="gitops-service-argocd"}'
+        values: '_ _ _ 1 _ 1 _ _ _ _ _ _ _ _ _ 1 _ 1 _ _ _ _ _'
+
+    alert_rule_test:
+      - eval_time: 23m
+        alertname: GitOpsApplicationSyncErrors
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: true
+            exp_annotations:
+              summary: >-
+                Less than 95% of GitOps applications are in synced state
+              description: >-
+                The percentage total of all Argo CD applications that are in Synced state is less than 95%.
+              runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/deploy-from-git-to-k8s.md
+
+  - interval: 1m
+    input_series:
+
+      # Two apps in sync, one app OutOfSync at the eval time 14 minutes into the series. 66% synced, so alert.
+      # Compare this with the test below.
+      - series: 'argocd_app_info{sync_status="Synced",name="gitopsdepl-001",namespace="gitops-service-argocd"}'
+        values: '_ 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'
+      - series: 'argocd_app_info{sync_status="Synced",name="gitopsdepl-002",namespace="gitops-service-argocd"}'
+        values: '_ _ _ _ 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'
+      - series: 'argocd_app_info{sync_status="OutOfSync",name="gitopsdepl-003",namespace="gitops-service-argocd"}'
+        values: '_ _ _ _ _ _ _ _ _ 1 1 1 1 1 _ _ _ _ _ _'
+      - series: 'argocd_app_info{sync_status="Unknown",name="gitopsdepl-004",namespace="gitops-service-argocd"}'
+        values: '_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _'
+
+    alert_rule_test:
+      - eval_time: 14m
+        alertname: GitOpsApplicationSyncErrors
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: true
+            exp_annotations:
+              summary: >-
+                Less than 95% of GitOps applications are in synced state
+              description: >-
+                The percentage total of all Argo CD applications that are in Synced state is less than 95%.
+              runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/deploy-from-git-to-k8s.md
+
+  - interval: 1m
+    input_series:
+
+      # Two apps in sync, one app OutOfSync. At the eval time of 20m, the alert should not be firing.
+      # Compare with the above test. Also compare with the next test.
+      - series: 'argocd_app_info{sync_status="Synced",name="gitopsdepl-001",namespace="gitops-service-argocd"}'
+        values: '_ 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'
+      - series: 'argocd_app_info{sync_status="Synced",name="gitopsdepl-002",namespace="gitops-service-argocd"}'
+        values: '_ _ _ _ 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'
+      - series: 'argocd_app_info{sync_status="OutOfSync",name="gitopsdepl-003",namespace="gitops-service-argocd"}'
+        values: '_ _ _ _ _ _ _ _ _ 1 1 1 1 1 _ _ _ _ _ _'
+      - series: 'argocd_app_info{sync_status="Unknown",name="gitopsdepl-004",namespace="gitops-service-argocd"}'
+        values: '_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _'
+
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: GitOpsApplicationSyncErrors
+
+  - interval: 1m
+    input_series:
+
+      # Two apps in sync, one app OutOfSync. At the eval time of 20m, the alert should be firing.
+      # Compare with the previous two tests where the one OutOfSync is still OutOfSync at the eval time
+      # and is within the 5m that Prometheus finds that the alert should be active.
+      - series: 'argocd_app_info{sync_status="Synced",name="gitopsdepl-001",namespace="gitops-service-argocd"}'
+        values: '_ 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'
+      - series: 'argocd_app_info{sync_status="Synced",name="gitopsdepl-002",namespace="gitops-service-argocd"}'
+        values: '_ _ _ _ 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'
+      - series: 'argocd_app_info{sync_status="OutOfSync",name="gitopsdepl-003",namespace="gitops-service-argocd"}'
+        values: '_ _ _ _ _ _ _ _ _ 1 1 1 1 1 _ _ _ _ _ 1'
+      - series: 'argocd_app_info{sync_status="Unknown",name="gitopsdepl-004",namespace="gitops-service-argocd"}'
+        values: '_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _'
+
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: GitOpsApplicationSyncErrors
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: true
+            exp_annotations:
+              summary: >-
+                Less than 95% of GitOps applications are in synced state
+              description: >-
+                The percentage total of all Argo CD applications that are in Synced state is less than 95%.
+              runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/deploy-from-git-to-k8s.md
