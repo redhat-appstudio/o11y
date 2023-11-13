@@ -14,6 +14,7 @@ This section describes the main steps required before you can add your code and 
 * Linux machine with x86-64 architecture with bash installed.
 * Basic tools: `curl`, `tar`, `make``.
 * Some container engine: either `docker` or `podman`.
+* go: v1.20
 
 ### Running the Automated Tests
 1. Clone your fork of the project.
@@ -46,6 +47,20 @@ rule_files:
   - some-rules.yaml
   - more-rules.yaml
 ```
+
+This repository contains Go unit tests. Test files are located in the `o11y/exporters`
+directory with `_test.go` file names.
+
+To run all the Go unit tests in the repository, execute the following command from
+the project's root directory `go test ./...` a similar output is expected:
+
+`ok      github.com/redhat-appstudio/o11y.git/exporters/dummy_service_exporter   0.002s`
+
+In order to run tests in a specific directory/path, you need to specify the package path,
+as shown below:
+
+`go test ./<directory/path>`
+
 
 ## Pull Requests
 This section covers a few aspects to have in mind while working on or reviewing Pull
