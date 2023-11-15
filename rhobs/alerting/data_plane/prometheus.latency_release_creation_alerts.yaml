@@ -1,0 +1,33 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-latency-release-creation-alerting-rules
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: latency-release-creation
+    interval: 1m
+    rules:
+    - alert: LatencyReleaseCreation
+      expr: |
+        (
+          (
+            increase(integration_svc_release_latency_seconds_bucket{le="+Inf"}[5m])
+            - ignoring(le)
+            increase(integration_svc_release_latency_seconds_bucket{le="10"}[5m])
+          ) / ignoring(le)
+          increase(integration_svc_release_latency_seconds_bucket{le="+Inf"}[5m])
+        ) > 0.10
+      for: 1m
+      labels:
+        severity: warning
+        slo: true
+      annotations:
+        summary: >-
+          Latency of release creation time exceeded
+        description: >
+          Time from Snapshot marked as passed to release created has been over
+          10s for more than 10% of requests during the last 5 minutes on cluster
+          {{ $labels.source_cluster }}
+        runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/integration-service/latency_release_creation.md
