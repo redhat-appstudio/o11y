@@ -1,0 +1,94 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.serviceprovider_alerts.yaml
+
+tests:
+  - interval: 1m
+    input_series:
+
+      # GitHub is experiencing 5xx errors rate of ~50% (we're counting relation of 500's to all), so it will be alerted
+      - series: 'redhat_appstudio_spi_service_provider_response_time_seconds_count{source_cluster="cluster01", namespace="spi-system", pod="spi-controller-manager", container="manager", sp="GitHub", status="500"}'
+        values: '1+1x64'   # last reported value for 500's responses count is a 65
+      - series: 'redhat_appstudio_spi_service_provider_response_time_seconds_count{source_cluster="cluster01", namespace="spi-system", pod="spi-controller-manager", container="manager", sp="GitHub", status="200"}'
+        values: '1+1x64'   # last reported value for 200's responses count is a 65
+
+    alert_rule_test:
+      - eval_time: 65m
+        alertname: ServiceProvider5xxErrorsRate
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: true
+              namespace: spi-system
+              pod: spi-controller-manager
+              container: manager
+              sp: GitHub
+              source_cluster: cluster01
+            exp_annotations:
+              summary: >-
+                SPI is experiencing 5xx errors from service provider GitHub of >10%
+              description: >-
+                Application controller in Pod spi-controller-manager for namespace
+                spi-system on instance cluster01 having a 50% of 5xx errors
+                from service provider GitHub for latest 60 minutes
+              runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/spi/alert-rule-serviceprovider5xxErrorsRate.md
+
+  - interval: 1m
+    input_series:
+
+      # GitHub is experiencing sum of 500 and 502 errors at rate of ~35%, must be alerted
+      - series: 'redhat_appstudio_spi_service_provider_response_time_seconds_count{source_cluster="cluster01", namespace="spi-system", pod="spi-controller-manager", container="manager", sp="GitHub", status="500"}'
+        values: '1+1x64'   # last reported value for 500 responses count is a 65
+      - series: 'redhat_appstudio_spi_service_provider_response_time_seconds_count{source_cluster="cluster01", namespace="spi-system", pod="spi-controller-manager", container="manager", sp="GitHub", status="502"}'
+        values: '1+1x64'  # last reported value for 502 responses count is a 65
+      - series: 'redhat_appstudio_spi_service_provider_response_time_seconds_count{source_cluster="cluster01", namespace="spi-system", pod="spi-controller-manager", container="manager", sp="GitHub", status="200"}'
+        values: '4+4x64'   # last reported value for 200's responses count is a 260
+
+    alert_rule_test:
+      - eval_time: 65m
+        alertname: ServiceProvider5xxErrorsRate
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: true
+              namespace: spi-system
+              pod: spi-controller-manager
+              container: manager
+              sp: GitHub
+              source_cluster: cluster01
+            exp_annotations:
+              summary: >-
+                SPI is experiencing 5xx errors from service provider GitHub of >10%
+              description: >-
+                Application controller in Pod spi-controller-manager for namespace
+                spi-system on instance cluster01 having a 33.33% of 5xx errors
+                from service provider GitHub for latest 60 minutes
+              runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/spi/alert-rule-serviceprovider5xxErrorsRate.md
+
+
+  - interval: 1m
+    input_series:
+
+      # SPI 5xx errors rate about of ~5% failure rate, should not alert
+      - series: 'redhat_appstudio_spi_service_provider_response_time_seconds_count{source_cluster="cluster02", namespace="spi-system", pod="spi-controller-manager", container="manager", sp="GitLab", status="500"}'
+        values: '1+1x64'   # last reported value for 500's responses count is a 65
+      - series: 'redhat_appstudio_spi_service_provider_response_time_seconds_count{source_cluster="cluster02", namespace="spi-system", pod="spi-controller-manager", container="manager", sp="GitLab", status="200"}'
+        values: '2+20x64'  # last reported value for 200's responses count is a 1282
+
+    alert_rule_test:
+      - eval_time: 65m
+        alertname: ServiceProvider5xxErrorsRate
+        exp_alerts: []
+
+  - interval: 1m
+    input_series:
+
+      # No 5xx errors reported, testing the RHS of the OR clause, should not alert
+      - series: 'redhat_appstudio_spi_service_provider_response_time_seconds_count{source_cluster="cluster02", namespace="spi-system", pod="spi-controller-manager", container="manager", sp="GitLab", status="200"}'
+        values: '10+10x64'
+
+    alert_rule_test:
+      - eval_time: 65m
+        alertname: ServiceProvider5xxErrorsRate
+        exp_alerts: []
