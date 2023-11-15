@@ -1,0 +1,28 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-component-alerting
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: component_alerts
+    interval: 1m
+    rules:
+    - alert: ComponentDeletionErrors
+      expr: |
+        (increase(has_component_failed_deletion_total[1h]))
+        /
+        (increase(has_component_deletion_total[1h]))  > 0.05
+      for: 5m
+      labels:
+        severity: warning
+        slo: true
+      annotations:
+        summary: >-
+          HAS is experiencing component deletion failures of {{ $value | humanizePercentage }}
+        description: >-
+          Component controller in Pod {{ $labels.pod }} for namespace
+          {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} is failing to
+          successfully delete at least 95% of components over the past hour
+        runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/has/component-create-failed.md
