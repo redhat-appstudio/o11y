@@ -1530,7 +1530,7 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "(sum(sum_over_time(pipelinerun_duration_scheduled_seconds_sum{status='succeded'}[$__range]))\n/ \nsum(sum_over_time(pipelinerun_duration_scheduled_seconds_count{status='succeded'}[$__range]))) \n/ \n(sum(sum_over_time(tekton_pipelines_controller_pipelinerun_duration_seconds_sum{status='success'}[$__range])) \n/ \nsum(sum_over_time(tekton_pipelines_controller_pipelinerun_duration_seconds_count{status='success'}[$__range])))",
+              "expr": "(sum(increase(pipelinerun_duration_scheduled_seconds_sum{status='succeded'}[$__range]))\n/ \nsum(increase(pipelinerun_duration_scheduled_seconds_count{status='succeded'}[$__range]))) \n/ \n(sum(increase(tekton_pipelines_controller_pipelinerun_duration_seconds_sum{status='success'}[$__range])) \n/ \nsum(increase(tekton_pipelines_controller_pipelinerun_duration_seconds_count{status='success'}[$__range])))",
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
@@ -1644,7 +1644,7 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "(sum(sum_over_time(pipelinerun_gap_between_taskruns_milliseconds_sum{status='succeded'}[$__range])/1000) \n/ \nsum(sum_over_time(pipelinerun_gap_between_taskruns_milliseconds_count{status='succeded'}[$__range]))) \n/ \n(sum(sum_over_time(tekton_pipelines_controller_pipelinerun_duration_seconds_sum{status='success'}[$__range])) \n/ \nsum(sum_over_time(tekton_pipelines_controller_pipelinerun_duration_seconds_count{status='success'}[$__range])))",
+              "expr": "(sum(increase(pipelinerun_gap_between_taskruns_milliseconds_sum{status='succeded'}[$__range])/1000) \n/ \nsum(increase(pipelinerun_gap_between_taskruns_milliseconds_count{status='succeded'}[$__range]))) \n/ \n(sum(increase(tekton_pipelines_controller_pipelinerun_duration_seconds_sum{status='success'}[$__range])) \n/ \nsum(increase(tekton_pipelines_controller_pipelinerun_duration_seconds_count{status='success'}[$__range])))",
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
