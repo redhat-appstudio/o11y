@@ -19,8 +19,6 @@ spec:
         /
         (
           sum(avg_over_time(argocd_app_info{namespace="gitops-service-argocd"}[5m]))
-          or
-          sum(argocd_app_info{namespace="gitops-service-argocd"}) * 0
         ) < 0.95
       for: 5m
       labels:
@@ -28,25 +26,7 @@ spec:
         slo: true
       annotations:
         summary: >-
-          Less than 95% of GitOps applications are in synced state: {{ $value }}
+          Less than 95% of GitOps applications are in synced state: {{ $value | humanizePercentage }}
         description: >-
           The percentage total of all Argo CD applications that are in Synced state is less than 95%.
-        runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/deploy-from-git-to-k8s.md
-    - alert: GitOpsApplicationNoSyncApps
-      expr: |
-        (
-          sum(argocd_app_info{sync_status="OutOfSync", namespace="gitops-service-argocd"}) +
-          sum(argocd_app_info{sync_status="Unknown", namespace="gitops-service-argocd"})
-        )
-        /
-        sum(argocd_app_info{namespace="gitops-service-argocd"}) >= 1
-      for: 5m
-      labels:
-        severity: warning
-        slo: true
-      annotations:
-        summary: >-
-          There are no apps in Synced state but there are one or more apps in OutOfSync or Unknown states
-        description: >-
-          There are no apps in Synced state but there are one or more apps in OutOfSync or Unknown states
         runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/deploy-from-git-to-k8s.md
