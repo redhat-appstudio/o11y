@@ -4,45 +4,9 @@ rule_files:
   - prometheus.gitops_sync_alerts.yaml
 
 tests:
-  # One test for situation where no apps are Synced
-  - interval: 1m
-    input_series:
-
-      # All OutOfSync or Unknown apps. No alerts
-      - series: 'argocd_app_info{sync_status="Synced",name="gitopsdepl-001",namespace="gitops-service-argocd"}'
-        values: '_ _ _ _ _ _'
-      - series: 'argocd_app_info{sync_status="OutOfSync",name="gitopsdepl-002",namespace="gitops-service-argocd"}'
-        values: '1 1 1 1 1 1'
-      - series: 'argocd_app_info{sync_status="Unknown",name="gitopsdepl-003",namespace="gitops-service-argocd"}'
-        values: '1 1 1 1 1 1'
-
-    alert_rule_test:
-      - eval_time: 6m
-        alertname: GitOpsApplicationNoSyncApps
-        exp_alerts:
-          - exp_labels:
-              severity: warning
-              slo: true
-            exp_annotations:
-              summary: >-
-                There are no apps in Synced state but there are one or more apps in OutOfSync or Unknown states
-              description: >-
-                There are no apps in Synced state but there are one or more apps in OutOfSync or Unknown states
-              runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/deploy-from-git-to-k8s.md
-
-  - interval: 1m
-    input_series:
-
-      # We don't want to be alerted in this situation (don't care situation)
-      - series: 'argocd_app_info{sync_status="Synced",name="gitopsdepl-001",namespace="gitops-service-argocd"}'
-        values: '_ _ _ _ _ _'
-      - series: 'argocd_app_info{sync_status="OutOfSync",name="gitopsdepl-002",namespace="gitops-service-argocd"}'
-        values: '_ _ _ _ _ _'
-
-    alert_rule_test:
-      - eval_time: 6m
-        alertname: GitOpsApplicationNoSyncApps
-
+  # -----------------------------------------------------------------------------------
+  # The following section describes tests for the situation where no apps are Synced
+  # -----------------------------------------------------------------------------------
   - interval: 1m
     input_series:
 
@@ -63,7 +27,7 @@ tests:
               slo: true
             exp_annotations:
               summary: >-
-                Less than 95% of GitOps applications are in synced state: 0
+                Less than 95% of GitOps applications are in synced state: 0%
               description: >-
                 The percentage total of all Argo CD applications that are in Synced state is less than 95%.
               runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/deploy-from-git-to-k8s.md
@@ -81,10 +45,14 @@ tests:
       - eval_time: 6m
         alertname: GitOpsApplicationSyncErrors
 
-  ############################################################################################################
+  # -----------------------------------------------------------------------------------
+  # End of section
+  # -----------------------------------------------------------------------------------
 
-  # All of the following tests are for testing the alert rule:
-  # GitOps service is experiencing application sync success rate of less than 95%
+  # -----------------------------------------------------------------------------------
+  # The following tests are for testing the rule, expecting both alerts firing, and not
+  # firing
+  # -----------------------------------------------------------------------------------
   - interval: 1m
     input_series:
 
@@ -105,7 +73,7 @@ tests:
               slo: true
             exp_annotations:
               summary: >-
-                Less than 95% of GitOps applications are in synced state: 0.3333333333333333
+                Less than 95% of GitOps applications are in synced state: 33.33%
               description: >-
                 The percentage total of all Argo CD applications that are in Synced state is less than 95%.
               runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/deploy-from-git-to-k8s.md
@@ -130,7 +98,7 @@ tests:
               slo: true
             exp_annotations:
               summary: >-
-                Less than 95% of GitOps applications are in synced state: 0.5
+                Less than 95% of GitOps applications are in synced state: 50%
               description: >-
                 The percentage total of all Argo CD applications that are in Synced state is less than 95%.
               runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/deploy-from-git-to-k8s.md
@@ -221,7 +189,7 @@ tests:
               slo: true
             exp_annotations:
               summary: >-
-                Less than 95% of GitOps applications are in synced state: 0.3333333333333333
+                Less than 95% of GitOps applications are in synced state: 33.33%
               description: >-
                 The percentage total of all Argo CD applications that are in Synced state is less than 95%.
               runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/deploy-from-git-to-k8s.md
@@ -249,7 +217,7 @@ tests:
               slo: true
             exp_annotations:
               summary: >-
-                Less than 95% of GitOps applications are in synced state: 0.6666666666666666
+                Less than 95% of GitOps applications are in synced state: 66.67%
               description: >-
                 The percentage total of all Argo CD applications that are in Synced state is less than 95%.
               runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/deploy-from-git-to-k8s.md
@@ -320,7 +288,7 @@ tests:
               slo: true
             exp_annotations:
               summary: >-
-                Less than 95% of GitOps applications are in synced state: 0.6666666666666666
+                Less than 95% of GitOps applications are in synced state: 66.67%
               description: >-
                 The percentage total of all Argo CD applications that are in Synced state is less than 95%.
               runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/deploy-from-git-to-k8s.md
@@ -360,7 +328,7 @@ tests:
               slo: true
             exp_annotations:
               summary: >-
-                Less than 95% of GitOps applications are in synced state: 0.9
+                Less than 95% of GitOps applications are in synced state: 90%
               description: >-
                 The percentage total of all Argo CD applications that are in Synced state is less than 95%.
               runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/deploy-from-git-to-k8s.md
@@ -437,7 +405,7 @@ tests:
               slo: true
             exp_annotations:
               summary: >-
-                Less than 95% of GitOps applications are in synced state: 0.5
+                Less than 95% of GitOps applications are in synced state: 50%
               description: >-
                 The percentage total of all Argo CD applications that are in Synced state is less than 95%.
               runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/deploy-from-git-to-k8s.md
@@ -475,7 +443,7 @@ tests:
               slo: true
             exp_annotations:
               summary: >-
-                Less than 95% of GitOps applications are in synced state: 0.5
+                Less than 95% of GitOps applications are in synced state: 50%
               description: >-
                 The percentage total of all Argo CD applications that are in Synced state is less than 95%.
               runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/deploy-from-git-to-k8s.md
@@ -498,7 +466,7 @@ tests:
               slo: true
             exp_annotations:
               summary: >-
-                Less than 95% of GitOps applications are in synced state: 0.5
+                Less than 95% of GitOps applications are in synced state: 50%
               description: >-
                 The percentage total of all Argo CD applications that are in Synced state is less than 95%.
               runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/deploy-from-git-to-k8s.md
@@ -521,7 +489,7 @@ tests:
             slo: true
           exp_annotations:
             summary: >-
-              Less than 95% of GitOps applications are in synced state: 0.5
+              Less than 95% of GitOps applications are in synced state: 50%
             description: >-
               The percentage total of all Argo CD applications that are in Synced state is less than 95%.
             runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/deploy-from-git-to-k8s.md
@@ -544,7 +512,7 @@ tests:
               slo: true
             exp_annotations:
               summary: >-
-                Less than 95% of GitOps applications are in synced state: 0
+                Less than 95% of GitOps applications are in synced state: 0%
               description: >-
                 The percentage total of all Argo CD applications that are in Synced state is less than 95%.
               runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/deploy-from-git-to-k8s.md
@@ -567,7 +535,7 @@ tests:
               slo: true
             exp_annotations:
               summary: >-
-                Less than 95% of GitOps applications are in synced state: 0.5
+                Less than 95% of GitOps applications are in synced state: 50%
               description: >-
                 The percentage total of all Argo CD applications that are in Synced state is less than 95%.
               runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/deploy-from-git-to-k8s.md
@@ -590,7 +558,7 @@ tests:
               slo: true
             exp_annotations:
               summary: >-
-                Less than 95% of GitOps applications are in synced state: 0.5
+                Less than 95% of GitOps applications are in synced state: 50%
               description: >-
                 The percentage total of all Argo CD applications that are in Synced state is less than 95%.
               runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/deploy-from-git-to-k8s.md
@@ -639,7 +607,7 @@ tests:
               slo: true
             exp_annotations:
               summary: >-
-                Less than 95% of GitOps applications are in synced state: 0
+                Less than 95% of GitOps applications are in synced state: 0%
               description: >-
                 The percentage total of all Argo CD applications that are in Synced state is less than 95%.
               runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/deploy-from-git-to-k8s.md
@@ -688,7 +656,7 @@ tests:
               slo: true
             exp_annotations:
               summary: >-
-                Less than 95% of GitOps applications are in synced state: 0.5
+                Less than 95% of GitOps applications are in synced state: 50%
               description: >-
                 The percentage total of all Argo CD applications that are in Synced state is less than 95%.
               runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/deploy-from-git-to-k8s.md
