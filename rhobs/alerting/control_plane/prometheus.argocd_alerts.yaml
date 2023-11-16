@@ -10,7 +10,10 @@ spec:
     interval: 1m
     rules:
     - alert: DegradedArgocdApp
-      expr: last_over_time(argocd_app_info{health_status="Degraded"}[2m]) == 1
+      expr: |
+        last_over_time(
+          argocd_app_info{health_status="Degraded", namespace=~"argocd-staging|argocd"}[2m]
+        ) == 1
       for: 5m
       labels:
         severity: warning
@@ -24,9 +27,13 @@ spec:
         runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-degradedArgocdApp.md
     - alert: ProgressingArgocdApp
       expr: |
-        max_over_time(argocd_app_info{health_status="Progressing", dest_namespace!~".+-tenant"}[19m]) == 1
+        max_over_time(
+          argocd_app_info{health_status="Progressing", namespace=~"argocd-staging|argocd"}[19m]
+        ) == 1
         unless ignoring (health_status)
-        max_over_time(argocd_app_info{health_status!="Progressing", dest_namespace!~".+-tenant"}[19m]) == 1
+        max_over_time(
+          argocd_app_info{health_status!="Progressing", namespace=~"argocd-staging|argocd"}[19m]
+        ) == 1
       for: 1m
       labels:
         severity: warning
