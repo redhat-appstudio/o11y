@@ -1,0 +1,59 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-pipeline-alerting
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: pipeline_alerts
+      interval: 1m
+      rules:
+        - alert: HighSchedulingOverhead
+          expr: |
+            (
+                sum by (source_cluster) (increase(pipelinerun_duration_scheduled_seconds_sum{status='succeded'}[30m]))
+                /
+                sum by (source_cluster) (increase(pipelinerun_duration_scheduled_seconds_count{status='succeded'}[30m]))
+            )
+            /
+            (
+                sum by (source_cluster) (increase(tekton_pipelines_controller_pipelinerun_duration_seconds_sum{status='success'}[30m]))
+                /
+                sum by (source_cluster) (increase(tekton_pipelines_controller_pipelinerun_duration_seconds_count{status='success'}[30m]))
+            )  > 0.05
+          for: 12h
+          labels:
+            severity: warning
+            slo: true
+          annotations:
+            summary: >-
+              Tekton has a scheduling overhead vs. PipelineRun durations of >5%
+            description: >-
+              Tekton controller on cluster {{ $labels.source_cluster }} the percentage of time needed to receive PipelineRun creation
+              events vs. overall PipelineRun execution time is at {{ $value | humanizePercentage }} instead of less than 5%.
+            runbook_url: TBD
+        - alert: HighExecutionOverhead
+          expr: |
+            (
+                sum by (source_cluster) (increase(pipelinerun_gap_between_taskruns_milliseconds_sum{status='succeded'}[30m])/1000)
+                /
+                sum by (source_cluster) (increase(pipelinerun_gap_between_taskruns_milliseconds_count{status='succeded'}[30m]))
+            )
+            /
+            (
+                sum by (source_cluster) (increase(tekton_pipelines_controller_pipelinerun_duration_seconds_sum{status='success'}[30m]))
+                /
+                sum by (source_cluster) (increase(tekton_pipelines_controller_pipelinerun_duration_seconds_count{status='success'}[30m]))
+            )  > 0.05
+          for: 12h
+          labels:
+            severity: warning
+            slo: true
+          annotations:
+            summary: >-
+              Tekton has a execution overhead vs. PipelineRun durations of >5%
+            description: >-
+              Tekton controller on cluster {{ $labels.source_cluster }} the percentage of the time needed to create
+              underlying TaskRuns vs. overall PipelineRun execution time is at {{ $value | humanizePercentage }} instead of less than 5%.
+            runbook_url: TBD
