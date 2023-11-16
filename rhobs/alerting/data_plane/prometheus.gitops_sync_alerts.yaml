@@ -11,16 +11,24 @@ spec:
     rules:
     - alert: GitOpsApplicationSyncErrors
       expr: |
-        sum(argocd_app_info{sync_status="Synced", namespace="gitops-service-argocd"})
+        (
+          sum(avg_over_time(argocd_app_info{sync_status="Synced", namespace="gitops-service-argocd"}[5m]))
+          or
+          sum(argocd_app_info{namespace="gitops-service-argocd"}) * 0
+        )
         /
-        sum(argocd_app_info{namespace="gitops-service-argocd"}) < 0.95
+        (
+          sum(avg_over_time(argocd_app_info{namespace="gitops-service-argocd"}[5m]))
+          or
+          sum(argocd_app_info{namespace="gitops-service-argocd"}) * 0
+        ) < 0.95
       for: 5m
       labels:
         severity: warning
         slo: true
       annotations:
         summary: >-
-          Less than 95% of GitOps applications are in synced state
+          Less than 95% of GitOps applications are in synced state: {{ $value }}
         description: >-
           The percentage total of all Argo CD applications that are in Synced state is less than 95%.
         runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/deploy-from-git-to-k8s.md
