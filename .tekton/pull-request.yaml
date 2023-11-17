@@ -55,6 +55,20 @@ spec:
               script: |
                 yum install -y make && \
                 CMD=obsctl-reloader-rules-checker make check-and-test
+      - name: yaml-lint
+        workspaces:
+          - name: workspace
+            workspace: workspace
+        runAfter:
+          - clone-repository
+        taskSpec:
+          workspaces:
+            - name: workspace
+          steps:
+            - name: yaml-lint
+              image: registry.access.redhat.com/ubi9/python-39:latest
+              workingDir: $(workspaces.workspace.path)
+              script: make install_pipenv sync_pipenv lint_yamls
       - name: run-gitlint
         params:
           - name: target-branch

@@ -13,7 +13,7 @@ CMD := ${BASE_CMD}
 endif
 
 .PHONY: all
-all: check-and-test kustomize-build
+all: check-and-test sync_pipenv lint_yamls kustomize-build
 
 kustomize:
 	curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash
@@ -22,6 +22,18 @@ kustomize:
 check-and-test:
 	$(CMD) -t rhtap -d rhobs/alerting/data_plane -y -p --tests-dir test/promql/tests/data_plane
 	$(CMD) -t rhtap -d rhobs/alerting/control_plane -y -p --tests-dir test/promql/tests/control_plane
+
+.PHONY: install_pipenv
+install_pipenv:
+	python3 -m pip install pipenv
+
+.PHONY: sync_pipenv
+sync_pipenv:
+	python3 -m pipenv sync --dev
+
+.PHONY: lint_yamls
+lint_yamls:
+	python3 -m pipenv run yamllint . && echo "lint_yamls: SUCCESS"
 
 .PHONY: kustomize-build
 kustomize-build: kustomize

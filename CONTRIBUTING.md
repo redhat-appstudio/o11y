@@ -15,6 +15,7 @@ This section describes the main steps required before you can add your code and 
 * Basic tools: `curl`, `tar`, `make``.
 * Some container engine: either `docker` or `podman`.
 * go: v1.20
+* Python 3.9 and pipenv.
 
 ### Running the Automated Tests
 1. Clone your fork of the project.
