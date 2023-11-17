@@ -1,0 +1,57 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.gitops_cluster_agent_op_alerts.yaml
+
+tests:
+  # ----- Cluster-Agent operations in non-complete state -----
+  - interval: 1m
+    input_series:
+      # More than 10 cluster-agent operations are in non-complete state, should alert
+      - series: 'operationDB_rows_in_non_complete_state'
+        values: '1x11'   # 11 cluster-agent operations are in non-complete state
+
+    alert_rule_test:
+      - eval_time: 11m
+        alertname: GitOpsClusterAgentOperationErrors
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: true
+            exp_annotations:
+              summary: >-
+                Cluster-Agent Operations in non-complete state are too high
+              description: >-
+                The sum of cluster-agent operations in non-complete state is greater than 10
+              runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/cluster-agent-operations.md
+
+  - interval: 1m
+    input_series:
+      # 10 cluster-agent operations are in non-complete state, should alert
+      - series: 'operationDB_rows_in_non_complete_state'
+        values: '1x10'   # 10 cluster-agent operations are in non-complete state
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: GitOpsClusterAgentOperationErrors
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: true
+            exp_annotations:
+              summary: >-
+                Cluster-Agent Operations in non-complete state are too high
+              description: >-
+                The sum of cluster-agent operations in non-complete state is greater than 10
+              runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/cluster-agent-operations.md
+
+  - interval: 1m
+    input_series:
+
+      # Less than 10 cluster-agent operations are in non-complete state, should not alert
+      - series: 'operationDB_rows_in_non_complete_state'
+        values: '1x3'   # 3 cluster-agent operations are in non-complete state
+
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: GitOpsClusterAgentOperationErrors
