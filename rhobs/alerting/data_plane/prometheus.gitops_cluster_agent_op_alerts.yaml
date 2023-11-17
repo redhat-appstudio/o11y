@@ -1,0 +1,24 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-gitops-cluster-agent-operations-alerting
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: cluster-agent-operations_alerts
+    interval: 1m
+    rules:
+    - alert: GitOpsClusterAgentOperationErrors
+      expr: |
+        sum(operationDB_rows_in_non_complete_state) <= 10
+      for: 5m
+      labels:
+        severity: warning
+        slo: true
+      annotations:
+        summary: >-
+          Cluster-Agent Operations in non-complete state are too high
+        description: >-
+          The sum of cluster-agent operations in non-complete state is greater than 10
+        runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/cluster-agent-operations.md
