@@ -11,11 +11,11 @@ tests:
     input_series:
 
       - series: 'argocd_app_info{sync_status="Synced",name="gitopsdepl-001",namespace="gitops-service-argocd"}'
-        values: '_ _ _ _ _ _'
+        values: '_ _ _ _ _ _ _ _ _ _ _'
       - series: 'argocd_app_info{sync_status="OutOfSync",name="gitopsdepl-002",namespace="gitops-service-argocd"}'
-        values: '1 1 1 1 1 1'
+        values: '1 1 1 1 1 1 1 1 1 1 1'
       - series: 'argocd_app_info{sync_status="Unknown",name="gitopsdepl-003",namespace="gitops-service-argocd"}'
-        values: '1 1 1 1 1 1'
+        values: '1 1 1 1 1 1 1 1 1 1 1'
 
     alert_rule_test:
       - eval_time: 10m
@@ -36,9 +36,9 @@ tests:
 
       # We don't want to be alerted in this situation (don't care situation)
       - series: 'argocd_app_info{sync_status="Synced",name="gitopsdepl-001",namespace="gitops-service-argocd"}'
-        values: '_ _ _ _ _ _'
+        values: '_ _ _ _ _ _ _ _ _ _ _'
       - series: 'argocd_app_info{sync_status="OutOfSync",name="gitopsdepl-002",namespace="gitops-service-argocd"}'
-        values: '_ _ _ _ _ _'
+        values: '_ _ _ _ _ _ _ _ _ _ _'
 
     alert_rule_test:
       - eval_time: 6m
@@ -57,11 +57,11 @@ tests:
 
       # One synced app, but one of each of OutOfSync and Unknown. 33% sync rate, so alert
       - series: 'argocd_app_info{sync_status="Synced",name="gitopsdepl-001",namespace="gitops-service-argocd"}'
-        values: '1 1 1 1 1 1'
+        values: '1 1 1 1 1 1 1 1 1 1 1 1'
       - series: 'argocd_app_info{sync_status="OutOfSync",name="gitopsdepl-002",namespace="gitops-service-argocd"}'
-        values: '1 1 1 1 1 1'
+        values: '1 1 1 1 1 1 1 1 1 1 1 1'
       - series: 'argocd_app_info{sync_status="Unknown",name="gitopsdepl-003",namespace="gitops-service-argocd"}'
-        values: '1 1 1 1 1 1'
+        values: '1 1 1 1 1 1 1 1 1 1 1 1'
 
     alert_rule_test:
       - eval_time: 6m
@@ -82,11 +82,11 @@ tests:
 
       # Less than 95% synced rate (at 50%), should alert
       - series: 'argocd_app_info{sync_status="Synced",name="gitopsdepl-001",namespace="gitops-service-argocd"}'
-        values: '1 1 1 1 1 1'
+        values: '1 1 1 1 1 1 1 1 1 1 1'
       - series: 'argocd_app_info{sync_status="OutOfSync",name="gitopsdepl-002",namespace="gitops-service-argocd"}'
-        values: '1 1 1 1 1 1'
+        values: '1 1 1 1 1 1 1 1 1 1 1'
       - series: 'argocd_app_info{sync_status="Unknown",name="gitopsdepl-003",namespace="gitops-service-argocd"}'
-        values: '_ _ _ _ _ _'
+        values: '_ _ _ _ _ _ _ _ _ _ _'
 
     alert_rule_test:
       - eval_time: 6m
@@ -107,11 +107,11 @@ tests:
 
       # One synced app for entire window period. Basic scenario. Should not alert
       - series: 'argocd_app_info{sync_status="Synced",name="gitopsdepl-001",namespace="gitops-service-argocd"}'
-        values: '1 1 1 1 1 1'
+        values: '1 1 1 1 1 1 1 1 1 1 1'
       - series: 'argocd_app_info{sync_status="OutOfSync",name="gitopsdepl-002",namespace="gitops-service-argocd"}'
-        values: '_ _ _ _ _ _'
+        values: '_ _ _ _ _ _ _ _ _ _ _'
       - series: 'argocd_app_info{sync_status="Unknown",name="gitopsdepl-003",namespace="gitops-service-argocd"}'
-        values: '_ _ _ _ _ _'
+        values: '_ _ _ _ _ _ _ _ _ _ _'
 
     alert_rule_test:
       - eval_time: 6m
@@ -122,11 +122,11 @@ tests:
 
       # No apps. No alerts
       - series: 'argocd_app_info{sync_status="Synced",name="gitopsdepl-001",namespace="gitops-service-argocd"}'
-        values: '_ _ _ _ _ _'
+        values: '_ _ _ _ _ _ _ _ _ _ _'
       - series: 'argocd_app_info{sync_status="OutOfSync",name="gitopsdepl-002",namespace="gitops-service-argocd"}'
-        values: '_ _ _ _ _ _'
+        values: '_ _ _ _ _ _ _ _ _ _ _'
       - series: 'argocd_app_info{sync_status="Unknown",name="gitopsdepl-003",namespace="gitops-service-argocd"}'
-        values: '_ _ _ _ _ _'
+        values: '_ _ _ _ _ _ _ _ _ _ _'
 
     alert_rule_test:
       - eval_time: 6m
