@@ -12,13 +12,14 @@ spec:
     - alert: GitOpsApplicationSyncErrors
       expr: |
         (
-          sum(avg_over_time(argocd_app_info{sync_status="Synced", namespace="gitops-service-argocd"}[5m])) by (source_cluster)
+          sum(last_over_time(argocd_app_info{sync_status="Synced", namespace="gitops-service-argocd"}[1m]))
+          by (source_cluster)
           or
-          sum(argocd_app_info{namespace="gitops-service-argocd"}) * 0
+          sum(argocd_app_info{namespace="gitops-service-argocd"}) by (source_cluster) * 0
         )
         /
         (
-          sum(avg_over_time(argocd_app_info{namespace="gitops-service-argocd"}[5m]))
+          sum(last_over_time(argocd_app_info{namespace="gitops-service-argocd"}[1m]))
           by (source_cluster)
         ) < 0.95
       for: 5m
