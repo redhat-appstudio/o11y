@@ -13,3 +13,7 @@ RUN ["go", "build", "."]
 
 EXPOSE 8090
 CMD ["go", "run", "."]
+
+
+FROM registry.access.redhat.com/ubi8/ubi-minimal:8.6-751
+RUN microdnf update --setopt=install_weak_deps=0 -y && microdnf install libcurl-minimal libcurl-devel
