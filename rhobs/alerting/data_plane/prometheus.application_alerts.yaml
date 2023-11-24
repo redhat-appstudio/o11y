@@ -13,18 +13,18 @@ spec:
       expr: |
         (increase(has_application_failed_deletion_total[1h]))
         /
-        (increase(has_application_deletion_total[1h]))  > 0.01
+        (increase(has_application_deletion_total[1h]))  > 0.05
       for: 5m
       labels:
         severity: warning
         slo: true
       annotations:
         summary: >-
-          HAS is experiencing application deletion failures of >1%
+          HAS is experiencing application deletion failures of >5%
         description: >-
           Application controller in Pod {{ $labels.pod }} for namespace
           {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} is failing to
-          successfully delete at least 99% of applications over the past hour
+          successfully delete at least 95% of applications over the past hour
         runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/has/application-delete-failed.md
     - alert: ApplicationCreationErrors
       expr: |
