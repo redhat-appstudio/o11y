@@ -77,8 +77,9 @@ tests:
       # HAS experienced ~10% (10.83%) deletion failure rate with counter reset, should still alert
       - series: 'has_component_deletion_total{namespace="application-service", pod="has", source_cluster="cluster01"}'
         values: '10+10x64'
+      # Increment failures by 1 for 20min, reset counter to 0 and increment failures by 10 for another 5 mins
       - series: 'has_component_failed_deletion_total{namespace="application-service", pod="has", source_cluster="cluster01"}'
-        values: '1+1x20 0+10x5 50x38' # increment failures by 1 for 20min, reset counter to 0 and increment failures by 10 for another 5 mins
+        values: '1+1x20 0+10x5 50x38'
 
     alert_rule_test:
       - eval_time: 65m
