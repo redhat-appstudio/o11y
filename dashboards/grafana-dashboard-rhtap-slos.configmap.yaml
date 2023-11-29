@@ -420,42 +420,7 @@ data:
           "fieldConfig": {
             "defaults": {
               "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "Boolean",
-                "axisPlacement": "auto",
-                "axisSoftMax": 1,
-                "axisSoftMin": 0,
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "lineInterpolation": "linear",
-                "lineStyle": {
-                  "fill": "solid"
-                },
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "auto",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "line+area"
-                }
+                "mode": "thresholds"
               },
               "mappings": [],
               "thresholds": {
@@ -483,18 +448,16 @@ data:
           "id": 56,
           "maxDataPoints": 30,
           "options": {
-            "legend": {
+            "orientation": "auto",
+            "reduceOptions": {
               "calcs": [
-                "last"
+                "lastNotNull"
               ],
-              "displayMode": "table",
-              "placement": "right",
-              "showLegend": true
+              "fields": "",
+              "values": false
             },
-            "tooltip": {
-              "mode": "multi",
-              "sort": "none"
-            }
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true
           },
           "pluginVersion": "9.3.8",
           "targets": [
@@ -504,26 +467,15 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum(operationDB_rows_in_non_complete_state)",
-              "hide": true,
+              "expr": "sum(operationDB_rows_in_non_complete_state) by (source_cluster)",
+              "hide": false,
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
-            },
-            {
-              "datasource": {
-                "name": "Expression",
-                "type": "__expr__",
-                "uid": "__expr__"
-              },
-              "expression": "$A <= 10",
-              "hide": false,
-              "refId": "hasFewNonActiveClusterAgentOperations",
-              "type": "math"
             }
           ],
           "title": "Measured",
-          "type": "timeseries"
+          "type": "gauge"
         },
         {
           "datasource": {
@@ -535,7 +487,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 19
+            "y": 26
           },
           "id": 74,
           "links": [],
@@ -627,7 +579,7 @@ data:
             "h": 7,
             "w": 12,
             "x": 10,
-            "y": 19
+            "y": 26
           },
           "id": 71,
           "maxDataPoints": 30,
@@ -696,7 +648,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 26
+            "y": 33
           },
           "id": 75,
           "links": [],
@@ -813,7 +765,7 @@ data:
             "h": 7,
             "w": 12,
             "x": 10,
-            "y": 26
+            "y": 33
           },
           "id": 72,
           "maxDataPoints": 30,
@@ -882,7 +834,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 33
+            "y": 40
           },
           "id": 76,
           "links": [],
@@ -999,7 +951,7 @@ data:
             "h": 7,
             "w": 12,
             "x": 10,
-            "y": 33
+            "y": 40
           },
           "id": 73,
           "maxDataPoints": 30,
@@ -1911,7 +1863,7 @@ data:
       "timezone": "",
       "title": "RHTAP SLOs",
       "uid": "rhtap-slos",
-      "version": 8,
+      "version": 11,
       "weekStart": ""
     }
 kind: ConfigMap
