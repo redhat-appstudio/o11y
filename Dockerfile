@@ -9,11 +9,13 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY --chown=default:root exporters/**/*.go .
 
-RUN ["go", "build", "."]
+RUN CGO_ENABLED=0 GOOS=linux go build -o /bin/exporters .
 
 EXPOSE 8090
-CMD ["go", "run", "."]
 
 
-FROM registry.access.redhat.com/ubi8/ubi-minimal:8.6-751
-RUN microdnf update --setopt=install_weak_deps=0 -y && microdnf install libcurl-minimal libcurl-devel
+FROM registry.access.redhat.com/ubi9/ubi-minimal:9.3-1361.1699548032
+RUN microdnf update --setopt=install_weak_deps=0 -y && microdnf install -y libcurl-minimal libcurl-devel
+
+COPY --from=builder /bin/exporters /bin/exporters
+CMD ["/bin/exporters"]
