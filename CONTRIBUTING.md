@@ -52,6 +52,10 @@ rule_files:
 This repository contains Go unit tests. Test files are located in the `o11y/exporters`
 directory with `_test.go` file names.
 
+To include all go packages in the current directory and its subdirectories run
+`go get ./...` This command will download and install all the dependencies mentioned
+in the import statements of the project `o11y/exporters/<go files>`.
+
 To run all the Go unit tests in the repository, execute the following command from
 the project's root directory `go test ./...` a similar output is expected:
 

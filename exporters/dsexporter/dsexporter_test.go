@@ -1,32 +1,46 @@
 package main
 
 import (
-	"net/http"
-	"net/http/httptest"
 	"testing"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestPingHandler(t *testing.T) {
-	// Request to the /ping endpoint
-	req, err := http.NewRequest("GET", "/ping", nil)
-	if err != nil {
-		t.Fatal(err)
+func TestCustomCollector(t *testing.T) {
+	exporter := NewCustomCollector()
+	prometheus.MustRegister(exporter)
+
+	// Simulate collecting metrics and check the exported metric value.
+	metrics := prometheus.DefaultGatherer
+	metricFamilies, err := metrics.Gather()
+	assert.NoError(t, err)
+
+	var RequestCountValue float64
+	for _, mf := range metricFamilies {
+		if mf.GetName() == "request_count" {
+			RequestCountValue = mf.GetMetric()[0].GetCounter().GetValue()
+			break
+		}
 	}
 
-	// ResponseRecorder to record the response
-	rr := httptest.NewRecorder()
+	// Check whether the exported metric value is initially 0.
+	assert.Equal(t, float64(0), RequestCountValue)
 
-	// Calls the ping handler with the created request and recorder
-	ping(rr, req)
+	// Increment the requestCounter by calling the Inc method.
+	exporter.requestCounter.Inc()
 
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("handler returned wrong status code: got %v want %v",
-			status, http.StatusOK)
+	// Collecting metrics again
+	metricFamilies, err = metrics.Gather()
+	assert.NoError(t, err)
+
+	for _, mf := range metricFamilies {
+		if mf.GetName() == "request_count" {
+			RequestCountValue = mf.GetMetric()[0].GetCounter().GetValue()
+			break
+		}
 	}
 
-	expected := "pong"
-	if rr.Body.String() != expected {
-		t.Errorf("handler returned unexpected body: got %v want %v",
-			rr.Body.String(), expected)
-	}
+	// Check whether the exported metric value is now 1 after incrementing.
+	assert.Equal(t, float64(1), RequestCountValue)
 }
