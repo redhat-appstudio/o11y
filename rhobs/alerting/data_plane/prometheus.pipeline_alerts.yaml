@@ -11,17 +11,10 @@ spec:
       rules:
         - alert: HighSchedulingOverhead
           expr: |
-            (
-                sum by (source_cluster) (increase(pipelinerun_duration_scheduled_seconds_sum{status='succeded'}[30m]))
-                /
-                sum by (source_cluster) (increase(pipelinerun_duration_scheduled_seconds_count{status='succeded'}[30m]))
-            )
+            sum by (source_cluster) (increase(pipeline_service_schedule_overhead_percentage_sum{status='succeded'}[30m]))
             /
-            (
-                sum by (source_cluster) (increase(tekton_pipelines_controller_pipelinerun_duration_seconds_sum{status='success'}[30m]))
-                /
-                sum by (source_cluster) (increase(tekton_pipelines_controller_pipelinerun_duration_seconds_count{status='success'}[30m]))
-            )  > 0.05
+            sum by (source_cluster) (increase(pipeline_service_schedule_overhead_percentage_count{status='succeded'}[30m]))
+            > 0.05
           for: 12h
           labels:
             severity: warning
@@ -35,17 +28,10 @@ spec:
             runbook_url: TBD
         - alert: HighExecutionOverhead
           expr: |
-            (
-                sum by (source_cluster) (increase(pipelinerun_gap_between_taskruns_milliseconds_sum{status='succeded'}[30m])/1000)
-                /
-                sum by (source_cluster) (increase(pipelinerun_gap_between_taskruns_milliseconds_count{status='succeded'}[30m]))
-            )
+            sum by (source_cluster) (increase(pipeline_service_execution_overhead_percentage_sum{status='succeded'}[30m]))
             /
-            (
-                sum by (source_cluster) (increase(tekton_pipelines_controller_pipelinerun_duration_seconds_sum{status='success'}[30m]))
-                /
-                sum by (source_cluster) (increase(tekton_pipelines_controller_pipelinerun_duration_seconds_count{status='success'}[30m]))
-            )  > 0.05
+            sum by (source_cluster) (increase(pipeline_service_execution_overhead_percentage_count{status='succeded'}[30m]))
+            > 0.05
           for: 12h
           labels:
             severity: warning
