@@ -1,0 +1,28 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-gitops-argocd-app-reconcile-alert
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: gitops-argocd-app-reconcile-alert
+    interval: 1m
+    rules:
+    - alert: GitOpsArgoCDAppReconcileAlert
+      annotations:
+        summary: >-
+          Less than 99% of Argo CD apps are reconciling within 4 seconds: {{ $value | humanizePercentage }}
+        description: >-
+          Argo CD in namespace {{ $labels.namespace }}
+          has failed to reconcile at least 99% of applications
+          within 4 seconds over the past 30 minutes
+        runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/argocd-app-reconcile.md
+      expr: |
+        increase(argocd_app_reconcile_bucket{namespace="gitops-service-argocd", le="4"}[30m])
+        /
+        ignoring (le) increase(argocd_app_reconcile_bucket{namespace="gitops-service-argocd", le="+Inf"}[30m]) < 0.99
+      for: 5m
+      labels:
+        severity: warning
+        slo: "true"
