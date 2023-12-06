@@ -1,0 +1,99 @@
+evaluation_interval: 1m
+
+rule_files:
+  - 'prometheus.latency_snapshot_to_static_integration_plr_creation_alerts.yaml'
+
+tests:
+  - interval: 1m
+    input_series:
+      # Simulating data from Cluster 1 (crosses the 10% threshold)
+      - series: 'integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_bucket{le="5", source_cluster="cluster01"}'
+        values: '0+10x10'  # 10 requests per minute took less than 5s
+      - series: 'integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_bucket{le="+Inf", source_cluster="cluster01"}'
+        values: '0+100x10'  # 100 total occurrences per minute in cluster01
+
+      # Simulating data from Cluster 2 (does not cross the 10% threshold)
+      - series: 'integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_bucket{le="5", source_cluster="cluster02"}'
+        values: '0+90x10'  # 90 requests per minute took less than 5s
+      - series: 'integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_bucket{le="+Inf", source_cluster="cluster02"}'
+        values: '0+100x10'  # 100 total occurrences per minute in cluster02
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: LatencySnapshotToStaticIntegrationPLRCreation
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: true
+              source_cluster: cluster01
+            exp_annotations:
+              summary: Latency from an application snapshot created to integration PLRs in static envs created
+              description: >
+                Time from Snapshot created to integration PLRs in static envs created has been over
+                5s for 90% of requests (tolerance 10%) during the last 5 minutes on cluster
+                cluster01
+              runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/integration-service/latency_snapshot_to_integration_test_static.md
+
+# Scenario where both clusters cross the 10% threshold
+# Alert triggered for both clusters
+  - interval: 1m
+    input_series:
+      # Simulating data from Cluster 1 (crosses the 10% threshold)
+      - series: 'integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_bucket{le="5", source_cluster="cluster01"}'
+        values: '0+5x10'  # 5 requests per minute took less than 5s
+      - series: 'integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_bucket{le="+Inf", source_cluster="cluster01"}'
+        values: '0+100x10'  # 100 total occurrences per minute in cluster01
+
+      # Simulating data from Cluster 2 (also crosses the 10% threshold)
+      - series: 'integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_bucket{le="5", source_cluster="cluster02"}'
+        values: '0+5x10'  # 5 requests per minute took less than 5s
+      - series: 'integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_bucket{le="+Inf", source_cluster="cluster02"}'
+        values: '0+100x10'  # 100 total occurrences per minute in cluster02
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: LatencySnapshotToStaticIntegrationPLRCreation
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: true
+              source_cluster: cluster01
+            exp_annotations:
+              summary: Latency from an application snapshot created to integration PLRs in static envs created
+              description: >
+                Time from Snapshot created to integration PLRs in static envs created has been over
+                5s for 95% of requests (tolerance 10%) during the last 5 minutes on cluster
+                cluster01
+              runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/integration-service/latency_snapshot_to_integration_test_static.md
+          - exp_labels:
+              severity: warning
+              slo: true
+              source_cluster: cluster02
+            exp_annotations:
+              summary: Latency from an application snapshot created to integration PLRs in static envs created
+              description: >
+                Time from Snapshot created to integration PLRs in static envs created has been over
+                5s for 95% of requests (tolerance 10%) during the last 5 minutes on cluster
+                cluster02
+              runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/integration-service/latency_snapshot_to_integration_test_static.md
+
+# Scenario where neither cluster crosses the 10% threshold
+# Alert not triggered
+  - interval: 1m
+    input_series:
+      # Simulating data from Cluster 1 (does not cross the 10% threshold)
+      - series: 'integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_bucket{le="5", source_cluster="cluster01"}'
+        values: '0+95x10'  # 95 requests per minute took less than 5s
+      - series: 'integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_bucket{le="+Inf", source_cluster="cluster01"}'
+        values: '0+100x10'  # 100 total occurrences per minute in cluster01
+
+      # Simulating data from Cluster 2 (does not cross the 10% threshold)
+      - series: 'integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_bucket{le="5", source_cluster="cluster02"}'
+        values: '0+95x10'  # 95 requests per minute took less than 5s
+      - series: 'integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_bucket{le="+Inf", source_cluster="cluster02"}'
+        values: '0+100x10'  # 100 total occurrences per minute in cluster02
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: LatencySnapshotToStaticIntegrationPLRCreation
+        exp_alerts: []  # No alerts are expected in this scenario

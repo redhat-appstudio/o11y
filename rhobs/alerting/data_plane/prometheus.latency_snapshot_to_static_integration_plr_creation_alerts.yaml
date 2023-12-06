@@ -1,0 +1,33 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-latency-snapshot-to-static-integration-plr-creation-alerting-rules
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: latency-snapshot-to-static-integration-plr-creation
+    interval: 1m
+    rules:
+    - alert: LatencySnapshotToStaticIntegrationPLRCreation
+      expr: |
+        (
+          (
+            increase(integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_bucket{le="+Inf"}[5m])
+            - ignoring(le)
+            increase(integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_bucket{le="5"}[5m])
+          ) / ignoring(le)
+          increase(integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_bucket{le="+Inf"}[5m])
+        ) > 0.10
+      for: 1m
+      labels:
+        severity: warning
+        slo: true
+      annotations:
+        summary: >-
+          Latency from an application snapshot created to integration PLRs in static envs created
+        description: >
+          Time from Snapshot created to integration PLRs in static envs created has been over
+          5s for {{ $value | humanizePercentage }} of requests (tolerance 10%) during the last 5 minutes on cluster
+          {{ $labels.source_cluster }}
+        runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/integration-service/latency_snapshot_to_integration_test_static.md
