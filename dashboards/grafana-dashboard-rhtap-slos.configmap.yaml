@@ -91,7 +91,7 @@ data:
               "showLineNumbers": false,
               "showMiniMap": false
             },
-            "content": "<h1><center>5xx errors rate for service providers</center></h1>",
+            "content": "<h1><center>5xx errors rate for service providers less than 1%</center></h1>",
             "mode": "html"
           },
           "pluginVersion": "9.3.8",
@@ -121,7 +121,7 @@ data:
               "custom": {
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
-                "axisLabel": "",
+                "axisLabel": "Percentage",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
                 "drawStyle": "line",
@@ -145,11 +145,11 @@ data:
                   "mode": "none"
                 },
                 "thresholdsStyle": {
-                  "mode": "off"
+                  "mode": "dashed+area"
                 }
               },
               "mappings": [],
-              "max": 1,
+              "max": 0.1,
               "min": 0,
               "thresholds": {
                 "mode": "absolute",
@@ -160,7 +160,7 @@ data:
                   },
                   {
                     "color": "red",
-                    "value": 80
+                    "value": 0.01
                   }
                 ]
               },
@@ -175,12 +175,15 @@ data:
             "y": 4
           },
           "id": 54,
+          "maxDataPoints": 30,
           "interval": "1m",
           "options": {
             "legend": {
-              "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
+              "calcs": [
+                "last"
+              ],
+              "displayMode": "table",
+              "placement": "right",
               "showLegend": true
             },
             "tooltip": {
@@ -195,8 +198,8 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "builder",
-              "expr": "sum(increase(redhat_appstudio_spi_service_provider_response_time_seconds_count{status=~\"5..\"}[$__range]) OR on() vector(0)) / sum(increase(redhat_appstudio_spi_service_provider_response_time_seconds_count{}[$__range]))",
-              "legendFormat": "SP 5xx percentage",
+              "expr": "(sum(increase(redhat_appstudio_spi_service_provider_response_time_seconds_count{status=~\"5..\"}[$__range])) or sum(increase(redhat_appstudio_spi_service_provider_response_time_seconds_count[$__range])) * 0)  / sum(increase(redhat_appstudio_spi_service_provider_response_time_seconds_count{}[$__range]))",
+              "legendFormat": "% SP 5xx errors",
               "range": true,
               "refId": "A",
               "type": "prometheus"
