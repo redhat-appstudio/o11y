@@ -1,0 +1,111 @@
+evaluation_interval: 1m
+
+rule_files:
+  - 'prometheus.seb_created_to_ready_alerts.yaml'
+
+tests:
+  # Scenario where one cluster exceeds the 10% threshold
+  - interval: 1m
+    input_series:
+      # Data from Cluster 1 (crosses the 10% threshold)
+      - series: 'integration_svc_seb_created_to_ready_seconds_bucket{le="120", source_cluster="cluster01"}'
+        values: '0+5x10'  # 5 requests took less than 120s
+      - series: 'integration_svc_seb_created_to_ready_seconds_bucket{le="+Inf", source_cluster="cluster01"}'
+        values: '0+40x10'  # 40 total occurrences in cluster01
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: SebCreatedToReady
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: true
+              source_cluster: cluster01
+            exp_annotations:
+              summary: Snapshot Environment Binding created to ready time exceeded
+              description: >
+                Time from Snapshot Environment Binding created to marked as
+                ready has been over 120s for more than 10% of requests during
+                the last 5 minutes on cluster cluster01
+              runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/integration-service/seb_created_to_ready.md
+
+  # Scenario where both clusters exceed the 10% threshold
+  - interval: 1m
+    input_series:
+      # Data from both clusters crossing the 10% threshold
+      - series: 'integration_svc_seb_created_to_ready_seconds_bucket{le="120", source_cluster="cluster01"}'
+        values: '0+4x10'  # 4 requests took less than 120s in cluster01
+      - series: 'integration_svc_seb_created_to_ready_seconds_bucket{le="+Inf", source_cluster="cluster01"}'
+        values: '0+40x10'  # 40 total occurrences in cluster01
+
+      - series: 'integration_svc_seb_created_to_ready_seconds_bucket{le="120", source_cluster="cluster02"}'
+        values: '0+3x10'  # 3 requests took less than 120s in cluster02
+      - series: 'integration_svc_seb_created_to_ready_seconds_bucket{le="+Inf", source_cluster="cluster02"}'
+        values: '0+30x10'  # 30 total occurrences in cluster02
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: SebCreatedToReady
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: true
+              source_cluster: cluster01
+            exp_annotations:
+              summary: Snapshot Environment Binding created to ready time exceeded
+              description: >
+                Time from Snapshot Environment Binding created to marked as
+                ready has been over 120s for more than 10% of requests during
+                the last 5 minutes on cluster cluster01
+              runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/integration-service/seb_created_to_ready.md
+
+          - exp_labels:
+              severity: warning
+              slo: true
+              source_cluster: cluster02
+            exp_annotations:
+              summary: Snapshot Environment Binding created to ready time exceeded
+              description: >
+                Time from Snapshot Environment Binding created to marked as
+                ready has been over 120s for more than 10% of requests during
+                the last 5 minutes on cluster cluster02
+              runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/integration-service/seb_created_to_ready.md
+
+  # Scenario where neither cluster crosses the 10% threshold
+  - interval: 1m
+    input_series:
+      # Data from both clusters not crossing the 10% threshold
+      - series: 'integration_svc_seb_created_to_ready_seconds_bucket{le="120", source_cluster="cluster01"}'
+        values: '0+36x10'  # 36 requests took less than 120s in cluster01
+      - series: 'integration_svc_seb_created_to_ready_seconds_bucket{le="+Inf", source_cluster="cluster01"}'
+        values: '0+40x10'  # 40 total occurrences in cluster01
+
+      - series: 'integration_svc_seb_created_to_ready_seconds_bucket{le="120", source_cluster="cluster02"}'
+        values: '0+27x10'  # 27 requests took less than 120s in cluster02
+      - series: 'integration_svc_seb_created_to_ready_seconds_bucket{le="+Inf", source_cluster="cluster02"}'
+        values: '0+30x10'  # 30 total occurrences in cluster02
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: SebCreatedToReady
+        exp_alerts: [] # No alerts should be triggered
+
+  # Scenario where all metric returns are zero (no events)
+  - interval: 1m
+    input_series:
+      # Data from Cluster 1 with zero events
+    - series: 'integration_svc_seb_created_to_ready_seconds_bucket{le="120", source_cluster="cluster01"}'
+      values: '0+0x10'  # 0 requests took less than 120s
+    - series: 'integration_svc_seb_created_to_ready_seconds_bucket{le="+Inf", source_cluster="cluster01"}'
+      values: '0+0x10'  # 0 total occurrences in cluster01
+
+    # Data from Cluster 2 with zero events
+    - series: 'integration_svc_seb_created_to_ready_seconds_bucket{le="120", source_cluster="cluster02"}'
+      values: '0+0x10'  # 0 requests took less than 120s
+    - series: 'integration_svc_seb_created_to_ready_seconds_bucket{le="+Inf", source_cluster="cluster02"}'
+      values: '0+0x10'  # 0 total occurrences in cluster02
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: SebCreatedToReady
+        exp_alerts: []  # No alerts are expected as there are no events
