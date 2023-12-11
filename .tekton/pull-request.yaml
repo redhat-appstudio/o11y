@@ -124,6 +124,20 @@ spec:
               image: registry.access.redhat.com/ubi8/ubi:latest
               workingDir: $(workspaces.workspace.path)
               script: yum install -y make && make kustomize-build
+      - name: exporters-build-and-push
+        workspaces:
+          - name: workspace
+            workspace: workspace
+        runAfter:
+          - clone-repository
+        taskSpec:
+          workspaces:
+            - name: workspace
+          steps:
+            - name: docker-build
+              image: registry.access.redhat.com/ubi8/ubi:latest
+              workingDir: $(workspaces.workspace.path)
+              script: yum install -y make && make install_docker docker_build
   workspaces:
     - name: workspace
       volumeClaimTemplate:

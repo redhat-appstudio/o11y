@@ -5,6 +5,7 @@ export PATH := $(VPATH)
 # Runtime CLI to use for running images
 CONTAINER_ENGINE ?= $(shell command -v podman 2>/dev/null || echo docker)
 IMG_VERSION=1.0.4
+EXPORTERS_IMG ?= quay.io/redhat-appstudio/o11y-prometheus-exporters:latest 
 
 BASE_CMD=$(CONTAINER_ENGINE) run -v "$(shell pwd):/work" --rm --privileged -t quay.io/rhobs/obsctl-reloader-rules-checker:$(IMG_VERSION) -t rhtap
  
@@ -39,3 +40,16 @@ lint_yamls:
 kustomize-build: kustomize
 	# This validates that the build command passes and not its output's validity.
 	kustomize build config/probes/monitoring/grafana/base 1>/dev/null
+
+.PHONY: install_docker
+install_docker:
+	yum install -y $(CONTAINER_ENGINE)
+	yum install -y uidmap
+
+.PHONY: docker_build
+docker_build:
+	$(CONTAINER_ENGINE) build --no-cache --userns=keep-id -t ${EXPORTERS_IMG} .
+
+.PHONY: docker_push
+docker_push:
+	$(CONTAINER_ENGINE) push ${EXPORTERS_IMG}
