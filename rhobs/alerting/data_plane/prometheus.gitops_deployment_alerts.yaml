@@ -1,0 +1,32 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-gitops-deployment-alerting
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: gitops_deployment_alerts
+    interval: 1m
+    rules:
+    - alert: GitOpsDeploymentHealthErrors
+      expr: |
+        (
+          sum(kube_deployment_status_replicas_ready{namespace="gitops-service-argocd"})
+          by (source_cluster)
+        )
+        /
+        (
+          sum(kube_deployment_spec_replicas{namespace="gitops-service-argocd"})
+          by (source_cluster)
+        ) < 0.95
+      for: 5m
+      labels:
+        severity: warning
+        slo: "true"
+      annotations:
+        summary: >-
+          Less than 95% of GitOps Deployments are in Healthy state: {{ $value | humanizePercentage }} in cluster: {{ $labels.source_cluster }}
+        description: >-
+          The percentage total of Argo CD Deployments that are in Healthy state is less than 95% in cluster: {{ $labels.source_cluster }}.
+        runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/deployments.md
