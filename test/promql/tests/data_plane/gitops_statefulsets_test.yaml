@@ -1,0 +1,179 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.gitops_statefulsets_alerts.yaml
+
+tests:
+  - interval: 1m
+    input_series:
+      - series: 'kube_statefulset_status_replicas_ready{namespace="gitops-service-argocd", source_cluster="stonesoupp01ue1"}'
+        values: '0x11'
+
+      - series: 'kube_statefulset_replicas{namespace="gitops-service-argocd", source_cluster="stonesoupp01ue1"}'
+        values: '1x11'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: GitOpsStatefulSetsHealthErrors
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "true"
+              source_cluster: stonesoupp01ue1
+            exp_annotations:
+              summary: >-
+                Less than 95% of GitOps StatefulSets are in Healthy state: 0% in cluster: stonesoupp01ue1
+              description: >-
+                The percentage total of Argo CD StatefulSets that are in Healthy state is less than 95% in cluster: stonesoupp01ue1.
+              runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/statefulsets.md
+
+  - interval: 1m
+    input_series:
+      # We don't want to be alerted in this situation (don't care situation)
+      - series: 'kube_statefulset_status_replicas_ready{namespace="gitops-service-argocd", source_cluster="stonesoupp01ue1"}'
+        values: '_ _ _ _ _ _ _ _ _ _ _'
+
+      - series: 'kube_statefulset_replicas{namespace="gitops-service-argocd", source_cluster="stonesoupp01ue1"}'
+        values: '_ _ _ _ _ _ _ _ _ _ _'
+
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: GitOpsStatefulSetsHealthErrors
+
+  - interval: 1m
+    input_series:
+      # 30% health rate, so alert
+      - series: 'kube_statefulset_status_replicas_ready{namespace="gitops-service-argocd", source_cluster="stonesoupp01ue1"}'
+        values: '3x11'
+
+      - series: 'kube_statefulset_replicas{namespace="gitops-service-argocd", source_cluster="stonesoupp01ue1"}'
+        values: '10x11'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: GitOpsStatefulSetsHealthErrors
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "true"
+              source_cluster: stonesoupp01ue1
+            exp_annotations:
+              summary: >-
+                Less than 95% of GitOps StatefulSets are in Healthy state: 30% in cluster: stonesoupp01ue1
+              description: >-
+                The percentage total of Argo CD StatefulSets that are in Healthy state is less than 95% in cluster: stonesoupp01ue1.
+              runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/statefulsets.md
+
+  - interval: 1m
+    input_series:
+      # One healthy StatefulSet for entire window period. Basic scenario. Should not alert
+      - series: 'kube_statefulset_status_replicas_ready{namespace="gitops-service-argocd", source_cluster="stonesoupp01ue1"}'
+        values: '1x11'
+
+      - series: 'kube_statefulset_replicas{namespace="gitops-service-argocd", source_cluster="stonesoupp01ue1"}'
+        values: '1x11'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: GitOpsStatefulSetsHealthErrors
+
+  - interval: 1m
+    input_series:
+      # No StatefulSets. No alerts
+      - series: 'kube_statefulset_status_replicas_ready{namespace="gitops-service-argocd", source_cluster="stonesoupp01ue1"}'
+        values: '_ _ _ _ _ _ _ _ _ _ _'
+
+      - series: 'kube_statefulset_replicas{namespace="gitops-service-argocd", source_cluster="stonesoupp01ue1"}'
+        values: '_ _ _ _ _ _ _ _ _ _ _'
+
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: GitOpsStatefulSetsHealthErrors
+
+  - interval: 1m
+    input_series:
+      # Two healthy StatefulSets, no unhealthy at the alert/evaluation time. So, no alert
+      - series: 'kube_statefulset_status_replicas_ready{name="sfs-001", namespace="gitops-service-argocd", source_cluster="stonesoupp01ue1"}'
+        values: '0 0 0 0 0 1 1 1 1 1'
+      - series: 'kube_statefulset_status_replicas_ready{name="sfs-002", namespace="gitops-service-argocd", source_cluster="stonesoupp01ue1"}'
+        values: '0 0 0 0 0 1 1 1 1 1'
+
+      - series: 'kube_statefulset_replicas{namespace="gitops-service-argocd"}'
+        values: '1 1 1 1 1 1 1 1 1 1'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: GitOpsStatefulSetsHealthErrors
+
+  - interval: 1m
+    input_series:
+      # One healthy StatefulSet. Two StatefulSet periodically go from healthy to unhealthy state. However
+      # even though the percentage of health is below the threshold, so there is no alert.
+      - series: 'kube_statefulset_status_replicas_ready{name="sfs-001", namespace="gitops-service-argocd", source_cluster="stonesoupp01ue1"}'
+        values: '1 0 1 0 1 0 1 0'
+      - series: 'kube_statefulset_status_replicas_ready{name="sfs-002", namespace="gitops-service-argocd", source_cluster="stonesoupp01ue1"}'
+        values: '0 1 0 1 0 1 0 1'
+
+      - series: 'kube_statefulset_replicas{namespace="gitops-service-argocd"}'
+        values: '1 1 1 1 1 1 1 1'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: GitOpsStatefulSetsHealthErrors
+
+  - interval: 1m
+    input_series:
+      # The percentage of health is below the threshold, there is no alert because it falls
+      # outside the alert/evaluation window. Compare this to the next test below.
+      - series: 'kube_statefulset_status_replicas_ready{namespace="gitops-service-argocd", source_cluster="stonesoupp01ue1"}'
+        values: '1 1 1 1 1 1 0 0'
+
+      - series: 'kube_statefulset_replicas{namespace="gitops-service-argocd", source_cluster="stonesoupp01ue1"}'
+        values: '1 1 1 1 1 1 1 1'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: GitOpsStatefulSetsHealthErrors
+
+  - interval: 1m
+    input_series:
+      # The percentage of health is below the threshold at the point of the active alert/evaluation.
+      # Compare this to the previous test above.
+      - series: 'kube_statefulset_status_replicas_ready{namespace="gitops-service-argocd", source_cluster="stonesoupp01ue1"}'
+        values: '0 0 0 0 0 0 0 1 1 1'
+
+      - series: 'kube_statefulset_replicas{namespace="gitops-service-argocd", source_cluster="stonesoupp01ue1"}'
+        values: '1 1 1 1 1 1 1 1 1 1'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: GitOpsStatefulSetsHealthErrors
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "true"
+              source_cluster: stonesoupp01ue1
+            exp_annotations:
+              summary: >-
+                Less than 95% of GitOps StatefulSets are in Healthy state: 0% in cluster: stonesoupp01ue1
+              description: >-
+                The percentage total of Argo CD StatefulSets that are in Healthy state is less than 95% in cluster: stonesoupp01ue1.
+              runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/statefulsets.md
+
+  - interval: 1m
+    input_series:
+      # Same as above with 20% health
+      - series: 'kube_statefulset_status_replicas_ready{namespace="gitops-service-argocd", source_cluster="stonesoupp01ue1"}'
+        values: '10 6 9 4 3 5 2 8 7 3'
+
+      - series: 'kube_statefulset_replicas{namespace="gitops-service-argocd", source_cluster="stonesoupp01ue1"}'
+        values: '10 10 10 10 10 10 10 10 10 10'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: GitOpsStatefulSetsHealthErrors
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "true"
+              source_cluster: stonesoupp01ue1
+            exp_annotations:
+              summary: >-
+                Less than 95% of GitOps StatefulSets are in Healthy state: 20% in cluster: stonesoupp01ue1
+              description: >-
+                The percentage total of Argo CD StatefulSets that are in Healthy state is less than 95% in cluster: stonesoupp01ue1.
+              runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/statefulsets.md
