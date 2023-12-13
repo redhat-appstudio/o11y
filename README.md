@@ -37,21 +37,21 @@ when a service or system is not meeting its specified service level objectives.
 
 #### Usage Guidelines:
 
-Apply the `slo: true` label to alerts directly associated with Service Level Objectives.
+Apply the `slo` label to alerts directly associated with Service Level Objectives.
 These alerts typically indicate issues affecting the performance or reliability of the service.
 
-#### Benefits of using the `slo: true` Label:
+#### Benefits of using the `slo` Label:
 
-Labeling alerts with `slo: true` facilitates quicker incident response by 
+Using the `slo` label facilitates quicker incident response by
 promptly identifying and addressing issues that impact service level objectives.
   
-#### How to apply the `slo: true` Label: 
+#### How to apply the `slo` Label:
 
-Apply `slo: true` under labels section of any alerting rule. 
+Apply `slo: "true"` under labels section of any alerting rule.
   ```
   labels:
       severity: warning
-      slo: true   # Apply the slo:true label in here.
+      slo: "true"
   ```
 
 ### Updating Alerts
