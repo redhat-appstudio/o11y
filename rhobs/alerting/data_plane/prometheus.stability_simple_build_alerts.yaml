@@ -1,0 +1,33 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-stability-simple-build-alerting-rules
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: stability-simple-build
+    interval: 1m
+    rules:
+    - alert: StabilitySimpleBuild
+      expr: |
+        (
+          (
+            increase(redhat_appstudio_buildservice_simple_build_pipeline_creation_time_bucket{le="+Inf"}[10m])
+            - ignoring(le)
+            increase(redhat_appstudio_buildservice_simple_build_pipeline_creation_time_bucket{le="300"}[10m])
+          ) / ignoring(le)
+          increase(redhat_appstudio_buildservice_simple_build_pipeline_creation_time_bucket{le="+Inf"}[10m])
+        ) > 0.01
+      for: 1m
+      labels:
+        severity: warning
+        slo: "true"
+      annotations:
+        summary: >-
+          Stability of component simple build submission time exceeded
+        description: >
+          Time taken from simple build request till the build pipeline is submitted has been over
+          5 minutes for more than 1% of requests during the last 10 minutes on cluster
+          {{ $labels.source_cluster }}
+        runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/build-service/stability_simple_build.md
