@@ -226,12 +226,128 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "description": "95% of applications should be in Synced state",
+          "description": "99% of Argo CD reconciliations should take less than 4s over the past 30m.",
           "gridPos": {
             "h": 7,
             "w": 10,
             "x": 0,
             "y": 12
+          },
+          "id": 90,
+          "links": [],
+          "options": {
+            "code": {
+              "language": "plaintext",
+              "showLineNumbers": false,
+              "showMiniMap": false
+            },
+            "content": "<h1><center>99% of Argo CD reconciliations should take less than 4s over the past 30m</center></h1>",
+            "mode": "html"
+          },
+          "pluginVersion": "9.3.8",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "refId": "A"
+            }
+          ],
+          "title": "% of timely Argo CD reconciliations",
+          "type": "text"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "The current measurement for the given time window.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "match": "null",
+                    "result": {
+                      "text": "N/A"
+                    }
+                  },
+                  "type": "special"
+                }
+              ],
+              "max": 1,
+              "min": 0,
+              "thresholds": {
+                "mode": "percentage",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 99
+                  }
+                ]
+              },
+              "unit": "percentunit"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 10,
+            "y": 12
+          },
+          "id": 94,
+          "links": [],
+          "maxDataPoints": 100,
+          "options": {
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showThresholdLabels": false,
+            "showThresholdMarkers": false
+          },
+          "pluginVersion": "9.3.8",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "increase(argocd_app_reconcile_bucket{namespace=\"gitops-service-argocd\", le=\"4\"}[30m]) / ignoring (le) increase(argocd_app_reconcile_bucket{namespace=\"gitops-service-argocd\", le=\"+Inf\"}[30m])",
+              "legendFormat": "{{source_cluster}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Measured",
+          "type": "gauge"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "95% of applications should be in Synced state",
+          "gridPos": {
+            "h": 7,
+            "w": 10,
+            "x": 0,
+            "y": 19
           },
           "id": 46,
           "links": [],
@@ -321,7 +437,7 @@ data:
             "h": 7,
             "w": 12,
             "x": 10,
-            "y": 12
+            "y": 19
           },
           "id": 48,
           "maxDataPoints": 30,
@@ -389,7 +505,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 19
+            "y": 26
           },
           "id": 55,
           "links": [],
@@ -446,7 +562,7 @@ data:
             "h": 7,
             "w": 12,
             "x": 10,
-            "y": 19
+            "y": 26
           },
           "id": 56,
           "maxDataPoints": 30,
@@ -490,7 +606,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 26
+            "y": 33
           },
           "id": 74,
           "links": [],
@@ -582,7 +698,7 @@ data:
             "h": 7,
             "w": 12,
             "x": 10,
-            "y": 26
+            "y": 33
           },
           "id": 71,
           "maxDataPoints": 30,
@@ -651,7 +767,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 33
+            "y": 40
           },
           "id": 75,
           "links": [],
@@ -768,7 +884,7 @@ data:
             "h": 7,
             "w": 12,
             "x": 10,
-            "y": 33
+            "y": 40
           },
           "id": 72,
           "maxDataPoints": 30,
@@ -837,7 +953,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 40
+            "y": 47
           },
           "id": 76,
           "links": [],
@@ -954,7 +1070,7 @@ data:
             "h": 7,
             "w": 12,
             "x": 10,
-            "y": 40
+            "y": 47
           },
           "id": 73,
           "maxDataPoints": 30,
@@ -1019,7 +1135,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 47
+            "y": 54
           },
           "id": 40,
           "panels": [],
@@ -1036,7 +1152,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 48
+            "y": 55
           },
           "id": 41,
           "links": [],
@@ -1107,7 +1223,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 48
+            "y": 55
           },
           "id": 42,
           "links": [],
@@ -1149,7 +1265,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 55
+            "y": 62
           },
           "id": 36,
           "links": [],
@@ -1221,7 +1337,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 55
+            "y": 62
           },
           "id": 37,
           "links": [],
@@ -1263,7 +1379,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 62
+            "y": 69
           },
           "id": 61,
           "links": [],
@@ -1335,7 +1451,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 62
+            "y": 69
           },
           "id": 62,
           "links": [],
@@ -1377,7 +1493,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 69
+            "y": 76
           },
           "id": 87,
           "links": [],
@@ -1449,7 +1565,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 69
+            "y": 76
           },
           "id": 88,
           "links": [],
@@ -1487,7 +1603,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 76
+            "y": 83
           },
           "id": 80,
           "panels": [],
@@ -1504,7 +1620,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 77
+            "y": 84
           },
           "id": 77,
           "links": [],
@@ -1576,7 +1692,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 77
+            "y": 84
           },
           "id": 78,
           "links": [],
@@ -1618,7 +1734,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 84
+            "y": 91
           },
           "id": 83,
           "links": [],
@@ -1690,7 +1806,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 84
+            "y": 91
           },
           "id": 86,
           "links": [],
@@ -1732,7 +1848,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 91
+            "y": 98
           },
           "id": 82,
           "links": [],
@@ -1804,7 +1920,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 91
+            "y": 98
           },
           "id": 84,
           "links": [],
@@ -1846,7 +1962,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 98
+            "y": 105
           },
           "id": 81,
           "links": [],
@@ -1918,7 +2034,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 98
+            "y": 105
           },
           "id": 85,
           "links": [],
@@ -1956,7 +2072,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 105
+            "y": 112
           },
           "id": 64,
           "panels": [],
@@ -1973,7 +2089,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 106
+            "y": 113
           },
           "id": 65,
           "links": [],
@@ -2028,7 +2144,8 @@ data:
                 "mode": "percentage",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -2044,7 +2161,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 106
+            "y": 113
           },
           "id": 68,
           "links": [],
@@ -2086,7 +2203,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 113
+            "y": 120
           },
           "id": 69,
           "links": [],
@@ -2141,7 +2258,8 @@ data:
                 "mode": "percentage",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -2157,7 +2275,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 113
+            "y": 120
           },
           "id": 70,
           "links": [],
@@ -2195,7 +2313,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 120
+            "y": 127
           },
           "id": 33,
           "panels": [],
@@ -2212,7 +2330,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 121
+            "y": 128
           },
           "id": 10,
           "links": [],
@@ -2264,7 +2382,8 @@ data:
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -2280,7 +2399,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 121
+            "y": 128
           },
           "id": 6,
           "links": [],
@@ -2338,7 +2457,8 @@ data:
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "green",
+                    "value": null
                   },
                   {
                     "color": "red",
@@ -2354,7 +2474,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 15,
-            "y": 121
+            "y": 128
           },
           "id": 29,
           "links": [],
@@ -2445,7 +2565,7 @@ data:
       "timezone": "",
       "title": "RHTAP SLOs",
       "uid": "rhtap-slos",
-      "version": 13,
+      "version": 3,
       "weekStart": ""
     }
 kind: ConfigMap
