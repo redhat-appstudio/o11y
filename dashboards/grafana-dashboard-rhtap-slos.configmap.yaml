@@ -91,6 +91,143 @@ data:
               "showLineNumbers": false,
               "showMiniMap": false
             },
+            "content": "<h1><center>OAuth completion time less than 30sec average</center></h1>",
+            "mode": "html"
+          },
+          "pluginVersion": "9.3.8",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "refId": "A"
+            }
+          ],
+          "title": "OAuth completion time SLO",
+          "type": "text"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "The average time of the OAuth flow completion by users",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "Seconds",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "dashed+area"
+                }
+              },
+              "mappings": [],
+              "max": 60,
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 30
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 10,
+            "y": 4
+          },
+          "id": 54,
+          "interval": "1m",
+          "maxDataPoints": 30,
+          "options": {
+            "legend": {
+              "calcs": [
+                "last"
+              ],
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "builder",
+              "expr": "sum(rate(redhat_appstudio_spi_oauth_flow_complete_time_seconds_sum{type=\"GitHub\"}[$__rate_interval])) without(instance, pod) / sum(rate(redhat_appstudio_spi_oauth_flow_complete_time_seconds_count{type=\"GitHub\"}[$__rate_interval])) without(instance, pod)",
+              "legendFormat": "{{source_cluster}}",
+              "range": true,
+              "refId": "A",
+              "type": "prometheus"
+            }
+          ],
+          "title": "Measured",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "The objective for the given time window.",
+          "gridPos": {
+            "h": 7,
+            "w": 10,
+            "x": 0,
+            "y": 11
+          },
+          "id": 52,
+          "links": [],
+          "options": {
+            "code": {
+              "language": "plaintext",
+              "showLineNumbers": false,
+              "showMiniMap": false
+            },
             "content": "<h1><center>5xx errors rate for service providers less than 1%</center></h1>",
             "mode": "html"
           },
@@ -172,7 +309,7 @@ data:
             "h": 7,
             "w": 12,
             "x": 10,
-            "y": 4
+            "y": 11
           },
           "id": 54,
           "interval": "1m",
@@ -214,7 +351,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 11
+            "y": 18
           },
           "id": 44,
           "panels": [],
@@ -231,7 +368,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 12
+            "y": 19
           },
           "id": 90,
           "links": [],
@@ -302,7 +439,7 @@ data:
             "h": 7,
             "w": 12,
             "x": 10,
-            "y": 12
+            "y": 19
           },
           "id": 94,
           "links": [],
@@ -347,7 +484,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 19
+            "y": 26
           },
           "id": 46,
           "links": [],
@@ -437,7 +574,7 @@ data:
             "h": 7,
             "w": 12,
             "x": 10,
-            "y": 19
+            "y": 26
           },
           "id": 48,
           "maxDataPoints": 30,
@@ -505,7 +642,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 26
+            "y": 33
           },
           "id": 55,
           "links": [],
@@ -562,7 +699,7 @@ data:
             "h": 7,
             "w": 12,
             "x": 10,
-            "y": 26
+            "y": 33
           },
           "id": 56,
           "maxDataPoints": 30,
@@ -606,7 +743,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 33
+            "y": 40
           },
           "id": 74,
           "links": [],
@@ -698,7 +835,7 @@ data:
             "h": 7,
             "w": 12,
             "x": 10,
-            "y": 33
+            "y": 40
           },
           "id": 71,
           "maxDataPoints": 30,
@@ -767,7 +904,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 40
+            "y": 47
           },
           "id": 75,
           "links": [],
@@ -884,7 +1021,7 @@ data:
             "h": 7,
             "w": 12,
             "x": 10,
-            "y": 40
+            "y": 47
           },
           "id": 72,
           "maxDataPoints": 30,
@@ -953,7 +1090,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 47
+            "y": 54
           },
           "id": 76,
           "links": [],
@@ -1070,7 +1207,7 @@ data:
             "h": 7,
             "w": 12,
             "x": 10,
-            "y": 47
+            "y": 54
           },
           "id": 73,
           "maxDataPoints": 30,
@@ -1135,7 +1272,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 54
+            "y": 61
           },
           "id": 40,
           "panels": [],
@@ -1152,7 +1289,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 55
+            "y": 62
           },
           "id": 41,
           "links": [],
@@ -1223,7 +1360,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 55
+            "y": 62
           },
           "id": 42,
           "links": [],
@@ -1265,7 +1402,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 62
+            "y": 69
           },
           "id": 36,
           "links": [],
@@ -1337,7 +1474,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 62
+            "y": 69
           },
           "id": 37,
           "links": [],
@@ -1379,7 +1516,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 69
+            "y": 76
           },
           "id": 61,
           "links": [],
@@ -1451,7 +1588,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 69
+            "y": 76
           },
           "id": 62,
           "links": [],
@@ -1493,7 +1630,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 76
+            "y": 83
           },
           "id": 87,
           "links": [],
@@ -1565,7 +1702,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 76
+            "y": 83
           },
           "id": 88,
           "links": [],
@@ -1603,7 +1740,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 83
+            "y": 90
           },
           "id": 80,
           "panels": [],
@@ -1620,7 +1757,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 84
+            "y": 91
           },
           "id": 77,
           "links": [],
@@ -1692,7 +1829,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 84
+            "y": 91
           },
           "id": 78,
           "links": [],
@@ -1734,7 +1871,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 91
+            "y": 98
           },
           "id": 83,
           "links": [],
@@ -1806,7 +1943,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 91
+            "y": 98
           },
           "id": 86,
           "links": [],
@@ -1848,7 +1985,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 98
+            "y": 105
           },
           "id": 82,
           "links": [],
@@ -1920,7 +2057,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 98
+            "y": 105
           },
           "id": 84,
           "links": [],
@@ -1962,7 +2099,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 105
+            "y": 112
           },
           "id": 81,
           "links": [],
@@ -2034,7 +2171,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 105
+            "y": 112
           },
           "id": 85,
           "links": [],
@@ -2072,7 +2209,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 112
+            "y": 119
           },
           "id": 64,
           "panels": [],
@@ -2089,7 +2226,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 113
+            "y": 120
           },
           "id": 65,
           "links": [],
@@ -2161,7 +2298,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 113
+            "y": 120
           },
           "id": 68,
           "links": [],
@@ -2203,7 +2340,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 120
+            "y": 127
           },
           "id": 69,
           "links": [],
@@ -2275,7 +2412,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 120
+            "y": 127
           },
           "id": 70,
           "links": [],
@@ -2313,7 +2450,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 127
+            "y": 134
           },
           "id": 33,
           "panels": [],
@@ -2330,7 +2467,7 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 128
+            "y": 135
           },
           "id": 10,
           "links": [],
@@ -2399,7 +2536,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 128
+            "y": 135
           },
           "id": 6,
           "links": [],
@@ -2474,7 +2611,7 @@ data:
             "h": 7,
             "w": 5,
             "x": 15,
-            "y": 128
+            "y": 135
           },
           "id": 29,
           "links": [],
