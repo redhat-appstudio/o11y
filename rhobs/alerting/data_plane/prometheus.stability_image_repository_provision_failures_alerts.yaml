@@ -1,0 +1,25 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-stability-image-repository-provision-failures-alerting-rules
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: stability-image-repository-provision-failures
+    interval: 1m
+    rules:
+    - alert: StabilityImageRepositoryProvisionFailures
+      expr: |
+        sum by (source_cluster) (increase(redhat_appstudio_imagecontroller_image_repository_provision_failure_time_bucket{le="+Inf"}[30m])) > 5
+      for: 1m
+      labels:
+        severity: warning
+        slo: "true"
+      annotations:
+        summary: >-
+          Stability of image repository provision failures
+        description: >
+          Provision image repository failures occured for more than 5 requests during the last 30 minutes
+          {{ $labels.source_cluster }}
+        runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/image-controller/stability_image_repository_provision_failures.md
