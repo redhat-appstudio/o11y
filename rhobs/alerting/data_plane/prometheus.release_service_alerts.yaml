@@ -1,0 +1,77 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-release-service-alerting
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: release_service_alerts
+    interval: 1m
+
+    rules:
+    # record rules for `ReleaseServiceProcessingDuration`
+    - record: rate_of_release_processing_duration_seconds_shorter_than_1h_per_10m
+      expr: sum by (job) (rate(release_processing_duration_seconds_bucket{le="3600"}[10m]))
+
+    - record: rate_of_release_processing_duration_seconds_counter_per_10m
+      expr: sum by (job) (rate(release_processing_duration_seconds_count[10m]) > 0)
+
+    # record rules for `ReleaseServicePreProcessingDurationSeconds`
+    - record: rate_of_release_pre_processing_duration_seconds_shorter_than_10s_per_10m
+      expr: sum by (job) (rate(release_pre_processing_duration_seconds_bucket{le="10"}[10m]))
+
+    - record: rate_of_release_pre_processing_duration_seconds_counter_per_10m
+      expr: sum by (job) (rate(release_pre_processing_duration_seconds_count[10m]) > 0)
+
+    # record rules for `ReleaseServiceValidationDurationSeconds`
+    - record: rate_of_release_validation_duration_seconds_shorter_than_5s_per_10m
+      expr: sum by (job) (rate(release_validation_duration_seconds_bucket{le="5"}[10m]))
+
+    - record: rate_of_release_validation_duration_seconds_counter_per_10m
+      expr: sum by (job) (rate(release_validation_duration_seconds_count[10m]) > 0)
+
+    - alert: ReleaseServiceProcessingDuration
+      expr: |
+        (
+          rate_of_release_processing_duration_seconds_shorter_than_1h_per_10m / rate_of_release_processing_duration_seconds_counter_per_10m
+        ) < 0.90
+      for: 15m
+      labels:
+        severity: critical
+        slo: "true"
+      annotations:
+        summary: >-
+          90% of Releases must be processed under one hour
+        description: >-
+          Release service is failing to successfully process within the period of one hour for 90% of releases
+
+    - alert: ReleaseServicePreProcessingDurationSeconds
+      expr: |
+        (
+          rate_of_release_pre_processing_duration_seconds_shorter_than_10s_per_10m / rate_of_release_pre_processing_duration_seconds_counter_per_10m
+        ) < 0.90
+      for: 15m
+      labels:
+        severity: critical
+        slo: "true"
+      annotations:
+        summary: >-
+          90% of Releases must start processing under 10 seconds
+        description: >-
+          Release service is failing to start processing under 10 seconds for 90% of releases
+
+    - alert: ReleaseServiceValidationDurationSeconds
+      expr: |
+        (
+          rate_of_release_validation_duration_seconds_shorter_than_5s_per_10m / rate_of_release_validation_duration_seconds_counter_per_10m
+        ) < 0.90
+      for: 15m
+      labels:
+        severity: critical
+        slo: "true"
+      annotations:
+        summary: >-
+          90% of Releases must be validated under 5 seconds
+        description: >-
+          Release service is failing to run the validations under 5 seconds for 90% of releases
