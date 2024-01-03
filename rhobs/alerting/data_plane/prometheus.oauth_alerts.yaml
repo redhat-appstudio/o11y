@@ -1,0 +1,27 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-spi-alerting-oauth
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: oauth_alerts
+      interval: 1m
+      rules:
+        - alert: OAuthLoginTime
+          expr: |
+            sum(rate(redhat_appstudio_spi_oauth_flow_complete_time_seconds_sum{type="GitHub"}[1h])) without(instance, pod)
+            /
+            sum(rate(redhat_appstudio_spi_oauth_flow_complete_time_seconds_count{type="GitHub"}[1h])) without(instance, pod) > 30
+          for: 5m
+          labels:
+            severity: warning
+            slo: "true"
+          annotations:
+            summary: >-
+              OAuth login average time is more than 30 sec on {{ $labels.source_cluster }}
+            description: >-
+              The average OAuth login time on cluster {{ $labels.source_cluster }} has
+              {{ $value }} sec for the last 5 minutes
+            runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/spi/oauth_login.md
