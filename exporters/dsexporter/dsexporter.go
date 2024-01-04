@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -41,6 +42,9 @@ func main() {
 	reg := prometheus.NewPedanticRegistry()
 	exporter := NewCustomCollector()
 	reg.MustRegister(exporter)
+
+	fmt.Println("Server is listening on http://localhost:8090/metrics")
+
 	http.Handle("/metrics", promhttp.HandlerFor(
 		reg,
 		promhttp.HandlerOpts{
