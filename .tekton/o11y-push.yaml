@@ -6,7 +6,8 @@ metadata:
     build.appstudio.redhat.com/commit_sha: '{{revision}}'
     build.appstudio.redhat.com/target_branch: '{{target_branch}}'
     pipelinesascode.tekton.dev/max-keep-runs: "3"
-    pipelinesascode.tekton.dev/on-cel-expression: event == "push" && target_branch == "main"
+    pipelinesascode.tekton.dev/on-cel-expression: event == "push" && target_branch
+      == "main"
   creationTimestamp: null
   labels:
     appstudio.openshift.io/application: o11y
@@ -26,9 +27,6 @@ spec:
     value: .
   - name: revision
     value: '{{revision}}'
-  - name: infra-deployment-update-script
-    value: |
-        sed -i -e 's|\(https://github.com/redhat-appstudio/o11y/.*?ref=\)\(.*\)|\1{{ revision }}|' components/monitoring/grafana/base/kustomization.yaml
   pipelineSpec:
     finally:
     - name: show-sbom
@@ -71,8 +69,6 @@ spec:
       description: Revision of the Source Repository
       name: revision
       type: string
-    - name: infra-deployment-update-script
-      default: ""
     - description: Fully Qualified Output Image
       name: output-image
       type: string
@@ -208,19 +204,6 @@ spec:
       workspaces:
       - name: source
         workspace: workspace
-    - name: infra-deployments-mr
-      params:
-      - name: ORIGIN_REPO
-        value: $(params.git-url)
-      - name: REVISION
-        value: $(params.revision)
-      - name: SCRIPT
-        value: $(params.infra-deployment-update-script)
-      runAfter:
-      - clone-repository
-      taskRef:
-        bundle: quay.io/redhat-appstudio-tekton-catalog/task-update-infra-deployments:0.1
-        name: update-infra-deployments
     - name: build-container
       params:
       - name: IMAGE
