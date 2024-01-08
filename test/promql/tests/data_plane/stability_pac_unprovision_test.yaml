@@ -1,0 +1,101 @@
+evaluation_interval: 1m
+
+rule_files:
+  - 'prometheus.stability_pac_unprovision_alerts.yaml'
+
+tests:
+# Scenario where only one cluster cross the 1% threshold
+# Alert triggered for one cluster
+  - interval: 1m
+    input_series:
+      # Simulating data from Cluster 1 (crosses the 1% threshold)
+      - series: 'redhat_appstudio_buildservice_PaC_unconfiguration_time_bucket{le="300", source_cluster="cluster01"}'
+        values: '0+1x20'  # 1 requests took less than 300s
+      - series: 'redhat_appstudio_buildservice_PaC_unconfiguration_time_bucket{le="+Inf", source_cluster="cluster01"}'
+        values: '0+200x20'  # 200 total occurrences in cluster01
+
+      # Simulating data from Cluster 2 (does not cross the 1% threshold)
+      - series: 'redhat_appstudio_buildservice_PaC_unconfiguration_time_bucket{le="300", source_cluster="cluster02"}'
+        values: '0+199x20'  # 199 requests took less than 300s
+      - series: 'redhat_appstudio_buildservice_PaC_unconfiguration_time_bucket{le="+Inf", source_cluster="cluster02"}'
+        values: '0+200x20'  # 200 total occurrences in cluster02
+
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: StabilityPacUnprovision
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "true"
+              source_cluster: cluster01
+            exp_annotations:
+              summary: Stability of component PaC unprovision time exceeded
+              description: >
+                Time taken from PaC unprovision request till Component is unprovisioned for PaC builds has been over
+                5 minutes for more than 1% of requests during the last 10 minutes on cluster
+                cluster01
+              runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/build-service/stability_pac_unprovision.md
+
+# Scenario where both clusters cross the 1% threshold
+# Alert triggered for both clusters
+  - interval: 1m
+    input_series:
+      # Simulating data from Cluster 1 (crosses the 1% threshold)
+      - series: 'redhat_appstudio_buildservice_PaC_unconfiguration_time_bucket{le="300", source_cluster="cluster01"}'
+        values: '0+1x20'  # 1 requests took less than 300s
+      - series: 'redhat_appstudio_buildservice_PaC_unconfiguration_time_bucket{le="+Inf", source_cluster="cluster01"}'
+        values: '0+200x20'  # 200 total occurrences in cluster01
+
+      # Simulating data from Cluster 2 (also crosses the 1% threshold)
+      - series: 'redhat_appstudio_buildservice_PaC_unconfiguration_time_bucket{le="300", source_cluster="cluster02"}'
+        values: '0+1x20'  # 1 requests took less than 300s
+      - series: 'redhat_appstudio_buildservice_PaC_unconfiguration_time_bucket{le="+Inf", source_cluster="cluster02"}'
+        values: '0+200x20'  # 200 total occurrences in cluster02
+
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: StabilityPacUnprovision
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "true"
+              source_cluster: cluster01
+            exp_annotations:
+              summary: Stability of component PaC unprovision time exceeded
+              description: >
+                Time taken from PaC unprovision request till Component is unprovisioned for PaC builds has been over
+                5 minutes for more than 1% of requests during the last 10 minutes on cluster
+                cluster01
+              runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/build-service/stability_pac_unprovision.md
+          - exp_labels:
+              severity: warning
+              slo: "true"
+              source_cluster: cluster02
+            exp_annotations:
+              summary: Stability of component PaC unprovision time exceeded
+              description: >
+                Time taken from PaC unprovision request till Component is unprovisioned for PaC builds has been over
+                5 minutes for more than 1% of requests during the last 10 minutes on cluster
+                cluster02
+              runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/build-service/stability_pac_unprovision.md
+
+# Scenario where neither cluster crosses the 1% threshold
+# Alert not triggered
+  - interval: 1m
+    input_series:
+      # Simulating data from Cluster 1 (does not cross the 1% threshold)
+      - series: 'redhat_appstudio_buildservice_PaC_unconfiguration_time_bucket{le="300", source_cluster="cluster01"}'
+        values: '0+199x20'  # 199 requests took less than 300s
+      - series: 'redhat_appstudio_buildservice_PaC_unconfiguration_time_bucket{le="+Inf", source_cluster="cluster01"}'
+        values: '0+200x20'  # 200 total occurrences in cluster01
+
+      # Simulating data from Cluster 2 (does not cross the 1% threshold)
+      - series: 'redhat_appstudio_buildservice_PaC_unconfiguration_time_bucket{le="300", source_cluster="cluster02"}'
+        values: '0+199x20'  # 199 requests took less than 300s
+      - series: 'redhat_appstudio_buildservice_PaC_unconfiguration_time_bucket{le="+Inf", source_cluster="cluster02"}'
+        values: '0+200x20'  # 200 total occurrences in cluster02
+
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: StabilityPacUnprovision
+        exp_alerts: []  # No alerts are expected in this scenario
