@@ -37,11 +37,13 @@ kind: Service
 metadata:
   name: exporter-service
   namespace: appstudio-grafana-datasource-exporter
+  labels:
+    app: appstudio-grafana-datasource-exporter
 spec:
   ports:
-  - name: https
+  - name: http
     port: 8090
-    targetPort: https
+    targetPort: http
   selector:
     app: grafana-datasource-exporter
 ---
@@ -66,7 +68,7 @@ spec:
         image: quay.io/redhat-appstudio/o11y-prometheus-exporters:v0.1
         ports:
         - containerPort: 8090
-          name: https
+          name: http
         resources:
           limits:
             cpu: 100m
@@ -77,3 +79,17 @@ spec:
         securityContext:
           readOnlyRootFilesystem: true
           runAsNonRoot: true
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: metrics-reader-test
+  namespace: appstudio-grafana-datasource-exporter
+spec:
+  endpoints:
+  - path: /metrics
+    port: http
+    scheme: http
+  selector:
+    matchLabels:
+      app: grafana-datasource-exporter
