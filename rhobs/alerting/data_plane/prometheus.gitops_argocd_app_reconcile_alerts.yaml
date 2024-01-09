@@ -17,6 +17,7 @@ spec:
           Argo CD in namespace {{ $labels.namespace }}
           has failed to reconcile at least 99% of applications
           within 4 seconds over the past 30 minutes
+        alert_route_namespace: gitops-service-argocd
         runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/gitops/argocd-app-reconcile.md
       expr: |
         increase(argocd_app_reconcile_bucket{namespace="gitops-service-argocd", le="4"}[30m])

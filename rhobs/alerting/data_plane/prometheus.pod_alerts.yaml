@@ -19,6 +19,7 @@ spec:
         description: >-
           Pod {{ $labels.pod }} for namespace {{ $labels.namespace }} on cluster
           {{ $labels.source_cluster }} is unscheduled for more than 30 minutes.
+        alert_route_namespace: '{{ $labels.namespace }}'
         runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-unschedualablePods.md
     - alert: CrashLoopBackOff
       expr: max_over_time(kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff", namespace!~"(.*-tenant|openshift-.*|kube-.*|default)"}[5m]) >= 1
@@ -31,6 +32,7 @@ spec:
           Pod {{ $labels.namespace }}/{{ $labels.pod }} ({{ $labels.container }}) is in
           waiting state (reason: 'CrashLoopBackOff') on cluster
           {{ $labels.source_cluster }} for more than 15 minutes.
+        alert_route_namespace: '{{ $labels.namespace }}'
         runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-crashLoopBackOff.md
     - alert: PodNotReady
       expr: |
@@ -45,4 +47,5 @@ spec:
         description: >-
           Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster
           {{ $labels.source_cluster }} is not ready for more than 15 minutes.
+        alert_route_namespace: '{{ $labels.namespace }}'
         runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-PodNotReady.md
