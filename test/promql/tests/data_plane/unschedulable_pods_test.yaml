@@ -35,6 +35,10 @@ tests:
       - series: 'kube_pod_status_unschedulable{namespace="default", pod="test-pod", source_cluster="cluster07"}'
         values: '1x60'
 
+      # The pod is in unscheduled status whole time but the namespace ends with env so it's ignored
+      - series: 'kube_pod_status_unschedulable{namespace="test-env", pod="test-pod", source_cluster="cluster01"}'
+        values: '1x60'
+
     alert_rule_test:
       - eval_time: 60m
         alertname: UnschedulablePods

@@ -130,6 +130,10 @@ tests:
       - series: 'kube_persistentvolume_status_phase{persistentvolume="pv-a", namespace="default", phase="Pending", source_cluster="cluster09"}'
         values: '1x4'
 
+      # Persistent volume is in the Failed state but it has a namespace that ends with 'env' so it's ignored.
+      - series: 'kube_persistentvolume_status_phase{persistentvolume="test-pv", namespace="test-env", phase="Failed", source_cluster="cluster01"}'
+        values: '1x4'
+
     alert_rule_test:
       - eval_time: 5m
         alertname: PersistentVolumeIssues
