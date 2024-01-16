@@ -268,6 +268,27 @@ spec:
               git config --global --add safe.directory '*'
               git fetch origin "$(params.target-branch)"
               gitlint --fail-without-commits --commits "origin/$(params.target-branch)..HEAD"
+    - name: run-kube-linter
+      params:
+      - name: repository
+        type: string
+        value: $(tasks.clone-repository.results.url)
+      workspaces:
+        - name: source
+          workspace: workspace
+      runAfter:
+        - clone-repository
+      taskSpec:
+        workspaces:
+          - name: source
+        steps:
+          - name: kube-linter
+            image: quay.io/rh_ee_saviv/kube-linter:latest
+            workingDir: $(workspaces.source.path)
+            script: |
+              set -ex
+              mv ../../kube-linter ../../bin
+              kube-linter lint $(workspaces.source.path)
     - name: run-go-unit-tests
       workspaces:
         - name: workspace
