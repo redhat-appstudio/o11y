@@ -178,6 +178,12 @@ tests:
       - series: 'kube_pod_status_unschedulable{namespace="default", pod="pod-4", source_cluster="cluster09"}'
         values: '0x14'
 
+      # Pod is in the Failed state and scheduled, but it has a namespace that ends with 'env' so it's ignored.
+      - series: 'kube_pod_status_phase{pod="test-pod", namespace="test-env", phase="Failed"}'
+        values: '1x14'
+      - series: 'kube_pod_status_unschedulable{namespace="test-env", pod="test-pod", source_cluster="cluster01"}'
+        values: '0x14'
+
     alert_rule_test:
       - eval_time: 15m
         alertname: PodNotReady

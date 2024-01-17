@@ -42,3 +42,16 @@ tests:
                 Resource example-resource in namespace exceeding-limits on cluster
                 cluster01 exceeded quota test-quota.
               runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-QuotaExceeded.md
+
+  - interval: 1m
+    input_series:
+
+      # Namespace exceeds its quota limits but since the name ends with 'env' it's ignored.
+      - series: 'kube_resourcequota{type="hard", namespace="test-env", resourcequota="test-quota", resource="example-resource", source_cluster="cluster01"}'
+        values: '2x15'
+      - series: 'kube_resourcequota{type="used", namespace="test-env", resourcequota="test-quota", resource="example-resource", source_cluster="cluster01"}'
+        values: '5x15'
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: QuotaExceeded
