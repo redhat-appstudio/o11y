@@ -39,6 +39,10 @@ tests:
       - series: 'kube_pod_container_status_waiting_reason{namespace="default", pod="test-pod", container="test-container", reason="CrashLoopBackOff", source_cluster="cluster01"}'
         values: '1x15'
 
+      # Pod failing with CrashLoopBackOff error but the namespace ends with env so it's ignored
+      - series: 'kube_pod_container_status_waiting_reason{namespace="test-env", pod="test-pod", container="test-container", reason="CrashLoopBackOff", source_cluster="cluster01"}'
+        values: '1x15'
+
     alert_rule_test:
       - eval_time: 15m
         alertname: CrashLoopBackOff
