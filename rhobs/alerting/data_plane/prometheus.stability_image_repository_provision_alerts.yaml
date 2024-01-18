@@ -1,0 +1,33 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-stability-image-repository-provision-alerting-rules
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: stability-image-repository-provision
+    interval: 1m
+    rules:
+    - alert: StabilityImageRepositoryProvision
+      expr: |
+        (
+          (
+            increase(redhat_appstudio_imagecontroller_image_repository_provision_time_bucket{le="+Inf"}[10m])
+            - ignoring(le)
+            increase(redhat_appstudio_imagecontroller_image_repository_provision_time_bucket{le="300"}[10m])
+          ) / ignoring(le)
+          increase(redhat_appstudio_imagecontroller_image_repository_provision_time_bucket{le="+Inf"}[10m])
+        ) > 0.01
+      for: 1m
+      labels:
+        severity: warning
+        slo: "true"
+      annotations:
+        summary: >-
+          Stability of image repository provision time exceeded
+        description: >
+          Time taken to provision image repository has been over
+          5 minutes for more than 1% of requests during the last 10 minutes on cluster
+          {{ $labels.source_cluster }}
+        runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/image-controller/stability_image_repository_provision.md
