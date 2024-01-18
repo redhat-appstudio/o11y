@@ -9,35 +9,35 @@ tests:
     input_series:
 
       # no app is degraded - shouldn't trigger alerts
-      - series: 'argocd_app_info{health_status="Degraded", name="not-degraded-app", namespace="argocd-staging", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="staging-cluster"}'
+      - series: 'argocd_app_info{health_status="Degraded", name="not-degraded-app", namespace="argocd-staging", dest_namespace="test_dest_namespace", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="staging-cluster"}'
         values: _x9
 
       # an app is constantly degraded - should trigger alerts
-      - series: 'argocd_app_info{health_status="Degraded", name="degraded-app", namespace="argocd-staging", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="staging-cluster"}'
+      - series: 'argocd_app_info{health_status="Degraded", name="degraded-app", namespace="argocd-staging", dest_namespace="test_dest_namespace", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="staging-cluster"}'
         values: 1x9
 
       # an app with some 1m degraded status - shouldn't trigger alerts
-      - series: 'argocd_app_info{health_status="Degraded", name="degraded-1m-app", namespace="argocd", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="production-cluster"}'
+      - series: 'argocd_app_info{health_status="Degraded", name="degraded-1m-app", namespace="argocd", dest_namespace="test_dest_namespace", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="production-cluster"}'
         values: 1 _ _ _ 1 _ _ _ _ _
 
       # an app with a 4m degraded status - shouldn't trigger alerts
-      - series: 'argocd_app_info{health_status="Degraded", name="degraded-4m-app", namespace="argocd", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="production-cluster"}'
+      - series: 'argocd_app_info{health_status="Degraded", name="degraded-4m-app", namespace="argocd", dest_namespace="test_dest_namespace", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="production-cluster"}'
         values: _ 1 1 1 1 _ _ _ _ _
 
       # an app is flapping every 1m - should trigger alerts triggers
-      - series: 'argocd_app_info{health_status="Degraded", name="flapping-1m-app", namespace="argocd", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="production-cluster"}'
+      - series: 'argocd_app_info{health_status="Degraded", name="flapping-1m-app", namespace="argocd", dest_namespace="test_dest_namespace", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="production-cluster"}'
         values: 1 _ 1 _ 1 _ 1 _ 1 _
 
       # an app is flapping every 2m - should trigger alerts triggers
-      - series: 'argocd_app_info{health_status="Degraded", name="flapping-2m-app", namespace="argocd", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="production-cluster"}'
+      - series: 'argocd_app_info{health_status="Degraded", name="flapping-2m-app", namespace="argocd", dest_namespace="test_dest_namespace", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="production-cluster"}'
         values: 1 _ _ 1 _ _ 1 _ _ 1
 
       # an app is flapping every 2m but on arbitrary namespace - should not trigger
-      - series: 'argocd_app_info{health_status="Degraded", name="flapping-2m-app", namespace="baz", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="production-cluster"}'
+      - series: 'argocd_app_info{health_status="Degraded", name="flapping-2m-app", namespace="baz", dest_namespace="test_dest_namespace", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="production-cluster"}'
         values: 1 _ _ 1 _ _ 1 _ _ 1
 
       # an app is in another health status which is not 'Degraded' - the rule shouldn't alert.
-      - series: 'argocd_app_info{health_status="Progressing", name="progressing-app", namespace="argocd-staging", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="staging-cluster"}'
+      - series: 'argocd_app_info{health_status="Progressing", name="progressing-app", namespace="argocd-staging", dest_namespace="test_dest_namespace", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="staging-cluster"}'
         values: 1x9
 
 
@@ -47,6 +47,7 @@ tests:
         exp_alerts:
           - exp_labels:
               severity: warning
+              dest_namespace: test_dest_namespace
               dest_server: https://api.foo.openshiftapps.com:6443
               namespace: argocd-staging
               health_status: Degraded
@@ -59,10 +60,12 @@ tests:
                 Application: degraded-app
                 Cluster: https://api.foo.openshiftapps.com:6443
                 Health status Degraded.
+              alert_route_namespace: test_dest_namespace
               runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-degradedArgocdApp.md
 
           - exp_labels:
               severity: warning
+              dest_namespace: test_dest_namespace
               dest_server: https://api.foo.openshiftapps.com:6443
               namespace: argocd
               health_status: Degraded
@@ -75,10 +78,12 @@ tests:
                 Application: flapping-1m-app
                 Cluster: https://api.foo.openshiftapps.com:6443
                 Health status Degraded.
+              alert_route_namespace: test_dest_namespace
               runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-degradedArgocdApp.md
 
           - exp_labels:
               severity: warning
+              dest_namespace: test_dest_namespace
               dest_server: https://api.foo.openshiftapps.com:6443
               namespace: argocd
               health_status: Degraded
@@ -91,6 +96,7 @@ tests:
                 Application: flapping-2m-app
                 Cluster: https://api.foo.openshiftapps.com:6443
                 Health status Degraded.
+              alert_route_namespace: test_dest_namespace
               runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-degradedArgocdApp.md
 
   # ProgressingArgocdApp alert
@@ -109,7 +115,7 @@ tests:
   - interval: 1m
     input_series:
       # App is always progressing, should raise an alert
-      - series: 'argocd_app_info{health_status="Progressing", name="progressing-only-app", namespace="argocd-staging", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="staging-cluster"}'
+      - series: 'argocd_app_info{health_status="Progressing", name="progressing-only-app", namespace="argocd-staging", dest_namespace="test_dest_namespace", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="staging-cluster"}'
         values: 1x19
     alert_rule_test:
       - eval_time: 20m
@@ -117,6 +123,7 @@ tests:
         exp_alerts:
           - exp_labels:
               severity: warning
+              dest_namespace: test_dest_namespace
               dest_server: https://api.foo.openshiftapps.com:6443
               namespace: argocd-staging
               health_status: Progressing
@@ -129,6 +136,7 @@ tests:
                 Application: progressing-only-app
                 Cluster: https://api.foo.openshiftapps.com:6443
                 App progressing for too long.
+              alert_route_namespace: test_dest_namespace
               runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-ProgressingArgocdApp.md
 
   - interval: 1m
@@ -182,14 +190,14 @@ tests:
   - interval: 1m
     input_series:
       # App 1: Progressing all of the time, should raise an alert
-      - series: 'argocd_app_info{health_status="Progressing", name="Progressing_first-app", namespace="argocd", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="production-cluster"}'
+      - series: 'argocd_app_info{health_status="Progressing", name="Progressing_first-app", namespace="argocd", dest_namespace="test_dest_namespace", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="production-cluster"}'
         values: 1x19
-      - series: 'argocd_app_info{health_status="Healthy", name="Progressing_first-app", namespace="argocd", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="production-cluster"}'
+      - series: 'argocd_app_info{health_status="Healthy", name="Progressing_first-app", namespace="argocd", dest_namespace="test_dest_namespace", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="production-cluster"}'
         values: _x19
       # App 2: Progressing for 17 minutes and then healthy for 3 minutes, should not raise an alert
-      - series: 'argocd_app_info{health_status="Progressing", name="Progressing_second-app", namespace="argocd", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="production-cluster"}'
+      - series: 'argocd_app_info{health_status="Progressing", name="Progressing_second-app", namespace="argocd", dest_namespace="test_dest_namespace", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="production-cluster"}'
         values: 1x16 _ _ _
-      - series: 'argocd_app_info{health_status="Healthy", name="Progressing_second-app", namespace="argocd", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="production-cluster"}'
+      - series: 'argocd_app_info{health_status="Healthy", name="Progressing_second-app", namespace="argocd", dest_namespace="test_dest_namespace", dest_server="https://api.foo.openshiftapps.com:6443", source_environment="production-cluster"}'
         values: _x16 1 1 1
     alert_rule_test:
       - eval_time: 20m
@@ -197,6 +205,7 @@ tests:
         exp_alerts:
           - exp_labels:
               severity: warning
+              dest_namespace: test_dest_namespace
               dest_server: https://api.foo.openshiftapps.com:6443
               namespace: argocd
               health_status: Progressing
@@ -209,4 +218,5 @@ tests:
                 Application: Progressing_first-app
                 Cluster: https://api.foo.openshiftapps.com:6443
                 App progressing for too long.
+              alert_route_namespace: test_dest_namespace
               runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-ProgressingArgocdApp.md
