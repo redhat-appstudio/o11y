@@ -11,9 +11,9 @@ spec:
     rules:
     - alert: QuotaExceeded
       expr: |
-        kube_resourcequota{type="used", namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default)"} /
+        kube_resourcequota{type="used", namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-definitions-e2e)"} /
         ignoring (type)
-        (kube_resourcequota{type="hard", namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default)"} > 0) > 1
+        (kube_resourcequota{type="hard", namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-definitions-e2e)"} > 0) > 1
       for: 15m
       labels:
         severity: warning
