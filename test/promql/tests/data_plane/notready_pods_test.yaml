@@ -187,6 +187,18 @@ tests:
       - series: 'kube_pod_status_unschedulable{namespace="test-env", pod="test-pod", source_cluster="cluster01"}'
         values: '0x14'
 
+      # Pod is in the Failed state and scheduled, but it's in the 'tekton-ci' namespace so it's ignored.
+      - series: 'kube_pod_status_phase{pod="test-pod", namespace="tekton-ci", phase="Failed"}'
+        values: '1x14'
+      - series: 'kube_pod_status_unschedulable{namespace="tekton-ci", pod="test-pod", source_cluster="cluster01"}'
+        values: '0x14'
+
+      # Pod is in the Failed state and scheduled, but it's in the 'build-definitions-e2e' namespace so it's ignored.
+      - series: 'kube_pod_status_phase{pod="test-pod", namespace="build-definitions-e2e", phase="Failed"}'
+        values: '1x14'
+      - series: 'kube_pod_status_unschedulable{namespace="build-definitions-e2e", pod="test-pod", source_cluster="cluster01"}'
+        values: '0x14'
+
     alert_rule_test:
       - eval_time: 15m
         alertname: PodNotReady
