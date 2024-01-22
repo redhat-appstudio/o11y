@@ -10,7 +10,7 @@ spec:
     interval: 1m
     rules:
     - alert: PersistentVolumeIssues
-      expr: kube_persistentvolume_status_phase{phase=~"Failed|Pending", namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default)"} == 1
+      expr: kube_persistentvolume_status_phase{phase=~"Failed|Pending", namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-definitions-e2e)"} == 1
       for: 5m
       labels:
         severity: warning

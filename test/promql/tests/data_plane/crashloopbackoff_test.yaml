@@ -43,6 +43,14 @@ tests:
       - series: 'kube_pod_container_status_waiting_reason{namespace="test-env", pod="test-pod", container="test-container", reason="CrashLoopBackOff", source_cluster="cluster01"}'
         values: '1x15'
 
+      # Pod failing with CrashLoopBackOff error but in the 'tekton-ci' namespace so it's ignored
+      - series: 'kube_pod_container_status_waiting_reason{namespace="tekton-ci", pod="test-pod", container="test-container", reason="CrashLoopBackOff", source_cluster="cluster01"}'
+        values: '1x15'
+
+      # Pod failing with CrashLoopBackOff error but in the 'build-definitions-e2e' namespace so it's ignored
+      - series: 'kube_pod_container_status_waiting_reason{namespace="build-definitions-e2e", pod="test-pod", container="test-container", reason="CrashLoopBackOff", source_cluster="cluster01"}'
+        values: '1x15'
+
     alert_rule_test:
       - eval_time: 15m
         alertname: CrashLoopBackOff

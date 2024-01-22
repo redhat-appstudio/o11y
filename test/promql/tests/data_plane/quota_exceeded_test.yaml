@@ -52,6 +52,18 @@ tests:
       - series: 'kube_resourcequota{type="used", namespace="test-env", resourcequota="test-quota", resource="example-resource", source_cluster="cluster01"}'
         values: '5x15'
 
+      # Namespace exceeds its quota limits but since it's named 'tekton-ci' it's ignored.
+      - series: 'kube_resourcequota{type="hard", namespace="tekton-ci", resourcequota="test-quota", resource="example-resource", source_cluster="cluster01"}'
+        values: '2x15'
+      - series: 'kube_resourcequota{type="used", namespace="tekton-ci", resourcequota="test-quota", resource="example-resource", source_cluster="cluster01"}'
+        values: '5x15'
+
+      # Namespace exceeds its quota limits but since it's named 'build-definitions-e2e' it's ignored.
+      - series: 'kube_resourcequota{type="hard", namespace="build-definitions-e2e", resourcequota="test-quota", resource="example-resource", source_cluster="cluster01"}'
+        values: '2x15'
+      - series: 'kube_resourcequota{type="used", namespace="build-definitions-e2e", resourcequota="test-quota", resource="example-resource", source_cluster="cluster01"}'
+        values: '5x15'
+
     alert_rule_test:
       - eval_time: 15m
         alertname: QuotaExceeded
