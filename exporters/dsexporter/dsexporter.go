@@ -43,8 +43,6 @@ func main() {
 	exporter := NewCustomCollector()
 	reg.MustRegister(exporter)
 
-	fmt.Println("Server is listening on http://localhost:8090/metrics")
-
 	http.Handle("/metrics", promhttp.HandlerFor(
 		reg,
 		promhttp.HandlerOpts{
@@ -52,5 +50,6 @@ func main() {
 			Registry:          reg,
 		},
 	))
+	fmt.Println("Server is listening on http://localhost:8090/metrics")
 	http.ListenAndServe(":8090", nil)
 }
