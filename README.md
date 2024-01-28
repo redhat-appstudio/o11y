@@ -54,6 +54,25 @@ Apply `slo: "true"` under labels section of any alerting rule.
       slo: "true"
   ```
 
+### Alerts Tagging
+
+Teams receive updates on alerts relevant to them through Slack notifications, 
+where the team's handle is tagged in the alert message.
+
+#### Usage Guidelines:
+
+Apply the `alert_route_namespace` annotation to alerts in order to get notified about them.
+  
+#### How to apply the `alert_route_namespace` Annotation:
+
+Apply the `alert_route_namespace` key to the annotations section of any alerting rule,
+with one of the team's namespaces as its value.
+  ```
+  annotations:
+      summary: "PipelineRunFinish to SnapshotInProgress time exceeded"
+      alert_route_namespace: "application-service"
+  ```
+
 ### Updating Alerts
 
 Alert rules for data plane and control plane clusters are being deployed by app-interface 
