@@ -18,7 +18,7 @@ tests:
         alertname: SebCreatedToReady
         exp_alerts:
           - exp_labels:
-              severity: warning
+              severity: critical
               slo: "true"
               source_cluster: cluster01
             exp_annotations:
@@ -49,7 +49,7 @@ tests:
         alertname: SebCreatedToReady
         exp_alerts:
           - exp_labels:
-              severity: warning
+              severity: critical
               slo: "true"
               source_cluster: cluster01
             exp_annotations:
@@ -62,7 +62,7 @@ tests:
               runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/integration-service/seb_created_to_ready.md
 
           - exp_labels:
-              severity: warning
+              severity: critical
               slo: "true"
               source_cluster: cluster02
             exp_annotations:
@@ -91,12 +91,12 @@ tests:
     alert_rule_test:
       - eval_time: 10m
         alertname: SebCreatedToReady
-        exp_alerts: [] # No alerts should be triggered
+        exp_alerts: []  # No alerts should be triggered
 
   # Scenario where all metric returns are zero (no events)
   - interval: 1m
     input_series:
-      # Data from Cluster 1 with zero events
+    # Data from Cluster 1 with zero events
     - series: 'integration_svc_seb_created_to_ready_seconds_bucket{le="120", source_cluster="cluster01"}'
       values: '0+0x10'  # 0 requests took less than 120s
     - series: 'integration_svc_seb_created_to_ready_seconds_bucket{le="+Inf", source_cluster="cluster01"}'
