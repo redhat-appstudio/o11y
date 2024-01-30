@@ -50,9 +50,11 @@ promptly identifying and addressing issues that impact service level objectives.
 Apply `slo: "true"` under labels section of any alerting rule.
   ```
   labels:
-      severity: warning
+      severity: critical
       slo: "true"
   ```
+##### Note
+SLO alerts should be labeled with `severity: critical`
 
 ### Alerts Tagging
 
