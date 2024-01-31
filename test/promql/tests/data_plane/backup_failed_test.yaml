@@ -1,0 +1,30 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.backup_alerts.yaml
+
+tests:
+  - interval: 1m
+    input_series:
+      # No backup failures
+      - series: velero_backup_failure_total{namespace="openshift-adp", schedule="backup-toolchain-member", source_cluster="cluster01"}
+        values: '0x60'
+
+      # A backup failure at every interval for 1h
+      - series: velero_backup_failure_total{namespace="openshift-adp", schedule="backup-tenants", source_cluster="cluster01"}
+        values: '0+1x60'
+
+    alert_rule_test:
+      - eval_time: 60m
+        alertname: BackupFailed
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: openshift-adp
+              source_cluster: cluster01
+              schedule: backup-tenants
+            exp_annotations:
+              summary: OADP experienced backup failures for schedule backup-tenants
+              description: OADP had 60 backup failure(s) over the last hour for schedule backup-tenants.
+              alert_routing_key: openshift-adp
+              runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/backup/backup-failed.md
