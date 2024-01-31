@@ -1,0 +1,21 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-backup-alerting-rules
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: backup-alerts
+    interval: 1m
+    rules:
+    - alert: BackupFailed
+      annotations:
+        summary: OADP experienced backup failures for schedule {{ $labels.schedule }}
+        description: OADP had {{ $value | humanize }} backup failure(s) over the last hour for schedule {{ $labels.schedule }}.
+        alert_routing_key: '{{ $labels.namespace }}'
+        runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/backup/backup-failed.md
+      expr: increase(velero_backup_failure_total[1h]) > 0
+      for: 5m
+      labels:
+        severity: warning
