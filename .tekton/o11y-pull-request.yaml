@@ -191,6 +191,24 @@ spec:
         workspace: workspace
       - name: basic-auth
         workspace: git-auth
+    - name: run-kubelint
+      runAfter:
+      - clone-repository
+      workspaces:
+      - name: source
+        workspace: workspace
+      taskRef:
+        resolver: git
+        params:
+        - name: url
+          value: https://github.com/tektoncd/catalog.git
+        - name: revision
+          value: main
+        - name: pathInRepo
+          value: task/kube-linter/0.1/kube-linter.yaml
+      params:
+      - name: config_file_path
+        value: source/.kube-linter.yaml
     - name: prefetch-dependencies
       params:
       - name: input
