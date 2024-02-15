@@ -63,21 +63,22 @@ where the team's handle is tagged in the alert message.
 
 #### Usage Guidelines:
 
-Apply the `alert_routing_key` annotation to alerts in order to get notified about them.
+Apply the `alert_team_handle` and `team` annotations to SLO alerts in order to get notified about them.
   
-#### How to apply the `alert_routing_key` Annotation:
+#### How to apply the `alert_team_handle` Annotation:
 
-Apply the `alert_routing_key` key to the annotations section of any alerting rule,
-with one of the team's namespaces as its value, or the team's name.
+Apply the `alert_team_handle` key to the annotations section of any alerting rule,
+with the relevant team's Slack group handle.
+The format of the Slack handle is: `<!subteam^-slack_group_id->` (e.g: `<!subteam^S041261DDEW>`);
+To obtain the Slack group ID, click on the team's group handle, then click the three dots, and select "Copy group ID."
+
+make sure to also add the `team` annotation with the name of the relevant team for readability.
   ```
   annotations:
       summary: "PipelineRunFinish to SnapshotInProgress time exceeded"
-      alert_routing_key: "application-service"
+      alert_team_handle: <!subteam^S04S21ECL8K>
+      team: o11y
   ```
-
-make sure that the team's name is aligned with the one mentioned in 
-[app-interface's logic](https://gitlab.cee.redhat.com/service/app-interface/-/blob/master/resources/rhobs/stage/alertmanager-routes-mst.secret.yaml?ref_type=heads#L75). 
-if the team is missing from the conditional statement in that file, make sure to add it.
 
 ### Updating Alerts
 
