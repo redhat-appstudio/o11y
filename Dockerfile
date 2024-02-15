@@ -20,7 +20,9 @@ RUN microdnf update --setopt=install_weak_deps=0 -y && microdnf install -y libcu
 COPY --from=builder /bin/exporters /bin/exporters
 
 # It is mandatory to set these labels
+LABEL name="Konflux Observability Exporters"
 LABEL description="Konflux Observability Exporters"
+LABEL com.redhat.component="Konflux Observability Exporters"
 LABEL io.k8s.description="Konflux Observability Exporters"
 LABEL io.k8s.display-name="o11y-exporters"
 LABEL io.openshift.tags="konflux"
