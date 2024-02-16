@@ -3,6 +3,7 @@
 This repository contains the following definitions for RHTAP:
   * Prometheus alerting rules (deployed to RHOBS)
   * Grafana dashboards (deployed to AppSRE's Grafana)
+  * Availability exporters
 
 ## Alerting Rules
 
@@ -125,8 +126,24 @@ to RHOBS. If additional metrics or labels are needed, add them by following the 
 described in the
 [monitoring stack documentation](https://github.com/redhat-appstudio/infra-deployments/blob/main/components/monitoring/prometheus/README.md#federation-and-remote-write)
 
+## Availability exporters
+
+In order to be able to evaluate the overall availability of the Konflux ecosystem, we
+need to be able to establish the availability of each of its components.
+
+By leveraging the existing [Konflux monitoring stack](https://gitlab.cee.redhat.com/konflux/docs/documentation/-/blob/main/o11y/monitoring/monitoring.md)
+based on Prometheus, we create Prometheus exporters that generate metrics that are
+scraped by the User Workload Monitoring Prometheus instance and remote-written to RHOBS.
+
+### Availability Exporter Example
+The o11y team provides an example availability exporter that can be used as reference,
+especially in the case in which the exporter is external to the code it's monitoring.
+
+- [Exporter code](https://github.com/redhat-appstudio/o11y/tree/main/exporters/dsexporter)
+- [Exporter and service Monitor Kubernetes Resources](https://github.com/redhat-appstudio/o11y/tree/main/config/exporters/monitoring/grafana/base)
+
+For more detailed documentation on [Availability exporters](https://gitlab.cee.redhat.com/konflux/docs/documentation/-/blob/main/o11y/monitoring/availability_exporters.md?ref_type=heads)
+
 ## Support
 
-The RHTAP o11y team maintains this repository.
-Reach out to us on our [slack channel](https://redhat-internal.slack.com/archives/C04FDFTF8EB)
-for further assistance.
+- Slack: [#forum-konflux-o11y](https://app.slack.com/client/E030G10V24F/C04FDFTF8EB)
