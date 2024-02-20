@@ -7,15 +7,15 @@ tests:
   - interval: 1m
     input_series:
       # Simulating data from Cluster 1 (crosses the 10% threshold)
-      - series: 'integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_bucket{le="5", source_cluster="cluster01"}'
+      - series: 'integration_svc_snapshot_created_to_pipelinerun_started_seconds_bucket{le="5", source_cluster="cluster01"}'
         values: '0+10x10'  # 10 requests per minute took less than 5s
-      - series: 'integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_bucket{le="+Inf", source_cluster="cluster01"}'
+      - series: 'integration_svc_snapshot_created_to_pipelinerun_started_seconds_bucket{le="+Inf", source_cluster="cluster01"}'
         values: '0+100x10'  # 100 total occurrences per minute in cluster01
 
       # Simulating data from Cluster 2 (does not cross the 10% threshold)
-      - series: 'integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_bucket{le="5", source_cluster="cluster02"}'
+      - series: 'integration_svc_snapshot_created_to_pipelinerun_started_seconds_bucket{le="5", source_cluster="cluster02"}'
         values: '0+90x10'  # 90 requests per minute took less than 5s
-      - series: 'integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_bucket{le="+Inf", source_cluster="cluster02"}'
+      - series: 'integration_svc_snapshot_created_to_pipelinerun_started_seconds_bucket{le="+Inf", source_cluster="cluster02"}'
         values: '0+100x10'  # 100 total occurrences per minute in cluster02
 
     alert_rule_test:
@@ -41,15 +41,15 @@ tests:
   - interval: 1m
     input_series:
       # Simulating data from Cluster 1 (crosses the 10% threshold)
-      - series: 'integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_bucket{le="5", source_cluster="cluster01"}'
+      - series: 'integration_svc_snapshot_created_to_pipelinerun_started_seconds_bucket{le="5", source_cluster="cluster01"}'
         values: '0+5x10'  # 5 requests per minute took less than 5s
-      - series: 'integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_bucket{le="+Inf", source_cluster="cluster01"}'
+      - series: 'integration_svc_snapshot_created_to_pipelinerun_started_seconds_bucket{le="+Inf", source_cluster="cluster01"}'
         values: '0+100x10'  # 100 total occurrences per minute in cluster01
 
       # Simulating data from Cluster 2 (also crosses the 10% threshold)
-      - series: 'integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_bucket{le="5", source_cluster="cluster02"}'
+      - series: 'integration_svc_snapshot_created_to_pipelinerun_started_seconds_bucket{le="5", source_cluster="cluster02"}'
         values: '0+5x10'  # 5 requests per minute took less than 5s
-      - series: 'integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_bucket{le="+Inf", source_cluster="cluster02"}'
+      - series: 'integration_svc_snapshot_created_to_pipelinerun_started_seconds_bucket{le="+Inf", source_cluster="cluster02"}'
         values: '0+100x10'  # 100 total occurrences per minute in cluster02
 
     alert_rule_test:
@@ -88,15 +88,15 @@ tests:
   - interval: 1m
     input_series:
       # Simulating data from Cluster 1 (does not cross the 10% threshold)
-      - series: 'integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_bucket{le="5", source_cluster="cluster01"}'
+      - series: 'integration_svc_snapshot_created_to_pipelinerun_started_seconds_bucket{le="5", source_cluster="cluster01"}'
         values: '0+95x10'  # 95 requests per minute took less than 5s
-      - series: 'integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_bucket{le="+Inf", source_cluster="cluster01"}'
+      - series: 'integration_svc_snapshot_created_to_pipelinerun_started_seconds_bucket{le="+Inf", source_cluster="cluster01"}'
         values: '0+100x10'  # 100 total occurrences per minute in cluster01
 
       # Simulating data from Cluster 2 (does not cross the 10% threshold)
-      - series: 'integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_bucket{le="5", source_cluster="cluster02"}'
+      - series: 'integration_svc_snapshot_created_to_pipelinerun_started_seconds_bucket{le="5", source_cluster="cluster02"}'
         values: '0+95x10'  # 95 requests per minute took less than 5s
-      - series: 'integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_bucket{le="+Inf", source_cluster="cluster02"}'
+      - series: 'integration_svc_snapshot_created_to_pipelinerun_started_seconds_bucket{le="+Inf", source_cluster="cluster02"}'
         values: '0+100x10'  # 100 total occurrences per minute in cluster02
 
     alert_rule_test:
