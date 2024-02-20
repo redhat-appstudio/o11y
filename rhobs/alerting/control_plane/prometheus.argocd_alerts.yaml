@@ -6,46 +6,53 @@ metadata:
     tenant: rhtap
 spec:
   groups:
-  - name: argocd-alerts
-    interval: 1m
-    rules:
-    - alert: DegradedArgocdApp
-      expr: |
-        last_over_time(
-          argocd_app_info{health_status="Degraded", namespace=~"argocd-staging|argocd"}[2m]
-        ) == 1
-      for: 5m
-      labels:
-        severity: warning
-        team: rhtap
-      annotations:
-        summary: Argocd App '{{ $labels.name }}' is degraded
-        description: |
-          Environment: {{ $labels.source_environment }}
-          Application: {{ $labels.name }}
-          Cluster: {{ $labels.dest_server }}
-          Health status Degraded.
-        alert_routing_key: '{{ $labels.dest_namespace }}'
-        runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-degradedArgocdApp.md
-    - alert: ProgressingArgocdApp
-      expr: |
-        max_over_time(
-          argocd_app_info{health_status="Progressing", namespace=~"argocd-staging|argocd"}[19m]
-        ) == 1
-        unless ignoring (health_status)
-        max_over_time(
-          argocd_app_info{health_status!="Progressing", namespace=~"argocd-staging|argocd"}[19m]
-        ) == 1
-      for: 1m
-      labels:
-        severity: warning
-        team: rhtap
-      annotations:
-        summary: Argocd App '{{ $labels.name }}' is progressing for too long
-        description: |-
-          Environment: {{ $labels.source_environment }}
-          Application: {{ $labels.name }}
-          Cluster: {{ $labels.dest_server }}
-          App progressing for too long.
-        alert_routing_key: '{{ $labels.dest_namespace }}'
-        runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-ProgressingArgocdApp.md
+    - name: argocd-alerts
+      interval: 1m
+      rules:
+        - alert: DegradedArgocdApp
+          expr: |
+            last_over_time(
+              argocd_app_info{health_status="Degraded", namespace=~"argocd-staging|argocd"}[2m]
+            ) == 1
+          for: 5m
+          labels:
+            severity: warning
+            team: rhtap
+          annotations:
+            summary: Argocd App '{{ $labels.name }}' is degraded
+            description: |
+              Environment: {{ $labels.source_environment }}
+              Application: {{ $labels.name }}
+              Cluster: {{ $labels.dest_server }}
+              Health status Degraded.
+            alert_routing_key: "{{ $labels.dest_namespace }}"
+            runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-degradedArgocdApp.md
+        - alert: ProgressingArgocdApp
+          expr: |
+            max_over_time(
+              argocd_app_info{health_status="Progressing", namespace=~"argocd-staging|argocd"}[19m]
+            ) == 1
+            unless ignoring (health_status)
+            max_over_time(
+              argocd_app_info{health_status!="Progressing", namespace=~"argocd-staging|argocd"}[19m]
+            ) == 1
+          for: 1m
+          labels:
+            severity: warning
+            team: rhtap
+          annotations:
+            summary: Argocd App '{{ $labels.name }}' is progressing for too long
+            description: |-
+              Environment: {{ $labels.source_environment }}
+              Application: {{ $labels.name }}
+              Cluster: {{ $labels.dest_server }}
+              App progressing for too long.
+            alert_routing_key: >-
+              {{ if eq $labels.dest_namespace "default" -}}
+                  {{ $name := $labels.name -}}
+                  {{ $modifiedName :=  reReplaceAll ".*?(-stone-[^-]+-[^-]+).*" "$1" $name }}
+                  {{ $modifiedName -}}
+              {{ else -}}
+                {{ $labels.dest_namespace -}}
+              {{ end }}
+            runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-ProgressingArgocdApp.md
