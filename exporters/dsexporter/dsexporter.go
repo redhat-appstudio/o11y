@@ -14,7 +14,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
-const service = "grafana"
 const check = "prometheus-appstudio-ds"
 var allDataSources = GetDataSources
 
@@ -26,10 +25,10 @@ type CustomCollector struct {
 func NewCustomCollector() *CustomCollector {
 	return &CustomCollector{
 		konfluxUp: prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: "konflux_up",
+			Name: "grafana_ds_up",
 			Help: "Availability of the Konflux default grafana datasource",
 		},
-		[]string{"service", "check"}),
+		[]string{"check"}),
 	}
 }
 
@@ -53,7 +52,7 @@ func (e *CustomCollector) Collect(ch chan<- prometheus.Metric) {
 		}
 	}
 
-	e.konfluxUp.WithLabelValues(service, check).Set(availability)
+	e.konfluxUp.WithLabelValues(check).Set(availability)
 	e.konfluxUp.Collect(ch)
 }
 

@@ -22,6 +22,7 @@ kustomize:
 check-and-test:
 	$(CMD) -t rhtap -d rhobs/alerting/data_plane -y -p --tests-dir test/promql/tests/data_plane
 	$(CMD) -t rhtap -d rhobs/alerting/control_plane -y -p --tests-dir test/promql/tests/control_plane
+	$(CMD) -t rhtap -d rhobs/recording -y -p --tests-dir test/promql/tests/recording
 
 .PHONY: install_pipenv
 install_pipenv:
