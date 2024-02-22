@@ -81,12 +81,12 @@ make sure to also add the `team` annotation with the name of the relevant team f
       team: o11y
   ```
 
-### Updating Alerts
+### Updating Alert and Recording Rules
 
-Alert rules for data plane and control plane clusters are being deployed by app-interface 
-to RHOBS, to where the metrics are also being forwarded. For deploying the 
-alert rules, app-interface references the location of the rules together with a git 
-reference - branch name or commit hash.
+Alert rules for data plane, control plane clusters and recording rules are being deployed by
+app-interface to RHOBS, to where the metrics are also being forwarded. For deploying the
+alert rules and recording rules, app-interface references the location of the rules together
+with a git reference - branch name or commit hash.
 
 It holds separate references to both staging and production RHOBS instances (monitoring
 RHTAP staging and production deployments). For both environments, we maintain the
@@ -95,11 +95,13 @@ changes to the rules will not take effect until the references are updated.
 
 Steps for updating the rules:
 
-1. Merge the necessary changes to this repository - alerts and tests.
+1. Merge the necessary changes to this repository - alerts, recording rules and tests.
 2. The
-[data plane staging environment](https://gitlab.cee.redhat.com/service/app-interface/-/blob/master/data/services/stonesoup/cicd/saas-rhtap-rules.yaml#L35)
-and the
+[data plane staging environment](https://gitlab.cee.redhat.com/service/app-interface/-/blob/master/data/services/stonesoup/cicd/saas-rhtap-rules.yaml#L35),
+the
 [control plane staging environment](https://gitlab.cee.redhat.com/service/app-interface/-/blob/master/data/services/stonesoup/cicd/saas-rhtap-rules.yaml#L49)
+and the
+[recording rules staging environment](https://gitlab.cee.redhat.com/service/app-interface/-/blob/master/data/services/stonesoup/cicd/saas-rhtap-rules.yaml#L63)
 in app-interface are referencing to the `main` branch in `o11y` repository  and will be automatically updated with the new changes.
 3. Once merged and ready to be promoted to production, update the
 [data plane production environment](https://gitlab.cee.redhat.com/service/app-interface/-/blob/master/data/services/stonesoup/cicd/saas-rhtap-rules.yaml#L39) 
