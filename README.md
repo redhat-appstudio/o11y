@@ -146,6 +146,30 @@ especially in the case in which the exporter is external to the code it's monito
 
 For more detailed documentation on [Availability exporters](https://gitlab.cee.redhat.com/konflux/docs/documentation/-/blob/main/o11y/monitoring/availability_exporters.md?ref_type=heads)
 
+## Recording Rules
+
+Recording rules allow us to precompute frequently needed or computationally expensive expressions
+and save their result as a new set of time series. Recording rules are the go-to approach for
+speeding up the performance of queries that take too long to return. When other teams want to go
+with their own metrics format for exporters they need to adapt to desired metric form by
+translating it using a recording rule. 
+
+These recording rules should be put in the [rhobs/recording folder](rhobs/recording/). 
+
+The standard format is single availability metric `konflux_up` with labels `service` and `check`.
+Each time series will have the service and check labels for the name of the originating service
+and availability check it performed, respectively. The metric konflux_up should return either 0
+or 1 based on the availability of the component/service. If the service is up then the
+metric should return 1 else 0.
+
+[Recording rule example](rhobs/recording/exporter_recording_rules.yml) provided here has
+below format
+  ```
+  grafana_ds_up(check=prometheus-appstudio-ds) -> konflux_up(service=grafana, check=prometheus-appstudio-ds)
+  ```
+
+For more detailed documentation on [recording rules](https://docs.google.com/document/d/1Y72T10JGuJaeyeNexmS_qTHfDB8uxxq0zERRRSOZegg/edit?usp=sharing)
+
 ## Support
 
 - Slack: [#forum-konflux-o11y](https://app.slack.com/client/E030G10V24F/C04FDFTF8EB)
