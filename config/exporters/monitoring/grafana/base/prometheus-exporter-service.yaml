@@ -32,18 +32,45 @@ roleRef:
   kind: ClusterRole
   name: exporter-cluster-role
 ---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kube-rbac-proxy
+rules:
+- apiGroups: ["authentication.k8s.io"]
+  resources:
+  - tokenreviews
+  verbs: ["create"]
+- apiGroups: ["authorization.k8s.io"]
+  resources:
+  - subjectaccessreviews
+  verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: exporter-role-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kube-rbac-proxy
+subjects:
+- kind: ServiceAccount
+  name: exporter-sa
+  namespace: appstudio-grafana-datasource-exporter
+---
 apiVersion: v1
 kind: Service
 metadata:
-  name: exporter-service
-  namespace: appstudio-grafana-datasource-exporter
   labels:
     app: grafana-datasource-exporter
+  name: exporter-service
+  namespace: appstudio-grafana-datasource-exporter
 spec:
   ports:
-  - name: http
-    port: 8090
-    targetPort: http
+  - name: https
+    port: 8443
+    targetPort: https
   selector:
     app: grafana-datasource-exporter
 ---
@@ -64,32 +91,36 @@ spec:
     spec:
       serviceAccountName: exporter-sa
       containers:
-      - name: grafana-datasource-exporter
-        image: exporter:latest
+      - name: kube-rbac-proxy
+        image: quay.io/brancz/kube-rbac-proxy:v0.14.0
+        args:
+        - "--secure-listen-address=0.0.0.0:8443"
+        - "--upstream=http://127.0.0.1:8090/"
+        - "--logtostderr=true"
+        - "--v=10"
         ports:
-        - containerPort: 8090
-          name: http
+        - containerPort: 8443
+          name: https
         resources:
           limits:
             cpu: 100m
-            memory: 100Mi
+            memory: 200Mi
           requests:
             cpu: 100m
-            memory: 10Mi
+            memory: 200Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+      - name: exporters
+        image: exporter:latest
+        resources:
+          limits:
+            cpu: 100m
+            memory: 200Mi
+          requests:
+            cpu: 100m
+            memory: 200Mi
         securityContext:
           readOnlyRootFilesystem: true
           runAsNonRoot: true
----
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
-  name: metrics-reader-test
-  namespace: appstudio-grafana-datasource-exporter
-spec:
-  endpoints:
-  - path: /metrics
-    port: http
-    scheme: http
-  selector:
-    matchLabels:
-      app: grafana-datasource-exporter
