@@ -1,0 +1,928 @@
+apiVersion: v1
+data:
+  konflux-argocd-dashboard.json: |
+    {
+      "annotations": {
+        "list": [
+          {
+            "builtIn": 1,
+            "datasource": {
+              "type": "datasource",
+              "uid": "grafana"
+            },
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "target": {
+              "limit": 100,
+              "matchAny": false,
+              "tags": [],
+              "type": "dashboard"
+            },
+            "type": "dashboard"
+          }
+        ]
+      },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 0,
+      "id": 682180,
+      "links": [],
+      "liveNow": false,
+      "panels": [
+        {
+          "collapsed": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          },
+          "id": 68,
+          "panels": [],
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "refId": "A"
+            }
+          ],
+          "title": "Applications",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 3,
+            "x": 0,
+            "y": 1
+          },
+          "id": 26,
+          "links": [],
+          "options": {
+            "code": {
+              "language": "plaintext",
+              "showLineNumbers": false,
+              "showMiniMap": false
+            },
+            "content": "![argoimage](https://avatars1.githubusercontent.com/u/30269780?s=120&v=4)",
+            "mode": "markdown"
+          },
+          "pluginVersion": "9.3.8",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "refId": "A"
+            }
+          ],
+          "transparent": true,
+          "type": "text"
+        },
+        {
+          "datasource": {
+            "uid": "${datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "match": "null",
+                    "result": {
+                      "text": "N/A"
+                    }
+                  },
+                  "type": "special"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "dtdurations"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 6,
+            "x": 3,
+            "y": 1
+          },
+          "id": 32,
+          "links": [],
+          "maxDataPoints": 100,
+          "options": {
+            "colorMode": "none",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "pluginVersion": "9.3.8",
+          "targets": [
+            {
+              "datasource": {
+                "uid": "${datasource}"
+              },
+              "expr": "time() - max(process_start_time_seconds{job=\"argocd-server-metrics\",namespace=~\"$namespace\",project=~\"$project\"})",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "refId": "A"
+            }
+          ],
+          "title": "Uptime",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "uid": "${datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "match": "null",
+                    "result": {
+                      "text": "N/A"
+                    }
+                  },
+                  "type": "special"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 15,
+            "x": 9,
+            "y": 1
+          },
+          "id": 75,
+          "links": [],
+          "maxDataPoints": 100,
+          "options": {
+            "colorMode": "none",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "pluginVersion": "9.3.8",
+          "repeatDirection": "h",
+          "targets": [
+            {
+              "datasource": {
+                "uid": "${datasource}"
+              },
+              "expr": "sum(argocd_app_info{namespace=~\"$namespace\"})",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "refId": "A"
+            }
+          ],
+          "title": "Total Applications",
+          "type": "stat"
+        },
+        {
+          "collapsed": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 7
+          },
+          "id": 77,
+          "panels": [],
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "refId": "A"
+            }
+          ],
+          "title": "Health Status",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "match": "null",
+                    "result": {
+                      "color": "rgba(237, 129, 40, 0.89)",
+                      "text": "0"
+                    }
+                  },
+                  "type": "special"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "#d44a3a",
+                    "value": null
+                  },
+                  {
+                    "color": "rgba(237, 129, 40, 0.89)",
+                    "value": 0
+                  },
+                  {
+                    "color": "#629e51",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 8,
+            "x": 0,
+            "y": 8
+          },
+          "id": 4,
+          "links": [],
+          "maxDataPoints": 100,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "pluginVersion": "9.3.8",
+          "targets": [
+            {
+              "datasource": {
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum(argocd_app_info{health_status=\"Healthy\",namespace=~\"argocd-staging|argocd\"} == 1)",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Healthy",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "match": "null",
+                    "result": {
+                      "color": "#F2495C",
+                      "text": "0"
+                    }
+                  },
+                  "type": "special"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "#F2495C",
+                    "value": null
+                  },
+                  {
+                    "color": "#F2495C",
+                    "value": 0
+                  },
+                  {
+                    "color": "#F2495C",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 8,
+            "x": 8,
+            "y": 8
+          },
+          "id": 6,
+          "links": [],
+          "maxDataPoints": 100,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "pluginVersion": "9.3.8",
+          "targets": [
+            {
+              "datasource": {
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum(argocd_app_info{health_status=\"Degraded\",namespace=~\"argocd-staging|argocd\"})",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Degraded",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "fixedColor": "rgb(182, 182, 182)",
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "match": "null",
+                    "result": {
+                      "color": "#d44a3a",
+                      "text": "0"
+                    }
+                  },
+                  "type": "special"
+                }
+              ],
+              "max": 100,
+              "min": 1,
+              "thresholds": {
+                "mode": "percentage",
+                "steps": [
+                  {
+                    "color": "dark-red",
+                    "value": null
+                  },
+                  {
+                    "color": "dark-green",
+                    "value": 95
+                  }
+                ]
+              },
+              "unit": "percent"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 8,
+            "x": 16,
+            "y": 8
+          },
+          "id": 14,
+          "links": [],
+          "maxDataPoints": 100,
+          "options": {
+            "colorMode": "none",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true,
+            "textMode": "auto"
+          },
+          "pluginVersion": "9.3.8",
+          "targets": [
+            {
+              "datasource": {
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum(argocd_app_info{health_status=\"Healthy\",namespace=~\"argocd-staging|argocd\"}) * 100 / sum(argocd_app_info{namespace=~\"argocd-staging|argocd\"})",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Health SLO",
+          "type": "gauge"
+        },
+        {
+          "collapsed": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 15
+          },
+          "id": 79,
+          "panels": [],
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "refId": "A"
+            }
+          ],
+          "title": "Sync Status",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "match": "null",
+                    "result": {
+                      "color": "rgba(237, 129, 40, 0.89)",
+                      "text": "0"
+                    }
+                  },
+                  "type": "special"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "#d44a3a",
+                    "value": null
+                  },
+                  {
+                    "color": "rgba(237, 129, 40, 0.89)",
+                    "value": 0
+                  },
+                  {
+                    "color": "#299c46",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 8,
+            "x": 0,
+            "y": 16
+          },
+          "id": 18,
+          "links": [],
+          "maxDataPoints": 100,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "pluginVersion": "9.3.8",
+          "targets": [
+            {
+              "datasource": {
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum(argocd_app_info{sync_status=\"Synced\",namespace=~\"argocd-staging|argocd\"})",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Synced",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "match": "null",
+                    "result": {
+                      "color": "#F2495C",
+                      "text": "0"
+                    }
+                  },
+                  "type": "special"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "#d44a3a",
+                    "value": null
+                  },
+                  {
+                    "color": "#F2495C",
+                    "value": 0
+                  },
+                  {
+                    "color": "#F2495C",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 8,
+            "x": 8,
+            "y": 16
+          },
+          "id": 20,
+          "links": [],
+          "maxDataPoints": 100,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "textMode": "auto"
+          },
+          "pluginVersion": "9.3.8",
+          "targets": [
+            {
+              "datasource": {
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum(argocd_app_info{sync_status=\"OutOfSync\",namespace=~\"argocd-staging|argocd\"})",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "OutOfSync",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "fixedColor": "rgb(255, 255, 255)",
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "match": "null",
+                    "result": {
+                      "color": "rgba(237, 129, 40, 0.89)",
+                      "text": "0"
+                    }
+                  },
+                  "type": "special"
+                }
+              ],
+              "max": 100,
+              "min": 1,
+              "thresholds": {
+                "mode": "percentage",
+                "steps": [
+                  {
+                    "color": "dark-red",
+                    "value": null
+                  },
+                  {
+                    "color": "#299c46",
+                    "value": 95
+                  }
+                ]
+              },
+              "unit": "percent"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 8,
+            "x": 16,
+            "y": 16
+          },
+          "id": 22,
+          "links": [],
+          "maxDataPoints": 100,
+          "options": {
+            "colorMode": "none",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true,
+            "textMode": "auto"
+          },
+          "pluginVersion": "9.3.8",
+          "targets": [
+            {
+              "datasource": {
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum(argocd_app_info{sync_status=\"Synced\",namespace=~\"argocd-staging|argocd\"}) * 100 / sum(argocd_app_info{namespace=~\"argocd-staging|argocd\"})",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Sync Success SLO",
+          "type": "gauge"
+        }
+      ],
+      "refresh": "1m",
+      "schemaVersion": 37,
+      "style": "dark",
+      "tags": [],
+      "templating": {
+        "list": [
+          {
+            "current": {
+              "selected": false,
+              "text": "appsres05ue1-prometheus",
+              "value": "appsres05ue1-prometheus"
+            },
+            "hide": 0,
+            "includeAll": false,
+            "label": "Prometheus",
+            "multi": false,
+            "name": "datasource",
+            "options": [],
+            "query": "prometheus",
+            "refresh": 1,
+            "regex": "",
+            "skipUrlSync": false,
+            "type": "datasource"
+          },
+          {
+            "allValue": ".*",
+            "current": {
+              "selected": false,
+              "text": "All",
+              "value": "$__all"
+            },
+            "datasource": {
+              "uid": "${datasource}"
+            },
+            "definition": "label_values(kube_pod_info, namespace)",
+            "hide": 0,
+            "includeAll": true,
+            "multi": false,
+            "name": "namespace",
+            "options": [],
+            "query": {
+              "query": "label_values(kube_pod_info, namespace)",
+              "refId": "appsres05ue1-prometheus-namespace-Variable-Query"
+            },
+            "refresh": 1,
+            "regex": ".*argocd.*",
+            "skipUrlSync": false,
+            "sort": 0,
+            "tagValuesQuery": "",
+            "tagsQuery": "",
+            "type": "query",
+            "useTags": false
+          },
+          {
+            "allValue": ".*",
+            "current": {
+              "selected": true,
+              "text": [
+                "All"
+              ],
+              "value": [
+                "$__all"
+              ]
+            },
+            "datasource": {
+              "uid": "${datasource}"
+            },
+            "definition": "label_values(argocd_app_health_status, project)",
+            "hide": 0,
+            "includeAll": true,
+            "multi": true,
+            "name": "project",
+            "options": [],
+            "query": {
+              "query": "label_values(argocd_app_health_status, project)",
+              "refId": "appsres05ue1-prometheus-project-Variable-Query"
+            },
+            "refresh": 1,
+            "regex": "",
+            "skipUrlSync": false,
+            "sort": 0,
+            "tagValuesQuery": "",
+            "tagsQuery": "",
+            "type": "query",
+            "useTags": false
+          }
+        ]
+      },
+      "time": {
+        "from": "now-6h",
+        "to": "now"
+      },
+      "timepicker": {
+        "refresh_intervals": [
+          "5s",
+          "10s",
+          "30s",
+          "1m",
+          "5m",
+          "15m",
+          "30m",
+          "1h",
+          "2h",
+          "1d"
+        ],
+        "time_options": [
+          "5m",
+          "15m",
+          "1h",
+          "6h",
+          "12h",
+          "24h",
+          "2d",
+          "7d",
+          "30d"
+        ]
+      },
+      "timezone": "",
+      "title": "Konflux ArgoCD",
+      "uid": "OFb_0IASz",
+      "version": 1,
+      "weekStart": ""
+    }
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-konflux-argocd
+  labels:
+    grafana_dashboard: "true"
+  annotations:
+    grafana-folder: /grafana-dashboard-definitions/RHTAP
