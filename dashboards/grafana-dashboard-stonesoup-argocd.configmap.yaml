@@ -27,7 +27,7 @@ data:
       "editable": true,
       "fiscalYearStartMonth": 0,
       "graphTooltip": 0,
-      "id": 682180,
+      "id": 682524,
       "links": [],
       "liveNow": false,
       "panels": [
@@ -94,6 +94,7 @@ data:
         },
         {
           "datasource": {
+            "type": "prometheus",
             "uid": "${datasource}"
           },
           "fieldConfig": {
@@ -131,8 +132,169 @@ data:
           },
           "gridPos": {
             "h": 6,
-            "w": 6,
+            "w": 4,
             "x": 3,
+            "y": 1
+          },
+          "id": 80,
+          "links": [],
+          "maxDataPoints": 100,
+          "options": {
+            "colorMode": "none",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "text": {
+              "valueSize": 70
+            },
+            "textMode": "auto"
+          },
+          "pluginVersion": "9.3.8",
+          "targets": [
+            {
+              "datasource": {
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "time() - max(process_start_time_seconds{job=\"argocd-metrics\",namespace=~\"$namespace\",project=~\"$project\"})",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "ArgoCD Controller Uptime",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "match": "null",
+                    "result": {
+                      "text": "N/A"
+                    }
+                  },
+                  "type": "special"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "dtdurations"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 4,
+            "x": 7,
+            "y": 1
+          },
+          "id": 81,
+          "links": [],
+          "maxDataPoints": 100,
+          "options": {
+            "colorMode": "none",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "text": {
+              "valueSize": 70
+            },
+            "textMode": "auto"
+          },
+          "pluginVersion": "9.3.8",
+          "targets": [
+            {
+              "datasource": {
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "time() - max(process_start_time_seconds{job=~\"argocd-applicationset-controller|argocd-metrics|argocd-server-metrics\",namespace=~\"$namespace\",project=~\"$project\"})",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "ArgoCD ApplicationSet Controller Uptime",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "uid": "${datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "match": "null",
+                    "result": {
+                      "text": "N/A"
+                    }
+                  },
+                  "type": "special"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "dtdurations"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 4,
+            "x": 11,
             "y": 1
           },
           "id": 32,
@@ -150,6 +312,9 @@ data:
               "fields": "",
               "values": false
             },
+            "text": {
+              "valueSize": 70
+            },
             "textMode": "auto"
           },
           "pluginVersion": "9.3.8",
@@ -164,7 +329,7 @@ data:
               "refId": "A"
             }
           ],
-          "title": "Uptime",
+          "title": "ArgoCD Server Uptime",
           "type": "stat"
         },
         {
@@ -206,8 +371,8 @@ data:
           },
           "gridPos": {
             "h": 6,
-            "w": 15,
-            "x": 9,
+            "w": 8,
+            "x": 15,
             "y": 1
           },
           "id": 75,
@@ -224,6 +389,9 @@ data:
               ],
               "fields": "",
               "values": false
+            },
+            "text": {
+              "valueSize": 100
             },
             "textMode": "auto"
           },
@@ -516,7 +684,7 @@ data:
               "refId": "A"
             }
           ],
-          "title": "Health SLO",
+          "title": "Health Percentage",
           "type": "gauge"
         },
         {
@@ -792,7 +960,7 @@ data:
               "refId": "A"
             }
           ],
-          "title": "Sync Success SLO",
+          "title": "Sync Success Percentage",
           "type": "gauge"
         }
       ],
@@ -804,7 +972,7 @@ data:
         "list": [
           {
             "current": {
-              "selected": false,
+              "selected": true,
               "text": "appsres05ue1-prometheus",
               "value": "appsres05ue1-prometheus"
             },
@@ -815,6 +983,7 @@ data:
             "name": "datasource",
             "options": [],
             "query": "prometheus",
+            "queryValue": "",
             "refresh": 1,
             "regex": "",
             "skipUrlSync": false,
@@ -916,7 +1085,7 @@ data:
       "timezone": "",
       "title": "Konflux ArgoCD",
       "uid": "OFb_0IASz",
-      "version": 1,
+      "version": 3,
       "weekStart": ""
     }
 kind: ConfigMap
