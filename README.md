@@ -57,6 +57,20 @@ Apply `slo: "true"` under labels section of any alerting rule.
 ##### Note
 SLO alerts should be labeled with `severity: critical`
 
+### Labeling Control Plane alerts
+
+SLO alerts from the `#konflux-slo-alerts` channel in Slack would be routed to PagerDuty.
+The Control Plane SLO alerts would be routed to AppSRE service in PagerDuty, and the Data Plane 
+SLO alerts would be routed to a Data Plane Tiger team service in PagerDuty.
+
+We have to make sure that the `control_plane` tag is defined and set to `"true"` When 
+adding or updating a Control Plane alert:
+```
+labels:
+  control_plane: "true"
+```
+
+
 ### Alerts Tagging
 
 Teams receive updates on alerts relevant to them through Slack notifications, 
