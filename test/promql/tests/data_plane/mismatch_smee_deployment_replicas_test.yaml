@@ -1,0 +1,55 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.smee_deployment_alerts.yaml
+
+tests:
+  - interval: 1m
+    input_series:
+      # Alerted cases:
+      # Actual deployments are lower than the spec in smee.* namespace, so it will be alerted.
+      - series: 'kube_deployment_spec_replicas{namespace="smee-client", deployment="gosmee", source_cluster="cluster01"}'
+        values: '2x5'
+      - series: 'kube_deployment_status_replicas_available{namespace="smee-client", deployment="gosmee", source_cluster="cluster01"}'
+        values: '1x5'
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: SmeeDeploymentReplicasMismatch
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: smee-client
+              deployment: gosmee
+              source_cluster: cluster01
+            exp_annotations:
+              summary: >-
+                Smee deployment smee-client/gosmee replicas mismatch
+              description: >-
+                The number of replicas defined in smee-client/gosmee on cluster cluster01
+                is different than the actual number of replicas
+              alert_routing_key: smee-client
+              runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-SmeeDeploymentMismatch.md
+
+  - interval: 1m
+    input_series:
+      # Not Alerted cases:
+      # Actual deployments equals the spec, No alert
+      - series: 'kube_deployment_spec_replicas{namespace="smee", deployment="gosmee", source_cluster="cluster01"}'
+        values: '2x5'
+      - series: 'kube_deployment_status_replicas_available{namespace="smee", deployment="gosmee", source_cluster="cluster01"}'
+        values: '2x5'
+      # Actual deployments are lower than the spec in smee.* for less than 5 minutes, No alert
+      - series: 'kube_deployment_spec_replicas{namespace="smee-client", deployment="gosmee", source_cluster="cluster01"}'
+        values: '2x5'
+      - series: 'kube_deployment_status_replicas_available{namespace="smee-client", deployment="gosmee", source_cluster="cluster01"}'
+        values: '1x3 2x5'
+      # Actual deployments are lower than the spec but not in smee.* namespace, No alert
+      - series: 'kube_deployment_spec_replicas{namespace="ns-1", deployment="dep", source_cluster="cluster01"}'
+        values: '2x5'
+      - series: 'kube_deployment_status_replicas_available{namespace="ns-1", deployment="dep", source_cluster="cluster01"}'
+        values: '1x3 2x5'
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: SmeeDeploymentReplicasMismatch
