@@ -121,6 +121,8 @@ in app-interface are referencing to the `main` branch in `o11y` repository  and 
 [data plane production environment](https://gitlab.cee.redhat.com/service/app-interface/-/blob/master/data/services/stonesoup/cicd/saas-rhtap-rules.yaml#L39) 
 and/or the
 [control plane production environment](https://gitlab.cee.redhat.com/service/app-interface/-/blob/master/data/services/stonesoup/cicd/saas-rhtap-rules.yaml#L53) 
+and/or the 
+[recording rules production environment](https://gitlab.cee.redhat.com/service/app-interface/-/blob/master/data/services/stonesoup/cicd/saas-rhtap-rules.yaml#L67)
 reference in app-interface to the commit hash of the changes you made.
 
 ## Grafana Dashboards
