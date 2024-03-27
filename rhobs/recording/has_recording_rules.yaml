@@ -1,0 +1,15 @@
+# Metric format needed
+# has_availability(check=github) -> konflux_up(service=has, check=github)
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-has-label-replace
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: has_availability
+    interval: 1m
+    rules:
+    - record: konflux_up
+      expr: label_replace(has_availability, "service", "has", "__name__", "(.+)")
