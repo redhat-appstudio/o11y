@@ -1,0 +1,25 @@
+evaluation_interval: 1m
+
+rule_files:
+- has_recording_rules.yaml
+
+tests:
+- interval: 1m
+  name: HASExporterTest
+  input_series:
+    - series: "has_availability{check='github'}"
+      values: "1 1 1 1 1"
+    - series: "has_availability{check='gitlab'}"
+      values: "0 0 0 0 0"
+    - series: "has_availability{other_label='bitbucket'}"
+      values: "0 1 0 1 0"
+  promql_expr_test:
+    - expr: konflux_up
+      eval_time: 5m
+      exp_samples:
+        - labels: konflux_up{service='has', check='github'}
+          value: 1
+        - labels: konflux_up{service='has', check='gitlab'}
+          value: 0
+        - labels: konflux_up{service='has', other_label='bitbucket'}
+          value: 0
