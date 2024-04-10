@@ -8,16 +8,10 @@ This repository contains the following definitions for RHTAP:
 ## Alerting Rules
 
 The repository contains Prometheus alert rules [files](rhobs/alerting) for monitoring
-RHTAP data plane and control plane clusters along with their [tests](test/promql).
+RHTAP data plane clusters along with their [tests](test/promql).
 
 
 The different alerting rules in this repository are:
-
-## Control Plane Alerts
-
-* [**Alert Rule ProgressingArgocdApp**](https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-ProgressingArgocdApp.md)
-
-* [**Alert Rule DegradedArgocdApp**](https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-degradedArgocdApp.md)
 
 ## Data Plane Alerts
 
@@ -57,20 +51,6 @@ Apply `slo: "true"` under labels section of any alerting rule.
 ##### Note
 SLO alerts should be labeled with `severity: critical`
 
-### Labeling Control Plane alerts
-
-SLO alerts from the `#konflux-slo-alerts` channel in Slack would be routed to PagerDuty.
-The Control Plane SLO alerts would be routed to AppSRE service in PagerDuty, and the Data Plane 
-SLO alerts would be routed to a Data Plane Tiger team service in PagerDuty.
-
-We have to make sure that the `control_plane` tag is defined and set to `"true"` When 
-adding or updating a Control Plane alert:
-```
-labels:
-  control_plane: "true"
-```
-
-
 ### Alerts Tagging
 
 Teams receive updates on alerts relevant to them through Slack notifications, 
@@ -97,7 +77,7 @@ make sure to also add the `team` annotation with the name of the relevant team f
 
 ### Updating Alert and Recording Rules
 
-Alert rules for data plane, control plane clusters and recording rules are being deployed by
+Alert rules for data plane clusters and recording rules are being deployed by
 app-interface to RHOBS, to where the metrics are also being forwarded. For deploying the
 alert rules and recording rules, app-interface references the location of the rules together
 with a git reference - branch name or commit hash.
@@ -113,15 +93,11 @@ Steps for updating the rules:
 2. The
 [data plane staging environment](https://gitlab.cee.redhat.com/service/app-interface/-/blob/master/data/services/stonesoup/cicd/saas-rhtap-rules.yaml#L35),
 the
-[control plane staging environment](https://gitlab.cee.redhat.com/service/app-interface/-/blob/master/data/services/stonesoup/cicd/saas-rhtap-rules.yaml#L49)
-and the
 [recording rules staging environment](https://gitlab.cee.redhat.com/service/app-interface/-/blob/master/data/services/stonesoup/cicd/saas-rhtap-rules.yaml#L63)
 in app-interface are referencing to the `main` branch in `o11y` repository  and will be automatically updated with the new changes.
 3. Once merged and ready to be promoted to production, update the
 [data plane production environment](https://gitlab.cee.redhat.com/service/app-interface/-/blob/master/data/services/stonesoup/cicd/saas-rhtap-rules.yaml#L39) 
 and/or the
-[control plane production environment](https://gitlab.cee.redhat.com/service/app-interface/-/blob/master/data/services/stonesoup/cicd/saas-rhtap-rules.yaml#L53) 
-and/or the 
 [recording rules production environment](https://gitlab.cee.redhat.com/service/app-interface/-/blob/master/data/services/stonesoup/cicd/saas-rhtap-rules.yaml#L67)
 reference in app-interface to the commit hash of the changes you made.
 
