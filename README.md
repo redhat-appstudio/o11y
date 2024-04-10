@@ -1,6 +1,6 @@
-# RHTAP Observability 
+# Konflux Observability 
 
-This repository contains the following definitions for RHTAP:
+This repository contains the following definitions for Konflux:
   * Prometheus alerting rules (deployed to RHOBS)
   * Grafana dashboards (deployed to AppSRE's Grafana)
   * Availability exporters
@@ -8,22 +8,22 @@ This repository contains the following definitions for RHTAP:
 ## Alerting Rules
 
 The repository contains Prometheus alert rules [files](rhobs/alerting) for monitoring
-RHTAP data plane clusters along with their [tests](test/promql).
+Konflux data plane clusters along with their [tests](test/promql).
 
 
 The different alerting rules in this repository are:
 
 ## Data Plane Alerts
 
-* [**Alert Rule Unschedulable**](https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-unschedualablePods.md)
+* [**Alert Rule Unschedulable**](https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-unschedualablePods.md)
 
-* [**Alert Rule CrashLoopBackOff**](https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-crashLoopBackOff.md?ref_type=heads)
+* [**Alert Rule CrashLoopBackOff**](https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-crashLoopBackOff.md?ref_type=heads)
 
-* [**Alert Rule PodNotReady**](https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-PodNotReady.md?ref_type=heads)
+* [**Alert Rule PodNotReady**](https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-PodNotReady.md?ref_type=heads)
 
-* [**Alert Rule PersistentVolumeIssues**](https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-pesistentVolumeIssues.md?ref_type=heads)
+* [**Alert Rule PersistentVolumeIssues**](https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-pesistentVolumeIssues.md?ref_type=heads)
 
-* [**Alert Rule QuotaExceeded**](https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/o11y/alert-rule-QuotaExceeded.md)
+* [**Alert Rule QuotaExceeded**](https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-QuotaExceeded.md)
 
 ### SLO Alerts
 
@@ -83,7 +83,7 @@ alert rules and recording rules, app-interface references the location of the ru
 with a git reference - branch name or commit hash.
 
 It holds separate references to both staging and production RHOBS instances (monitoring
-RHTAP staging and production deployments). For both environments, we maintain the
+Konflux staging and production deployments). For both environments, we maintain the
 reference to the rules as a commit hash (rather than a branch). This means that any
 changes to the rules will not take effect until the references are updated.
 
@@ -105,7 +105,7 @@ reference in app-interface to the commit hash of the changes you made.
 
 Refer to the app-interface [instructions](
 https://gitlab.cee.redhat.com/service/app-interface/-/blob/master/docs/app-sre/monitoring.md#visualization-with-grafana)
-to learn how to develop AppSRE dashboards for RHTAP. This repository serves as
+to learn how to develop AppSRE dashboards for Konflux. This repository serves as
 versioned storage for the [dashboard definitions](dashboards/) and nothing more.
 
 Dashboards are automatically deployed to [stage](https://grafana.stage.devshift.net) AppSRE Grafana when merged into the `main` branch.
@@ -115,7 +115,7 @@ in app-interface.
 
 ## Adding Metrics and Labels
 
-Only a subset of the metrics and labels available within the RHTAP clusters is forwarded
+Only a subset of the metrics and labels available within the Konflux clusters is forwarded
 to RHOBS. If additional metrics or labels are needed, add them by following the steps
 described in the
 [monitoring stack documentation](https://github.com/redhat-appstudio/infra-deployments/blob/main/components/monitoring/prometheus/README.md#federation-and-remote-write)
