@@ -1,0 +1,22 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-konflux-up-has-alerting
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: konflux_up_has_alerts
+    interval: 1m
+    rules:
+    - alert: KonfluxUpHasAlert
+      expr: absent(konflux_up{service="has", check="github"}) == 1
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Availability metric 'konflux_up' is missing.
+        description: >-
+          Availability metric 'konflux_up' is missing for check {{ $labels.check }}
+          on service {{ $labels.service }} for more than 5 minutes.
+        alert_routing_key: 'appstudio-grafana'

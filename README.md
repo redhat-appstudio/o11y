@@ -25,6 +25,11 @@ The different alerting rules in this repository are:
 
 * [**Alert Rule QuotaExceeded**](https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-QuotaExceeded.md)
 
+### Availability Metric Alerts
+
+These Alert rules are defined to monitor and alert if the `konflux_up` metric is missing
+for all expected permutations of the `service` and `check` labels across different environments.
+
 ### SLO Alerts
 
 SLO (Service Level Objective) alert rules are rules defined to monitor and alert 
