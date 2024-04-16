@@ -1,0 +1,37 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.availability_metric_has_alerts.yaml
+
+tests:
+
+  - interval: 1m
+    input_series:
+      - series: 'konflux_up{service="has", check="github"}'
+        values: '0x15'
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: KonfluxUpHasAlert
+
+  - interval: 1m
+    input_series:
+      - series: 'konflux_up{service="grafana", check="prometheus-appstudio-ds"}'
+        values: '1x15'
+
+    alert_rule_test:
+
+      - eval_time: 15m
+        alertname: KonfluxUpHasAlert
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              check: github
+              service: has
+            exp_annotations:
+              summary: >-
+                Availability metric 'konflux_up' is missing.
+              description: >-
+                Availability metric 'konflux_up' is missing for check github
+                on service has for more than 5 minutes.
+              alert_routing_key: 'appstudio-grafana'
