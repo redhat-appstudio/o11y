@@ -1,0 +1,15 @@
+# Metric format needed
+# redhat_appstudio_imagecontroller_global_quay_app_available(service="image-controller-controller-manager-metrics-service") -> konflux_up(service="image-controller-controller-manager-metrics-service", check="quay")
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-image-controller-availability
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: image_controller_quay_availability
+      interval: 1m
+      rules:
+        - record: konflux_up
+          expr: label_replace(redhat_appstudio_imagecontroller_global_quay_app_available, "check", "quay", "","")
