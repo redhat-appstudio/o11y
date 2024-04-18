@@ -1,0 +1,25 @@
+evaluation_interval: 1m
+
+rule_files:
+  - image_controller_availability_recording_rules.yaml
+
+tests:
+  - interval: 1m
+    name: RSExporterTest
+    input_series:
+      - series: "redhat_appstudio_imagecontroller_global_quay_app_available{service='image-controller-controller-manager-metrics-service'}"
+        values: "1 1 1 1 1"
+      - series: "redhat_appstudio_imagecontroller_global_quay_app_available{service='image-controller-controller-manager-metrics-service1'}"
+        values: "0 0 0 0 0"
+      - series: "redhat_appstudio_imagecontroller_global_quay_app_available{service='image-controller-controller-manager-metrics-service2'}"
+        values: "0 1 0 1 0"
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples:
+          - labels: konflux_up{service='image-controller-controller-manager-metrics-service', check='quay'}
+            value: 1
+          - labels: konflux_up{service='image-controller-controller-manager-metrics-service1', check='quay'}
+            value: 0
+          - labels: konflux_up{service='image-controller-controller-manager-metrics-service2', check='quay'}
+            value: 0
