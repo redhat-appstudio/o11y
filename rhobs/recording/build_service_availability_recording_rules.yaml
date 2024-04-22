@@ -1,0 +1,15 @@
+# Metric format needed
+# redhat_appstudio_buildservice_global_github_app_available(service="build-service-controller-manager-metrics-service") -> konflux_up(service="build-service-controller-manager-metrics-service", check="github")
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-build-service-availability
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: build_service_github_availability
+      interval: 1m
+      rules:
+        - record: konflux_up
+          expr: label_replace(redhat_appstudio_buildservice_global_github_app_available, "check", "github", "","")
