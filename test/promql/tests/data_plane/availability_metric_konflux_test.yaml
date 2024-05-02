@@ -1,0 +1,50 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.availability_metric_konflux_alerts.yaml
+
+tests:
+  - interval: 1m
+    input_series:
+      - series: 'konflux_up{service="grafana", check="prometheus-appstudio-ds", source_cluster="stone-stg-rh01"}'
+        values: '1x59 _x61'
+      - series: 'konflux_up{service="grafana", check="prometheus-appstudio-ds", source_cluster="stone-stg-m01"}'
+        values: '1x120'
+
+    alert_rule_test:
+      - eval_time: 120m
+        alertname: KonfluxAlert
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              check: prometheus-appstudio-ds
+              service: grafana
+              source_cluster: stone-stg-rh01
+            exp_annotations:
+              summary: >-
+                Availability metric 'konflux_up' is missing.
+              description: >-
+                Availability metric 'konflux_up' is missing some entries for check
+                prometheus-appstudio-ds on service grafana and cluster stone-stg-rh01 when
+                compared to previous hour.
+              alert_routing_key: 'konflux-up'
+
+  - interval: 1m
+    input_series:
+      - series: 'konflux_up{service="grafana", check="prometheus-appstudio-ds", source_cluster="stone-stg-rh01"}'
+        values: '1x30 _x90'
+
+    alert_rule_test:
+      - eval_time: 120m
+        alertname: KonfluxAlert
+
+  - interval: 1m
+    input_series:
+      - series: 'konflux_up{service="grafana", check="prometheus-appstudio-ds", source_cluster="stone-stg-rh01", pod="grafana-pod1"}'
+        values: '_x59 1x61'
+      - series: 'konflux_up{service="grafana", check="prometheus-appstudio-ds", source_cluster="stone-stg-rh01", pod="grafana-pod2"}'
+        values: '1x59 _x61'
+
+    alert_rule_test:
+      - eval_time: 120m
+        alertname: KonfluxAlert
