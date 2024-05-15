@@ -9,7 +9,7 @@ tests:
     input_series:
 
       # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
-      # Tekton is experiencing scheduling overhead of 100%, so it will be alerted
+      # Tekton is experiencing scheduling overhead == total execution, so it will be alerted
       - series: 'pipeline_service_schedule_overhead_percentage_sum{status="succeded",namespace="foo", source_cluster="cluster01"}'
         values: '1+1x780'
       - series: 'pipeline_service_schedule_overhead_percentage_count{status="succeded",namespace="foo", source_cluster="cluster01"}'
@@ -33,10 +33,10 @@ tests:
               source_cluster: cluster01
             exp_annotations:
               summary: >-
-                Tekton has a scheduling overhead vs. PipelineRun durations of >5%
+                Tekton has a scheduling overhead vs. PipelineRun durations of <95%
               description: >-
-                Tekton controller on cluster cluster01 the percentage of time needed to receive PipelineRun creation
-                events vs. overall PipelineRun execution time is at 100% instead of less than 5%.
+                Tekton controller on cluster cluster01 factoring out the time needed to receive PipelineRun creation
+                events from the overall PipelineRun execution time is at 0% instead of 95% or greater.
               alert_team_handle: <!subteam^S03GF42RBE2>
               team: pipelines
               runbook_url: TBD
@@ -45,7 +45,7 @@ tests:
     input_series:
 
       # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
-      # Tekton is experiencing scheduling overhead less than 5%, should not alert
+      # Tekton overhead ratio is above 95%, should not alert
       - series: 'pipeline_service_schedule_overhead_percentage_sum{status="succeded",namespace="boo", source_cluster="cluster01"}'
         values: '0.5x780'
       - series: 'pipeline_service_schedule_overhead_percentage_count{status="succeded",namespace="boo", source_cluster="cluster01"}'
@@ -69,10 +69,10 @@ tests:
               source_cluster: cluster01
             exp_annotations:
               summary: >-
-                Tekton has a scheduling overhead vs. PipelineRun durations of >5%
+                Tekton has a scheduling overhead vs. PipelineRun durations of <95%
               description: >-
-                Tekton controller on cluster cluster01 the percentage of time needed to receive PipelineRun creation
-                events vs. overall PipelineRun execution time is at 50% instead of less than 5%.
+                Tekton controller on cluster cluster01 factoring out the time needed to receive PipelineRun creation
+                events from the overall PipelineRun execution time is at 50% instead of 95% or greater.
               alert_team_handle: <!subteam^S03GF42RBE2>
               team: pipelines
               runbook_url: TBD
@@ -81,7 +81,7 @@ tests:
     input_series:
 
       # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
-      # Tekton is experiencing scheduling overhead less than 5%, should not alert
+      # Tekton overhead ratio is above 95%, should not alert
       - series: 'pipeline_service_schedule_overhead_percentage_sum{status="succeded",namespace="boo", source_cluster="cluster01"}'
         values: '0.03x780'
       - series: 'pipeline_service_schedule_overhead_percentage_count{status="succeded",namespace="boo", source_cluster="cluster01"}'
@@ -104,7 +104,7 @@ tests:
     input_series:
 
       # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
-      # Tekton is experiencing execution overhead of 100%, so it will be alerted
+      # Tekton is experiencing execution overhead == total execution, so it will be alerted
       - series: 'pipeline_service_execution_overhead_percentage_sum{status="succeded",namespace="foo", source_cluster="cluster01"}'
         values: '1+1x780'
       - series: 'pipeline_service_execution_overhead_percentage_count{status="succeded",namespace="foo", source_cluster="cluster01"}'
@@ -128,10 +128,10 @@ tests:
               source_cluster: cluster01
             exp_annotations:
               summary: >-
-                Tekton has a execution overhead vs. PipelineRun durations of >5%
+                Tekton has a execution overhead vs. PipelineRun durations of <95%
               description: >-
-                Tekton controller on cluster cluster01 the percentage of the time needed to create
-                underlying TaskRuns vs. overall PipelineRun execution time is at 100% instead of less than 5%.
+                Tekton controller on cluster cluster01 factoring out the time needed to create
+                underlying TaskRuns from the overall PipelineRun execution time is at 0% instead of 95% or greater.
               alert_team_handle: <!subteam^S03GF42RBE2>
               team: pipelines
               runbook_url: TBD
@@ -140,7 +140,7 @@ tests:
     input_series:
 
       # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
-      # Tekton is experiencing scheduling overhead less than 5%, should not alert
+      # Tekton execution overhead is better than 95%, should not alert
       - series: 'pipeline_service_execution_overhead_percentage_sum{status="succeded",namespace="foo", source_cluster="cluster01"}'
         values: '0.05263x780'
       - series: 'pipeline_service_execution_overhead_percentage_count{status="succeded",namespace="foo", source_cluster="cluster01"}'
@@ -168,10 +168,10 @@ tests:
               source_cluster: cluster01
             exp_annotations:
               summary: >-
-                Tekton has a execution overhead vs. PipelineRun durations of >5%
+                Tekton has a execution overhead vs. PipelineRun durations of <95%
               description: >-
-                Tekton controller on cluster cluster01 the percentage of the time needed to create
-                underlying TaskRuns vs. overall PipelineRun execution time is at 5.263% instead of less than 5%.
+                Tekton controller on cluster cluster01 factoring out the time needed to create
+                underlying TaskRuns from the overall PipelineRun execution time is at 94.74% instead of 95% or greater.
               alert_team_handle: <!subteam^S03GF42RBE2>
               team: pipelines
               runbook_url: TBD
@@ -180,7 +180,7 @@ tests:
     input_series:
 
       # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
-      # Tekton is experiencing execution overhead less than 5%, should not alert
+      # Tekton execution overhead is better than 95%, should not alert
       - series: 'pipeline_service_execution_overhead_percentage_sum{status="succeded",namespace="foo", source_cluster="cluster01"}'
         values: '0.03x780'
       - series: 'pipeline_service_execution_overhead_percentage_count{status="succeded",namespace="foo", source_cluster="cluster01"}'
