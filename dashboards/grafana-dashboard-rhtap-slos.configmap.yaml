@@ -1265,7 +1265,7 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "description": "Proportion of time elapsed waiting for the pipeline controller to receive create events compared to the total duration of successful PipelineRuns is under the defined threshold",
+          "description": "Factoring out the time needed to receive PipelineRun creation events from the overall PipelineRun execution time is at or above the defined percentile",
           "gridPos": {
             "h": 7,
             "w": 10,
@@ -1365,7 +1365,7 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum(increase(pipeline_service_schedule_overhead_percentage_sum{status='succeded'}[$__range])) \n/  \nsum(increase(pipeline_service_schedule_overhead_percentage_count{status='succeded'}[$__range]))",
+              "expr": "1-(sum(increase(pipeline_service_schedule_overhead_percentage_sum{status='succeded'}[$__range])) \n/  \nsum(increase(pipeline_service_schedule_overhead_percentage_count{status='succeded'}[$__range])))",
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
@@ -1379,7 +1379,7 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "description": "Proportion of time elapsed between the completion of a TaskRun and the start of the next TaskRun within a PipelineRun to the total duration of successful PipelineRuns is under the defined threshold",
+          "description": "Factoring out the time needed to create underlying TaskRuns from the overall PipelineRun execution time is at or above the defined percentile",
           "gridPos": {
             "h": 7,
             "w": 10,
@@ -1479,7 +1479,7 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum(increase(pipeline_service_execution_overhead_percentage_sum{status='succeded'}[$__range])) \n/  \nsum(increase(pipeline_service_execution_overhead_percentage_count{status='succeded'}[$__range]))",
+              "expr": "1-(sum(increase(pipeline_service_execution_overhead_percentage_sum{status='succeded'}[$__range])) \n/  \nsum(increase(pipeline_service_execution_overhead_percentage_count{status='succeded'}[$__range])))",
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
