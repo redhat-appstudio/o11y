@@ -28,7 +28,6 @@ data:
       "editable": true,
       "fiscalYearStartMonth": 0,
       "graphTooltip": 0,
-      "id": 664920,
       "links": [],
       "liveNow": false,
       "panels": [
@@ -54,7 +53,7 @@ data:
             "content": "This dashboard shows all SLOs for RHTAP over a specified time window.\n\nSelect a datasource to switch between environments.",
             "mode": "markdown"
           },
-          "pluginVersion": "9.3.8",
+          "pluginVersion": "10.4.1",
           "transparent": true,
           "type": "text"
         },
@@ -84,7 +83,6 @@ data:
             "y": 4
           },
           "id": 52,
-          "links": [],
           "options": {
             "code": {
               "language": "plaintext",
@@ -94,7 +92,7 @@ data:
             "content": "<h1><center>OAuth completion time less than 30sec average</center></h1>",
             "mode": "html"
           },
-          "pluginVersion": "9.3.8",
+          "pluginVersion": "10.4.1",
           "targets": [
             {
               "datasource": {
@@ -119,6 +117,7 @@ data:
                 "mode": "palette-classic"
               },
               "custom": {
+                "axisBorderShow": false,
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
                 "axisLabel": "Seconds",
@@ -132,6 +131,7 @@ data:
                   "tooltip": false,
                   "viz": false
                 },
+                "insertNulls": false,
                 "lineInterpolation": "linear",
                 "lineWidth": 1,
                 "pointSize": 5,
@@ -220,8 +220,7 @@ data:
             "x": 0,
             "y": 11
           },
-          "id": 52,
-          "links": [],
+          "id": 104,
           "options": {
             "code": {
               "language": "plaintext",
@@ -231,7 +230,7 @@ data:
             "content": "<h1><center>5xx errors rate for service providers less than 1%</center></h1>",
             "mode": "html"
           },
-          "pluginVersion": "9.3.8",
+          "pluginVersion": "10.4.1",
           "targets": [
             {
               "datasource": {
@@ -256,6 +255,7 @@ data:
                 "mode": "palette-classic"
               },
               "custom": {
+                "axisBorderShow": false,
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
                 "axisLabel": "Percentage",
@@ -269,6 +269,7 @@ data:
                   "tooltip": false,
                   "viz": false
                 },
+                "insertNulls": false,
                 "lineInterpolation": "linear",
                 "lineWidth": 1,
                 "pointSize": 5,
@@ -311,7 +312,7 @@ data:
             "x": 10,
             "y": 11
           },
-          "id": 54,
+          "id": 105,
           "interval": "1m",
           "maxDataPoints": 30,
           "options": {
@@ -351,476 +352,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 61
-          },
-          "id": 40,
-          "panels": [],
-          "title": "Application Service SLOs",
-          "type": "row"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "The objective for the given time window.",
-          "gridPos": {
-            "h": 7,
-            "w": 10,
-            "x": 0,
-            "y": 62
-          },
-          "id": 41,
-          "links": [],
-          "options": {
-            "code": {
-              "language": "plaintext",
-              "showLineNumbers": false,
-              "showMiniMap": false
-            },
-            "content": "<h1><center>95% of applications created should have succeeded</center></h1>",
-            "mode": "html"
-          },
-          "pluginVersion": "9.3.8",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "refId": "A"
-            }
-          ],
-          "title": "Application Creation SLO",
-          "type": "text"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "The current measurement for the given time window.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [
-                {
-                  "options": {
-                    "match": "null",
-                    "result": {
-                      "text": "N/A"
-                    }
-                  },
-                  "type": "special"
-                }
-              ],
-              "max": 1,
-              "min": 0,
-              "thresholds": {
-                "mode": "percentage",
-                "steps": [
-                  {
-                    "color": "red",
-                    "value": null
-                  },
-                  {
-                    "color": "green",
-                    "value": 95
-                  }
-                ]
-              },
-              "unit": "percentunit"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 5,
-            "x": 10,
-            "y": 62
-          },
-          "id": 42,
-          "links": [],
-          "maxDataPoints": 100,
-          "options": {
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [],
-              "fields": "",
-              "values": false
-            },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": false
-          },
-          "pluginVersion": "9.3.8",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "1-sum(increase(has_application_failed_creation_total[$__range]))\n/\nsum(increase(has_application_creation_total[$__range]))",
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Measured",
-          "type": "gauge"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "The objective for the given time window.",
-          "gridPos": {
-            "h": 7,
-            "w": 10,
-            "x": 0,
-            "y": 69
-          },
-          "id": 36,
-          "links": [],
-          "options": {
-            "code": {
-              "language": "plaintext",
-              "showLineNumbers": false,
-              "showMiniMap": false
-            },
-            "content": "<h1><center>95% of application deletions must succeed</center></h1>",
-            "mode": "html"
-          },
-          "pluginVersion": "9.3.8",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "refId": "A"
-            }
-          ],
-          "title": "Application Deletion SLO",
-          "type": "text"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "The current measurement for the given time window.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [
-                {
-                  "options": {
-                    "match": "null",
-                    "result": {
-                      "text": "N/A"
-                    }
-                  },
-                  "type": "special"
-                }
-              ],
-              "max": 1,
-              "min": 0,
-              "noValue": "-",
-              "thresholds": {
-                "mode": "percentage",
-                "steps": [
-                  {
-                    "color": "red",
-                    "value": null
-                  },
-                  {
-                    "color": "green",
-                    "value": 95
-                  }
-                ]
-              },
-              "unit": "percentunit"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 5,
-            "x": 10,
-            "y": 69
-          },
-          "id": 37,
-          "links": [],
-          "maxDataPoints": 100,
-          "options": {
-            "orientation": "horizontal",
-            "reduceOptions": {
-              "calcs": [],
-              "fields": "",
-              "values": false
-            },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": false
-          },
-          "pluginVersion": "9.3.8",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "1-sum(increase(has_application_failed_deletion_total[$__range]))\n/\nsum(increase(has_application_deletion_total[$__range]))",
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Measured",
-          "type": "gauge"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "The objective for the given time window.",
-          "gridPos": {
-            "h": 7,
-            "w": 10,
-            "x": 0,
-            "y": 76
-          },
-          "id": 61,
-          "links": [],
-          "options": {
-            "code": {
-              "language": "plaintext",
-              "showLineNumbers": false,
-              "showMiniMap": false
-            },
-            "content": "<h1><center>95% of component deletions must succeed</center></h1>",
-            "mode": "html"
-          },
-          "pluginVersion": "9.3.8",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "refId": "A"
-            }
-          ],
-          "title": "Component Deletion SLO",
-          "type": "text"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "The current measurement for the given time window.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [
-                {
-                  "options": {
-                    "match": "null",
-                    "result": {
-                      "text": "N/A"
-                    }
-                  },
-                  "type": "special"
-                }
-              ],
-              "max": 1,
-              "min": 0,
-              "noValue": "-",
-              "thresholds": {
-                "mode": "percentage",
-                "steps": [
-                  {
-                    "color": "red",
-                    "value": null
-                  },
-                  {
-                    "color": "green",
-                    "value": 95
-                  }
-                ]
-              },
-              "unit": "percentunit"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 5,
-            "x": 10,
-            "y": 76
-          },
-          "id": 62,
-          "links": [],
-          "maxDataPoints": 100,
-          "options": {
-            "orientation": "horizontal",
-            "reduceOptions": {
-              "calcs": [],
-              "fields": "",
-              "values": false
-            },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": false
-          },
-          "pluginVersion": "9.3.8",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "1-sum(increase(has_component_failed_deletion_total[$__range]))\n/\nsum(increase(has_component_deletion_total[$__range]))",
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Measured",
-          "type": "gauge"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "The objective for the given time window.",
-          "gridPos": {
-            "h": 7,
-            "w": 10,
-            "x": 0,
-            "y": 83
-          },
-          "id": 87,
-          "links": [],
-          "options": {
-            "code": {
-              "language": "plaintext",
-              "showLineNumbers": false,
-              "showMiniMap": false
-            },
-            "content": "<h1><center>95% of component creations must succeed</center></h1>",
-            "mode": "html"
-          },
-          "pluginVersion": "9.3.8",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "refId": "A"
-            }
-          ],
-          "title": "Component Creation SLO",
-          "type": "text"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "The current measurement for the given time window.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [
-                {
-                  "options": {
-                    "match": "null",
-                    "result": {
-                      "text": "N/A"
-                    }
-                  },
-                  "type": "special"
-                }
-              ],
-              "max": 1,
-              "min": 0,
-              "noValue": "-",
-              "thresholds": {
-                "mode": "percentage",
-                "steps": [
-                  {
-                    "color": "red",
-                    "value": null
-                  },
-                  {
-                    "color": "green",
-                    "value": 95
-                  }
-                ]
-              },
-              "unit": "percentunit"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 5,
-            "x": 10,
-            "y": 83
-          },
-          "id": 88,
-          "links": [],
-          "maxDataPoints": 100,
-          "options": {
-            "orientation": "horizontal",
-            "reduceOptions": {
-              "calcs": [],
-              "fields": "",
-              "values": false
-            },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": false
-          },
-          "pluginVersion": "9.3.8",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "1-sum(increase(has_component_failed_creation_total[$__range]))\n/\nsum(increase(has_component_creation_total[$__range]))",
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "timeFrom": "1h",
-          "title": "Measured",
-          "type": "gauge"
-        },
-        {
-          "collapsed": false,
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 90
+            "y": 18
           },
           "id": 80,
           "panels": [],
@@ -837,10 +369,9 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 91
+            "y": 19
           },
           "id": 77,
-          "links": [],
           "options": {
             "code": {
               "language": "plaintext",
@@ -850,7 +381,7 @@ data:
             "content": "<h1><center>90% of requests must be within required response time</center></h1>",
             "mode": "html"
           },
-          "pluginVersion": "9.3.8",
+          "pluginVersion": "10.4.1",
           "targets": [
             {
               "datasource": {
@@ -909,12 +440,13 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 91
+            "y": 19
           },
           "id": 78,
-          "links": [],
           "maxDataPoints": 100,
           "options": {
+            "minVizHeight": 75,
+            "minVizWidth": 75,
             "orientation": "horizontal",
             "reduceOptions": {
               "calcs": [],
@@ -922,9 +454,10 @@ data:
               "values": false
             },
             "showThresholdLabels": false,
-            "showThresholdMarkers": false
+            "showThresholdMarkers": false,
+            "sizing": "auto"
           },
-          "pluginVersion": "9.3.8",
+          "pluginVersion": "10.4.1",
           "targets": [
             {
               "datasource": {
@@ -951,10 +484,9 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 98
+            "y": 26
           },
           "id": 83,
-          "links": [],
           "options": {
             "code": {
               "language": "plaintext",
@@ -964,7 +496,7 @@ data:
             "content": "<h1><center>90% of equests must be within required time</center></h1>",
             "mode": "html"
           },
-          "pluginVersion": "9.3.8",
+          "pluginVersion": "10.4.1",
           "targets": [
             {
               "datasource": {
@@ -1023,12 +555,13 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 98
+            "y": 26
           },
           "id": 86,
-          "links": [],
           "maxDataPoints": 100,
           "options": {
+            "minVizHeight": 75,
+            "minVizWidth": 75,
             "orientation": "horizontal",
             "reduceOptions": {
               "calcs": [],
@@ -1036,9 +569,10 @@ data:
               "values": false
             },
             "showThresholdLabels": false,
-            "showThresholdMarkers": false
+            "showThresholdMarkers": false,
+            "sizing": "auto"
           },
-          "pluginVersion": "9.3.8",
+          "pluginVersion": "10.4.1",
           "targets": [
             {
               "datasource": {
@@ -1065,10 +599,9 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 105
+            "y": 33
           },
           "id": 82,
-          "links": [],
           "options": {
             "code": {
               "language": "plaintext",
@@ -1120,8 +653,7 @@ data:
                 "mode": "percentage",
                 "steps": [
                   {
-                    "color": "red",
-                    "value": null
+                    "color": "red"
                   },
                   {
                     "color": "green",
@@ -1137,10 +669,9 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 105
+            "y": 33
           },
           "id": 84,
-          "links": [],
           "maxDataPoints": 100,
           "options": {
             "orientation": "horizontal",
@@ -1198,8 +729,7 @@ data:
                 "mode": "percentage",
                 "steps": [
                   {
-                    "color": "red",
-                    "value": null
+                    "color": "red"
                   },
                   {
                     "color": "green",
@@ -1215,10 +745,9 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 112
+            "y": 40
           },
           "id": 85,
-          "links": [],
           "maxDataPoints": 100,
           "options": {
             "orientation": "horizontal",
@@ -1253,7 +782,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 119
+            "y": 47
           },
           "id": 64,
           "panels": [],
@@ -1270,10 +799,9 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 120
+            "y": 48
           },
           "id": 65,
-          "links": [],
           "options": {
             "code": {
               "language": "plaintext",
@@ -1325,8 +853,7 @@ data:
                 "mode": "percentage",
                 "steps": [
                   {
-                    "color": "red",
-                    "value": null
+                    "color": "red"
                   },
                   {
                     "color": "green",
@@ -1342,10 +869,9 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 120
+            "y": 48
           },
           "id": 68,
-          "links": [],
           "maxDataPoints": 100,
           "options": {
             "orientation": "horizontal",
@@ -1384,10 +910,9 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 127
+            "y": 55
           },
           "id": 69,
-          "links": [],
           "options": {
             "code": {
               "language": "plaintext",
@@ -1439,8 +964,7 @@ data:
                 "mode": "percentage",
                 "steps": [
                   {
-                    "color": "red",
-                    "value": null
+                    "color": "red"
                   },
                   {
                     "color": "green",
@@ -1456,10 +980,9 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 127
+            "y": 55
           },
           "id": 70,
-          "links": [],
           "maxDataPoints": 100,
           "options": {
             "orientation": "horizontal",
@@ -1494,7 +1017,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 134
+            "y": 62
           },
           "id": 96,
           "panels": [],
@@ -1511,10 +1034,9 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 135
+            "y": 63
           },
           "id": 97,
-          "links": [],
           "options": {
             "code": {
               "language": "plaintext",
@@ -1565,8 +1087,7 @@ data:
                 "mode": "percentage",
                 "steps": [
                   {
-                    "color": "red",
-                    "value": null
+                    "color": "red"
                   },
                   {
                     "color": "green",
@@ -1582,10 +1103,9 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 135
+            "y": 63
           },
           "id": 101,
-          "links": [],
           "maxDataPoints": 100,
           "options": {
             "orientation": "horizontal",
@@ -1626,10 +1146,9 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 142
+            "y": 70
           },
           "id": 99,
-          "links": [],
           "options": {
             "code": {
               "language": "plaintext",
@@ -1680,8 +1199,7 @@ data:
                 "mode": "percentage",
                 "steps": [
                   {
-                    "color": "red",
-                    "value": null
+                    "color": "red"
                   },
                   {
                     "color": "green",
@@ -1697,10 +1215,9 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 142
+            "y": 70
           },
           "id": 100,
-          "links": [],
           "maxDataPoints": 100,
           "options": {
             "orientation": "horizontal",
@@ -1741,10 +1258,9 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 149
+            "y": 77
           },
           "id": 102,
-          "links": [],
           "options": {
             "code": {
               "language": "plaintext",
@@ -1795,8 +1311,7 @@ data:
                 "mode": "percentage",
                 "steps": [
                   {
-                    "color": "red",
-                    "value": null
+                    "color": "red"
                   },
                   {
                     "color": "green",
@@ -1812,10 +1327,9 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 149
+            "y": 77
           },
           "id": 103,
-          "links": [],
           "maxDataPoints": 100,
           "options": {
             "orientation": "horizontal",
@@ -1852,7 +1366,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 156
+            "y": 84
           },
           "id": 33,
           "panels": [],
@@ -1869,10 +1383,9 @@ data:
             "h": 7,
             "w": 10,
             "x": 0,
-            "y": 157
+            "y": 85
           },
           "id": 10,
-          "links": [],
           "options": {
             "code": {
               "language": "plaintext",
@@ -1921,8 +1434,7 @@ data:
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1938,10 +1450,9 @@ data:
             "h": 7,
             "w": 5,
             "x": 10,
-            "y": 157
+            "y": 85
           },
           "id": 98,
-          "links": [],
           "maxDataPoints": 100,
           "options": {
             "colorMode": "none",
@@ -1996,8 +1507,7 @@ data:
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -2013,10 +1523,9 @@ data:
             "h": 7,
             "w": 5,
             "x": 15,
-            "y": 157
+            "y": 85
           },
           "id": 29,
-          "links": [],
           "maxDataPoints": 100,
           "options": {
             "colorMode": "none",
@@ -2047,8 +1556,7 @@ data:
         }
       ],
       "refresh": "1h",
-      "schemaVersion": 37,
-      "style": "dark",
+      "schemaVersion": 39,
       "tags": [],
       "templating": {
         "list": [
@@ -2104,7 +1612,7 @@ data:
       "timezone": "",
       "title": "RHTAP SLOs",
       "uid": "rhtap-slos",
-      "version": 4,
+      "version": 3,
       "weekStart": ""
     }
 kind: ConfigMap
