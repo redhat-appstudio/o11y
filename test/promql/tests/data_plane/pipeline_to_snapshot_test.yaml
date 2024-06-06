@@ -1,0 +1,103 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.pipeline_to_snapshot_alerts.yaml
+
+tests:
+
+# Scenario where one cluster crosses the 10% threshold and another does not
+- interval: 1m
+  input_series:
+    # Simulating data from Cluster 1
+    - series: 'integration_svc_response_seconds_bucket{le="30", namespace="integration-service",  source_cluster="cluster01"}'
+      values: '0+10x10'  # 10 requests took less than 30s
+    - series: 'integration_svc_response_seconds_bucket{le="+Inf", namespace="integration-service", source_cluster="cluster01"}'
+      values: '0+100x10'  # 100 total occurrences in cluster1
+    # Simulating data from Cluster 2
+    - series: 'integration_svc_response_seconds_bucket{le="30", namespace="integration-service", source_cluster="cluster02"}'
+      values: '0+95x10'  # 95 requests took less than 30s
+    - series: 'integration_svc_response_seconds_bucket{le="+Inf", namespace="integration-service", source_cluster="cluster02"}'
+      values: '0+100x10'  # 100 total occurrences in cluster2
+  alert_rule_test:
+    - eval_time: 10m
+      alertname: PipelineRunToSnapshotExceeded
+      exp_alerts:
+        - exp_labels:
+            severity: critical
+            slo: "true"
+            namespace: integration-service
+            source_cluster: cluster01
+          exp_annotations:
+            summary: PipelineRunFinish to SnapshotInProgress time exceeded
+            description: >
+              Time from pipeline run finished to snapshot marked in progress has been over
+              30s for more than 10% of requests during the last 5 minutes and has not improved for 5 minutes
+              on cluster cluster01
+            alert_team_handle: <!subteam^S041261DDEW>
+            team: integration
+            runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/integration-service/pipeline_to_snapshot_exceeded.md
+
+# Scenario where both clusters cross the 10% threshold, alert should trigger for both
+- interval: 1m
+  input_series:
+    # Simulating data from Cluster 01
+    - series: 'integration_svc_response_seconds_bucket{le="30", namespace="integration-service", source_cluster="cluster01"}'
+      values: '0+10x10'  # 10 requests took less than 30s
+    - series: 'integration_svc_response_seconds_bucket{le="+Inf", namespace="integration-service", source_cluster="cluster01"}'
+      values: '0+100x10'  # 100 total occurrences in cluster1
+    # Simulating data from Cluster 2
+    - series: 'integration_svc_response_seconds_bucket{le="30", namespace="integration-service", source_cluster="cluster02"}'
+      values: '0+10x10'  # 10 requests took less than 30s
+    - series: 'integration_svc_response_seconds_bucket{le="+Inf", namespace="integration-service", source_cluster="cluster02"}'
+      values: '0+100x10'  # 100 total occurrences in cluster2
+  alert_rule_test:
+    - eval_time: 10m
+      alertname: PipelineRunToSnapshotExceeded
+      exp_alerts:
+        - exp_labels:
+            severity: critical
+            slo: "true"
+            namespace: integration-service
+            source_cluster: cluster01
+          exp_annotations:
+            summary: PipelineRunFinish to SnapshotInProgress time exceeded
+            description: >
+              Time from pipeline run finished to snapshot marked in progress has been over
+              30s for more than 10% of requests during the last 5 minutes and has not improved for 5 minutes
+              on cluster cluster01
+            alert_team_handle: <!subteam^S041261DDEW>
+            team: integration
+            runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/integration-service/pipeline_to_snapshot_exceeded.md
+        - exp_labels:
+            severity: critical
+            slo: "true"
+            namespace: integration-service
+            source_cluster: cluster02
+          exp_annotations:
+            summary: PipelineRunFinish to SnapshotInProgress time exceeded
+            description: >
+              Time from pipeline run finished to snapshot marked in progress has been over
+              30s for more than 10% of requests during the last 5 minutes and has not improved for 5 minutes
+              on cluster cluster02
+            alert_team_handle: <!subteam^S041261DDEW>
+            team: integration
+            runbook_url: https://gitlab.cee.redhat.com/rhtap/docs/sop/-/blob/main/integration-service/pipeline_to_snapshot_exceeded.md
+
+# Scenario where no alert is triggered as both clusters stay below the 10% threshold
+- interval: 1m
+  input_series:
+    # Simulating data from Cluster 1 for 9.99% above 30s
+    - series: 'integration_svc_response_seconds_bucket{le="30", namespace="integration-service", source_cluster="cluster01"}'
+      values: '0+99x10'  # 99 requests took less than 30s
+    - series: 'integration_svc_response_seconds_bucket{le="+Inf", namespace="integration-service", source_cluster="cluster01"}'
+      values: '0+100x10'  # 100 total occurrences in cluster1
+
+    # Simulating data from Cluster 2 for 4% above 30s, alert should not trigger
+    - series: 'integration_svc_response_seconds_bucket{le="30", namespace="integration-service", source_cluster="cluster02"}'
+      values: '0+96x10'  # 96 requests took less than 30s
+    - series: 'integration_svc_response_seconds_bucket{le="+Inf", namespace="integration-service", source_cluster="cluster02"}'
+      values: '0+100x10'  # 100 total occurrences in cluster2
+  alert_rule_test:
+    - eval_time: 10m
+      alertname: PipelineRunToSnapshotExceeded
+      exp_alerts: []  # No alerts are expected in this scenario
