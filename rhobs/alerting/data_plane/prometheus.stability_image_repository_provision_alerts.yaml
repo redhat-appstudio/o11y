@@ -13,12 +13,12 @@ spec:
       expr: |
         (
           (
-            increase(redhat_appstudio_imagecontroller_image_repository_provision_time_bucket{le="+Inf"}[10m])
+            increase(redhat_appstudio_imagecontroller_image_repository_provision_time_bucket{le="+Inf"}[20m])
             - ignoring(le)
-            increase(redhat_appstudio_imagecontroller_image_repository_provision_time_bucket{le="300"}[10m])
+            increase(redhat_appstudio_imagecontroller_image_repository_provision_time_bucket{le="300"}[20m])
           ) / ignoring(le)
-          increase(redhat_appstudio_imagecontroller_image_repository_provision_time_bucket{le="+Inf"}[10m])
-        ) > 0.01
+          increase(redhat_appstudio_imagecontroller_image_repository_provision_time_bucket{le="+Inf"}[20m])
+        ) > 0.2
       for: 1m
       labels:
         severity: critical
@@ -28,7 +28,7 @@ spec:
           Stability of image repository provision time exceeded
         description: >
           Time taken to provision image repository has been over
-          5 minutes for more than 1% of requests during the last 10 minutes on cluster
+          5 minutes for more than 20% of requests during the last 20 minutes on cluster
           {{ $labels.source_cluster }}
         alert_team_handle: <!subteam^S0500D143S8>
         team: build
