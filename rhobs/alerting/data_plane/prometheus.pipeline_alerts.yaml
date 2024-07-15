@@ -47,3 +47,18 @@ spec:
             alert_team_handle: <!subteam^S03GF42RBE2>
             team: pipelines
             runbook_url: TBD
+        - alert: CorePipelineControllerCrashloop
+          expr: |
+            sum(kube_pod_container_status_restarts_total{namespace="openshift-pipelines", pod=~"tekton-pipelines-controller-.*"}) - sum(kube_pod_container_status_restarts_total{namespace="openshift-pipelines", pod=~"tekton-pipelines-controller-.*"} offset 2m) > 0
+          for: 5m
+          labels:
+            severity: critical
+            slo: "true"
+          annotations:
+            summary: >-
+              Tekton controller is crashlooping
+            description: >-
+              Tekton controller on cluster {{ $labels.source_cluster }} has restarted {{ $value }} the past 5 minutes.
+            alert_team_handle: <!subteam^S03GF42RBE2>
+            team: pipelines
+            runbook_url: TBD
