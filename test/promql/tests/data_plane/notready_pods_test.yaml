@@ -9,20 +9,20 @@ tests:
       # Alerted cases:
       # Pod is in the Pending state and scheduled, so it will be alerted.
       - series: 'kube_pod_status_phase{pod="pod-1", namespace="ns-1", phase="Pending", source_cluster="cluster01"}'
-        values: '1x14'
+        values: '1x29'
       - series: 'kube_pod_status_phase{pod="pod-1", namespace="ns-1", phase="Unknown", source_cluster="cluster01"}'
-        values: '0x14'
+        values: '0x29'
       - series: 'kube_pod_status_phase{pod="pod-1", namespace="ns-1", phase="Failed", source_cluster="cluster01"}'
-        values: '0x14'
+        values: '0x29'
       - series: 'kube_pod_status_phase{pod="pod-1", namespace="ns-1", phase="Running", source_cluster="cluster01"}'
-        values: '0x14'
+        values: '0x29'
       - series: 'kube_pod_status_phase{pod="pod-1", namespace="ns-1", phase="Succeeded", source_cluster="cluster01"}'
-        values: '0x14'
+        values: '0x29'
       - series: 'kube_pod_status_unschedulable{namespace="ns-1", pod="pod-1", source_cluster="cluster01"}'
-        values: '0x14'
+        values: '0x29'
 
     alert_rule_test:
-      - eval_time: 15m
+      - eval_time: 30m
         alertname: PodNotReady
         exp_alerts:
           - exp_labels:
@@ -36,7 +36,7 @@ tests:
                 Pod pod-1 is not ready
               description: >-
                 Pod pod-1 in namespace ns-1 on cluster cluster01 is
-                not ready for more than 15 minutes.
+                not ready for more than 30 minutes.
               alert_routing_key: ns-1
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-PodNotReady.md
 
@@ -44,20 +44,20 @@ tests:
     input_series:
       # Pod is in the Unknown state and scheduled, so it will be alerted.
       - series: 'kube_pod_status_phase{pod="pod-1", namespace="ns-2", phase="Pending", source_cluster="cluster02"}'
-        values: '0x14'
+        values: '0x29'
       - series: 'kube_pod_status_phase{pod="pod-1", namespace="ns-2", phase="Unknown", source_cluster="cluster02"}'
-        values: '1x14'
+        values: '1x29'
       - series: 'kube_pod_status_phase{pod="pod-1", namespace="ns-2", phase="Failed", source_cluster="cluster02"}'
-        values: '0x14'
+        values: '0x29'
       - series: 'kube_pod_status_phase{pod="pod-1", namespace="ns-2", phase="Running", source_cluster="cluster02"}'
-        values: '0x14'
+        values: '0x29'
       - series: 'kube_pod_status_phase{pod="pod-1", namespace="ns-2", phase="Succeeded", source_cluster="cluster02"}'
-        values: '0x14'
+        values: '0x29'
       - series: 'kube_pod_status_unschedulable{namespace="ns-2", pod="pod-1", source_cluster="cluster02"}'
-        values: '0x14'
+        values: '0x29'
 
     alert_rule_test:
-      - eval_time: 15m
+      - eval_time: 30m
         alertname: PodNotReady
         exp_alerts:
           - exp_labels:
@@ -71,7 +71,7 @@ tests:
                 Pod pod-1 is not ready
               description: >-
                 Pod pod-1 in namespace ns-2 on cluster cluster02 is
-                not ready for more than 15 minutes.
+                not ready for more than 30 minutes.
               alert_routing_key: ns-2
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-PodNotReady.md
 
@@ -80,20 +80,20 @@ tests:
     input_series:
       # Pod is in the Failed state and scheduled, so it will be alerted.
       - series: 'kube_pod_status_phase{pod="pod-1", namespace="ns-3", phase="Pending", source_cluster="cluster03"}'
-        values: '0x14'
+        values: '0x29'
       - series: 'kube_pod_status_phase{pod="pod-1", namespace="ns-3", phase="Unknown", source_cluster="cluster03"}'
-        values: '0x14'
+        values: '0x29'
       - series: 'kube_pod_status_phase{pod="pod-1", namespace="ns-3", phase="Failed", source_cluster="cluster03"}'
-        values: '1x14'
+        values: '1x29'
       - series: 'kube_pod_status_phase{pod="pod-1", namespace="ns-3", phase="Running", source_cluster="cluster03"}'
-        values: '0x14'
+        values: '0x29'
       - series: 'kube_pod_status_phase{pod="pod-1", namespace="ns-3", phase="Succeeded", source_cluster="cluster03"}'
-        values: '0x14'
+        values: '0x29'
       - series: 'kube_pod_status_unschedulable{namespace="ns-3", pod="pod-1", source_cluster="cluster03"}'
-        values: '0x14'
+        values: '0x29'
 
     alert_rule_test:
-      - eval_time: 15m
+      - eval_time: 30m
         alertname: PodNotReady
         exp_alerts:
           - exp_labels:
@@ -107,7 +107,7 @@ tests:
                 Pod pod-1 is not ready
               description: >-
                 Pod pod-1 in namespace ns-3 on cluster cluster03 is
-                not ready for more than 15 minutes.
+                not ready for more than 30 minutes.
               alert_routing_key: ns-3
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-PodNotReady.md
 
@@ -118,87 +118,87 @@ tests:
       # Pod is in the Unknown state and unscheduled (unscheduled once in the 15 min
       # interval), so it will not be alerted.
       - series: 'kube_pod_status_phase{pod="pod-1", namespace="ns-4", phase="Pending", source_cluster="cluster04"}'
-        values: '0x14'
+        values: '0x29'
       - series: 'kube_pod_status_phase{pod="pod-1", namespace="ns-4", phase="Unknown", source_cluster="cluster04"}'
-        values: '1x14'
+        values: '1x29'
       - series: 'kube_pod_status_phase{pod="pod-1", namespace="ns-4", phase="Failed", source_cluster="cluster04"}'
-        values: '0x14'
+        values: '0x29'
       - series: 'kube_pod_status_phase{pod="pod-1", namespace="ns-4", phase="Running", source_cluster="cluster04"}'
-        values: '0x14'
+        values: '0x29'
       - series: 'kube_pod_status_phase{pod="pod-1", namespace="ns-4", phase="Succeeded", source_cluster="cluster04"}'
-        values: '0x14'
+        values: '0x29'
       - series: 'kube_pod_status_unschedulable{namespace="ns-4", pod="pod-1", source_cluster="cluster04"}'
-        values: '1x0 0x13'
+        values: '1x0 0x28'
 
       # Pod is in Succeeded state and scheduled, so it will not be alerted.
       - series: 'kube_pod_status_phase{pod="pod-1", namespace="ns-5", phase="Pending"}'
-        values: '0x14'
+        values: '0x29'
       - series: 'kube_pod_status_phase{pod="pod-1", namespace="ns-5", phase="Unknown"}'
-        values: '0x14'
+        values: '0x29'
       - series: 'kube_pod_status_phase{pod="pod-1", namespace="ns-5", phase="Failed"}'
-        values: '0x14'
+        values: '0x29'
       - series: 'kube_pod_status_phase{pod="pod-1", namespace="ns-5", phase="Running"}'
-        values: '0x14'
+        values: '0x29'
       - series: 'kube_pod_status_phase{pod="pod-1", namespace="ns-5", phase="Succeeded"}'
-        values: '1x14'
+        values: '1x29'
       - series: 'kube_pod_status_unschedulable{namespace="ns-5", pod="pod-1", source_cluster="cluster05"}'
-        values: '0x14'
+        values: '0x29'
 
       # Pod is in the Running state for the first 14 min, then it's in the Failed state
       # for the last 1 min and unscheduled, so it will not be alerted.
       - series: 'kube_pod_status_phase{pod="pod-1", namespace="ns-7", phase="Running"}'
-        values: '1x13 0'
+        values: '1x28 0'
       - series: 'kube_pod_status_phase{pod="pod-1", namespace="ns-7", phase="Failed"}'
-        values: '0x13 1'
+        values: '0x28 1'
       - series: 'kube_pod_status_unschedulable{namespace="ns-7", pod="pod-1",source_cluster="cluster05"}'
-        values: '0x14'
+        values: '0x29'
 
       # Pod is in the Failed state and scheduled, but it has a namespace that ends
       # with 'tenant' so it's ignored.
       - series: 'kube_pod_status_phase{pod="pod-1", namespace="prod-tenant", phase="Failed"}'
-        values: '1x14'
+        values: '1x29'
       - series: 'kube_pod_status_unschedulable{namespace="prod-tenant", pod="pod-1", source_cluster="cluster06"}'
-        values: '0x14'
+        values: '0x29'
 
       # Pod is in the Pending state and scheduled, but it has a namespace that starts
       # with 'openshift' so it's ignored.
       - series: 'kube_pod_status_phase{pod="pod-2", namespace="openshift-prod-test", phase="Pending"}'
-        values: '1x14'
+        values: '1x29'
       - series: 'kube_pod_status_unschedulable{namespace="openshift-prod-test", pod="pod-2", source_cluster="cluster07"}'
-        values: '0x14'
+        values: '0x29'
 
       # Pod is in the Pending state and scheduled, but it has a namespace that starts
       # with 'kube' so it's ignored.
       - series: 'kube_pod_status_phase{pod="pod-3", namespace="kube-test", phase="Unknown"}'
-        values: '1x14'
+        values: '1x29'
       - series: 'kube_pod_status_unschedulable{namespace="kube-test", pod="pod-3", source_cluster="cluster08"}'
-        values: '0x14'
+        values: '0x29'
 
       # Pod is in the Pending state and scheduled, but it has a namespace 'default'
       # so it's ignored.
       - series: 'kube_pod_status_phase{pod="pod-4", namespace="default", phase="Failed"}'
-        values: '1x14'
+        values: '1x29'
       - series: 'kube_pod_status_unschedulable{namespace="default", pod="pod-4", source_cluster="cluster09"}'
-        values: '0x14'
+        values: '0x29'
 
       # Pod is in the Failed state and scheduled, but it has a namespace that ends with 'env' so it's ignored.
       - series: 'kube_pod_status_phase{pod="test-pod", namespace="test-env", phase="Failed"}'
-        values: '1x14'
+        values: '1x29'
       - series: 'kube_pod_status_unschedulable{namespace="test-env", pod="test-pod", source_cluster="cluster01"}'
-        values: '0x14'
+        values: '0x29'
 
       # Pod is in the Failed state and scheduled, but it's in the 'tekton-ci' namespace so it's ignored.
       - series: 'kube_pod_status_phase{pod="test-pod", namespace="tekton-ci", phase="Failed"}'
-        values: '1x14'
+        values: '1x29'
       - series: 'kube_pod_status_unschedulable{namespace="tekton-ci", pod="test-pod", source_cluster="cluster01"}'
-        values: '0x14'
+        values: '0x29'
 
       # Pod is in the Failed state and scheduled, but it's in the 'build-templates-e2e' namespace so it's ignored.
       - series: 'kube_pod_status_phase{pod="test-pod", namespace="build-templates-e2e", phase="Failed"}'
-        values: '1x14'
+        values: '1x29'
       - series: 'kube_pod_status_unschedulable{namespace="build-templates-e2e", pod="test-pod", source_cluster="cluster01"}'
-        values: '0x14'
+        values: '0x29'
 
     alert_rule_test:
-      - eval_time: 15m
+      - eval_time: 30m
         alertname: PodNotReady
