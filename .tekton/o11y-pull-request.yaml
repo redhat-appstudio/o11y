@@ -393,19 +393,33 @@ spec:
           - name: workdir
             emptyDir: {}
     - name: test-kustomize-build
-      workspaces:
-        - name: workspace
-          workspace: workspace
+      params:
+        - name: SOURCE_ARTIFACT
+          value: $(tasks.clone-repository-oci-ta.results.SOURCE_ARTIFACT)
       runAfter:
-        - clone-repository
+        - clone-repository-oci-ta
       taskSpec:
-        workspaces:
-          - name: workspace
+        params:
+          - description: The Trusted Artifact URI pointing to the artifact with the application source code.
+            name: SOURCE_ARTIFACT
+            type: string
+        stepTemplate:
+          volumeMounts:
+            - mountPath: /var/workdir
+              name: workdir
         steps:
+          - name: use-trusted-artifact
+            image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:8391272c4e5011120e9e7fee2c1f339e9405366110bf239dadcbc21e953ce099
+            args:
+              - use
+              - $(params.SOURCE_ARTIFACT)=/var/workdir/source
           - name: kustomize-build
             image: registry.access.redhat.com/ubi8/ubi:latest
-            workingDir: $(workspaces.workspace.path)/source
+            workingDir: /var/workdir/source
             script: yum install -y make && make kustomize-build
+        volumes:
+          - name: workdir
+            emptyDir: {}
     - name: build-container
       params:
       - name: IMAGE
