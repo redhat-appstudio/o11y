@@ -312,26 +312,42 @@ spec:
       params:
         - name: target-branch
           value: $(params.target-branch)
-      workspaces:
-        - name: workspace
-          workspace: workspace
+        - name: SOURCE_ARTIFACT
+          value: $(tasks.clone-repository-oci-ta.results.SOURCE_ARTIFACT)
       runAfter:
-        - clone-repository
+        - clone-repository-oci-ta
       taskSpec:
         params:
           - name: target-branch
-        workspaces:
-          - name: workspace
+          - description: The Trusted Artifact URI pointing to the artifact with the application source code.
+            name: SOURCE_ARTIFACT
+            type: string
+        stepTemplate:
+          volumeMounts:
+            - mountPath: /var/workdir
+              name: workdir
+          # This is needed because the steps below both write to git source but execute as
+          # different users by default.
+          securityContext:
+            runAsUser: 0
         steps:
+          - name: use-trusted-artifact
+            image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:8391272c4e5011120e9e7fee2c1f339e9405366110bf239dadcbc21e953ce099
+            args:
+              - use
+              - $(params.SOURCE_ARTIFACT)=/var/workdir/source
           - name: run-gitlint
             image: registry.access.redhat.com/ubi9/python-39:latest
-            workingDir: $(workspaces.workspace.path)/source
+            workingDir: /var/workdir/source
             script: |
               #!/bin/bash -ex
               python -m pip install gitlint
               git config --global --add safe.directory '*'
               git fetch origin "$(params.target-branch)"
               gitlint --fail-without-commits --commits "origin/$(params.target-branch)..HEAD"
+        volumes:
+          - name: workdir
+            emptyDir: {}
     - name: run-kubelint
       runAfter:
       - clone-repository-oci-ta
