@@ -173,35 +173,6 @@ spec:
         value: $(params.git-url)
       - name: revision
         value: $(params.revision)
-      - name: depth
-        value: 20
-      runAfter:
-      - init
-      taskRef:
-        params:
-        - name: name
-          value: git-clone
-        - name: bundle
-          value: quay.io/redhat-appstudio-tekton-catalog/task-git-clone:0.1@sha256:a5fd411406ea3614c583aa57cf4bb4b2d7f024ac98c7fb966343ede3790d64e6
-        - name: kind
-          value: task
-        resolver: bundles
-      when:
-      - input: $(tasks.init.results.build)
-        operator: in
-        values:
-        - "true"
-      workspaces:
-      - name: output
-        workspace: workspace
-      - name: basic-auth
-        workspace: git-auth
-    - name: clone-repository-oci-ta
-      params:
-      - name: url
-        value: $(params.git-url)
-      - name: revision
-        value: $(params.revision)
       - name: ociStorage
         value: "$(params.output-image).git"
       - name: ociArtifactExpiresAfter
@@ -234,13 +205,13 @@ spec:
       - name: dev-package-managers
         value: $(params.prefetch-dev-package-managers-enabled)
       - name: SOURCE_ARTIFACT
-        value: $(tasks.clone-repository-oci-ta.results.SOURCE_ARTIFACT)
+        value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
       - name: ociStorage
         value: $(params.output-image).prefetch
       - name: ociArtifactExpiresAfter
         value: $(params.image-expires-after)
       runAfter:
-      - clone-repository-oci-ta
+      - clone-repository
       taskRef:
         params:
         - name: name
@@ -253,9 +224,9 @@ spec:
     - name: check-and-test-prometheus-rules
       params:
         - name: SOURCE_ARTIFACT
-          value: $(tasks.clone-repository-oci-ta.results.SOURCE_ARTIFACT)
+          value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
       runAfter:
-        - clone-repository-oci-ta
+        - clone-repository
       taskSpec:
         params:
           - description: The Trusted Artifact URI pointing to the artifact with the application source code.
@@ -282,10 +253,10 @@ spec:
             emptyDir: {}
     - name: yaml-lint
       runAfter:
-        - clone-repository-oci-ta
+        - clone-repository
       params:
         - name: SOURCE_ARTIFACT
-          value: $(tasks.clone-repository-oci-ta.results.SOURCE_ARTIFACT)
+          value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
       taskSpec:
         params:
           - description: The Trusted Artifact URI pointing to the artifact with the application source code.
@@ -313,9 +284,9 @@ spec:
         - name: target-branch
           value: $(params.target-branch)
         - name: SOURCE_ARTIFACT
-          value: $(tasks.clone-repository-oci-ta.results.SOURCE_ARTIFACT)
+          value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
       runAfter:
-        - clone-repository-oci-ta
+        - clone-repository
       taskSpec:
         params:
           - name: target-branch
@@ -350,20 +321,20 @@ spec:
             emptyDir: {}
     - name: run-kubelint
       runAfter:
-      - clone-repository-oci-ta
+      - clone-repository
       taskRef:
         name: kube-linter-oci-ta
       params:
       - name: SOURCE_ARTIFACT
-        value: $(tasks.clone-repository-oci-ta.results.SOURCE_ARTIFACT)
+        value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
       - name: config_file_path
         value: .kube-linter.yaml
     - name: run-go-unit-tests
       params:
         - name: SOURCE_ARTIFACT
-          value: $(tasks.clone-repository-oci-ta.results.SOURCE_ARTIFACT)
+          value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
       runAfter:
-        - clone-repository-oci-ta
+        - clone-repository
       taskSpec:
         params:
           - description: The Trusted Artifact URI pointing to the artifact with the application source code.
@@ -395,9 +366,9 @@ spec:
     - name: test-kustomize-build
       params:
         - name: SOURCE_ARTIFACT
-          value: $(tasks.clone-repository-oci-ta.results.SOURCE_ARTIFACT)
+          value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
       runAfter:
-        - clone-repository-oci-ta
+        - clone-repository
       taskSpec:
         params:
           - description: The Trusted Artifact URI pointing to the artifact with the application source code.
