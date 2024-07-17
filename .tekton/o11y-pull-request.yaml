@@ -9,6 +9,7 @@ metadata:
     pipelinesascode.tekton.dev/max-keep-runs: "3"
     pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch
       == "main"
+    pipelinesascode.tekton.dev/task: "[.tekton/kube-linter-oci-ta.yaml]"
   creationTimestamp: null
   labels:
     appstudio.openshift.io/application: o11y
@@ -305,22 +306,14 @@ spec:
               gitlint --fail-without-commits --commits "origin/$(params.target-branch)..HEAD"
     - name: run-kubelint
       runAfter:
-      - clone-repository
-      workspaces:
-      - name: source
-        workspace: workspace
+      - clone-repository-oci-ta
       taskRef:
-        resolver: git
-        params:
-        - name: url
-          value: https://github.com/tektoncd/catalog.git
-        - name: revision
-          value: 710c77d5c520d8dbce1e7e0055543415b57d6cb9
-        - name: pathInRepo
-          value: task/kube-linter/0.1/kube-linter.yaml
+        name: kube-linter-oci-ta
       params:
+      - name: SOURCE_ARTIFACT
+        value: $(tasks.clone-repository-oci-ta.results.SOURCE_ARTIFACT)
       - name: config_file_path
-        value: source/.kube-linter.yaml
+        value: .kube-linter.yaml
     - name: run-go-unit-tests
       workspaces:
         - name: workspace
