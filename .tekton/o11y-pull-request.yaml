@@ -9,6 +9,7 @@ metadata:
     pipelinesascode.tekton.dev/max-keep-runs: "3"
     pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch
       == "main"
+    pipelinesascode.tekton.dev/task: "[.tekton/kube-linter-oci-ta.yaml]"
   creationTimestamp: null
   labels:
     appstudio.openshift.io/application: o11y
@@ -172,35 +173,6 @@ spec:
         value: $(params.git-url)
       - name: revision
         value: $(params.revision)
-      - name: depth
-        value: 20
-      runAfter:
-      - init
-      taskRef:
-        params:
-        - name: name
-          value: git-clone
-        - name: bundle
-          value: quay.io/redhat-appstudio-tekton-catalog/task-git-clone:0.1@sha256:a5fd411406ea3614c583aa57cf4bb4b2d7f024ac98c7fb966343ede3790d64e6
-        - name: kind
-          value: task
-        resolver: bundles
-      when:
-      - input: $(tasks.init.results.build)
-        operator: in
-        values:
-        - "true"
-      workspaces:
-      - name: output
-        workspace: workspace
-      - name: basic-auth
-        workspace: git-auth
-    - name: clone-repository-oci-ta
-      params:
-      - name: url
-        value: $(params.git-url)
-      - name: revision
-        value: $(params.revision)
       - name: ociStorage
         value: "$(params.output-image).git"
       - name: ociArtifactExpiresAfter
@@ -233,13 +205,13 @@ spec:
       - name: dev-package-managers
         value: $(params.prefetch-dev-package-managers-enabled)
       - name: SOURCE_ARTIFACT
-        value: $(tasks.clone-repository-oci-ta.results.SOURCE_ARTIFACT)
+        value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
       - name: ociStorage
         value: $(params.output-image).prefetch
       - name: ociArtifactExpiresAfter
         value: $(params.image-expires-after)
       runAfter:
-      - clone-repository-oci-ta
+      - clone-repository
       taskRef:
         params:
         - name: name
@@ -250,107 +222,175 @@ spec:
           value: task
         resolver: bundles
     - name: check-and-test-prometheus-rules
-      workspaces:
-        - name: workspace
-          workspace: workspace
+      params:
+        - name: SOURCE_ARTIFACT
+          value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
       runAfter:
         - clone-repository
       taskSpec:
-        workspaces:
-          - name: workspace
+        params:
+          - description: The Trusted Artifact URI pointing to the artifact with the application source code.
+            name: SOURCE_ARTIFACT
+            type: string
+        stepTemplate:
+          volumeMounts:
+            - mountPath: /var/workdir
+              name: workdir
         steps:
+          - name: use-trusted-artifact
+            image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:8391272c4e5011120e9e7fee2c1f339e9405366110bf239dadcbc21e953ce099
+            args:
+              - use
+              - $(params.SOURCE_ARTIFACT)=/var/workdir/source
           - name: check-and-test-all
             image: quay.io/rhobs/obsctl-reloader-rules-checker:1.0.7
-            workingDir: $(workspaces.workspace.path)/source
+            workingDir: /var/workdir/source
             script: |
               yum install -y make && \
               CMD=obsctl-reloader-rules-checker make check-and-test
+        volumes:
+          - name: workdir
+            emptyDir: {}
     - name: yaml-lint
-      workspaces:
-        - name: workspace
-          workspace: workspace
       runAfter:
         - clone-repository
+      params:
+        - name: SOURCE_ARTIFACT
+          value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
       taskSpec:
-        workspaces:
-          - name: workspace
+        params:
+          - description: The Trusted Artifact URI pointing to the artifact with the application source code.
+            name: SOURCE_ARTIFACT
+            type: string
+        stepTemplate:
+          volumeMounts:
+            - mountPath: /var/workdir
+              name: workdir
         steps:
+          - name: use-trusted-artifact
+            image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:8391272c4e5011120e9e7fee2c1f339e9405366110bf239dadcbc21e953ce099
+            args:
+              - use
+              - $(params.SOURCE_ARTIFACT)=/var/workdir/source
           - name: yaml-lint
             image: registry.access.redhat.com/ubi9/python-39:latest
-            workingDir: $(workspaces.workspace.path)/source
+            workingDir: /var/workdir/source
             script: make install_pipenv sync_pipenv lint_yamls
+        volumes:
+          - name: workdir
+            emptyDir: {}
     - name: run-gitlint
       params:
         - name: target-branch
           value: $(params.target-branch)
-      workspaces:
-        - name: workspace
-          workspace: workspace
+        - name: SOURCE_ARTIFACT
+          value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
       runAfter:
         - clone-repository
       taskSpec:
         params:
           - name: target-branch
-        workspaces:
-          - name: workspace
+          - description: The Trusted Artifact URI pointing to the artifact with the application source code.
+            name: SOURCE_ARTIFACT
+            type: string
+        stepTemplate:
+          volumeMounts:
+            - mountPath: /var/workdir
+              name: workdir
+          # This is needed because the steps below both write to git source but execute as
+          # different users by default.
+          securityContext:
+            runAsUser: 0
         steps:
+          - name: use-trusted-artifact
+            image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:8391272c4e5011120e9e7fee2c1f339e9405366110bf239dadcbc21e953ce099
+            args:
+              - use
+              - $(params.SOURCE_ARTIFACT)=/var/workdir/source
           - name: run-gitlint
             image: registry.access.redhat.com/ubi9/python-39:latest
-            workingDir: $(workspaces.workspace.path)/source
+            workingDir: /var/workdir/source
             script: |
               #!/bin/bash -ex
               python -m pip install gitlint
               git config --global --add safe.directory '*'
               git fetch origin "$(params.target-branch)"
               gitlint --fail-without-commits --commits "origin/$(params.target-branch)..HEAD"
+        volumes:
+          - name: workdir
+            emptyDir: {}
     - name: run-kubelint
       runAfter:
       - clone-repository
-      workspaces:
-      - name: source
-        workspace: workspace
       taskRef:
-        resolver: git
-        params:
-        - name: url
-          value: https://github.com/tektoncd/catalog.git
-        - name: revision
-          value: 710c77d5c520d8dbce1e7e0055543415b57d6cb9
-        - name: pathInRepo
-          value: task/kube-linter/0.1/kube-linter.yaml
+        name: kube-linter-oci-ta
       params:
+      - name: SOURCE_ARTIFACT
+        value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
       - name: config_file_path
-        value: source/.kube-linter.yaml
+        value: .kube-linter.yaml
     - name: run-go-unit-tests
-      workspaces:
-        - name: workspace
-          workspace: workspace
+      params:
+        - name: SOURCE_ARTIFACT
+          value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
       runAfter:
         - clone-repository
       taskSpec:
-        workspaces:
-          - name: workspace
+        params:
+          - description: The Trusted Artifact URI pointing to the artifact with the application source code.
+            name: SOURCE_ARTIFACT
+            type: string
+        stepTemplate:
+          volumeMounts:
+            - mountPath: /var/workdir
+              name: workdir
+          # This is needed because the steps below both write to git source but execute as
+          # different users by default.
+          securityContext:
+            runAsUser: 0
         steps:
+          - name: use-trusted-artifact
+            image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:8391272c4e5011120e9e7fee2c1f339e9405366110bf239dadcbc21e953ce099
+            args:
+              - use
+              - $(params.SOURCE_ARTIFACT)=/var/workdir/source
           - name: go-unit-tests
             image: registry.access.redhat.com/ubi9/go-toolset:1.21.11-2.1720624888
-            workingDir: $(workspaces.workspace.path)/source
+            workingDir: /var/workdir/source
             script: |
               go get -v -t -d ./...
               go test -v ./...
+        volumes:
+          - name: workdir
+            emptyDir: {}
     - name: test-kustomize-build
-      workspaces:
-        - name: workspace
-          workspace: workspace
+      params:
+        - name: SOURCE_ARTIFACT
+          value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
       runAfter:
         - clone-repository
       taskSpec:
-        workspaces:
-          - name: workspace
+        params:
+          - description: The Trusted Artifact URI pointing to the artifact with the application source code.
+            name: SOURCE_ARTIFACT
+            type: string
+        stepTemplate:
+          volumeMounts:
+            - mountPath: /var/workdir
+              name: workdir
         steps:
+          - name: use-trusted-artifact
+            image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:8391272c4e5011120e9e7fee2c1f339e9405366110bf239dadcbc21e953ce099
+            args:
+              - use
+              - $(params.SOURCE_ARTIFACT)=/var/workdir/source
           - name: kustomize-build
             image: registry.access.redhat.com/ubi8/ubi:latest
-            workingDir: $(workspaces.workspace.path)/source
+            workingDir: /var/workdir/source
             script: yum install -y make && make kustomize-build
+        volumes:
+          - name: workdir
+            emptyDir: {}
     - name: build-container
       params:
       - name: IMAGE
@@ -528,22 +568,10 @@ spec:
         values:
         - "false"
     workspaces:
-    - name: workspace
     - name: git-auth
       optional: true
   taskRunTemplate: {}
   workspaces:
-  - name: workspace
-    volumeClaimTemplate:
-      metadata:
-        creationTimestamp: null
-      spec:
-        accessModes:
-        - ReadWriteOnce
-        resources:
-          requests:
-            storage: 1Gi
-      status: {}
   - name: git-auth
     secret:
       secretName: '{{ git_auth_secret }}'
