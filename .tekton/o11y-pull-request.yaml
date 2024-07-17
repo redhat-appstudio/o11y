@@ -359,21 +359,39 @@ spec:
       - name: config_file_path
         value: .kube-linter.yaml
     - name: run-go-unit-tests
-      workspaces:
-        - name: workspace
-          workspace: workspace
+      params:
+        - name: SOURCE_ARTIFACT
+          value: $(tasks.clone-repository-oci-ta.results.SOURCE_ARTIFACT)
       runAfter:
-        - clone-repository
+        - clone-repository-oci-ta
       taskSpec:
-        workspaces:
-          - name: workspace
+        params:
+          - description: The Trusted Artifact URI pointing to the artifact with the application source code.
+            name: SOURCE_ARTIFACT
+            type: string
+        stepTemplate:
+          volumeMounts:
+            - mountPath: /var/workdir
+              name: workdir
+          # This is needed because the steps below both write to git source but execute as
+          # different users by default.
+          securityContext:
+            runAsUser: 0
         steps:
+          - name: use-trusted-artifact
+            image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:8391272c4e5011120e9e7fee2c1f339e9405366110bf239dadcbc21e953ce099
+            args:
+              - use
+              - $(params.SOURCE_ARTIFACT)=/var/workdir/source
           - name: go-unit-tests
             image: registry.access.redhat.com/ubi9/go-toolset:1.21.11-2.1720624888
-            workingDir: $(workspaces.workspace.path)/source
+            workingDir: /var/workdir/source
             script: |
               go get -v -t -d ./...
               go test -v ./...
+        volumes:
+          - name: workdir
+            emptyDir: {}
     - name: test-kustomize-build
       workspaces:
         - name: workspace
