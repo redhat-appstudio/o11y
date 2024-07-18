@@ -1,0 +1,164 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.pipeline_alerts.yaml
+
+tests:
+  # ----- Tekton Controller Rapid Restart Tests ----
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # tekton pipeline controller is experiencing controller successive restarts so it will be alerted, whereas we are currently not checking
+      # other pods in the same namespace that restart
+      - series: 'kube_pod_container_status_restarts_total{namespace="openshift-pipelines", pod="tekton-pipelines-controller-a", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'kube_pod_container_status_restarts_total{namespace="openshift-pipelines", pod="tekton-triggers-controller-a", source_cluster="cluster01"}'
+        values: '2+2x780'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: CorePipelineControllerRepeatedRestarts
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              source_cluster: cluster01
+            exp_annotations:
+              summary: >-
+                Tekton controller is rapidly restarting.
+              description: >-
+                Tekton controller on cluster cluster01 has restarted 5 times recently.
+              alert_team_handle: <!subteam^S03GF42RBE2>
+              team: pipelines
+              runbook_url: TBD
+
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # tekton pipeline controller is experiencing some controller restarts but not fast enough so it should not alert
+      - series: 'kube_pod_container_status_restarts_total{namespace="openshift-pipelines", pod="tekton-pipelines-controller-a", source_cluster="cluster01"}'
+        values: '1x780'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: CorePipelineControllerRepeatedRestarts
+
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # tekton pipeline controller is not experiencing  controller restarts so it should not alert
+      - series: 'kube_pod_container_status_restarts_total{namespace="openshift-pipelines", pod="tekton-pipelines-controller-a", source_cluster="cluster01"}'
+        values: '0x780'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: CorePipelineControllerRepeatedRestarts
+
+  # ----- PipelineRun Controller Potential Deadlock Kicking Off PipelineRuns ----
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # tekton pipelinerun controller is experiencing delays getting pipelineruns in tenant-1 started and should alert.  Also make sure the lack
+      # of kickoff issues in tenant-2 does not affect the value of the query
+      - series: 'pipelinerun_kickoff_not_attempted_count{namespace="tenant-1", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'pipelinerun_kickoff_not_attempted_count{namespace="tenant-2", source_cluster="cluster01"}'
+        values: '0x780'
+
+    alert_rule_test:
+      - eval_time: 85m
+        alertname: PipelineControllerDeadlock
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              source_cluster: cluster01
+            exp_annotations:
+              summary: >-
+                Tekton pipeline controller appears to have stopped processing active pipelineruns which have not been started yet.
+              description: >-
+                Tekton pipeline controller on cluster cluster01 has appeared deadlocked on 2 pipelineruns.
+              alert_team_handle: <!subteam^S03GF42RBE2>
+              team: pipelines
+              runbook_url: TBD
+
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # tekton pipelinerun controller is experiencing some delays getting pipelineruns kicked off but not fast enough so it should not alert
+      - series: 'pipelinerun_kickoff_not_attempted_count{namespace="tenant-1", source_cluster="cluster01"}'
+        values: '1x780'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: PipelineControllerDeadlock
+
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # tekton pipelinerun controller is not experiencing some delays getting pipelineruns kicked off so it should not alert
+      - series: 'pipelinerun_kickoff_not_attempted_count{namespace="tenant-1", source_cluster="cluster01"}'
+        values: '0x780'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: PipelineControllerDeadlock
+
+  # ----- TaskRun Controller Potential Deadlock Starting Pods that pass K8s checks ----
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # tekton taskrun controller is experiencing delays getting the k8s approved pods for taskruns in tenant-1 started and should alert.  Also make sure the lack
+      # of pod issues in tenant-2 does not affect the value of the query
+      - series: 'taskrun_pod_create_not_attempted_or_pending_count{namespace="tenant-1", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'taskrun_pod_create_not_attempted_or_pending_count{namespace="tenant-2", source_cluster="cluster01"}'
+        values: '0x780'
+
+    alert_rule_test:
+      - eval_time: 85m
+        alertname: TaskControllerDeadlock
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              source_cluster: cluster01
+            exp_annotations:
+              summary: >-
+                Tekton taskrun controller appears to have stopped processing active taskruns whose underlying Pod have not failed Kubernetes screening.
+              description: >-
+                Tekton taskrun controller on cluster cluster01 has appeared deadlocked on 2 taskruns.
+              alert_team_handle: <!subteam^S03GF42RBE2>
+              team: pipelines
+              runbook_url: TBD
+
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # tekton pipelinerun controller is experiencing some delays getting pipelineruns kicked off but not fast enough so it should not alert
+      - series: 'taskrun_pod_create_not_attempted_or_pending_count{namespace="tenant-1", source_cluster="cluster01"}'
+        values: '1x780'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: TaskControllerDeadlock
+
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # tekton pipelinerun controller is not experiencing some delays getting pipelineruns kicked off so it should not alert
+      - series: 'taskrun_pod_create_not_attempted_or_pending_count{namespace="tenant-1", source_cluster="cluster01"}'
+        values: '0x780'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: TaskControllerDeadlock
