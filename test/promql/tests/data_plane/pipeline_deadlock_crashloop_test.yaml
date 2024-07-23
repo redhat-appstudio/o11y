@@ -121,6 +121,10 @@ tests:
         values: '1+1x780'
       - series: 'taskrun_pod_create_not_attempted_or_pending_count{namespace="tenant-2", source_cluster="cluster01"}'
         values: '0x780'
+      - series: 'tekton_pipelines_controller_running_taskruns_throttled_by_quota{namespace="tenant-1", source_cluster="cluster01"}'
+        values: '0x780'
+      - series: 'tekton_pipelines_controller_running_taskruns_throttled_by_node{namespace="tenant-1", source_cluster="cluster01"}'
+        values: '0x780'
 
     alert_rule_test:
       - eval_time: 85m
@@ -138,6 +142,57 @@ tests:
               alert_team_handle: <!subteam^S03GF42RBE2>
               team: pipelines
               runbook_url: TBD
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # tekton taskrun controller is experiencing delays getting the k8s approved pods for taskruns in tenant-1 started and should alert.  Also make sure the lack
+      # of pod issues in tenant-2 does not affect the value of the query
+      - series: 'taskrun_pod_create_not_attempted_or_pending_count{namespace="tenant-1", source_cluster="cluster01"}'
+        values: '1+2x780'
+      - series: 'taskrun_pod_create_not_attempted_or_pending_count{namespace="tenant-2", source_cluster="cluster01"}'
+        values: '0x780'
+      - series: 'tekton_pipelines_controller_running_taskruns_throttled_by_quota{namespace="tenant-1", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'tekton_pipelines_controller_running_taskruns_throttled_by_node{namespace="tenant-1", source_cluster="cluster01"}'
+        values: '0x780'
+
+    alert_rule_test:
+      - eval_time: 85m
+        alertname: TaskControllerDeadlock
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              source_cluster: cluster01
+            exp_annotations:
+              summary: >-
+                Tekton taskrun controller appears to have stopped processing active taskruns whose underlying Pod have not failed Kubernetes screening.
+              description: >-
+                Tekton taskrun controller on cluster cluster01 has appeared deadlocked on 2 taskruns.
+              alert_team_handle: <!subteam^S03GF42RBE2>
+              team: pipelines
+              runbook_url: TBD
+
+
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # tekton taskrun controller is experiencing delays getting the k8s approved pods for taskruns in tenant-1, but only
+      # from k8s throttling so no alert fires.
+      - series: 'taskrun_pod_create_not_attempted_or_pending_count{namespace="tenant-1", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'taskrun_pod_create_not_attempted_or_pending_count{namespace="tenant-2", source_cluster="cluster01"}'
+        values: '0x780'
+      - series: 'tekton_pipelines_controller_running_taskruns_throttled_by_quota{namespace="tenant-1", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'tekton_pipelines_controller_running_taskruns_throttled_by_node{namespace="tenant-1", source_cluster="cluster01"}'
+        values: '1+1x780'
+
+    alert_rule_test:
+      - eval_time: 85m
+        alertname: TaskControllerDeadlock
 
   - interval: 1m
     input_series:
