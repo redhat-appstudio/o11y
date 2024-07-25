@@ -49,7 +49,7 @@ spec:
             runbook_url: TBD
         - alert: CorePipelineControllerRepeatedRestarts
           expr: |
-            sum by (source_cluster) (increase(kube_pod_container_status_restarts_total{namespace="openshift-pipelines", pod=~"tekton-pipelines-controller-.*"}[5m])) > 0
+            sum by (source_cluster) (increase(kube_pod_container_status_restarts_total{namespace="openshift-pipelines", pod=~"tekton-.*"}[5m])) > 0
           for: 5m
           labels:
             severity: critical
@@ -58,7 +58,7 @@ spec:
             summary: >-
               Tekton controller is rapidly restarting.
             description: >-
-              Tekton controller on cluster {{ $labels.source_cluster }} has restarted {{ $value }} times recently.
+              Tekton controllers on cluster {{ $labels.source_cluster }} have restarted {{ $value }} times recently.
             alert_team_handle: <!subteam^S04PYECHCCU>
             team: pipelines
             runbook_url: TBD
