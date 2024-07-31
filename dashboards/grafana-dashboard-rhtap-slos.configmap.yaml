@@ -2,1402 +2,1634 @@ apiVersion: v1
 data:
   rhtap-slo-dashboard.json: |-
     {
-      "annotations": {
-        "list": [
-          {
-            "builtIn": 1,
-            "datasource": {
-              "type": "prometheus",
-              "uid": "${datasource}"
-            },
-            "enable": true,
-            "hide": true,
-            "iconColor": "rgba(0, 211, 255, 1)",
-            "name": "Annotations & Alerts",
-            "target": {
-              "limit": 100,
-              "matchAny": false,
-              "tags": [],
-              "type": "dashboard"
-            },
-            "type": "dashboard"
-          }
-        ]
-      },
-      "description": "RHTAP Service Level Objectives",
-      "editable": true,
-      "fiscalYearStartMonth": 0,
-      "graphTooltip": 0,
-      "id": 920922,
-      "links": [],
-      "liveNow": false,
-      "panels": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "",
-          "gridPos": {
-            "h": 3,
-            "w": 20,
-            "x": 0,
-            "y": 0
-          },
-          "id": 31,
-          "options": {
-            "code": {
-              "language": "plaintext",
-              "showLineNumbers": false,
-              "showMiniMap": false
-            },
-            "content": "This dashboard shows all SLOs for RHTAP over a specified time window.\n\nSelect a datasource to switch between environments.",
-            "mode": "markdown"
-          },
-          "pluginVersion": "10.4.1",
-          "transparent": true,
-          "type": "text"
-        },
-        {
-          "collapsed": false,
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 3
-          },
-          "id": 80,
-          "panels": [],
-          "title": "Integration Service SLO's",
-          "type": "row"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "The objective for the given time window.",
-          "gridPos": {
-            "h": 7,
-            "w": 10,
-            "x": 0,
-            "y": 4
-          },
-          "id": 77,
-          "options": {
-            "code": {
-              "language": "plaintext",
-              "showLineNumbers": false,
-              "showMiniMap": false
-            },
-            "content": "<h1><center>90% of requests must be within required response time</center></h1>",
-            "mode": "html"
-          },
-          "pluginVersion": "10.4.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "refId": "A"
-            }
-          ],
-          "title": "Latency Service Response SLO",
-          "type": "text"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "The current measurement for the given time window.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [
+        "annotations": {
+            "list": [
                 {
-                  "options": {
-                    "match": "null",
-                    "result": {
-                      "text": "N/A"
-                    }
-                  },
-                  "type": "special"
+                    "builtIn": 1,
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "enable": true,
+                    "hide": true,
+                    "iconColor": "rgba(0, 211, 255, 1)",
+                    "name": "Annotations & Alerts",
+                    "target": {
+                        "limit": 100,
+                        "matchAny": false,
+                        "tags": [],
+                        "type": "dashboard"
+                    },
+                    "type": "dashboard"
                 }
-              ],
-              "max": 1,
-              "min": 0,
-              "noValue": "-",
-              "thresholds": {
-                "mode": "percentage",
-                "steps": [
-                  {
-                    "color": "red",
-                    "value": null
-                  },
-                  {
-                    "color": "green",
-                    "value": 90
-                  }
-                ]
-              },
-              "unit": "percentunit"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 5,
-            "x": 10,
-            "y": 4
-          },
-          "id": 78,
-          "maxDataPoints": 100,
-          "options": {
-            "minVizHeight": 75,
-            "minVizWidth": 75,
-            "orientation": "horizontal",
-            "reduceOptions": {
-              "calcs": [],
-              "fields": "",
-              "values": false
-            },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": false,
-            "sizing": "auto"
-          },
-          "pluginVersion": "10.4.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "sum(rate(integration_svc_response_seconds_bucket{le=\"30\"}[$__rate_interval])) by (job)\n/\nsum(rate(integration_svc_response_seconds_count[$__rate_interval]) > 0) by (job)",
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Measured",
-          "type": "gauge"
+            ]
         },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "The objective for the given time window.",
-          "gridPos": {
-            "h": 7,
-            "w": 10,
-            "x": 0,
-            "y": 11
-          },
-          "id": 83,
-          "options": {
-            "code": {
-              "language": "plaintext",
-              "showLineNumbers": false,
-              "showMiniMap": false
-            },
-            "content": "<h1><center>90% of equests must be within required time</center></h1>",
-            "mode": "html"
-          },
-          "pluginVersion": "10.4.1",
-          "targets": [
+        "description": "RHTAP Service Level Objectives",
+        "editable": true,
+        "fiscalYearStartMonth": 0,
+        "graphTooltip": 0,
+        "id": 920922,
+        "links": [],
+        "liveNow": false,
+        "panels": [
             {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "refId": "A"
-            }
-          ],
-          "title": "Time to start Pipeline Run",
-          "type": "text"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "The current measurement for the given time window.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [
-                {
-                  "options": {
-                    "match": "null",
-                    "result": {
-                      "text": "N/A"
-                    }
-                  },
-                  "type": "special"
-                }
-              ],
-              "max": 1,
-              "min": 0,
-              "noValue": "-",
-              "thresholds": {
-                "mode": "percentage",
-                "steps": [
-                  {
-                    "color": "red",
-                    "value": null
-                  },
-                  {
-                    "color": "green",
-                    "value": 90
-                  }
-                ]
-              },
-              "unit": "percentunit"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 5,
-            "x": 10,
-            "y": 11
-          },
-          "id": 86,
-          "maxDataPoints": 100,
-          "options": {
-            "minVizHeight": 75,
-            "minVizWidth": 75,
-            "orientation": "horizontal",
-            "reduceOptions": {
-              "calcs": [],
-              "fields": "",
-              "values": false
-            },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": false,
-            "sizing": "auto"
-          },
-          "pluginVersion": "10.4.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "sum(rate(integration_svc_snapshot_created_to_pipelinerun_started_seconds_bucket{le=\"5\"}[$__rate_interval])) by (job)\n/\nsum(rate(integration_svc_snapshot_created_to_pipelinerun_started_seconds_count[$__rate_interval]) > 0) by (job)",
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Measured",
-          "type": "gauge"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "The objective for the given time window.",
-          "gridPos": {
-            "h": 7,
-            "w": 10,
-            "x": 0,
-            "y": 18
-          },
-          "id": 82,
-          "options": {
-            "code": {
-              "language": "plaintext",
-              "showLineNumbers": false,
-              "showMiniMap": false
-            },
-            "content": "<h1><center>90% of requests must be within required time</center></h1>",
-            "mode": "html"
-          },
-          "pluginVersion": "10.4.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "refId": "A"
-            }
-          ],
-          "title": "Latency of Release Creation",
-          "type": "text"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "The current measurement for the given time window.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [
-                {
-                  "options": {
-                    "match": "null",
-                    "result": {
-                      "text": "N/A"
-                    }
-                  },
-                  "type": "special"
-                }
-              ],
-              "max": 1,
-              "min": 0,
-              "noValue": "-",
-              "thresholds": {
-                "mode": "percentage",
-                "steps": [
-                  {
-                    "color": "red",
-                    "value": null
-                  },
-                  {
-                    "color": "green",
-                    "value": 90
-                  }
-                ]
-              },
-              "unit": "percentunit"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 5,
-            "x": 10,
-            "y": 18
-          },
-          "id": 84,
-          "maxDataPoints": 100,
-          "options": {
-            "minVizHeight": 75,
-            "minVizWidth": 75,
-            "orientation": "horizontal",
-            "reduceOptions": {
-              "calcs": [],
-              "fields": "",
-              "values": false
-            },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": false,
-            "sizing": "auto"
-          },
-          "pluginVersion": "10.4.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "sum(rate(integration_svc_release_latency_seconds_bucket{le=\"10\"}[$__rate_interval])) by (job) / sum(rate(integration_svc_release_latency_seconds_count[$__rate_interval])) by (job)",
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Measured",
-          "type": "gauge"
-        },
-        {
-          "collapsed": false,
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 25
-          },
-          "id": 96,
-          "panels": [],
-          "title": "Release Service SLOs",
-          "type": "row"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "Measure the time it takes for a Release to be marked as Validated.",
-          "gridPos": {
-            "h": 7,
-            "w": 10,
-            "x": 0,
-            "y": 26
-          },
-          "id": 97,
-          "options": {
-            "code": {
-              "language": "plaintext",
-              "showLineNumbers": false,
-              "showMiniMap": false
-            },
-            "content": "<h1><center>90% of the Releases should be validated below 5 seconds</center></h1>",
-            "mode": "html"
-          },
-          "pluginVersion": "10.4.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "refId": "A"
-            }
-          ],
-          "title": "Release Validation SLO",
-          "type": "text"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "Measure the time it takes for a Release to be marked as Processed.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [
-                {
-                  "options": {
-                    "match": "null",
-                    "result": {
-                      "text": "N/A"
-                    }
-                  },
-                  "type": "special"
-                }
-              ],
-              "max": 1,
-              "min": 0,
-              "thresholds": {
-                "mode": "percentage",
-                "steps": [
-                  {
-                    "color": "red",
-                    "value": null
-                  },
-                  {
-                    "color": "green",
-                    "value": 90
-                  }
-                ]
-              },
-              "unit": "percentunit"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 5,
-            "x": 10,
-            "y": 26
-          },
-          "id": 101,
-          "maxDataPoints": 100,
-          "options": {
-            "minVizHeight": 75,
-            "minVizWidth": 75,
-            "orientation": "horizontal",
-            "reduceOptions": {
-              "calcs": [
-                "mean"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": false,
-            "sizing": "auto"
-          },
-          "pluginVersion": "10.4.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "sum by (job) (rate(release_validation_duration_seconds_bucket{le=\"5\"}[$__rate_interval])) / sum by (job) (rate(release_validation_duration_seconds_count[$__rate_interval]) > 0)",
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Measured",
-          "type": "gauge"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "Measure the time it takes for a Release to be marked as Processing",
-          "gridPos": {
-            "h": 7,
-            "w": 10,
-            "x": 0,
-            "y": 33
-          },
-          "id": 99,
-          "options": {
-            "code": {
-              "language": "plaintext",
-              "showLineNumbers": false,
-              "showMiniMap": false
-            },
-            "content": "<h1><center>90% of the Releases should be pre-processed within 10 seconds</center></h1>",
-            "mode": "html"
-          },
-          "pluginVersion": "10.4.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "refId": "A"
-            }
-          ],
-          "title": "Release Pre-Processing SLO",
-          "type": "text"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "Measure the time it takes for a Release to be marked as Processed.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [
-                {
-                  "options": {
-                    "match": "null",
-                    "result": {
-                      "text": "N/A"
-                    }
-                  },
-                  "type": "special"
-                }
-              ],
-              "max": 1,
-              "min": 0,
-              "thresholds": {
-                "mode": "percentage",
-                "steps": [
-                  {
-                    "color": "red",
-                    "value": null
-                  },
-                  {
-                    "color": "green",
-                    "value": 90
-                  }
-                ]
-              },
-              "unit": "percentunit"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 5,
-            "x": 10,
-            "y": 33
-          },
-          "id": 100,
-          "maxDataPoints": 100,
-          "options": {
-            "minVizHeight": 75,
-            "minVizWidth": 75,
-            "orientation": "horizontal",
-            "reduceOptions": {
-              "calcs": [
-                "mean"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": false,
-            "sizing": "auto"
-          },
-          "pluginVersion": "10.4.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "sum by (job) (rate(release_pre_processing_duration_seconds_bucket{le=\"10\"}[$__rate_interval])) / sum by (job) (rate(release_pre_processing_duration_seconds_count[$__rate_interval]) > 0)",
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Measured",
-          "type": "gauge"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "Measure the time it takes for a successful Release to be marked as Processed.",
-          "gridPos": {
-            "h": 7,
-            "w": 10,
-            "x": 0,
-            "y": 40
-          },
-          "id": 102,
-          "options": {
-            "code": {
-              "language": "plaintext",
-              "showLineNumbers": false,
-              "showMiniMap": false
-            },
-            "content": "<h1><center>90% of the Releases should be processed within 1 hour</center></h1>",
-            "mode": "html"
-          },
-          "pluginVersion": "10.4.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "refId": "A"
-            }
-          ],
-          "title": "Release Processing SLO",
-          "type": "text"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "Measure the time it takes for a Release to be marked as Processed.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [
-                {
-                  "options": {
-                    "match": "null",
-                    "result": {
-                      "text": "N/A"
-                    }
-                  },
-                  "type": "special"
-                }
-              ],
-              "max": 1,
-              "min": 0,
-              "thresholds": {
-                "mode": "percentage",
-                "steps": [
-                  {
-                    "color": "red",
-                    "value": null
-                  },
-                  {
-                    "color": "green",
-                    "value": 90
-                  }
-                ]
-              },
-              "unit": "percentunit"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 5,
-            "x": 10,
-            "y": 40
-          },
-          "id": 103,
-          "maxDataPoints": 100,
-          "options": {
-            "minVizHeight": 75,
-            "minVizWidth": 75,
-            "orientation": "horizontal",
-            "reduceOptions": {
-              "calcs": [
-                "mean"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": false,
-            "sizing": "auto"
-          },
-          "pluginVersion": "10.4.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "sum by (job) (rate(release_processing_duration_seconds_bucket{le=\"3600\"}[$__rate_interval])) / sum by (job) (rate(release_processing_duration_seconds_count[$__rate_interval]) > 0)",
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Measured",
-          "type": "gauge"
-        },
-        {
-          "collapsed": true,
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 47
-          },
-          "id": 33,
-          "panels": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "description": "The objective for the given time window.",
-              "gridPos": {
-                "h": 7,
-                "w": 10,
-                "x": 0,
-                "y": 48
-              },
-              "id": 10,
-              "options": {
-                "code": {
-                  "language": "plaintext",
-                  "showLineNumbers": false,
-                  "showMiniMap": false
-                },
-                "content": "<h1><center>SLO Definition</center></h1>",
-                "mode": "html"
-              },
-              "pluginVersion": "10.4.1",
-              "targets": [
-                {
-                  "datasource": {
+                "datasource": {
                     "type": "prometheus",
                     "uid": "${datasource}"
-                  },
-                  "refId": "A"
-                }
-              ],
-              "title": "SLO",
-              "type": "text"
+                },
+                "description": "",
+                "gridPos": {
+                    "h": 3,
+                    "w": 20,
+                    "x": 0,
+                    "y": 0
+                },
+                "id": 31,
+                "options": {
+                    "code": {
+                        "language": "plaintext",
+                        "showLineNumbers": false,
+                        "showMiniMap": false
+                    },
+                    "content": "This dashboard shows all SLOs for RHTAP over a specified time window.\n\nSelect a datasource to switch between environments.",
+                    "mode": "markdown"
+                },
+                "pluginVersion": "10.4.1",
+                "transparent": true,
+                "type": "text"
             },
             {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "description": "The current measurement for the given time window.",
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "thresholds"
-                  },
-                  "mappings": [
+                "collapsed": false,
+                "gridPos": {
+                    "h": 1,
+                    "w": 24,
+                    "x": 0,
+                    "y": 3
+                },
+                "id": 80,
+                "panels": [],
+                "title": "Integration Service SLO's",
+                "type": "row"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "The objective for the given time window.",
+                "gridPos": {
+                    "h": 7,
+                    "w": 10,
+                    "x": 0,
+                    "y": 4
+                },
+                "id": 77,
+                "options": {
+                    "code": {
+                        "language": "plaintext",
+                        "showLineNumbers": false,
+                        "showMiniMap": false
+                    },
+                    "content": "<h1><center>90% of requests must be within required response time</center></h1>",
+                    "mode": "html"
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
                     {
-                      "options": {
-                        "match": "null",
-                        "result": {
-                          "text": "N/A"
-                        }
-                      },
-                      "type": "special"
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "refId": "A"
                     }
-                  ],
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
-                  },
-                  "unit": "none"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 7,
-                "w": 5,
-                "x": 0,
-                "y": 55
-              },
-              "id": 98,
-              "maxDataPoints": 100,
-              "options": {
-                "colorMode": "none",
-                "graphMode": "none",
-                "justifyMode": "auto",
-                "orientation": "horizontal",
-                "reduceOptions": {
-                  "calcs": [
-                    "mean"
-                  ],
-                  "fields": "",
-                  "values": false
-                },
-                "showPercentChange": false,
-                "textMode": "auto",
-                "wideLayout": true
-              },
-              "pluginVersion": "10.4.1",
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "${datasource}"
-                  },
-                  "refId": "A"
-                }
-              ],
-              "title": "Measured",
-              "type": "stat"
+                ],
+                "title": "Latency Service Response SLO",
+                "type": "text"
             },
             {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "description": "The remaining error budget for the given time window.",
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "thresholds"
-                  },
-                  "mappings": [
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "The current measurement for the given time window.",
+                "fieldConfig": {
+                    "defaults": {
+                        "color": {
+                            "mode": "thresholds"
+                        },
+                        "mappings": [
+                            {
+                                "options": {
+                                    "match": "null",
+                                    "result": {
+                                        "text": "N/A"
+                                    }
+                                },
+                                "type": "special"
+                            }
+                        ],
+                        "max": 1,
+                        "min": 0,
+                        "noValue": "-",
+                        "thresholds": {
+                            "mode": "percentage",
+                            "steps": [
+                                {
+                                    "color": "red",
+                                    "value": null
+                                },
+                                {
+                                    "color": "green",
+                                    "value": 90
+                                }
+                            ]
+                        },
+                        "unit": "percentunit"
+                    },
+                    "overrides": []
+                },
+                "gridPos": {
+                    "h": 7,
+                    "w": 5,
+                    "x": 10,
+                    "y": 4
+                },
+                "id": 78,
+                "maxDataPoints": 100,
+                "options": {
+                    "minVizHeight": 75,
+                    "minVizWidth": 75,
+                    "orientation": "horizontal",
+                    "reduceOptions": {
+                        "calcs": [],
+                        "fields": "",
+                        "values": false
+                    },
+                    "showThresholdLabels": false,
+                    "showThresholdMarkers": false,
+                    "sizing": "auto"
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
                     {
-                      "options": {
-                        "match": "null",
-                        "result": {
-                          "text": "N/A"
-                        }
-                      },
-                      "type": "special"
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "editorMode": "code",
+                        "expr": "sum(rate(integration_svc_response_seconds_bucket{le=\"30\"}[$__rate_interval])) by (job)\n/\nsum(rate(integration_svc_response_seconds_count[$__rate_interval]) > 0) by (job)",
+                        "legendFormat": "__auto",
+                        "range": true,
+                        "refId": "A"
                     }
-                  ],
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green",
-                        "value": null
-                      },
-                      {
-                        "color": "red",
-                        "value": 80
-                      }
-                    ]
-                  },
-                  "unit": "none"
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 7,
-                "w": 5,
-                "x": 5,
-                "y": 55
-              },
-              "id": 29,
-              "maxDataPoints": 100,
-              "options": {
-                "colorMode": "none",
-                "graphMode": "none",
-                "justifyMode": "auto",
-                "orientation": "horizontal",
-                "reduceOptions": {
-                  "calcs": [
-                    "mean"
-                  ],
-                  "fields": "",
-                  "values": false
-                },
-                "showPercentChange": false,
-                "textMode": "auto",
-                "wideLayout": true
-              },
-              "pluginVersion": "10.4.1",
-              "targets": [
-                {
-                  "datasource": {
+                ],
+                "title": "Measured",
+                "type": "gauge"
+            },
+            {
+                "datasource": {
                     "type": "prometheus",
                     "uid": "${datasource}"
-                  },
-                  "refId": "A"
-                }
-              ],
-              "title": "Error Budget (%)",
-              "type": "stat"
-            }
-          ],
-          "title": "SLO Template",
-          "type": "row"
-        },
-        {
-          "collapsed": false,
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 48
-          },
-          "id": 64,
-          "panels": [],
-          "title": "PipelineRun Overhead SLOs",
-          "type": "row"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "Factoring out the time needed to receive PipelineRun creation events from the overall PipelineRun execution time is at or above the defined percentile",
-          "gridPos": {
-            "h": 7,
-            "w": 10,
-            "x": 0,
-            "y": 49
-          },
-          "id": 65,
-          "options": {
-            "code": {
-              "language": "plaintext",
-              "showLineNumbers": false,
-              "showMiniMap": false
-            },
-            "content": "<h1><center>95% of pipeline run duration excludes scheduling overhead</center></h1>",
-            "mode": "html"
-          },
-          "pluginVersion": "10.4.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "refId": "A"
-            }
-          ],
-          "title": "Pipeline Scheduling SLO",
-          "type": "text"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "The current measurement for the given time window.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [
-                {
-                  "options": {
-                    "match": "null",
-                    "result": {
-                      "text": "N/A"
+                },
+                "description": "The objective for the given time window.",
+                "gridPos": {
+                    "h": 7,
+                    "w": 10,
+                    "x": 0,
+                    "y": 11
+                },
+                "id": 83,
+                "options": {
+                    "code": {
+                        "language": "plaintext",
+                        "showLineNumbers": false,
+                        "showMiniMap": false
+                    },
+                    "content": "<h1><center>90% of equests must be within required time</center></h1>",
+                    "mode": "html"
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "refId": "A"
                     }
-                  },
-                  "type": "special"
-                }
-              ],
-              "max": 1,
-              "min": 0,
-              "noValue": "-",
-              "thresholds": {
-                "mode": "percentage",
-                "steps": [
-                  {
-                    "color": "red",
-                    "value": null
-                  },
-                  {
-                    "color": "green",
-                    "value": 95
-                  }
-                ]
-              },
-              "unit": "percentunit"
+                ],
+                "title": "Time to start Pipeline Run",
+                "type": "text"
             },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 5,
-            "x": 10,
-            "y": 49
-          },
-          "id": 68,
-          "maxDataPoints": 100,
-          "options": {
-            "minVizHeight": 75,
-            "minVizWidth": 75,
-            "orientation": "horizontal",
-            "reduceOptions": {
-              "calcs": [],
-              "fields": "",
-              "values": false
-            },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": false,
-            "sizing": "auto"
-          },
-          "pluginVersion": "10.4.1",
-          "targets": [
             {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "1-(sum(increase(pipeline_service_schedule_overhead_percentage_sum{status='succeded'}[$__range])) \n/  \nsum(increase(pipeline_service_schedule_overhead_percentage_count{status='succeded'}[$__range])))",
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Scheduling overhead",
-          "type": "gauge"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "Factoring out the time needed to create underlying TaskRuns from the overall PipelineRun execution time is at or above the defined percentile",
-          "gridPos": {
-            "h": 7,
-            "w": 10,
-            "x": 0,
-            "y": 56
-          },
-          "id": 69,
-          "options": {
-            "code": {
-              "language": "plaintext",
-              "showLineNumbers": false,
-              "showMiniMap": false
-            },
-            "content": "<h1><center>95% of pipeline run duration excludes execution overhead</center></h1>",
-            "mode": "html"
-          },
-          "pluginVersion": "10.4.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "refId": "A"
-            }
-          ],
-          "title": "Pipeline Execution SLO",
-          "type": "text"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "The current measurement for the given time window.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [
-                {
-                  "options": {
-                    "match": "null",
-                    "result": {
-                      "text": "N/A"
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "The current measurement for the given time window.",
+                "fieldConfig": {
+                    "defaults": {
+                        "color": {
+                            "mode": "thresholds"
+                        },
+                        "mappings": [
+                            {
+                                "options": {
+                                    "match": "null",
+                                    "result": {
+                                        "text": "N/A"
+                                    }
+                                },
+                                "type": "special"
+                            }
+                        ],
+                        "max": 1,
+                        "min": 0,
+                        "noValue": "-",
+                        "thresholds": {
+                            "mode": "percentage",
+                            "steps": [
+                                {
+                                    "color": "red",
+                                    "value": null
+                                },
+                                {
+                                    "color": "green",
+                                    "value": 90
+                                }
+                            ]
+                        },
+                        "unit": "percentunit"
+                    },
+                    "overrides": []
+                },
+                "gridPos": {
+                    "h": 7,
+                    "w": 5,
+                    "x": 10,
+                    "y": 11
+                },
+                "id": 86,
+                "maxDataPoints": 100,
+                "options": {
+                    "minVizHeight": 75,
+                    "minVizWidth": 75,
+                    "orientation": "horizontal",
+                    "reduceOptions": {
+                        "calcs": [],
+                        "fields": "",
+                        "values": false
+                    },
+                    "showThresholdLabels": false,
+                    "showThresholdMarkers": false,
+                    "sizing": "auto"
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "editorMode": "code",
+                        "expr": "sum(rate(integration_svc_snapshot_created_to_pipelinerun_started_seconds_bucket{le=\"5\"}[$__rate_interval])) by (job)\n/\nsum(rate(integration_svc_snapshot_created_to_pipelinerun_started_seconds_count[$__rate_interval]) > 0) by (job)",
+                        "legendFormat": "__auto",
+                        "range": true,
+                        "refId": "A"
                     }
-                  },
-                  "type": "special"
-                }
-              ],
-              "max": 1,
-              "min": 0,
-              "noValue": "-",
-              "thresholds": {
-                "mode": "percentage",
-                "steps": [
-                  {
-                    "color": "red",
-                    "value": null
-                  },
-                  {
-                    "color": "green",
-                    "value": 95
-                  }
-                ]
-              },
-              "unit": "percentunit"
+                ],
+                "title": "Measured",
+                "type": "gauge"
             },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 5,
-            "x": 10,
-            "y": 56
-          },
-          "id": 70,
-          "maxDataPoints": 100,
-          "options": {
-            "minVizHeight": 75,
-            "minVizWidth": 75,
-            "orientation": "horizontal",
-            "reduceOptions": {
-              "calcs": [],
-              "fields": "",
-              "values": false
-            },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": false,
-            "sizing": "auto"
-          },
-          "pluginVersion": "10.4.1",
-          "targets": [
             {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "1-(sum(increase(pipeline_service_execution_overhead_percentage_sum{status='succeded'}[$__range])) \n/  \nsum(increase(pipeline_service_execution_overhead_percentage_count{status='succeded'}[$__range])))",
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Execution overhead",
-          "type": "gauge"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "The number of times the pipelines controller has restarted",
-          "gridPos": {
-            "h": 7,
-            "w": 10,
-            "x": 0,
-            "y": 63
-          },
-          "id": 104,
-          "options": {
-            "code": {
-              "language": "plaintext",
-              "showLineNumbers": false,
-              "showMiniMap": false
-            },
-            "content": "<h1><center>The number of times the pipelines controller has restarted</center></h1>",
-            "mode": "html"
-          },
-          "pluginVersion": "10.4.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "refId": "A"
-            }
-          ],
-          "title": "Pipeline Controller Restarts",
-          "type": "text"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "The number of times any of the tekton controllers have restarted",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [
-                {
-                  "options": {
-                    "match": "null",
-                    "result": {
-                      "text": "N/A"
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "The objective for the given time window.",
+                "gridPos": {
+                    "h": 7,
+                    "w": 10,
+                    "x": 0,
+                    "y": 18
+                },
+                "id": 82,
+                "options": {
+                    "code": {
+                        "language": "plaintext",
+                        "showLineNumbers": false,
+                        "showMiniMap": false
+                    },
+                    "content": "<h1><center>90% of requests must be within required time</center></h1>",
+                    "mode": "html"
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "refId": "A"
                     }
-                  },
-                  "type": "special"
-                }
-              ],
-              "noValue": "No data",
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 5
-                  }
-                ]
-              },
-              "unit": "none"
+                ],
+                "title": "Latency of Release Creation",
+                "type": "text"
             },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 5,
-            "x": 10,
-            "y": 63
-          },
-          "id": 105,
-          "maxDataPoints": 100,
-          "options": {
-            "colorMode": "value",
-            "graphMode": "area",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showPercentChange": false,
-            "textMode": "auto",
-            "wideLayout": true
-          },
-          "pluginVersion": "10.4.1",
-          "targets": [
             {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "sum(increase(kube_pod_container_status_restarts_total{namespace=\"openshift-pipelines\", pod=~\"tekton-.*\"}[$__range]))",
-              "instant": false,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Pipieline Controller Restarts",
-          "type": "stat"
-        }
-      ],
-      "refresh": "1h",
-      "schemaVersion": 39,
-      "tags": [],
-      "templating": {
-        "list": [
-          {
-            "current": {
-              "selected": true,
-              "text": "rhtap-observatorium-production",
-              "value": "rhtap-observatorium-production"
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "The current measurement for the given time window.",
+                "fieldConfig": {
+                    "defaults": {
+                        "color": {
+                            "mode": "thresholds"
+                        },
+                        "mappings": [
+                            {
+                                "options": {
+                                    "match": "null",
+                                    "result": {
+                                        "text": "N/A"
+                                    }
+                                },
+                                "type": "special"
+                            }
+                        ],
+                        "max": 1,
+                        "min": 0,
+                        "noValue": "-",
+                        "thresholds": {
+                            "mode": "percentage",
+                            "steps": [
+                                {
+                                    "color": "red",
+                                    "value": null
+                                },
+                                {
+                                    "color": "green",
+                                    "value": 90
+                                }
+                            ]
+                        },
+                        "unit": "percentunit"
+                    },
+                    "overrides": []
+                },
+                "gridPos": {
+                    "h": 7,
+                    "w": 5,
+                    "x": 10,
+                    "y": 18
+                },
+                "id": 84,
+                "maxDataPoints": 100,
+                "options": {
+                    "minVizHeight": 75,
+                    "minVizWidth": 75,
+                    "orientation": "horizontal",
+                    "reduceOptions": {
+                        "calcs": [],
+                        "fields": "",
+                        "values": false
+                    },
+                    "showThresholdLabels": false,
+                    "showThresholdMarkers": false,
+                    "sizing": "auto"
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "editorMode": "code",
+                        "expr": "sum(rate(integration_svc_release_latency_seconds_bucket{le=\"10\"}[$__rate_interval])) by (job) / sum(rate(integration_svc_release_latency_seconds_count[$__rate_interval])) by (job)",
+                        "legendFormat": "__auto",
+                        "range": true,
+                        "refId": "A"
+                    }
+                ],
+                "title": "Measured",
+                "type": "gauge"
             },
-            "hide": 0,
-            "includeAll": false,
-            "multi": false,
-            "name": "datasource",
-            "options": [],
-            "query": "prometheus",
-            "queryValue": "",
-            "refresh": 1,
-            "regex": "/^rhtap-/",
-            "skipUrlSync": false,
-            "type": "datasource"
-          }
-        ]
-      },
-      "time": {
-        "from": "now-28d",
-        "to": "now"
-      },
-      "timepicker": {
-        "refresh_intervals": [
-          "5s",
-          "10s",
-          "30s",
-          "1m",
-          "5m",
-          "15m",
-          "30m",
-          "1h",
-          "2h",
-          "1d"
+            {
+                "collapsed": false,
+                "gridPos": {
+                    "h": 1,
+                    "w": 24,
+                    "x": 0,
+                    "y": 25
+                },
+                "id": 96,
+                "panels": [],
+                "title": "Release Service SLOs",
+                "type": "row"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "Measure the time it takes for a Release to be marked as Validated.",
+                "gridPos": {
+                    "h": 7,
+                    "w": 10,
+                    "x": 0,
+                    "y": 26
+                },
+                "id": 97,
+                "options": {
+                    "code": {
+                        "language": "plaintext",
+                        "showLineNumbers": false,
+                        "showMiniMap": false
+                    },
+                    "content": "<h1><center>90% of the Releases should be validated below 5 seconds</center></h1>",
+                    "mode": "html"
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "refId": "A"
+                    }
+                ],
+                "title": "Release Validation SLO",
+                "type": "text"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "Measure the time it takes for a Release to be marked as Processed.",
+                "fieldConfig": {
+                    "defaults": {
+                        "color": {
+                            "mode": "thresholds"
+                        },
+                        "mappings": [
+                            {
+                                "options": {
+                                    "match": "null",
+                                    "result": {
+                                        "text": "N/A"
+                                    }
+                                },
+                                "type": "special"
+                            }
+                        ],
+                        "max": 1,
+                        "min": 0,
+                        "thresholds": {
+                            "mode": "percentage",
+                            "steps": [
+                                {
+                                    "color": "red",
+                                    "value": null
+                                },
+                                {
+                                    "color": "green",
+                                    "value": 90
+                                }
+                            ]
+                        },
+                        "unit": "percentunit"
+                    },
+                    "overrides": []
+                },
+                "gridPos": {
+                    "h": 7,
+                    "w": 5,
+                    "x": 10,
+                    "y": 26
+                },
+                "id": 101,
+                "maxDataPoints": 100,
+                "options": {
+                    "minVizHeight": 75,
+                    "minVizWidth": 75,
+                    "orientation": "horizontal",
+                    "reduceOptions": {
+                        "calcs": [
+                            "mean"
+                        ],
+                        "fields": "",
+                        "values": false
+                    },
+                    "showThresholdLabels": false,
+                    "showThresholdMarkers": false,
+                    "sizing": "auto"
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "editorMode": "code",
+                        "expr": "sum by (job) (rate(release_validation_duration_seconds_bucket{le=\"5\"}[$__rate_interval])) / sum by (job) (rate(release_validation_duration_seconds_count[$__rate_interval]) > 0)",
+                        "legendFormat": "__auto",
+                        "range": true,
+                        "refId": "A"
+                    }
+                ],
+                "title": "Measured",
+                "type": "gauge"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "Measure the time it takes for a Release to be marked as Processing",
+                "gridPos": {
+                    "h": 7,
+                    "w": 10,
+                    "x": 0,
+                    "y": 33
+                },
+                "id": 99,
+                "options": {
+                    "code": {
+                        "language": "plaintext",
+                        "showLineNumbers": false,
+                        "showMiniMap": false
+                    },
+                    "content": "<h1><center>90% of the Releases should be pre-processed within 10 seconds</center></h1>",
+                    "mode": "html"
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "refId": "A"
+                    }
+                ],
+                "title": "Release Pre-Processing SLO",
+                "type": "text"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "Measure the time it takes for a Release to be marked as Processed.",
+                "fieldConfig": {
+                    "defaults": {
+                        "color": {
+                            "mode": "thresholds"
+                        },
+                        "mappings": [
+                            {
+                                "options": {
+                                    "match": "null",
+                                    "result": {
+                                        "text": "N/A"
+                                    }
+                                },
+                                "type": "special"
+                            }
+                        ],
+                        "max": 1,
+                        "min": 0,
+                        "thresholds": {
+                            "mode": "percentage",
+                            "steps": [
+                                {
+                                    "color": "red",
+                                    "value": null
+                                },
+                                {
+                                    "color": "green",
+                                    "value": 90
+                                }
+                            ]
+                        },
+                        "unit": "percentunit"
+                    },
+                    "overrides": []
+                },
+                "gridPos": {
+                    "h": 7,
+                    "w": 5,
+                    "x": 10,
+                    "y": 33
+                },
+                "id": 100,
+                "maxDataPoints": 100,
+                "options": {
+                    "minVizHeight": 75,
+                    "minVizWidth": 75,
+                    "orientation": "horizontal",
+                    "reduceOptions": {
+                        "calcs": [
+                            "mean"
+                        ],
+                        "fields": "",
+                        "values": false
+                    },
+                    "showThresholdLabels": false,
+                    "showThresholdMarkers": false,
+                    "sizing": "auto"
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "editorMode": "code",
+                        "expr": "sum by (job) (rate(release_pre_processing_duration_seconds_bucket{le=\"10\"}[$__rate_interval])) / sum by (job) (rate(release_pre_processing_duration_seconds_count[$__rate_interval]) > 0)",
+                        "legendFormat": "__auto",
+                        "range": true,
+                        "refId": "A"
+                    }
+                ],
+                "title": "Measured",
+                "type": "gauge"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "Measure the time it takes for a successful Release to be marked as Processed.",
+                "gridPos": {
+                    "h": 7,
+                    "w": 10,
+                    "x": 0,
+                    "y": 40
+                },
+                "id": 102,
+                "options": {
+                    "code": {
+                        "language": "plaintext",
+                        "showLineNumbers": false,
+                        "showMiniMap": false
+                    },
+                    "content": "<h1><center>90% of the Releases should be processed within 1 hour</center></h1>",
+                    "mode": "html"
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "refId": "A"
+                    }
+                ],
+                "title": "Release Processing SLO",
+                "type": "text"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "Measure the time it takes for a Release to be marked as Processed.",
+                "fieldConfig": {
+                    "defaults": {
+                        "color": {
+                            "mode": "thresholds"
+                        },
+                        "mappings": [
+                            {
+                                "options": {
+                                    "match": "null",
+                                    "result": {
+                                        "text": "N/A"
+                                    }
+                                },
+                                "type": "special"
+                            }
+                        ],
+                        "max": 1,
+                        "min": 0,
+                        "thresholds": {
+                            "mode": "percentage",
+                            "steps": [
+                                {
+                                    "color": "red",
+                                    "value": null
+                                },
+                                {
+                                    "color": "green",
+                                    "value": 90
+                                }
+                            ]
+                        },
+                        "unit": "percentunit"
+                    },
+                    "overrides": []
+                },
+                "gridPos": {
+                    "h": 7,
+                    "w": 5,
+                    "x": 10,
+                    "y": 40
+                },
+                "id": 103,
+                "maxDataPoints": 100,
+                "options": {
+                    "minVizHeight": 75,
+                    "minVizWidth": 75,
+                    "orientation": "horizontal",
+                    "reduceOptions": {
+                        "calcs": [
+                            "mean"
+                        ],
+                        "fields": "",
+                        "values": false
+                    },
+                    "showThresholdLabels": false,
+                    "showThresholdMarkers": false,
+                    "sizing": "auto"
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "editorMode": "code",
+                        "expr": "sum by (job) (rate(release_processing_duration_seconds_bucket{le=\"3600\"}[$__rate_interval])) / sum by (job) (rate(release_processing_duration_seconds_count[$__rate_interval]) > 0)",
+                        "legendFormat": "__auto",
+                        "range": true,
+                        "refId": "A"
+                    }
+                ],
+                "title": "Measured",
+                "type": "gauge"
+            },
+            {
+                "collapsed": true,
+                "gridPos": {
+                    "h": 1,
+                    "w": 24,
+                    "x": 0,
+                    "y": 47
+                },
+                "id": 33,
+                "panels": [
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "description": "The objective for the given time window.",
+                        "gridPos": {
+                            "h": 7,
+                            "w": 10,
+                            "x": 0,
+                            "y": 48
+                        },
+                        "id": 10,
+                        "options": {
+                            "code": {
+                                "language": "plaintext",
+                                "showLineNumbers": false,
+                                "showMiniMap": false
+                            },
+                            "content": "<h1><center>SLO Definition</center></h1>",
+                            "mode": "html"
+                        },
+                        "pluginVersion": "10.4.1",
+                        "targets": [
+                            {
+                                "datasource": {
+                                    "type": "prometheus",
+                                    "uid": "${datasource}"
+                                },
+                                "refId": "A"
+                            }
+                        ],
+                        "title": "SLO",
+                        "type": "text"
+                    },
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "description": "The current measurement for the given time window.",
+                        "fieldConfig": {
+                            "defaults": {
+                                "color": {
+                                    "mode": "thresholds"
+                                },
+                                "mappings": [
+                                    {
+                                        "options": {
+                                            "match": "null",
+                                            "result": {
+                                                "text": "N/A"
+                                            }
+                                        },
+                                        "type": "special"
+                                    }
+                                ],
+                                "thresholds": {
+                                    "mode": "absolute",
+                                    "steps": [
+                                        {
+                                            "color": "green"
+                                        },
+                                        {
+                                            "color": "red",
+                                            "value": 80
+                                        }
+                                    ]
+                                },
+                                "unit": "none"
+                            },
+                            "overrides": []
+                        },
+                        "gridPos": {
+                            "h": 7,
+                            "w": 5,
+                            "x": 0,
+                            "y": 55
+                        },
+                        "id": 98,
+                        "maxDataPoints": 100,
+                        "options": {
+                            "colorMode": "none",
+                            "graphMode": "none",
+                            "justifyMode": "auto",
+                            "orientation": "horizontal",
+                            "reduceOptions": {
+                                "calcs": [
+                                    "mean"
+                                ],
+                                "fields": "",
+                                "values": false
+                            },
+                            "showPercentChange": false,
+                            "textMode": "auto",
+                            "wideLayout": true
+                        },
+                        "pluginVersion": "10.4.1",
+                        "targets": [
+                            {
+                                "datasource": {
+                                    "type": "prometheus",
+                                    "uid": "${datasource}"
+                                },
+                                "refId": "A"
+                            }
+                        ],
+                        "title": "Measured",
+                        "type": "stat"
+                    },
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "description": "The remaining error budget for the given time window.",
+                        "fieldConfig": {
+                            "defaults": {
+                                "color": {
+                                    "mode": "thresholds"
+                                },
+                                "mappings": [
+                                    {
+                                        "options": {
+                                            "match": "null",
+                                            "result": {
+                                                "text": "N/A"
+                                            }
+                                        },
+                                        "type": "special"
+                                    }
+                                ],
+                                "thresholds": {
+                                    "mode": "absolute",
+                                    "steps": [
+                                        {
+                                            "color": "green"
+                                        },
+                                        {
+                                            "color": "red",
+                                            "value": 80
+                                        }
+                                    ]
+                                },
+                                "unit": "none"
+                            },
+                            "overrides": []
+                        },
+                        "gridPos": {
+                            "h": 7,
+                            "w": 5,
+                            "x": 5,
+                            "y": 55
+                        },
+                        "id": 29,
+                        "maxDataPoints": 100,
+                        "options": {
+                            "colorMode": "none",
+                            "graphMode": "none",
+                            "justifyMode": "auto",
+                            "orientation": "horizontal",
+                            "reduceOptions": {
+                                "calcs": [
+                                    "mean"
+                                ],
+                                "fields": "",
+                                "values": false
+                            },
+                            "showPercentChange": false,
+                            "textMode": "auto",
+                            "wideLayout": true
+                        },
+                        "pluginVersion": "10.4.1",
+                        "targets": [
+                            {
+                                "datasource": {
+                                    "type": "prometheus",
+                                    "uid": "${datasource}"
+                                },
+                                "refId": "A"
+                            }
+                        ],
+                        "title": "Error Budget (%)",
+                        "type": "stat"
+                    }
+                ],
+                "title": "SLO Template",
+                "type": "row"
+            },
+            {
+                "collapsed": false,
+                "gridPos": {
+                    "h": 1,
+                    "w": 24,
+                    "x": 0,
+                    "y": 48
+                },
+                "id": 64,
+                "panels": [],
+                "title": "Pipeline SLOs",
+                "type": "row"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "Factoring out the time needed to receive PipelineRun creation events from the overall PipelineRun execution time is at or above the defined percentile",
+                "gridPos": {
+                    "h": 7,
+                    "w": 10,
+                    "x": 0,
+                    "y": 49
+                },
+                "id": 65,
+                "options": {
+                    "code": {
+                        "language": "plaintext",
+                        "showLineNumbers": false,
+                        "showMiniMap": false
+                    },
+                    "content": "<h1><center>95% of pipeline run duration excludes scheduling overhead</center></h1>",
+                    "mode": "html"
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "refId": "A"
+                    }
+                ],
+                "title": "Pipeline Scheduling SLO",
+                "type": "text"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "The current measurement for the given time window.",
+                "fieldConfig": {
+                    "defaults": {
+                        "color": {
+                            "mode": "thresholds"
+                        },
+                        "mappings": [
+                            {
+                                "options": {
+                                    "match": "null",
+                                    "result": {
+                                        "text": "N/A"
+                                    }
+                                },
+                                "type": "special"
+                            }
+                        ],
+                        "max": 1,
+                        "min": 0,
+                        "noValue": "-",
+                        "thresholds": {
+                            "mode": "percentage",
+                            "steps": [
+                                {
+                                    "color": "red",
+                                    "value": null
+                                },
+                                {
+                                    "color": "green",
+                                    "value": 95
+                                }
+                            ]
+                        },
+                        "unit": "percentunit"
+                    },
+                    "overrides": []
+                },
+                "gridPos": {
+                    "h": 7,
+                    "w": 5,
+                    "x": 10,
+                    "y": 49
+                },
+                "id": 68,
+                "maxDataPoints": 100,
+                "options": {
+                    "minVizHeight": 75,
+                    "minVizWidth": 75,
+                    "orientation": "horizontal",
+                    "reduceOptions": {
+                        "calcs": [],
+                        "fields": "",
+                        "values": false
+                    },
+                    "showThresholdLabels": false,
+                    "showThresholdMarkers": false,
+                    "sizing": "auto"
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "editorMode": "code",
+                        "expr": "1-(sum(increase(pipeline_service_schedule_overhead_percentage_sum{status='succeded'}[$__range])) \n/  \nsum(increase(pipeline_service_schedule_overhead_percentage_count{status='succeded'}[$__range])))",
+                        "legendFormat": "__auto",
+                        "range": true,
+                        "refId": "A"
+                    }
+                ],
+                "title": "Scheduling overhead",
+                "type": "gauge"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "Factoring out the time needed to create underlying TaskRuns from the overall PipelineRun execution time is at or above the defined percentile",
+                "gridPos": {
+                    "h": 7,
+                    "w": 10,
+                    "x": 0,
+                    "y": 56
+                },
+                "id": 69,
+                "options": {
+                    "code": {
+                        "language": "plaintext",
+                        "showLineNumbers": false,
+                        "showMiniMap": false
+                    },
+                    "content": "<h1><center>95% of pipeline run duration excludes execution overhead</center></h1>",
+                    "mode": "html"
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "refId": "A"
+                    }
+                ],
+                "title": "Pipeline Execution SLO",
+                "type": "text"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "The current measurement for the given time window.",
+                "fieldConfig": {
+                    "defaults": {
+                        "color": {
+                            "mode": "thresholds"
+                        },
+                        "mappings": [
+                            {
+                                "options": {
+                                    "match": "null",
+                                    "result": {
+                                        "text": "N/A"
+                                    }
+                                },
+                                "type": "special"
+                            }
+                        ],
+                        "max": 1,
+                        "min": 0,
+                        "noValue": "-",
+                        "thresholds": {
+                            "mode": "percentage",
+                            "steps": [
+                                {
+                                    "color": "red",
+                                    "value": null
+                                },
+                                {
+                                    "color": "green",
+                                    "value": 95
+                                }
+                            ]
+                        },
+                        "unit": "percentunit"
+                    },
+                    "overrides": []
+                },
+                "gridPos": {
+                    "h": 7,
+                    "w": 5,
+                    "x": 10,
+                    "y": 56
+                },
+                "id": 70,
+                "maxDataPoints": 100,
+                "options": {
+                    "minVizHeight": 75,
+                    "minVizWidth": 75,
+                    "orientation": "horizontal",
+                    "reduceOptions": {
+                        "calcs": [],
+                        "fields": "",
+                        "values": false
+                    },
+                    "showThresholdLabels": false,
+                    "showThresholdMarkers": false,
+                    "sizing": "auto"
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "editorMode": "code",
+                        "expr": "1-(sum(increase(pipeline_service_execution_overhead_percentage_sum{status='succeded'}[$__range])) \n/  \nsum(increase(pipeline_service_execution_overhead_percentage_count{status='succeded'}[$__range])))",
+                        "legendFormat": "__auto",
+                        "range": true,
+                        "refId": "A"
+                    }
+                ],
+                "title": "Execution overhead",
+                "type": "gauge"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "The number of times the pipelines controller has restarted",
+                "gridPos": {
+                    "h": 7,
+                    "w": 10,
+                    "x": 0,
+                    "y": 63
+                },
+                "id": 104,
+                "options": {
+                    "code": {
+                        "language": "plaintext",
+                        "showLineNumbers": false,
+                        "showMiniMap": false
+                    },
+                    "content": "<h1><center>The number of times the pipelines controller has restarted</center></h1>",
+                    "mode": "html"
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "refId": "A"
+                    }
+                ],
+                "title": "Pipeline Controller Restarts",
+                "type": "text"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "The number of times any of the tekton controllers have restarted",
+                "fieldConfig": {
+                    "defaults": {
+                        "color": {
+                            "mode": "thresholds"
+                        },
+                        "mappings": [
+                            {
+                                "options": {
+                                    "match": "null",
+                                    "result": {
+                                        "text": "N/A"
+                                    }
+                                },
+                                "type": "special"
+                            }
+                        ],
+                        "noValue": "No data",
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "color": "green",
+                                    "value": null
+                                },
+                                {
+                                    "color": "red",
+                                    "value": 5
+                                }
+                            ]
+                        },
+                        "unit": "none"
+                    },
+                    "overrides": []
+                },
+                "gridPos": {
+                    "h": 7,
+                    "w": 5,
+                    "x": 10,
+                    "y": 63
+                },
+                "id": 105,
+                "maxDataPoints": 100,
+                "options": {
+                    "colorMode": "value",
+                    "graphMode": "area",
+                    "justifyMode": "auto",
+                    "orientation": "auto",
+                    "reduceOptions": {
+                        "calcs": [
+                            "lastNotNull"
+                        ],
+                        "fields": "",
+                        "values": false
+                    },
+                    "showPercentChange": false,
+                    "textMode": "auto",
+                    "wideLayout": true
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "editorMode": "code",
+                        "expr": "sum(increase(kube_pod_container_status_restarts_total{namespace=\"openshift-pipelines\", pod=~\"tekton-.*\"}[$__range]))",
+                        "instant": false,
+                        "legendFormat": "__auto",
+                        "range": true,
+                        "refId": "A"
+                    }
+                ],
+                "title": "Pipieline Controller Restarts",
+                "type": "stat"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "The number of validated PipelineRuns not yet processed by the PipelineRun Controller.",
+                "gridPos": {
+                    "h": 7,
+                    "w": 10,
+                    "x": 0,
+                    "y": 70
+                },
+                "id": 106,
+                "options": {
+                    "code": {
+                        "language": "plaintext",
+                        "showLineNumbers": false,
+                        "showMiniMap": false
+                    },
+                    "content": "<h1><center>The number of validated PipelineRuns not yet processed by the PipelineRun Controller.</center></h1>",
+                    "mode": "html"
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "refId": "A"
+                    }
+                ],
+                "title": "Deadlocked PipelineRuns",
+                "type": "text"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "The number of validated PipelineRuns not yet processed by the PipelineRun Controller.",
+                "fieldConfig": {
+                    "defaults": {
+                        "color": {
+                            "mode": "thresholds"
+                        },
+                        "mappings": [
+                            {
+                                "options": {
+                                    "match": "null",
+                                    "result": {
+                                        "text": "N/A"
+                                    }
+                                },
+                                "type": "special"
+                            }
+                        ],
+                        "noValue": "No data",
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "color": "green",
+                                    "value": null
+                                },
+                                {
+                                    "color": "red",
+                                    "value": 30
+                                }
+                            ]
+                        },
+                        "unit": "none"
+                    },
+                    "overrides": []
+                },
+                "gridPos": {
+                    "h": 7,
+                    "w": 5,
+                    "x": 10,
+                    "y": 70
+                },
+                "id": 107,
+                "maxDataPoints": 100,
+                "options": {
+                    "colorMode": "value",
+                    "graphMode": "area",
+                    "justifyMode": "auto",
+                    "orientation": "auto",
+                    "reduceOptions": {
+                        "calcs": [
+                            "lastNotNull"
+                        ],
+                        "fields": "",
+                        "values": false
+                    },
+                    "showPercentChange": false,
+                    "textMode": "auto",
+                    "wideLayout": true
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "editorMode": "code",
+                        "expr": "sum(increase(pipelinerun_kickoff_not_attempted_count[$__range]))",
+                        "instant": false,
+                        "legendFormat": "__auto",
+                        "range": true,
+                        "refId": "A"
+                    }
+                ],
+                "title": "Deadlocked PipelineRuns",
+                "type": "stat"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "The number of validated TaskRuns not yet processed by the TaskRuns Controller.",
+                "gridPos": {
+                    "h": 7,
+                    "w": 10,
+                    "x": 0,
+                    "y": 77
+                },
+                "id": 108,
+                "options": {
+                    "code": {
+                        "language": "plaintext",
+                        "showLineNumbers": false,
+                        "showMiniMap": false
+                    },
+                    "content": "<h1><center>The number of validated TaskRuns not yet processed by the TaskRuns Controller.</center></h1>",
+                    "mode": "html"
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "refId": "A"
+                    }
+                ],
+                "title": "Deadlocked TaskRuns",
+                "type": "text"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "The number of validated TaskRuns not yet processed by the TaskRuns Controller.",
+                "fieldConfig": {
+                    "defaults": {
+                        "color": {
+                            "mode": "thresholds"
+                        },
+                        "mappings": [
+                            {
+                                "options": {
+                                    "match": "null",
+                                    "result": {
+                                        "text": "N/A"
+                                    }
+                                },
+                                "type": "special"
+                            }
+                        ],
+                        "noValue": "No data",
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "color": "green",
+                                    "value": null
+                                },
+                                {
+                                    "color": "red",
+                                    "value": 30
+                                }
+                            ]
+                        },
+                        "unit": "none"
+                    },
+                    "overrides": []
+                },
+                "gridPos": {
+                    "h": 7,
+                    "w": 5,
+                    "x": 10,
+                    "y": 77
+                },
+                "id": 109,
+                "maxDataPoints": 100,
+                "options": {
+                    "colorMode": "value",
+                    "graphMode": "area",
+                    "justifyMode": "auto",
+                    "orientation": "auto",
+                    "reduceOptions": {
+                        "calcs": [
+                            "lastNotNull"
+                        ],
+                        "fields": "",
+                        "values": false
+                    },
+                    "showPercentChange": false,
+                    "textMode": "auto",
+                    "wideLayout": true
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "editorMode": "code",
+                        "expr": "sum(increase(taskrun_pod_create_not_attempted_or_pending_count[$__range])) - sum(increase(tekton_pipelines_controller_running_taskruns_throttled_by_quota[$__range])) - sum(increase(tekton_pipelines_controller_running_taskruns_throttled_by_node[$__range]))",
+                        "instant": false,
+                        "legendFormat": "__auto",
+                        "range": true,
+                        "refId": "A"
+                    }
+                ],
+                "title": "Deadlocked TaskRuns",
+                "type": "stat"
+            }
         ],
-        "time_options": [
-          "5m",
-          "15m",
-          "1h",
-          "6h",
-          "12h",
-          "24h",
-          "2d",
-          "7d",
-          "30d"
-        ]
-      },
-      "timezone": "",
-      "title": "RHTAP SLOs",
-      "uid": "rhtap-slos",
-      "version": 4,
-      "weekStart": ""
+        "refresh": "1h",
+        "schemaVersion": 39,
+        "tags": [],
+        "templating": {
+            "list": [
+                {
+                    "current": {
+                        "selected": true,
+                        "text": "rhtap-observatorium-production",
+                        "value": "rhtap-observatorium-production"
+                    },
+                    "hide": 0,
+                    "includeAll": false,
+                    "multi": false,
+                    "name": "datasource",
+                    "options": [],
+                    "query": "prometheus",
+                    "queryValue": "",
+                    "refresh": 1,
+                    "regex": "/^rhtap-/",
+                    "skipUrlSync": false,
+                    "type": "datasource"
+                }
+            ]
+        },
+        "time": {
+            "from": "now-28d",
+            "to": "now"
+        },
+        "timepicker": {
+            "refresh_intervals": [
+                "5s",
+                "10s",
+                "30s",
+                "1m",
+                "5m",
+                "15m",
+                "30m",
+                "1h",
+                "2h",
+                "1d"
+            ],
+            "time_options": [
+                "5m",
+                "15m",
+                "1h",
+                "6h",
+                "12h",
+                "24h",
+                "2d",
+                "7d",
+                "30d"
+            ]
+        },
+        "timezone": "",
+        "title": "RHTAP SLOs",
+        "uid": "rhtap-slos",
+        "version": 6,
+        "weekStart": ""
     }
 kind: ConfigMap
 metadata:
