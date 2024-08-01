@@ -92,3 +92,18 @@ spec:
             alert_team_handle: <!subteam^S04PYECHCCU>
             team: pipelines
             runbook_url: TBD
+        - alert: ResolverControllerDeadlock
+          expr: |
+            sum by (source_cluster) (increase(pending_resolutionrequest_count[2m])) > 0
+          for: 75m
+          labels:
+            severity: critical
+            slo: "true"
+          annotations:
+            summary: >-
+              Tekton resolver controller appears to have stopped processing active resolutionrequests which have not been started yet.
+            description: >-
+              Tekton resolver controller on cluster {{ $labels.source_cluster }} has appeared deadlocked on {{ $value }} resolutionrequests.
+            alert_team_handle: <!subteam^S04PYECHCCU>
+            team: pipelines
+            runbook_url: TBD

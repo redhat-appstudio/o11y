@@ -1569,6 +1569,123 @@ data:
                 ],
                 "title": "Deadlocked TaskRuns",
                 "type": "stat"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "The number of validated ResolutionRequests  not yet processed by the Resolver Controller.",
+                "gridPos": {
+                    "h": 7,
+                    "w": 10,
+                    "x": 0,
+                    "y": 84
+                },
+                "id": 110,
+                "options": {
+                    "code": {
+                        "language": "plaintext",
+                        "showLineNumbers": false,
+                        "showMiniMap": false
+                    },
+                    "content": "<h1><center>The number of validated ResolutionRequests not yet processed by the Resolver Controller.</center></h1>",
+                    "mode": "html"
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "refId": "A"
+                    }
+                ],
+                "title": "Deadlocked ResolutionRequests",
+                "type": "text"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "The number of validated ResolutionRequests not yet processed by the Resolver Controller.",
+                "fieldConfig": {
+                    "defaults": {
+                        "color": {
+                            "mode": "thresholds"
+                        },
+                        "mappings": [
+                            {
+                                "options": {
+                                    "match": "null",
+                                    "result": {
+                                        "text": "N/A"
+                                    }
+                                },
+                                "type": "special"
+                            }
+                        ],
+                        "noValue": "No data",
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "color": "green",
+                                    "value": null
+                                },
+                                {
+                                    "color": "red",
+                                    "value": 30
+                                }
+                            ]
+                        },
+                        "unit": "none"
+                    },
+                    "overrides": []
+                },
+                "gridPos": {
+                    "h": 7,
+                    "w": 5,
+                    "x": 10,
+                    "y": 84
+                },
+                "id": 111,
+                "maxDataPoints": 100,
+                "options": {
+                    "colorMode": "value",
+                    "graphMode": "area",
+                    "justifyMode": "auto",
+                    "orientation": "auto",
+                    "reduceOptions": {
+                        "calcs": [
+                            "lastNotNull"
+                        ],
+                        "fields": "",
+                        "values": false
+                    },
+                    "showPercentChange": false,
+                    "textMode": "auto",
+                    "wideLayout": true
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "editorMode": "code",
+                        "expr": "sum(increase(pending_resolutionrequest_count[$__range]))",
+                        "instant": false,
+                        "legendFormat": "__auto",
+                        "range": true,
+                        "refId": "A"
+                    }
+                ],
+                "title": "Deadlocked ResolutionRequests",
+                "type": "stat"
             }
         ],
         "refresh": "1h",
@@ -1628,7 +1745,7 @@ data:
         "timezone": "",
         "title": "RHTAP SLOs",
         "uid": "rhtap-slos",
-        "version": 6,
+        "version": 7,
         "weekStart": ""
     }
 kind: ConfigMap
