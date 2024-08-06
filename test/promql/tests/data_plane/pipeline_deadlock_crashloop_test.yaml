@@ -217,3 +217,44 @@ tests:
     alert_rule_test:
       - eval_time: 10m
         alertname: TaskControllerDeadlock
+
+  # ----- Resolver Controller Potential Deadlock Kicking Off ResolutionRequests ----
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # tekton resolver controller is experiencing delays getting resolutionrequests in tenant-1 started and should alert.  Also make sure the lack
+      # of issues in tenant-2 does not affect the value of the query
+      - series: 'pending_resolutionrequest_count{namespace="tenant-1", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'pending_resolutionrequest_count{namespace="tenant-2", source_cluster="cluster01"}'
+        values: '0x780'
+
+    alert_rule_test:
+      - eval_time: 85m
+        alertname: ResolverControllerDeadlock
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              source_cluster: cluster01
+            exp_annotations:
+              summary: >-
+                Tekton resolver controller appears to have stopped processing active resolutionrequests which have not been started yet.
+              description: >-
+                Tekton resolver controller on cluster cluster01 has appeared deadlocked on 2 resolutionrequests.
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: TBD
+
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # tekton resolver controller is experiencing some delays getting resolutionrequests kicked off but not fast enough so it should not alert
+      - series: 'pending_resolutionrequest_count{namespace="tenant-1", source_cluster="cluster01"}'
+        values: '1x780'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: ResolverControllerDeadlock
