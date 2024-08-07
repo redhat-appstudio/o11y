@@ -1,0 +1,20 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-release-service-availability
+  labels:
+    tenant: rhtap
+spec:
+
+  groups:
+    - name: release_service_general_availability
+      interval: 1m
+      rules:
+        - record: konflux_up
+          expr: |
+            label_replace(
+              avg(release_service_check_gauge) without(Name) OR
+              label_replace(
+                floor(sum(release_service_check_gauge) without(check) / count(release_service_check_gauge) without(check)),
+              "check", "release", "", ""),
+            "Name", "release_service_check_gauge", "", "")
