@@ -1686,6 +1686,240 @@ data:
                 ],
                 "title": "Deadlocked ResolutionRequests",
                 "type": "stat"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "The number of PipelineRuns/TaskRuns still needing processing by Tekton Chains Controller",
+                "gridPos": {
+                    "h": 7,
+                    "w": 10,
+                    "x": 0,
+                    "y": 91
+                },
+                "id": 112,
+                "options": {
+                    "code": {
+                        "language": "plaintext",
+                        "showLineNumbers": false,
+                        "showMiniMap": false
+                    },
+                    "content": "<h1><center>The number of PipelineRuns/TaskRuns still needing processing by Tekton Chains Controller</center></h1>",
+                    "mode": "html"
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "refId": "A"
+                    }
+                ],
+                "title": "Deadlocked Chains",
+                "type": "text"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "The number of PipelineRuns/TaskRuns still needing processing by Tekton Chains Controller",
+                "fieldConfig": {
+                    "defaults": {
+                        "color": {
+                            "mode": "thresholds"
+                        },
+                        "mappings": [
+                            {
+                                "options": {
+                                    "match": "null",
+                                    "result": {
+                                        "text": "N/A"
+                                    }
+                                },
+                                "type": "special"
+                            }
+                        ],
+                        "noValue": "No data",
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "color": "green",
+                                    "value": null
+                                },
+                                {
+                                    "color": "red",
+                                    "value": 50
+                                }
+                            ]
+                        },
+                        "unit": "none"
+                    },
+                    "overrides": []
+                },
+                "gridPos": {
+                    "h": 7,
+                    "w": 5,
+                    "x": 10,
+                    "y": 91
+                },
+                "id": 113,
+                "maxDataPoints": 100,
+                "options": {
+                    "colorMode": "value",
+                    "graphMode": "area",
+                    "justifyMode": "auto",
+                    "orientation": "auto",
+                    "reduceOptions": {
+                        "calcs": [
+                            "lastNotNull"
+                        ],
+                        "fields": "",
+                        "values": false
+                    },
+                    "showPercentChange": false,
+                    "textMode": "auto",
+                    "wideLayout": true
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "editorMode": "code",
+                        "expr": "sum(increase(watcher_workqueue_depth{container='tekton-chains-controller',app='tekton-chains-controller'}[$__range]))",
+                        "instant": false,
+                        "legendFormat": "__auto",
+                        "range": true,
+                        "refId": "A"
+                    }
+                ],
+                "title": "Deadlocked Chains",
+                "type": "stat"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "The Kubernetes client latency of the  Tekton Chains Controller",
+                "gridPos": {
+                    "h": 7,
+                    "w": 10,
+                    "x": 0,
+                    "y": 98
+                },
+                "id": 114,
+                "options": {
+                    "code": {
+                        "language": "plaintext",
+                        "showLineNumbers": false,
+                        "showMiniMap": false
+                    },
+                    "content": "<h1><center>The Kubernetes client latency of the  Tekton Chains Controller</center></h1>",
+                    "mode": "html"
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "refId": "A"
+                    }
+                ],
+                "title": "Chains Performance",
+                "type": "text"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "The number of PipelineRuns/TaskRuns still needing processing by Tekton Chains Controller",
+                "fieldConfig": {
+                    "defaults": {
+                        "color": {
+                            "mode": "thresholds"
+                        },
+                        "mappings": [
+                            {
+                                "options": {
+                                    "match": "null",
+                                    "result": {
+                                        "text": "N/A"
+                                    }
+                                },
+                                "type": "special"
+                            }
+                        ],
+                        "noValue": "No data",
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "color": "green",
+                                    "value": null
+                                },
+                                {
+                                    "color": "red",
+                                    "value": 50
+                                }
+                            ]
+                        },
+                        "unit": "none"
+                    },
+                    "overrides": []
+                },
+                "gridPos": {
+                    "h": 7,
+                    "w": 5,
+                    "x": 10,
+                    "y": 98
+                },
+                "id": 115,
+                "maxDataPoints": 100,
+                "options": {
+                    "colorMode": "value",
+                    "graphMode": "area",
+                    "justifyMode": "auto",
+                    "orientation": "auto",
+                    "reduceOptions": {
+                        "calcs": [
+                            "lastNotNull"
+                        ],
+                        "fields": "",
+                        "values": false
+                    },
+                    "showPercentChange": false,
+                    "textMode": "auto",
+                    "wideLayout": true
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "editorMode": "code",
+                        "expr": "sum(increase(watcher_client_latency_bucket{app='tekton-chains-controller',le='1'}[$__range])) / sum(increase(watcher_client_latency_bucket{app='tekton-chains-controller',le='+Inf'}[$__range]))",
+                        "instant": false,
+                        "legendFormat": "__auto",
+                        "range": true,
+                        "refId": "A"
+                    }
+                ],
+                "title": "Chains Performance",
+                "type": "stat"
             }
         ],
         "refresh": "1h",
@@ -1745,7 +1979,7 @@ data:
         "timezone": "",
         "title": "RHTAP SLOs",
         "uid": "rhtap-slos",
-        "version": 7,
+        "version": 8,
         "weekStart": ""
     }
 kind: ConfigMap

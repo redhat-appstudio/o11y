@@ -258,3 +258,90 @@ tests:
     alert_rule_test:
       - eval_time: 10m
         alertname: ResolverControllerDeadlock
+
+  # ----- Chains Controller Potential Deadlock Kicking ----
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # tekton chains controller is experiencing delays processing pipelineruns in tenant-1 started and should alert.  Also make sure the lack
+      # of issues in another app does not affect the value of the query
+      - series: 'watcher_workqueue_depth{container="tekton-chains-controller", app="tekton-chains-controller", source_cluster="cluster01"}'
+        values: '300+300x780'
+      - series: 'watcher_workqueue_depth{container="tekton-pipelines-controller", app="tekton-pipelines-controller", source_cluster="cluster01"}'
+        values: '0x780'
+
+    alert_rule_test:
+      - eval_time: 85m
+        alertname: ChainsControllerDeadlock
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              source_cluster: cluster01
+            exp_annotations:
+              summary: >-
+                Tekton chains controller appears to have stopped processing active pipelineruns.
+              description: >-
+                Tekton chains controller on cluster cluster01 has appeared deadlocked on 600 pipelinerun events.
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: TBD
+
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # tekton chains controller is experiencing some delays processing pipelineruns but not fast enough so it should not alert
+      - series: 'watcher_workqueue_depth{container="tekton-chains-controller", app="tekton-chains-controller", source_cluster="cluster01"}'
+        values: '1x780'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: ChainsControllerDeadlock
+
+  # ----- Chains Controller Potential Deadlock Kicking ----
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      - series: 'watcher_client_latency_bucket{app="tekton-chains-controller", le="1", source_cluster="cluster01"}'
+        values: '300+300x780'
+      - series: 'watcher_client_latency_bucket{app="tekton-chains-controller", le="10", source_cluster="cluster01"}'
+        values: '300+300x780'
+      - series: 'watcher_client_latency_bucket{app="tekton-chains-controller", le="+Inf", source_cluster="cluster01"}'
+        values: '900+900x780'
+      - series: 'watcher_client_latency_bucket{app="tekton-pipelines-controller", le="1", source_cluster="cluster01"}'
+        values: '1x780'
+      - series: 'watcher_client_latency_bucket{app="tekton-pipelines-controller", le="+Inf", source_cluster="cluster01"}'
+        values: '1x780'
+
+    alert_rule_test:
+      - eval_time: 85m
+        alertname: ChainsControllerPerformance
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              source_cluster: cluster01
+            exp_annotations:
+              summary: >-
+                Tekton chains controller performance appears degraded with uncommonly high client latency.
+              description: >-
+                Tekton chains controller on cluster cluster01 performance appears degraded with client latency 33.33%.
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: TBD
+
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      - series: 'watcher_client_latency_bucket{app="tekton-chains-controller", le="1", source_cluster="cluster01"}'
+        values: '300+300x780'
+      - series: 'watcher_client_latency_bucket{app="tekton-chains-controller", le="+Inf", source_cluster="cluster01"}'
+        values: '400+400x780'
+
+    alert_rule_test:
+      - eval_time: 85m
+        alertname: ChainsControllerPerformance
