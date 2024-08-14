@@ -107,3 +107,36 @@ spec:
             alert_team_handle: <!subteam^S04PYECHCCU>
             team: pipelines
             runbook_url: TBD
+        - alert: ChainsControllerDeadlock
+          expr: |
+            sum by (source_cluster) (increase(watcher_workqueue_depth{container='tekton-chains-controller',app='tekton-chains-controller'}[2m])) > 50
+          for: 75m
+          labels:
+            severity: critical
+            slo: "true"
+          annotations:
+            summary: >-
+              Tekton chains controller appears to have stopped processing active pipelineruns.
+            description: >-
+              Tekton chains controller on cluster {{ $labels.source_cluster }} has appeared deadlocked on {{ $value }} pipelinerun events.
+            alert_team_handle: <!subteam^S04PYECHCCU>
+            team: pipelines
+            runbook_url: TBD
+        - alert: ChainsControllerPerformance
+          expr: |
+            (sum by (source_cluster) (increase(watcher_client_latency_bucket{app='tekton-chains-controller',le='1'}[5m]))
+            /
+            sum by (source_cluster) (increase(watcher_client_latency_bucket{app='tekton-chains-controller',le='+Inf'}[5m])))
+            < 0.50
+          for: 75m
+          labels:
+            severity: critical
+            slo: "true"
+          annotations:
+            summary: >-
+              Tekton chains controller performance appears degraded with uncommonly high client latency.
+            description: >-
+              Tekton chains controller on cluster {{ $labels.source_cluster }} performance appears degraded with client latency {{ $value | humanizePercentage }}.
+            alert_team_handle: <!subteam^S04PYECHCCU>
+            team: pipelines
+            runbook_url: TBD
