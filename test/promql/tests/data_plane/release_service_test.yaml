@@ -6,33 +6,6 @@ evaluation_interval: 1m
 tests:
   - interval: 1m
     input_series:
-      - series: 'release_processing_duration_seconds_bucket{le="3600", job="release", namespace="foo", source_cluster="cluster01"}'
-        values: '1+8x59'
-      - series: 'release_processing_duration_seconds_count{job="release", namespace="foo", source_cluster="cluster01"}'
-        values: '1+9x59'
-      - series: 'release_processing_duration_seconds_bucket{le="3600", job="release", namespace="foo", source_cluster="cluster02"}'
-        values: '1+8x59'
-      - series: 'release_processing_duration_seconds_count{job="release", namespace="foo", source_cluster="cluster02"}'
-        values: '1+9x59'
-    alert_rule_test:
-      - eval_time: 1h
-        alertname: ReleaseServiceProcessingDuration
-        exp_alerts:
-          - exp_labels:
-              severity: critical
-              slo: "true"
-              job: "release"
-            exp_annotations:
-              summary: >-
-                90% of Releases must be processed under one hour
-              description: >-
-                Release service is failing to successfully process within the period of one hour for 90% of releases
-              alert_team_handle: <!subteam^S03SVBS426R>
-              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/release-service/release-processed-latency.md?ref_type=heads
-              team: release
-
-  - interval: 1m
-    input_series:
       - series: 'release_pre_processing_duration_seconds_bucket{le="10", job="release", namespace="foo", source_cluster="cluster01"}'
         values: '1+8x59'
       - series: 'release_pre_processing_duration_seconds_count{job="release", namespace="foo", source_cluster="cluster01"}'
