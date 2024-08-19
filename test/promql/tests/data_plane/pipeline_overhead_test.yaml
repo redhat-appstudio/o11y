@@ -39,7 +39,7 @@ tests:
                 events from the overall PipelineRun execution time is at 0% instead of 95% or greater.
               alert_team_handle: <!subteam^S04PYECHCCU>
               team: pipelines
-              runbook_url: TBD
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/slos/scheduling-overhead.md
 
   - interval: 1m
     input_series:
@@ -75,7 +75,7 @@ tests:
                 events from the overall PipelineRun execution time is at 50% instead of 95% or greater.
               alert_team_handle: <!subteam^S04PYECHCCU>
               team: pipelines
-              runbook_url: TBD
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/slos/scheduling-overhead.md
 
   - interval: 1m
     input_series:
@@ -134,7 +134,7 @@ tests:
                 underlying TaskRuns from the overall PipelineRun execution time is at 0% instead of 95% or greater.
               alert_team_handle: <!subteam^S04PYECHCCU>
               team: pipelines
-              runbook_url: TBD
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/slos/execution-overhead.md
 
   - interval: 1m
     input_series:
@@ -174,7 +174,7 @@ tests:
                 underlying TaskRuns from the overall PipelineRun execution time is at 94.74% instead of 95% or greater.
               alert_team_handle: <!subteam^S04PYECHCCU>
               team: pipelines
-              runbook_url: TBD
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/slos/execution-overhead.md
 
   - interval: 1m
     input_series:
@@ -201,3 +201,49 @@ tests:
     alert_rule_test:
       - eval_time: 13h
         alertname: HighExecutionOverhead
+
+  # ----- Chains Controller Performance / High Overhead ----
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      - series: 'watcher_client_latency_bucket{app="tekton-chains-controller", le="1", source_cluster="cluster01"}'
+        values: '300+300x780'
+      - series: 'watcher_client_latency_bucket{app="tekton-chains-controller", le="10", source_cluster="cluster01"}'
+        values: '300+300x780'
+      - series: 'watcher_client_latency_bucket{app="tekton-chains-controller", le="+Inf", source_cluster="cluster01"}'
+        values: '900+900x780'
+      - series: 'watcher_client_latency_bucket{app="tekton-pipelines-controller", le="1", source_cluster="cluster01"}'
+        values: '1x780'
+      - series: 'watcher_client_latency_bucket{app="tekton-pipelines-controller", le="+Inf", source_cluster="cluster01"}'
+        values: '1x780'
+
+    alert_rule_test:
+      - eval_time: 85m
+        alertname: ChainsControllerPerformance
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              source_cluster: cluster01
+            exp_annotations:
+              summary: >-
+                Tekton chains controller performance appears degraded with uncommonly high client latency.
+              description: >-
+                Tekton chains controller on cluster cluster01 performance appears degraded with client latency 33.33%.
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/slos/chains-performance.md
+
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      - series: 'watcher_client_latency_bucket{app="tekton-chains-controller", le="1", source_cluster="cluster01"}'
+        values: '300+300x780'
+      - series: 'watcher_client_latency_bucket{app="tekton-chains-controller", le="+Inf", source_cluster="cluster01"}'
+        values: '400+400x780'
+
+    alert_rule_test:
+      - eval_time: 85m
+        alertname: ChainsControllerPerformance

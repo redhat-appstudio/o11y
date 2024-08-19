@@ -27,7 +27,7 @@ spec:
               events from the overall PipelineRun execution time is at {{ $value | humanizePercentage }} instead of 95% or greater.
             alert_team_handle: <!subteam^S04PYECHCCU>
             team: pipelines
-            runbook_url: TBD
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/slos/scheduling-overhead.md
         - alert: HighExecutionOverhead
           expr: |
             1-(sum by (source_cluster) (increase(pipeline_service_execution_overhead_percentage_sum{status='succeded'}[30m]))
@@ -46,7 +46,7 @@ spec:
               underlying TaskRuns from the overall PipelineRun execution time is at {{ $value | humanizePercentage }} instead of 95% or greater.
             alert_team_handle: <!subteam^S04PYECHCCU>
             team: pipelines
-            runbook_url: TBD
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/slos/execution-overhead.md
         - alert: CorePipelineControllerRepeatedRestarts
           expr: |
             sum by (source_cluster) (increase(kube_pod_container_status_restarts_total{namespace="openshift-pipelines", pod=~"tekton-.*"}[5m])) > 0
@@ -61,7 +61,8 @@ spec:
               Tekton controllers on cluster {{ $labels.source_cluster }} have restarted {{ $value }} times recently.
             alert_team_handle: <!subteam^S04PYECHCCU>
             team: pipelines
-            runbook_url: TBD
+            # link will be available once https://gitlab.cee.redhat.com/konflux/docs/sop/-/merge_requests/163 merges
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/slos/core-pipeline-controller-repeated-restarts.md
         - alert: PipelineControllerDeadlock
           expr: |
             sum by (source_cluster) (increase(pipelinerun_kickoff_not_attempted_count[2m])) > 0
@@ -76,7 +77,8 @@ spec:
               Tekton pipeline controller on cluster {{ $labels.source_cluster }} has appeared deadlocked on {{ $value }} pipelineruns.
             alert_team_handle: <!subteam^S04PYECHCCU>
             team: pipelines
-            runbook_url: TBD
+            # link will be available once https://gitlab.cee.redhat.com/konflux/docs/sop/-/merge_requests/163 merges
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/slos/tekton-pipeline-related-deadlocks.md
         - alert: TaskControllerDeadlock
           expr: |
             sum by (source_cluster) (increase(taskrun_pod_create_not_attempted_or_pending_count[2m])) - sum by (source_cluster) (increase(tekton_pipelines_controller_running_taskruns_throttled_by_quota[2m])) - sum by (source_cluster) (increase(tekton_pipelines_controller_running_taskruns_throttled_by_node[2m]))> 0
@@ -91,7 +93,8 @@ spec:
               Tekton taskrun controller on cluster {{ $labels.source_cluster }} has appeared deadlocked on {{ $value }} taskruns.
             alert_team_handle: <!subteam^S04PYECHCCU>
             team: pipelines
-            runbook_url: TBD
+            # link will be available once https://gitlab.cee.redhat.com/konflux/docs/sop/-/merge_requests/163 merges
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/slos/tekton-pipeline-related-deadlocks.md
         - alert: ResolverControllerDeadlock
           expr: |
             sum by (source_cluster) (increase(pending_resolutionrequest_count[2m])) > 0
@@ -106,7 +109,8 @@ spec:
               Tekton resolver controller on cluster {{ $labels.source_cluster }} has appeared deadlocked on {{ $value }} resolutionrequests.
             alert_team_handle: <!subteam^S04PYECHCCU>
             team: pipelines
-            runbook_url: TBD
+            # link will be available once https://gitlab.cee.redhat.com/konflux/docs/sop/-/merge_requests/163 merges
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/slos/tekton-pipeline-related-deadlocks.md
         - alert: ChainsControllerDeadlock
           expr: |
             sum by (source_cluster) (increase(watcher_workqueue_depth{container='tekton-chains-controller',app='tekton-chains-controller'}[2m])) > 50
@@ -121,7 +125,8 @@ spec:
               Tekton chains controller on cluster {{ $labels.source_cluster }} has appeared deadlocked on {{ $value }} pipelinerun events.
             alert_team_handle: <!subteam^S04PYECHCCU>
             team: pipelines
-            runbook_url: TBD
+            # link will be available once https://gitlab.cee.redhat.com/konflux/docs/sop/-/merge_requests/163 merges
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/slos/tekton-pipeline-related-deadlocks.md
         - alert: ChainsControllerPerformance
           expr: |
             (sum by (source_cluster) (increase(watcher_client_latency_bucket{app='tekton-chains-controller',le='1'}[5m]))
@@ -139,4 +144,5 @@ spec:
               Tekton chains controller on cluster {{ $labels.source_cluster }} performance appears degraded with client latency {{ $value | humanizePercentage }}.
             alert_team_handle: <!subteam^S04PYECHCCU>
             team: pipelines
-            runbook_url: TBD
+            # link will be available once https://issues.redhat.com/browse/SRVKP-5899 is complete
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/slos/chains-performance.md
