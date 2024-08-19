@@ -31,7 +31,7 @@ tests:
                 Tekton controllers on cluster cluster01 have restarted 15 times recently.
               alert_team_handle: <!subteam^S04PYECHCCU>
               team: pipelines
-              runbook_url: TBD
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/slos/core-pipeline-controller-repeated-restarts.md
 
   - interval: 1m
     input_series:
@@ -84,7 +84,7 @@ tests:
                 Tekton pipeline controller on cluster cluster01 has appeared deadlocked on 2 pipelineruns.
               alert_team_handle: <!subteam^S04PYECHCCU>
               team: pipelines
-              runbook_url: TBD
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/slos/tekton-pipeline-related-deadlocks.md
 
   - interval: 1m
     input_series:
@@ -141,7 +141,7 @@ tests:
                 Tekton taskrun controller on cluster cluster01 has appeared deadlocked on 2 taskruns.
               alert_team_handle: <!subteam^S04PYECHCCU>
               team: pipelines
-              runbook_url: TBD
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/slos/tekton-pipeline-related-deadlocks.md
   - interval: 1m
     input_series:
 
@@ -172,7 +172,7 @@ tests:
                 Tekton taskrun controller on cluster cluster01 has appeared deadlocked on 2 taskruns.
               alert_team_handle: <!subteam^S04PYECHCCU>
               team: pipelines
-              runbook_url: TBD
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/slos/tekton-pipeline-related-deadlocks.md
 
 
   - interval: 1m
@@ -245,7 +245,7 @@ tests:
                 Tekton resolver controller on cluster cluster01 has appeared deadlocked on 2 resolutionrequests.
               alert_team_handle: <!subteam^S04PYECHCCU>
               team: pipelines
-              runbook_url: TBD
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/slos/tekton-pipeline-related-deadlocks.md
 
   - interval: 1m
     input_series:
@@ -259,7 +259,7 @@ tests:
       - eval_time: 10m
         alertname: ResolverControllerDeadlock
 
-  # ----- Chains Controller Potential Deadlock Kicking ----
+  # ----- Chains Controller Potential Deadlock ----
   - interval: 1m
     input_series:
 
@@ -286,7 +286,7 @@ tests:
                 Tekton chains controller on cluster cluster01 has appeared deadlocked on 600 pipelinerun events.
               alert_team_handle: <!subteam^S04PYECHCCU>
               team: pipelines
-              runbook_url: TBD
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/slos/tekton-pipeline-related-deadlocks.md
 
   - interval: 1m
     input_series:
@@ -299,49 +299,3 @@ tests:
     alert_rule_test:
       - eval_time: 10m
         alertname: ChainsControllerDeadlock
-
-  # ----- Chains Controller Potential Deadlock Kicking ----
-  - interval: 1m
-    input_series:
-
-      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
-      - series: 'watcher_client_latency_bucket{app="tekton-chains-controller", le="1", source_cluster="cluster01"}'
-        values: '300+300x780'
-      - series: 'watcher_client_latency_bucket{app="tekton-chains-controller", le="10", source_cluster="cluster01"}'
-        values: '300+300x780'
-      - series: 'watcher_client_latency_bucket{app="tekton-chains-controller", le="+Inf", source_cluster="cluster01"}'
-        values: '900+900x780'
-      - series: 'watcher_client_latency_bucket{app="tekton-pipelines-controller", le="1", source_cluster="cluster01"}'
-        values: '1x780'
-      - series: 'watcher_client_latency_bucket{app="tekton-pipelines-controller", le="+Inf", source_cluster="cluster01"}'
-        values: '1x780'
-
-    alert_rule_test:
-      - eval_time: 85m
-        alertname: ChainsControllerPerformance
-        exp_alerts:
-          - exp_labels:
-              severity: critical
-              slo: "true"
-              source_cluster: cluster01
-            exp_annotations:
-              summary: >-
-                Tekton chains controller performance appears degraded with uncommonly high client latency.
-              description: >-
-                Tekton chains controller on cluster cluster01 performance appears degraded with client latency 33.33%.
-              alert_team_handle: <!subteam^S04PYECHCCU>
-              team: pipelines
-              runbook_url: TBD
-
-  - interval: 1m
-    input_series:
-
-      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
-      - series: 'watcher_client_latency_bucket{app="tekton-chains-controller", le="1", source_cluster="cluster01"}'
-        values: '300+300x780'
-      - series: 'watcher_client_latency_bucket{app="tekton-chains-controller", le="+Inf", source_cluster="cluster01"}'
-        values: '400+400x780'
-
-    alert_rule_test:
-      - eval_time: 85m
-        alertname: ChainsControllerPerformance
