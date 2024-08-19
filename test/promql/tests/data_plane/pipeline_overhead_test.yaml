@@ -247,3 +247,97 @@ tests:
     alert_rule_test:
       - eval_time: 85m
         alertname: ChainsControllerPerformance
+
+  # ----- Results Too Many Errors ----
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      - series: 'grpc_server_handled_total{job="tekton-results-api", grpc_service="tekton.results.v1alpha2.CreateResult", grpc_code="OK", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'grpc_server_handled_total{job="tekton-results-api", grpc_service="tekton.results.v1alpha2.CreateResult", grpc_code="Unavailable", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'grpc_server_handled_total{job="tekton-results-api", grpc_service="tekton.results.v1alpha2.CreateResult", grpc_code="Internal", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'grpc_server_handled_total{job="tekton-results-api", grpc_service="tekton.results.v1alpha2.CreateResult", grpc_code="NotFound", source_cluster="cluster01"}'
+        values: '1+1x780'
+
+    alert_rule_test:
+      - eval_time: 85m
+        alertname: ResultsSuccessRateTooManyErrors
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              source_cluster: cluster01
+            exp_annotations:
+              summary: >-
+                Tekton results is experiencing too many API errors.
+              description: >-
+                Tekton results on cluster cluster01 only has an API success rate of 25%.
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/slos/tekton-result-high-errors.md
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      - series: 'grpc_server_handled_total{job="tekton-results-api", grpc_service="tekton.results.v1alpha2.CreateResult", grpc_code="OK", source_cluster="cluster01"}'
+        values: '2+2x780'
+      - series: 'grpc_server_handled_total{job="tekton-results-api", grpc_service="tekton.results.v1alpha2.CreateResult", grpc_code="Unavailable", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'grpc_server_handled_total{job="tekton-results-api", grpc_service="tekton.results.v1alpha2.CreateResult", grpc_code="Internal", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'grpc_server_handled_total{job="tekton-results-api", grpc_service="tekton.results.v1alpha2.CreateResult", grpc_code="NotFound", source_cluster="cluster01"}'
+        values: '0x780'
+
+    alert_rule_test:
+      - eval_time: 85m
+        alertname: ResultsSuccessRateTooManyErrors
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              source_cluster: cluster01
+            exp_annotations:
+              summary: >-
+                Tekton results is experiencing too many API errors.
+              description: >-
+                Tekton results on cluster cluster01 only has an API success rate of 50%.
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/slos/tekton-result-high-errors.md
+
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      - series: 'grpc_server_handled_total{job="tekton-results-api", grpc_service="tekton.results.v1alpha2.CreateResult", grpc_code="OK", source_cluster="cluster01"}'
+        values: '0x780'
+      - series: 'grpc_server_handled_total{job="tekton-results-api", grpc_service="tekton.results.v1alpha2.CreateResult", grpc_code="Unavailable", source_cluster="cluster01"}'
+        values: '0x780'
+      - series: 'grpc_server_handled_total{job="tekton-results-api", grpc_service="tekton.results.v1alpha2.CreateResult", grpc_code="Internal", source_cluster="cluster01"}'
+        values: '0x780'
+      - series: 'grpc_server_handled_total{job="tekton-results-api", grpc_service="tekton.results.v1alpha2.CreateResult", grpc_code="NotFound", source_cluster="cluster01"}'
+        values: '0x780'
+
+    alert_rule_test:
+      - eval_time: 85m
+        alertname: ResultsSuccessRateTooManyErrors
+
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      - series: 'grpc_server_handled_total{job="tekton-results-api", grpc_service="tekton.results.v1alpha2.CreateResult", grpc_code="OK", source_cluster="cluster01"}'
+        values: '100+100x780'
+      - series: 'grpc_server_handled_total{job="tekton-results-api", grpc_service="tekton.results.v1alpha2.CreateResult", grpc_code="Unavailable", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'grpc_server_handled_total{job="tekton-results-api", grpc_service="tekton.results.v1alpha2.CreateResult", grpc_code="Internal", source_cluster="cluster01"}'
+        values: '0x780'
+      - series: 'grpc_server_handled_total{job="tekton-results-api", grpc_service="tekton.results.v1alpha2.CreateResult", grpc_code="NotFound", source_cluster="cluster01"}'
+        values: '0x780'
+
+    alert_rule_test:
+      - eval_time: 85m
+        alertname: ResultsSuccessRateTooManyErrors

@@ -146,3 +146,42 @@ spec:
             team: pipelines
             # link will be available once https://issues.redhat.com/browse/SRVKP-5899 is complete
             runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/slos/chains-performance.md
+        - alert: ResultsDeadlock
+          expr: |
+            sum by (source_cluster) (increase(tekton_pipelines_controller_pipelinerun_count[5m])) > 0
+            and
+            sum by (source_cluster) (increase(grpc_server_handled_total{job='tekton-results-api', grpc_service=~'tekton.results.*'}[5m])) == 0
+          for: 75m
+          labels:
+            severity: critical
+            slo: "true"
+          annotations:
+            summary: >-
+              Tekton results appears to have stopped processing active pipelineruns.
+            description: >-
+              Tekton results on cluster {{ $labels.source_cluster }} appears deadlocked on pipelinerun events.
+            alert_team_handle: <!subteam^S04PYECHCCU>
+            team: pipelines
+            # link will be available once https://gitlab.cee.redhat.com/konflux/docs/sop/-/merge_requests/163 merges
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/slos/tekton-pipeline-related-deadlocks.md
+        - alert: ResultsSuccessRateTooManyErrors
+          expr: |
+            sum by (source_cluster) (increase(grpc_server_handled_total{job='tekton-results-api', grpc_service=~'tekton.results.*', grpc_code='OK'}[10m]))
+            /
+            sum by (source_cluster) (increase(grpc_server_handled_total{job='tekton-results-api', grpc_service=~'tekton.results.*'}[10m]))
+            < 0.75
+            and
+            sum by (source_cluster) (increase(grpc_server_handled_total{job='tekton-results-api', grpc_service=~'tekton.results.*'}[10m])) > 0
+          for: 75m
+          labels:
+            severity: critical
+            slo: "true"
+          annotations:
+            summary: >-
+              Tekton results is experiencing too many API errors.
+            description: >-
+              Tekton results on cluster {{ $labels.source_cluster }} only has an API success rate of {{ $value | humanizePercentage }}.
+            alert_team_handle: <!subteam^S04PYECHCCU>
+            team: pipelines
+            # link will be available once https://issues.redhat.com/browse/SRVKP-5900 is done
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/slos/tekton-result-high-errors.md
