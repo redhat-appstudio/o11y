@@ -299,3 +299,75 @@ tests:
     alert_rule_test:
       - eval_time: 10m
         alertname: ChainsControllerDeadlock
+
+  # ----- Results Potential Deadlock ----
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # tekton results appears deadlocked
+      - series: 'tekton_pipelines_controller_pipelinerun_count{source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'grpc_server_handled_total{job="tekton-results-api", grpc_service="tekton.results.v1alpha2.CreateResult", source_cluster="cluster01"}'
+        values: '0x780'
+      - series: 'grpc_server_handled_total{job="foo", grpc_service="foo", source_cluster="cluster01"}'
+        values: '1+1x780'
+
+    alert_rule_test:
+      - eval_time: 85m
+        alertname: ResultsDeadlock
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              source_cluster: cluster01
+            exp_annotations:
+              summary: >-
+                Tekton results appears to have stopped processing active pipelineruns.
+              description: >-
+                Tekton results on cluster cluster01 appears deadlocked on pipelinerun events.
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/slos/tekton-pipeline-related-deadlocks.md
+
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # tekton chains controller is experiencing some delays processing pipelineruns but not fast enough so it should not alert
+      - series: 'tekton_pipelines_controller_pipelinerun_count{source_cluster="cluster01"}'
+        values: '0x780'
+      - series: 'grpc_server_handled_total{job="tekton-results-api", grpc_service="tekton.results.v1alpha2.CreateResult", source_cluster="cluster01"}'
+        values: '0x780'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: ResultsDeadlock
+
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # tekton results not deadlocked
+      - series: 'tekton_pipelines_controller_pipelinerun_count{source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'grpc_server_handled_total{job="tekton-results-api", grpc_service="tekton.results.v1alpha2.CreateResult", source_cluster="cluster01"}'
+        values: '1+1x780'
+
+    alert_rule_test:
+      - eval_time: 85m
+        alertname: ResultsDeadlock
+
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # tekton results not deadlocked
+      - series: 'tekton_pipelines_controller_pipelinerun_count{source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'grpc_server_handled_total{job="foo", grpc_service="foo", source_cluster="cluster01"}'
+        values: '0x780'
+
+    alert_rule_test:
+      - eval_time: 85m
+        alertname: ResultsDeadlock
