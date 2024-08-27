@@ -1,0 +1,31 @@
+rule_files:
+  - prometheus.build_service_alerts.yaml
+
+evaluation_interval: 1m
+
+tests:
+  - interval: 1m
+    input_series:
+      - series: konflux_up{service="github", check="build-service"}
+        values: '_x6 1'
+    alert_rule_test:
+      - alertname: GitHubAppFailureAlert
+        eval_time: 4m
+        exp_alerts: []
+      - alertname: GitHubAppFailureAlert
+        eval_time: 5m
+        exp_alerts:
+        - exp_labels:
+            severity: warning
+            check: build-service
+            service: github
+          exp_annotations:
+            summary: "'konflux_up' availability metric missing for GitHub App in build-service."
+            description: >-
+              The 'konflux_up' availability metric for the GitHub App in the build-service has not been reported for check build-service on service github for over 5 minutes, indicating a possible service disruption.
+            team: build
+            alert_team_handle: <!subteam^S03DM1RL0TF>
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/build-service/availability_github_app.md
+      - alertname: GitHubAppFailureAlert
+        eval_time: 7m
+        exp_alerts: []
