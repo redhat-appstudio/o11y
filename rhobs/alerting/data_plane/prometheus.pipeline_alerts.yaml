@@ -9,45 +9,8 @@ spec:
     - name: pipeline_alerts
       interval: 1m
       rules:
-        - alert: HighSchedulingOverhead
-          expr: |
-            1-(sum by (source_cluster) (increase(pipeline_service_schedule_overhead_percentage_sum{status='succeded'}[30m]))
-            /
-            sum by (source_cluster) (increase(pipeline_service_schedule_overhead_percentage_count{status='succeded'}[30m])))
-            < 0.95
-          for: 12h
-          labels:
-            severity: critical
-            slo: "true"
-          annotations:
-            summary: >-
-              Tekton has a scheduling overhead vs. PipelineRun durations of <95%
-            description: >-
-              Tekton controller on cluster {{ $labels.source_cluster }} factoring out the time needed to receive PipelineRun creation
-              events from the overall PipelineRun execution time is at {{ $value | humanizePercentage }} instead of 95% or greater.
-            alert_team_handle: <!subteam^S04PYECHCCU>
-            team: pipelines
-            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/slos/scheduling-overhead.md
-        - alert: HighExecutionOverhead
-          expr: |
-            1-(sum by (source_cluster) (increase(pipeline_service_execution_overhead_percentage_sum{status='succeded'}[30m]))
-            /
-            sum by (source_cluster) (increase(pipeline_service_execution_overhead_percentage_count{status='succeded'}[30m])))
-            < 0.95
-          for: 12h
-          labels:
-            severity: critical
-            slo: "true"
-          annotations:
-            summary: >-
-              Tekton has a execution overhead vs. PipelineRun durations of <95%
-            description: >-
-              Tekton controller on cluster {{ $labels.source_cluster }} factoring out the time needed to create
-              underlying TaskRuns from the overall PipelineRun execution time is at {{ $value | humanizePercentage }} instead of 95% or greater.
-            alert_team_handle: <!subteam^S04PYECHCCU>
-            team: pipelines
-            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/slos/execution-overhead.md
-        - alert: CorePipelineControllerRepeatedRestarts
+        - alert: PipelinePodsRepeatedRestarts
+          # includes all the pods except PAC and Results
           expr: |
             sum by (source_cluster) (increase(kube_pod_container_status_restarts_total{namespace="openshift-pipelines", pod=~"tekton-.*"}[5m])) > 0
           for: 5m
