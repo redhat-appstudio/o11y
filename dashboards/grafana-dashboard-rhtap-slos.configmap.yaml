@@ -1804,6 +1804,347 @@ data:
                 ],
                 "title": "Chains Performance",
                 "type": "stat"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "Indicator whether Tekton Results is deadlocked",
+                "gridPos": {
+                    "h": 7,
+                    "w": 10,
+                    "x": 0,
+                    "y": 63
+                },
+                "id": 116,
+                "options": {
+                    "code": {
+                        "language": "plaintext",
+                        "showLineNumbers": false,
+                        "showMiniMap": false
+                    },
+                    "content": "<h1><center>If there are PipelineRuns on the cluster, but no corresponding GRPC processed by Tekton Results, Tekton Results is possibly deadlocked </center></h1>",
+                    "mode": "html"
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "refId": "A"
+                    }
+                ],
+                "title": "Results Deadlocked Part 1",
+                "type": "text"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "The rate of PipelineRuns existing on cluster for the poling interval",
+                "fieldConfig": {
+                    "defaults": {
+                        "color": {
+                            "mode": "thresholds"
+                        },
+                        "mappings": [
+                            {
+                                "options": {
+                                    "match": "null",
+                                    "result": {
+                                        "text": "N/A"
+                                    }
+                                },
+                                "type": "special"
+                            }
+                        ],
+                        "noValue": "No data",
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "color": "green",
+                                    "value": null
+                                }
+                            ]
+                        },
+                        "unit": "none"
+                    },
+                    "overrides": []
+                },
+                "gridPos": {
+                    "h": 7,
+                    "w": 5,
+                    "x": 10,
+                    "y": 63
+                },
+                "id": 115,
+                "maxDataPoints": 100,
+                "options": {
+                    "colorMode": "value",
+                    "graphMode": "area",
+                    "justifyMode": "auto",
+                    "orientation": "auto",
+                    "reduceOptions": {
+                        "calcs": [
+                            "lastNotNull"
+                        ],
+                        "fields": "",
+                        "values": false
+                    },
+                    "showPercentChange": false,
+                    "textMode": "auto",
+                    "wideLayout": true
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "editorMode": "code",
+                        "expr": "sum(increase(tekton_pipelines_controller_pipelinerun_count[$__range]))",
+                        "instant": false,
+                        "legendFormat": "__auto",
+                        "range": true,
+                        "refId": "A"
+                    }
+                ],
+                "title": "PipelineRun Total Rate - Results Deadlock Part 1",
+                "type": "stat"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "Indicator whether Tekton Results is deadlocked",
+                "gridPos": {
+                    "h": 7,
+                    "w": 10,
+                    "x": 0,
+                    "y": 70
+                },
+                "id": 119,
+                "options": {
+                    "code": {
+                        "language": "plaintext",
+                        "showLineNumbers": false,
+                        "showMiniMap": false
+                    },
+                    "content": "<h1><center>If there are PipelineRuns on the cluster, but no corresponding GRPC processed by Tekton Results, Tekton Results is possibly deadlocked </center></h1>",
+                    "mode": "html"
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "refId": "A"
+                    }
+                ],
+                "title": "Results Deadlocked Part 2",
+                "type": "text"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "The rate of PipelineRun related GRPC API calls made against Tekton Results",
+                "fieldConfig": {
+                    "defaults": {
+                        "color": {
+                            "mode": "thresholds"
+                        },
+                        "mappings": [
+                            {
+                                "options": {
+                                    "match": "null",
+                                    "result": {
+                                        "text": "N/A"
+                                    }
+                                },
+                                "type": "special"
+                            }
+                        ],
+                        "noValue": "No data",
+                        "thresholds": {
+                            "mode": "absolute",
+                            "steps": [
+                                {
+                                    "color": "green",
+                                    "value": null
+                                }
+                            ]
+                        },
+                        "unit": "none"
+                    },
+                    "overrides": []
+                },
+                "gridPos": {
+                    "h": 7,
+                    "w": 5,
+                    "x": 10,
+                    "y": 70
+                },
+                "id": 118,
+                "maxDataPoints": 100,
+                "options": {
+                    "colorMode": "value",
+                    "graphMode": "area",
+                    "justifyMode": "auto",
+                    "orientation": "auto",
+                    "reduceOptions": {
+                        "calcs": [
+                            "lastNotNull"
+                        ],
+                        "fields": "",
+                        "values": false
+                    },
+                    "showPercentChange": false,
+                    "textMode": "auto",
+                    "wideLayout": true
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "editorMode": "code",
+                        "expr": "sum(rate(grpc_server_handled_total{job='tekton-results-api', grpc_service=~'tekton.results.*'}[$__range]))",
+                        "instant": false,
+                        "legendFormat": "__auto",
+                        "range": true,
+                        "refId": "A"
+                    }
+                ],
+                "title": "Tekton Results GRPC Rate - Results Deadlock Part 2",
+                "type": "stat"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "Tekton Results API Success Rate",
+                "gridPos": {
+                    "h": 7,
+                    "w": 10,
+                    "x": 0,
+                    "y": 77
+                },
+                "id": 121,
+                "options": {
+                    "code": {
+                        "language": "plaintext",
+                        "showLineNumbers": false,
+                        "showMiniMap": false
+                    },
+                    "content": "<h1><center>Tekton Results API Success Rate </center></h1>",
+                    "mode": "html"
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "refId": "A"
+                    }
+                ],
+                "title": "Results Success Rate",
+                "type": "text"
+            },
+            {
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "The success rate of API calls made to Tekton Results",
+                "fieldConfig": {
+                    "defaults": {
+                        "color": {
+                            "mode": "thresholds"
+                        },
+                        "mappings": [
+                            {
+                                "options": {
+                                    "match": "null",
+                                    "result": {
+                                        "text": "N/A"
+                                    }
+                                },
+                                "type": "special"
+                            }
+                        ],
+                        "max": 1,
+                        "min": 0,
+                        "noValue": "-",
+                        "thresholds": {
+                            "mode": "percentage",
+                            "steps": [
+                                {
+                                    "color": "red",
+                                    "value": null
+                                },
+                                {
+                                    "color": "green",
+                                    "value": 95
+                                }
+                            ]
+                        },
+                        "unit": "percentunit"
+                    },
+                    "overrides": []
+                },
+                "gridPos": {
+                    "h": 7,
+                    "w": 5,
+                    "x": 10,
+                    "y": 77
+                },
+                "id": 120,
+                "maxDataPoints": 100,
+                "options": {
+                    "minVizHeight": 75,
+                    "minVizWidth": 75,
+                    "orientation": "horizontal",
+                    "reduceOptions": {
+                        "calcs": [],
+                        "fields": "",
+                        "values": false
+                    },
+                    "showThresholdLabels": false,
+                    "showThresholdMarkers": false,
+                    "sizing": "auto"
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
+                    {
+                        "datasource": {
+                            "type": "prometheus",
+                            "uid": "${datasource}"
+                        },
+                        "editorMode": "code",
+                        "expr": "sum(increase(grpc_server_handled_total{job='tekton-results-api', grpc_service=~'tekton.results.*', grpc_code='OK'}[$__range])) / sum(increase(grpc_server_handled_total{job='tekton-results-api', grpc_service=~'tekton.results.*'}[$__range]))",
+                        "legendFormat": "__auto",
+                        "range": true,
+                        "refId": "A"
+                    }
+                ],
+                "title": "Tekton Results API Success",
+                "type": "gauge"
             }
         ],
         "refresh": "1h",
