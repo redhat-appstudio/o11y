@@ -143,3 +143,49 @@ tests:
     alert_rule_test:
       - eval_time: 85m
         alertname: ResultsSuccessRateTooManyErrors
+
+  # ----- PAC Controller Performance / High Overhead ----
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      - series: 'pac_watcher_client_latency_bucket{le="1", source_cluster="cluster01"}'
+        values: '300+300x780'
+      - series: 'pac_watcher_client_latency_bucket{le="10", source_cluster="cluster01"}'
+        values: '300+300x780'
+      - series: 'pac_watcher_client_latency_bucket{le="+Inf", source_cluster="cluster01"}'
+        values: '900+900x780'
+      - series: 'pac_watcher_client_latency_bucket{le="1", source_cluster="cluster02"}'
+        values: '1x780'
+      - series: 'pac_watcher_client_latency_bucket{le="+Inf", source_cluster="cluster02"}'
+        values: '1x780'
+
+    alert_rule_test:
+      - eval_time: 85m
+        alertname: PACControllerPerformance
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              source_cluster: cluster01
+            exp_annotations:
+              summary: >-
+                Tekton PAC controller performance appears degraded with uncommonly high client latency.
+              description: >-
+                Tekton PAC controller on cluster cluster01 performance appears degraded with client latency 33.33%.
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/slos/pac-performance.md
+
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      - series: 'pac_watcher_client_latency_bucket{le="1", source_cluster="cluster02"}'
+        values: '300+300x780'
+      - series: 'pac_watcher_client_latency_bucket{le="+Inf", source_cluster="cluster02"}'
+        values: '400+400x780'
+
+    alert_rule_test:
+      - eval_time: 85m
+        alertname: PACControllerPerformance

@@ -12,7 +12,7 @@ spec:
         - alert: PipelinePodsRepeatedRestarts
           # includes all the pods except PAC and Results
           expr: |
-            sum by (source_cluster) (increase(kube_pod_container_status_restarts_total{namespace="openshift-pipelines", pod=~"tekton-.*"}[5m])) > 0
+            sum by (source_cluster) (increase(kube_pod_container_status_restarts_total{namespace="openshift-pipelines", pod=~"tekton-.*|pipelines-as-code-.*"}[5m])) > 0
           for: 5m
           labels:
             severity: critical
@@ -148,3 +148,38 @@ spec:
             team: pipelines
             # link will be available once https://issues.redhat.com/browse/SRVKP-5900 is done
             runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/slos/tekton-result-high-errors.md
+        - alert: PACControllerDeadlock
+          expr: |
+            sum by (source_cluster) (increase(pac_watcher_work_queue_depth[2m])) > 50
+          for: 75m
+          labels:
+            severity: critical
+            slo: "true"
+          annotations:
+            summary: >-
+              Tekton PAC controller appears to have stopped processing active pipelineruns.
+            description: >-
+              Tekton PAC controller on cluster {{ $labels.source_cluster }} has appeared deadlocked on {{ $value }} pipelinerun events.
+            alert_team_handle: <!subteam^S04PYECHCCU>
+            team: pipelines
+            # link will be available once https://gitlab.cee.redhat.com/konflux/docs/sop/-/merge_requests/163 merges
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/slos/tekton-pipeline-related-deadlocks.md
+        - alert: PACControllerPerformance
+          expr: |
+            (sum by (source_cluster) (increase(pac_watcher_client_latency_bucket{le='10'}[5m]))
+            /
+            sum by (source_cluster) (increase(pac_watcher_client_latency_bucket{le='+Inf'}[5m])))
+            < 0.50
+          for: 75m
+          labels:
+            severity: critical
+            slo: "true"
+          annotations:
+            summary: >-
+              Tekton PAC controller performance appears degraded with uncommonly high client latency.
+            description: >-
+              Tekton PAC controller on cluster {{ $labels.source_cluster }} performance appears degraded with client latency {{ $value | humanizePercentage }}.
+            alert_team_handle: <!subteam^S04PYECHCCU>
+            team: pipelines
+            # link will be available once https://issues.redhat.com/browse/SRVKP-5899 is complete
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/slos/pac-performance.md

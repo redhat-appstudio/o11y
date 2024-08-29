@@ -371,3 +371,42 @@ tests:
     alert_rule_test:
       - eval_time: 85m
         alertname: ResultsDeadlock
+
+
+  # ----- PAC Controller Potential Deadlock ----
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      - series: 'pac_watcher_work_queue_depth{source_cluster="cluster01"}'
+        values: '300+300x780'
+      - series: 'pac_watcher_work_queue_depth{source_cluster="cluster02"}'
+        values: '0x780'
+
+    alert_rule_test:
+      - eval_time: 85m
+        alertname: PACControllerDeadlock
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              source_cluster: cluster01
+            exp_annotations:
+              summary: >-
+                Tekton PAC controller appears to have stopped processing active pipelineruns.
+              description: >-
+                Tekton PAC controller on cluster cluster01 has appeared deadlocked on 600 pipelinerun events.
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/slos/tekton-pipeline-related-deadlocks.md
+
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      - series: 'pac_watcher_work_queue_depth{source_cluster="cluster02"}'
+        values: '1x780'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: ChainsControllerDeadlock
