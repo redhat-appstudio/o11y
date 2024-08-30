@@ -199,6 +199,12 @@ tests:
       - series: 'kube_pod_status_unschedulable{namespace="build-templates-e2e", pod="test-pod", source_cluster="cluster01"}'
         values: '0x29'
 
+      # Pod is in the Failed state and scheduled, but it's in the 'konflux-ci' namespace so it's ignored.
+      - series: 'kube_pod_status_phase{pod="test-pod", namespace="konflux-ci", phase="Failed"}'
+        values: '1x29'
+      - series: 'kube_pod_status_unschedulable{namespace="konflux-ci", pod="test-pod", source_cluster="cluster01"}'
+        values: '0x29'
+
     alert_rule_test:
       - eval_time: 30m
         alertname: PodNotReady
