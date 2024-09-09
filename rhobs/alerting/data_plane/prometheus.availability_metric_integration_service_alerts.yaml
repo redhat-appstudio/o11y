@@ -1,0 +1,28 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-integration-service-availability-slo-alerting-rules
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: integration-service-availability-slo
+    interval: 1m
+    rules:
+    - alert: IntegrationServiceAvailabilitySLOViolation
+      expr: |
+        (
+          avg_over_time(redhat_appstudio_integrationservice_global_github_app_available[24h]) * 100
+        ) < 99
+      for: 10m
+      labels:
+        severity: critical
+        slo: "true"
+      annotations:
+        summary: >-
+          Integration Service Availability SLO Violation
+        description: >-
+          Integration Service GitHub App availability has dropped below 99% for more than 10 minutes on cluster {{ $labels.source_cluster }}.
+        alert_team_handle: <!subteam^S05M4AG8CJH>
+        team: integration
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/sre/integration_service_availability.md
