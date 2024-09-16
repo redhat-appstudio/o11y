@@ -1,0 +1,15 @@
+# Metric format needed
+# konflux_workspaces_available(service="workspaces-controller-manager-metrics") -> konflux_up(service="workspaces-controller-manager-metrics", check="kubesaw")
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-workspaces-service-availability
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: konflux_workspaces_available
+      interval: 1m
+      rules:
+        - record: konflux_up
+          expr: label_replace(konflux_workspaces_available, "check", "kubesaw", "","")
