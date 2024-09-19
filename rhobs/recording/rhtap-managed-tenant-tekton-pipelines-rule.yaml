@@ -1,0 +1,80 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-managed-tenants-tekton-pipelines-rule
+  namespace: rhtap-releng-tenant
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    # pipelineruns durations
+    - name: rhtap_managed_tenant_pipelinerun_duration_seconds_5m_sample
+      interval: 5m
+      rules:
+        - record: rhtap_managed_tenant_pipelinerun_duration_seconds_5m
+          expr: |
+            sum by (le, pipeline, status) (rate(tekton_pipelines_controller_pipelinerun_duration_seconds_bucket[5m]))
+
+    - name: rhtap_managed_tenant_pipelinerun_duration_seconds_15m_sample
+      interval: 15m
+      rules:
+        - record: rhtap_managed_tenant_pipelinerun_duration_seconds_15m
+          expr: |
+            sum by (le, pipeline, status) (rate(tekton_pipelines_controller_pipelinerun_duration_seconds_bucket[15m]))
+
+    - name: rhtap_managed_tenant_pipelinerun_duration_seconds_30m_sample
+      interval: 30m
+      rules:
+        - record: rhtap_managed_tenant_pipelinerun_duration_seconds_30m
+          expr: |
+            sum by (le, pipeline, status) (rate(tekton_pipelines_controller_pipelinerun_duration_seconds_bucket[30m]))
+
+    - name: rhtap_managed_tenant_pipelinerun_duration_seconds_1h_sample
+      interval: 1h
+      rules:
+        - record: rhtap_managed_tenant_pipelinerun_duration_seconds_1h
+          expr: |
+            sum by (le, pipeline, status) (rate(tekton_pipelines_controller_pipelinerun_duration_seconds_bucket[1h]))
+
+    - name: rhtap_managed_tenant_pipelinerun_duration_seconds_4h_sample
+      interval: 4h
+      rules:
+        - record: rhtap_managed_tenant_pipelinerun_duration_seconds_4h
+          expr: |
+            sum by (le, pipeline, status) (rate(tekton_pipelines_controller_pipelinerun_duration_seconds_bucket[4h]))
+
+    # pipelineruns taskruns durations
+    - name: rhtap_managed_tenant_pipelinerun_taskrun_duration_seconds_5m_sample
+      interval: 5m
+      rules:
+        - record: rhtap_managed_tenant_pipelinerun_taskrun_duration_seconds_5m
+          expr: |
+            sum by (le, pipeline, task, status) (rate(tekton_pipelines_controller_pipelinerun_taskrun_duration_seconds_bucket[5m]))
+
+    - name: rhtap_managed_tenant_pipelinerun_taskrun_duration_seconds_15m_sample
+      interval: 15m
+      rules:
+        - record: rhtap_managed_tenant_pipelinerun_taskrun_duration_seconds_15m
+          expr: |
+            sum by (le, pipeline, task, status) (rate(tekton_pipelines_controller_pipelinerun_taskrun_duration_seconds_bucket[15m]))
+
+    - name: rhtap_managed_tenant_pipelinerun_taskrun_duration_seconds_30m_sample
+      interval: 30m
+      rules:
+        - record: rhtap_managed_tenant_pipelinerun_taskrun_duration_seconds_30m
+          expr: |
+            sum by (le, pipeline, task, status) (rate(tekton_pipelines_controller_pipelinerun_taskrun_duration_seconds_bucket[30m]))
+
+    - name: rhtap_managed_tenant_pipelinerun_taskrun_duration_seconds_1h_sample
+      interval: 1h 
+      rules:
+        - record: rhtap_managed_tenant_pipelinerun_taskrun_duration_seconds_1h
+          expr: |
+            sum by (le, pipeline, task, status) (rate(tekton_pipelines_controller_pipelinerun_taskrun_duration_seconds_bucket[1h]))
+
+    - name: rhtap_managed_tenant_pipelinerun_taskrun_duration_seconds_4h_sample
+      interval: 4h 
+      rules:
+        - record: rhtap_managed_tenant_pipelinerun_taskrun_duration_seconds_4h
+          expr: |
+            sum by (le, pipeline, task, status) (rate(tekton_pipelines_controller_pipelinerun_taskrun_duration_seconds_bucket[4h]))
