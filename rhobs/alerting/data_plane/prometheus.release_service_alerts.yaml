@@ -65,11 +65,11 @@ spec:
         (
           avg_over_time
           (
-            (sum(kube_pod_container_status_ready{namespace="release-service", container="manager"}))
+            count(sum(kube_pod_container_status_ready{namespace="release-service", container="manager"}) by(namespace, source_cluster) > 0) by(namespace)
             [1h:]
           )
           /
-          max_over_time(sum(kube_pod_container_status_ready{namespace="release-service", container="manager"}) [1d:])
+          count(max_over_time(sum(kube_pod_container_status_ready{namespace="release-service", container="manager"}) by(source_cluster, namespace)[1d:])) by(namespace)
         ) < 0.99
       for: 15m
       labels:
