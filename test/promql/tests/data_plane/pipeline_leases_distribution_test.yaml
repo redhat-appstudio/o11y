@@ -1,0 +1,534 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.pipeline_alerts.yaml
+
+tests:
+  # ----- Tekton Pipelines controller PipelineRun reconciler leases not distributed across more than one pod Tests ----
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # Leases are distributed only across 1 pod, so let's raise an alert
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.00-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.01-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.02-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.03-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.00-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.01-of-04", lease_holder="tekton-pipelines-controller-ccc"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.02-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.03-of-04", lease_holder="tekton-pipelines-controller-ccc"}'
+        values: '1x20'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: PipelinesControllerPipelineRunRecLeasesNotDistributed
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              source_cluster: cluster01
+            exp_annotations:
+              summary: Tekton Pipelines controller PipelineRun reconciler leases not distributed across more than one pod
+              description: >-
+                Tekton Pipelines controller PipelineRun reconciler leases not distributed across more than one pod
+                on cluster cluster01.
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-PipelinesControllerLeasesNotDistributed.md
+
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # Leases are distributed only across 1 pod, so let's raise an alert
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.00-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.01-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.02-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.03-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.00-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.01-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.02-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.03-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x20'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: PipelinesControllerPipelineRunRecLeasesNotDistributed
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              source_cluster: cluster01
+            exp_annotations:
+              summary: Tekton Pipelines controller PipelineRun reconciler leases not distributed across more than one pod
+              description: >-
+                Tekton Pipelines controller PipelineRun reconciler leases not distributed across more than one pod
+                on cluster cluster01.
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-PipelinesControllerLeasesNotDistributed.md
+          - exp_labels:
+              severity: warning
+              source_cluster: cluster02
+            exp_annotations:
+              summary: Tekton Pipelines controller PipelineRun reconciler leases not distributed across more than one pod
+              description: >-
+                Tekton Pipelines controller PipelineRun reconciler leases not distributed across more than one pod
+                on cluster cluster02.
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-PipelinesControllerLeasesNotDistributed.md
+
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # Leases are distributed across 2 pods, so all is good
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.00-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.01-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.02-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.03-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.00-of-04", lease_holder="tekton-pipelines-controller-ccc"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.01-of-04", lease_holder="tekton-pipelines-controller-ddd"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.02-of-04", lease_holder="tekton-pipelines-controller-ccc"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.03-of-04", lease_holder="tekton-pipelines-controller-ddd"}'
+        values: '1x20'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: PipelinesControllerPipelineRunRecLeasesNotDistributed
+
+  # ----- Tekton Pipelines controller TaskRun reconciler leases not distributed across more than one pod Test ----
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # Leases are distributed only across 1 pod, so let's raise an alert
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.taskrun.reconciler.00-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.taskrun.reconciler.01-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.taskrun.reconciler.02-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.taskrun.reconciler.03-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.taskrun.reconciler.00-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.taskrun.reconciler.01-of-04", lease_holder="tekton-pipelines-controller-ccc"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.taskrun.reconciler.02-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.taskrun.reconciler.03-of-04", lease_holder="tekton-pipelines-controller-ccc"}'
+        values: '1x20'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: PipelinesControllerTaskRunRecLeasesNotDistributed
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              source_cluster: cluster01
+            exp_annotations:
+              summary: Tekton Pipelines controller TaskRun reconciler leases not distributed across more than one pod
+              description: >-
+                Tekton Pipelines controller TaskRun reconciler leases not distributed across more than one pod
+                on cluster cluster01.
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-PipelinesControllerLeasesNotDistributed.md
+
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # Leases are distributed only across 1 pod, so let's raise an alert
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.taskrun.reconciler.00-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.taskrun.reconciler.01-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.taskrun.reconciler.02-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.taskrun.reconciler.03-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.taskrun.reconciler.00-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.taskrun.reconciler.01-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.taskrun.reconciler.02-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.taskrun.reconciler.03-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x20'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: PipelinesControllerTaskRunRecLeasesNotDistributed
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              source_cluster: cluster01
+            exp_annotations:
+              summary: Tekton Pipelines controller TaskRun reconciler leases not distributed across more than one pod
+              description: >-
+                Tekton Pipelines controller TaskRun reconciler leases not distributed across more than one pod
+                on cluster cluster01.
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-PipelinesControllerLeasesNotDistributed.md
+          - exp_labels:
+              severity: warning
+              source_cluster: cluster02
+            exp_annotations:
+              summary: Tekton Pipelines controller TaskRun reconciler leases not distributed across more than one pod
+              description: >-
+                Tekton Pipelines controller TaskRun reconciler leases not distributed across more than one pod
+                on cluster cluster02.
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-PipelinesControllerLeasesNotDistributed.md
+
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # Leases are distributed across 2 pods, so all is good
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.taskrun.reconciler.00-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.taskrun.reconciler.01-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.taskrun.reconciler.02-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.taskrun.reconciler.03-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.taskrun.reconciler.00-of-04", lease_holder="tekton-pipelines-controller-ccc"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.taskrun.reconciler.01-of-04", lease_holder="tekton-pipelines-controller-ddd"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.taskrun.reconciler.02-of-04", lease_holder="tekton-pipelines-controller-ccc"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.taskrun.reconciler.03-of-04", lease_holder="tekton-pipelines-controller-ddd"}'
+        values: '1x20'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: PipelinesControllerTaskRunRecLeasesNotDistributed
+
+  # ----- Tekton Pipelines controller ResolutionRequest reconciler leases not distributed across more than one pod Test ----
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # Leases are distributed only across 1 pod, so let's raise an alert
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.resolutionrequest.reconciler.00-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.resolutionrequest.reconciler.01-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.resolutionrequest.reconciler.02-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.resolutionrequest.reconciler.03-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.resolutionrequest.reconciler.00-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.resolutionrequest.reconciler.01-of-04", lease_holder="tekton-pipelines-controller-ccc"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.resolutionrequest.reconciler.02-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.resolutionrequest.reconciler.03-of-04", lease_holder="tekton-pipelines-controller-ccc"}'
+        values: '1x20'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: PipelinesControllerResReqRecLeasesNotDistributed
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              source_cluster: cluster01
+            exp_annotations:
+              summary: Tekton Pipelines controller ResolutionRequest reconciler leases not distributed across more than one pod
+              description: >-
+                Tekton Pipelines controller ResolutionRequest reconciler leases not distributed across more than one pod
+                on cluster cluster01.
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-PipelinesControllerLeasesNotDistributed.md
+
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # Leases are distributed only across 1 pod, so let's raise an alert
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.resolutionrequest.reconciler.00-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.resolutionrequest.reconciler.01-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.resolutionrequest.reconciler.02-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.resolutionrequest.reconciler.03-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.resolutionrequest.reconciler.00-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.resolutionrequest.reconciler.01-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.resolutionrequest.reconciler.02-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.resolutionrequest.reconciler.03-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x20'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: PipelinesControllerResReqRecLeasesNotDistributed
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              source_cluster: cluster01
+            exp_annotations:
+              summary: Tekton Pipelines controller ResolutionRequest reconciler leases not distributed across more than one pod
+              description: >-
+                Tekton Pipelines controller ResolutionRequest reconciler leases not distributed across more than one pod
+                on cluster cluster01.
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-PipelinesControllerLeasesNotDistributed.md
+          - exp_labels:
+              severity: warning
+              source_cluster: cluster02
+            exp_annotations:
+              summary: Tekton Pipelines controller ResolutionRequest reconciler leases not distributed across more than one pod
+              description: >-
+                Tekton Pipelines controller ResolutionRequest reconciler leases not distributed across more than one pod
+                on cluster cluster02.
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-PipelinesControllerLeasesNotDistributed.md
+
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # Leases are distributed across 2 pods, so all is good
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.resolutionrequest.reconciler.00-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.resolutionrequest.reconciler.01-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.resolutionrequest.reconciler.02-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.resolutionrequest.reconciler.03-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.resolutionrequest.reconciler.00-of-04", lease_holder="tekton-pipelines-controller-ccc"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.resolutionrequest.reconciler.01-of-04", lease_holder="tekton-pipelines-controller-ddd"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.resolutionrequest.reconciler.02-of-04", lease_holder="tekton-pipelines-controller-ccc"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.resolutionrequest.reconciler.03-of-04", lease_holder="tekton-pipelines-controller-ddd"}'
+        values: '1x20'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: PipelinesControllerTaskRunRecLeasesNotDistributed
+
+  # ----- Tekton Pipelines controller PipelineRun reconciler leases holder is missing Tests ----
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # Leases metric is present, but lease_holder is empty, so let's raise an alert
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.00-of-04", lease_holder=""}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.00-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: PipelinesControllerPipelineRunRecLeasesHolderMissing
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              source_cluster: cluster01
+              lease: tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.00-of-04
+              namespace: openshift-pipelines
+            exp_annotations:
+              summary: Tekton Pipelines controller PipelineRun reconciler leases holder is missing
+              description: Tekton Pipelines controller PipelineRun reconciler leases lease_holder is empty on cluster cluster01.
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-PipelinesControllerLeasesNotDistributed.md
+
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # If metric was not there, but then appears, it should not trigger the alert
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.00-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '_x6 1x14'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.01-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '_x6 1x14'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.02-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '_x6 1x14'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.03-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '_x6 1x14'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.00-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.01-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.02-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.03-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x20'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: PipelinesControllerPipelineRunRecLeasesHolderMissing
+
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # If metric was there, but then disappears, it is bad (incorrect state) but it is not captured by this rule, so we do not want alert to be triggered by this rule
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.00-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x6 _x14'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.01-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x6 _x14'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.02-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x6 _x14'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.03-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x6 _x14'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.00-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.01-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.02-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.03-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x20'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: PipelinesControllerPipelineRunRecLeasesHolderMissing
+
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # Leases metric is there with right labels, so all is good
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.00-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.01-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.02-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler.03-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x20'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: PipelinesControllerPipelineRunRecLeasesHolderMissing
+
+  # ----- Tekton Pipelines controller TaskRun reconciler leases holder is missing Test ----
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # Leases metric is present, but lease_holder is empty, so let's raise an alert
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.taskrun.reconciler.00-of-04", lease_holder=""}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.taskrun.reconciler.00-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: PipelinesControllerTaskRunRecLeasesHolderMissing
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              source_cluster: cluster01
+              lease: tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.taskrun.reconciler.00-of-04
+              namespace: openshift-pipelines
+            exp_annotations:
+              summary: Tekton Pipelines controller TaskRun reconciler leases holder is missing
+              description: Tekton Pipelines controller TaskRun reconciler leases lease_holder is empty on cluster cluster01.
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-PipelinesControllerLeasesNotDistributed.md
+
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # Leases metric is there with right labels, so all is good
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.taskrun.reconciler.00-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.taskrun.reconciler.01-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.taskrun.reconciler.02-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.taskrun.reconciler.03-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x20'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: PipelinesControllerTaskRunRecLeasesHolderMissing
+
+  # ----- Tekton Pipelines controller ResolutionRequest reconciler leases holder is missing Test ----
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # Leases metric is present, but lease_holder is empty, so let's raise an alert
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.resolutionrequest.reconciler.00-of-04", lease_holder=""}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster02", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.resolutionrequest.reconciler.00-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: PipelinesControllerResReqRecLeasesHolderMissing
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              source_cluster: cluster01
+              lease: tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.resolutionrequest.reconciler.00-of-04
+              namespace: openshift-pipelines
+            exp_annotations:
+              summary: Tekton Pipelines controller ResolutionRequest reconciler leases holder is missing
+              description: Tekton Pipelines controller ResolutionRequest reconciler leases lease_holder is empty on cluster cluster01.
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-PipelinesControllerLeasesNotDistributed.md
+
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # Leases metric is there with right labels, so all is good
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.resolutionrequest.reconciler.00-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.resolutionrequest.reconciler.01-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.resolutionrequest.reconciler.02-of-04", lease_holder="tekton-pipelines-controller-aaa"}'
+        values: '1x20'
+      - series: 'kube_lease_owner{source_cluster="cluster01", namespace="openshift-pipelines", lease="tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.resolutionrequest.reconciler.03-of-04", lease_holder="tekton-pipelines-controller-bbb"}'
+        values: '1x20'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: PipelinesControllerResReqRecLeasesHolderMissing
