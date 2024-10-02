@@ -87,17 +87,16 @@ tests:
               team: release
 
   - name: ReleaseServiceControllerAvailabilityAlertOnClusterDataMissingSLOFailure
-    interval: 5m
+    interval: 1m
     input_series:
       - series: 'kube_pod_container_status_ready{namespace="release-service", container="manager", source_cluster="cluster01"}'
-        values: '1 1x791'
+        values: '1 1x58'
       - series: 'kube_pod_container_status_ready{namespace="release-service", container="manager", source_cluster="cluster02"}'
-        values: '1 1x791'
-      # the release pod of cluster03 was up for 1 hour and went down for the rest of the period
+        values: '1 1x58'
       - series: 'kube_pod_container_status_ready{namespace="release-service", container="manager", source_cluster="cluster03"}'
-        values: '1x33 _x759'
+        values: '1 _x58'
     alert_rule_test:
-      - eval_time: 1d
+      - eval_time: 1h
         alertname: ReleaseServiceControllerManagerAvailability
         exp_alerts:
           - exp_labels:
