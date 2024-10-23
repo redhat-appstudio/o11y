@@ -1,0 +1,32 @@
+rule_files:
+  - prometheus.image_controller_alerts.yaml
+
+evaluation_interval: 1m
+
+tests:
+  - interval: 1m
+    input_series:
+      - series: konflux_up{service="quay", check="image-controller"}
+        values: '_x6 1'
+    alert_rule_test:
+      - alertname: QuayFailureAlert
+        eval_time: 4m
+        exp_alerts: []
+      - alertname: QuayFailureAlert
+        eval_time: 5m
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              check: image-controller
+              service: quay
+            exp_annotations:
+              summary: Availability metric 'konflux_up' missing for Quay in image-controller.
+              description: >-
+                The availability metric 'konflux_up' is missing for the Quay service in the image-controller
+                for more than 5 minutes, indicating a potential service failure.
+              team: build
+              alert_team_handle: <!subteam^S03DM1RL0TF>
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/image-controller/availability_quay.md
+      - alertname: QuayFailureAlert
+        eval_time: 7m
+        exp_alerts: []

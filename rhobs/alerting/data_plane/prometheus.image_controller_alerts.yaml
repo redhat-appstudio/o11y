@@ -1,0 +1,24 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-image-controller-quay-alerting
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: image_controller_quay_alerts
+      interval: 1m
+      rules:
+        - alert: QuayFailureAlert
+          expr: absent(konflux_up{service="quay", check="image-controller"}) == 1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: Availability metric 'konflux_up' missing for Quay in image-controller.
+            description: >-
+              The availability metric 'konflux_up' is missing for the Quay service in the image-controller
+              for more than 5 minutes, indicating a potential service failure.
+            team: build
+            alert_team_handle: <!subteam^S03DM1RL0TF>
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/image-controller/availability_quay.md
