@@ -1,0 +1,15 @@
+# Metric format needed
+# multi_platform_controller_available(service="multi-platform-controller-controller-manager-metrics-service") -> konflux_up(service="multi-platform-controller", check="linux-arm64")
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-mpc-service-availability
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: mpc_service_backend_availability
+      interval: 1m
+      rules:
+        - record: konflux_up
+          expr: label_replace(multi_platform_controller_available, "service", "multi-platform-controller", "__name__", "(.+)")
