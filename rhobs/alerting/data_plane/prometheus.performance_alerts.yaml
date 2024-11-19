@@ -1,0 +1,181 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-performance-alerting
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: performance_alerts
+      interval: 1m
+      rules:
+        # ETCD alerts
+        - alert: EtcdFsyncLatency
+          expr: |
+            avg_over_time(histogram_quantile(0.99, rate(etcd_disk_wal_fsync_duration_seconds_bucket[2m]))[10m:]) > 1
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: >-
+              ETCD slow file system synchronization.
+            description: >-
+              10 minutes avg. 99th etcd fsync latency on {{$labels.pod}} higher than 1s. {{$value}}s.
+            alert_team_handle: <!subteam^S04PYECHCCU>
+            team: pipelines
+
+        - alert: EtcdCommitLatency
+          expr: |
+            avg_over_time(histogram_quantile(0.99, rate(etcd_disk_backend_commit_duration_seconds_bucket[2m]))[10m:]) > 0.03
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: >-
+              ETCD slow writes observed.
+            description: >-
+              10 minutes avg. 99th etcd commit latency on {{$labels.pod}} higher than 30ms. {{$value}}s
+            alert_team_handle: <!subteam^S04PYECHCCU>
+            team: pipelines
+
+        - alert: EtcdProposalFailures
+          expr: |
+            rate(etcd_server_proposals_failed_total{job=~".*etcd.*"}[15m]) > 5
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: >-
+              ETCD raft proposal failures.
+            description: >-
+              ETCD cluster has high number of proposal failures.
+            alert_team_handle: <!subteam^S04PYECHCCU>
+            team: pipelines
+
+
+        - alert: EtcdSlowNetworkRTT
+          expr: |
+            histogram_quantile(0.99, rate(etcd_network_peer_round_trip_time_seconds_bucket{job=~".*etcd.*"}[15m])) > 0.15
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: >-
+              ETCD slow network.
+            description: >-
+              ETCD cluster member communication is slow.
+            alert_team_handle: <!subteam^S04PYECHCCU>
+            team: pipelines
+
+        - alert: EtcdSlowGRPC
+          expr: |
+            histogram_quantile(0.99, sum(rate(grpc_server_handling_seconds_bucket{job=~".*etcd.*", grpc_method!="Defragment", grpc_type="unary"}[15m])) without(grpc_type)) > 0.15
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: >-
+              ETCD slow requests.
+            description: >-
+              Slow GRPC request processing by ETCD server.
+            alert_team_handle: <!subteam^S04PYECHCCU>
+            team: pipelines
+
+        - alert: EtcdHighCPU
+          expr: |
+            sum(rate(container_cpu_usage_seconds_total{image!='', namespace='openshift-etcd', container='etcd'}[10m])) * 100 / sum(machine_cpu_cores)  > 5
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: >-
+              ETCD High CPU Usage.
+            description: >-
+              ETCD CPU usage increased significantly
+            alert_team_handle: <!subteam^S04PYECHCCU>
+            team: pipelines
+
+        - alert: EtcdHighMemory
+          expr: |
+            sum(deriv(container_memory_usage_bytes{image!='', namespace='openshift-etcd', container='etcd'}[10m])) * 100 / sum(node_memory_MemTotal_bytes) > 5
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: >-
+              ETCD High Memory Usage.
+            description: >-
+              ETCD memory usage increased significantly
+            alert_team_handle: <!subteam^S04PYECHCCU>
+            team: pipelines
+
+
+        - alert: KubeAPIHighLatency
+          expr: |
+            avg_over_time(histogram_quantile(0.99, sum(irate(apiserver_request_duration_seconds_bucket{apiserver="kube-apiserver", verb=~"LIST|GET", subresource!~"log|exec|portforward|attach|proxy", scope="cluster"}[5m])) by (le, resource, verb, scope))[5m:]) > 30
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: >-
+              High Latency on Kube API Server Requests.
+            description: >-
+              5 minutes avg. 99th read-only API call latency for {{$labels.verb}}/{{$labels.resource}} in scope {{$labels.scope}} higher than 30 seconds. {{$value}}s
+            alert_team_handle: <!subteam^S04PYECHCCU>
+            team: pipelines
+
+        - alert: KubeAPIHighCPU
+          expr: |
+            sum(rate(container_cpu_usage_seconds_total{image!='', namespace='openshift-kube-apiserver', container='kube-apiserver'}[1m])) * 100 / sum(machine_cpu_cores) > 5
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: >-
+              KubeAPI Server High CPU Usage.
+            description: >-
+              KubeAPI Server CPU usage increased significantly by {{$value}}%
+            alert_team_handle: <!subteam^S04PYECHCCU>
+            team: pipelines
+
+        - alert: KubeAPIHighMemory
+          expr: |
+            (sum(deriv(container_memory_usage_bytes{namespace='openshift-kube-apiserver', container='kube-apiserver'}[10m]))) * 100 / sum(node_memory_MemTotal_bytes) > 5
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: >-
+              KubeAPI Server High Memory Usage.
+            description: >-
+              KubeAPI Server Memory usage increased significantly by {{$value}}%
+            alert_team_handle: <!subteam^S04PYECHCCU>
+            team: pipelines
+
+        - alert: NodeHighCPU
+          expr: |
+            (100 * avg(1 - rate(node_cpu_seconds_total{mode="idle"}[5m])) by (instance)) > 95
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: >-
+              Node High CPU Usage.
+            description: >-
+              CPU Usage is above {{$value}}% on node {{ $labels.instance }}
+            alert_team_handle: <!subteam^S04PYECHCCU>
+            team: pipelines
+
+        - alert: NodeHighMemory
+          expr: |
+            100*((node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes)/node_memory_MemTotal_bytes) > 90
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: >-
+              Node High Memory Usage.
+            description: >-
+              Memory Usage is above {{$value}}% on node {{ $labels.instance }}
+            alert_team_handle: <!subteam^S04PYECHCCU>
+            team: pipelines
