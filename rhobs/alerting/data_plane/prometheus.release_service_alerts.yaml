@@ -65,11 +65,11 @@ spec:
         (
           avg_over_time
           (
-            count(sum(kube_pod_container_status_ready{namespace="release-service", container="manager"}) by(namespace, source_cluster) > 0) by(namespace)
+            count(sum(kube_pod_container_status_ready{namespace="release-service", container="manager", source_cluster=~"stone-prd-rh01|stone-prod-p02"}) by(namespace, source_cluster) > 0) by(namespace)
             [1h:]
           )
           /
-          sum(max_over_time(sum(kube_pod_container_status_ready{namespace="release-service", container="manager"}) by(source_cluster, namespace)[1h:])) by(namespace)
+          sum(max_over_time(sum(kube_pod_container_status_ready{namespace="release-service", container="manager", source_cluster=~"stone-prd-rh01|stone-prod-p02"}) by(source_cluster, namespace)[1h:])) by(namespace)
         ) < 0.99
       for: 15m
       labels:
