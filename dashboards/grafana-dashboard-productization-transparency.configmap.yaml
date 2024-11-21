@@ -1,0 +1,138 @@
+apiVersion: v1
+data:
+  productization-transparency.json: |
+    {
+      "annotations": {
+        "list": [
+          {
+            "builtIn": 1,
+            "datasource": {
+              "type": "grafana",
+              "uid": "-- Grafana --"
+            },
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "type": "dashboard"
+          }
+        ]
+      },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 0,
+      "id": 689731,
+      "links": [],
+      "panels": [
+        {
+          "title": "Delay Between Commit and Build Start",
+          "type": "stat",
+          "datasource": {
+              "type": "prometheus",
+              "uid": "${Datasource}"
+          },
+          "targets": [
+            {
+              "expr": "avg_over_time(commit_to_build_start_duration_seconds[$__range])",
+              "legendFormat": "Commit to Build Start"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s"
+            }
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 12,
+            "x": 0,
+            "y": 0
+          }
+        },
+        {
+          "title": "Build Duration",
+          "type": "stat",
+          "datasource": {
+              "type": "prometheus",
+              "uid": "${Datasource}"
+          },
+          "targets": [
+            {
+              "expr": "avg_over_time(build_duration_seconds[$__range])",
+              "legendFormat": "Build Duration"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "s"
+            }
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 12,
+            "x": 12,
+            "y": 0
+          }
+        },
+      ],
+      "refresh": "",
+      "schemaVersion": 1,
+      "tags": [],
+      "templating": {
+        "list": [
+          {
+            "current": {
+              "selected": true,
+              "text": "rhtap-observatorium-stage",
+              "value": "PDCCF087A30F0737B"
+            },
+            "hide": 0,
+            "includeAll": false,
+            "label": "Prometheus",
+            "multi": false,
+            "name": "Datasource",
+            "options": [],
+            "query": "prometheus",
+            "queryValue": "",
+            "refresh": 1,
+            "regex": "/rhtap*/",
+            "skipUrlSync": false,
+            "type": "datasource"
+          },
+          {
+            "allValue": "",
+            "current": {
+              "selected": false,
+              "text": "All",
+              "value": "$__all"
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${Datasource}"
+            },
+            "refresh": 1,
+            "regex": "",
+            "skipUrlSync": false,
+            "sort": 1,
+            "type": "query"
+          }
+        ]
+      },
+      "time": {
+        "from": "now-7d",
+        "to": "now"
+      },
+      "timepicker": {},
+      "timezone": "browser",
+      "title": "Productization Transparency Dashboard",
+      "uid": "fdifr5mbapv5df",
+      "version": 180,
+      "weekStart": ""
+    }
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-productization-transparency
+  labels:
+    grafana_dashboard: "true"
+  annotations:
+    grafana-folder: /grafana-dashboard-definitions/RHTAP
