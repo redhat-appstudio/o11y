@@ -66,12 +66,12 @@ spec:
           avg_over_time
           (
             count(sum(kube_pod_container_status_ready{namespace="release-service", container="manager", source_cluster=~"stone-prd-rh01|stone-prod-p02"}) by(namespace, source_cluster) > 0) by(namespace)
-            [1h:]
+            [1d:]
           )
           /
-          count(max_over_time(sum(kube_pod_container_status_ready{namespace="release-service", container="manager", source_cluster=~"stone-prd-rh01|stone-prod-p02"}) by(source_cluster, namespace)[1h:])) by(namespace)
+          count(max_over_time(sum(kube_pod_container_status_ready{namespace="release-service", container="manager", source_cluster=~"stone-prd-rh01|stone-prod-p02"}) by(source_cluster, namespace)[1d:])) by(namespace)
         ) < 0.99
-      for: 15m
+      for: 1h
       labels:
         severity: critical
         slo: "true"
@@ -80,6 +80,22 @@ spec:
           The Release Service Controller Manager must be available 99% of the time
         description: >-
           The Release Service Controller Manager is failing to be available for 99% of the time
+        alert_team_handle: <!subteam^S03SVBS426R>
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/release-service/release-controller-availability.md?ref_type=heads
+        team: release
+
+    - alert: ReleaseServiceControllerManagerPodNotReady
+      expr: |
+        sum by (source_cluster) (kube_pod_container_status_ready{container="manager",namespace="release-service",source_cluster=~"stone-prd-rh01|stone-prod-p02"}) == 0
+      for: 10m
+      labels:
+        severity: high
+        slo: "false"
+      annotations:
+        summary: >-
+          The Release Service Controller Manager is down in the {{ $labels.source_cluster }} for the last 10 minutes
+        description: >-
+          The Release Service Controller Manager is down in the {{ $labels.source_cluster }} for the last 10 minutes
         alert_team_handle: <!subteam^S03SVBS426R>
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/release-service/release-controller-availability.md?ref_type=heads
         team: release

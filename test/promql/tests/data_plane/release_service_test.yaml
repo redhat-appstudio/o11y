@@ -70,7 +70,7 @@ tests:
       - series: 'kube_pod_container_status_ready{namespace="release-service", container="manager", source_cluster="cluster03"}'
         values: '1x59'
     alert_rule_test:
-      - eval_time: 1h
+      - eval_time: 24h
         alertname: ReleaseServiceControllerManagerAvailability
         exp_alerts:
           - exp_labels:
@@ -96,7 +96,7 @@ tests:
       - series: 'kube_pod_container_status_ready{namespace="release-service", container="manager", source_cluster="cluster03"}'
         values: '1 1x58'
     alert_rule_test:
-      - eval_time: 1h
+      - eval_time: 24h
         alertname: ReleaseServiceControllerManagerAvailability
         exp_alerts:
           - exp_labels:
@@ -124,4 +124,63 @@ tests:
     alert_rule_test:
       - eval_time: 1h
         alertname: ReleaseServiceControllerManagerAvailability
+        exp_alerts: []
+
+
+  - name: ReleaseServiceControllerManagerOnPodNotReadyStonePrdRh01
+    interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_ready{namespace="release-service", container="manager", source_cluster="stone-prd-rh01"}'
+        values: '1 0x58'
+      - series: 'kube_pod_container_status_ready{namespace="release-service", container="manager", source_cluster="stone-prod-p02"}'
+        values: '1 1x58'
+    alert_rule_test:
+      - eval_time: 1h
+        alertname: ReleaseServiceControllerManagerPodNotReady
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              slo: "false"
+              source_cluster: "stone-prd-rh01"
+            exp_annotations:
+              summary: The Release Service Controller Manager is down in the stone-prd-rh01 for the last 10 minutes
+              description: >-
+                The Release Service Controller Manager is down in the stone-prd-rh01 for the last 10 minutes
+              alert_team_handle: "<!subteam^S03SVBS426R>"
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/release-service/release-controller-availability.md?ref_type=heads
+              team: release
+
+  - name: ReleaseServiceControllerManagerOnPodNotReadyStoneProdP02
+    interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_ready{namespace="release-service", container="manager", source_cluster="stone-prd-rh01"}'
+        values: '1 1x58'
+      - series: 'kube_pod_container_status_ready{namespace="release-service", container="manager", source_cluster="stone-prod-p02"}'
+        values: '1 0x58'
+    alert_rule_test:
+      - eval_time: 1h
+        alertname: ReleaseServiceControllerManagerPodNotReady
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              slo: "false"
+              source_cluster: "stone-prod-p02"
+            exp_annotations:
+              summary: The Release Service Controller Manager is down in the stone-prod-p02 for the last 10 minutes
+              description: >-
+                The Release Service Controller Manager is down in the stone-prod-p02 for the last 10 minutes
+              alert_team_handle: "<!subteam^S03SVBS426R>"
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/release-service/release-controller-availability.md?ref_type=heads
+              team: release
+
+  - name: ReleaseServiceControllerManagerOnPodReady
+    interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_ready{namespace="release-service", container="manager", source_cluster="stone-prd-rh01"}'
+        values: '1 1x58'
+      - series: 'kube_pod_container_status_ready{namespace="release-service", container="manager", source_cluster="stone-prod-p02"}'
+        values: '1 1x58'
+    alert_rule_test:
+      - eval_time: 1h
+        alertname: ReleaseServiceControllerManagerPodNotReady
         exp_alerts: []
