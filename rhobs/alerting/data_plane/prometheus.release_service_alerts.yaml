@@ -86,16 +86,15 @@ spec:
 
     - alert: ReleaseServiceControllerManagerPodNotReady
       expr: |
-        sum by (source_cluster) (kube_pod_container_status_ready{container="manager",namespace="release-service",source_cluster=~"stone-prd-rh01|stone-prod-p02"}) == 0
+        sum by (source_cluster, namespace) (kube_pod_container_status_ready{container="manager",namespace="release-service",source_cluster=~"stone-prd-rh01|stone-prod-p02"}) == 0
       for: 10m
       labels:
         severity: high
-        slo: "false"
       annotations:
         summary: >-
           The Release Service Controller Manager is down in the {{ $labels.source_cluster }} for the last 10 minutes
         description: >-
           The Release Service Controller Manager is down in the {{ $labels.source_cluster }} for the last 10 minutes
-        alert_team_handle: <!subteam^S03SVBS426R>
+        alert_team_key: "{{ $labels.namespace }}"
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/release-service/release-controller-availability.md?ref_type=heads
         team: release
