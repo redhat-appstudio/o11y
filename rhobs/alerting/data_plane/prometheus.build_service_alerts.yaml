@@ -1,0 +1,23 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-build-service-github-app-alerting
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: build_service_github_app_alerts
+      interval: 1m
+      rules:
+        - alert: GitHubAppFailureAlert
+          expr: (konflux_up{service="build-service", check="github"} offset 1h) unless on(service, check, source_cluster) konflux_up{service="build-service", check="github"}
+          for: 1m
+          labels:
+            severity: warning
+          annotations:
+            summary: Availability metric 'konflux_up' is missing for GitHub App in {{ $labels.service }}.
+            description: >-
+              The 'konflux_up' availability metric is missing for GitHub App in {{ $labels.service }} on cluster {{ $labels.source_cluster }} indicating a possible service disruption.
+            team: build
+            alert_team_handle: <!subteam^S03DM1RL0TF>
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/build-service/availability_github_app.md
