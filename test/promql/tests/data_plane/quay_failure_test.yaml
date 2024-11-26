@@ -1,0 +1,67 @@
+rule_files:
+  - prometheus.image_controller_alerts.yaml
+
+evaluation_interval: 1m
+
+tests:
+  # Check that the alert is triggered in image-controller on check 'quay'
+  - interval: 1m
+    input_series:
+      - series: konflux_up{service="image-controller", check="quay", source_cluster="prod"}
+        values: '1x60 _x10 1x60'
+
+    alert_rule_test:
+      - eval_time: 66m
+        alertname: QuayFailureAlert
+
+      - eval_time: 67m
+        alertname: QuayFailureAlert
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              check: quay
+              service: image-controller
+              source_cluster: prod
+            exp_annotations:
+              summary: Availability metric 'konflux_up' is missing for quay in image-controller.
+              description: >-
+                The 'konflux_up' availability metric is missing for quay in image-controller on cluster prod indicating a possible service disruption.
+              team: build
+              alert_team_handle: <!subteam^S03DM1RL0TF>
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/image-controller/availability_quay.md
+
+      - eval_time: 75m
+        alertname: QuayFailureAlert
+
+      - eval_time: 125m
+        alertname: QuayFailureAlert
+
+  # Ensure the alert is not triggered on a different check than 'quay'
+  - input_series:
+      - series: 'konflux_up{service="image-controller", check="foo-check", source_cluster="prod"}'
+        values: '1x60 _x10 1x5'
+
+    alert_rule_test:
+      - eval_time: 66m
+        alertname: QuayFailureAlert
+
+      - eval_time: 67m
+        alertname: QuayFailureAlert
+
+      - eval_time: 75m
+        alertname: QuayFailureAlert
+
+  # Ensure the alert is not triggered in a different service than 'image-controller'
+  - input_series:
+      - series: 'konflux_up{service="foo-service", check="quay", source_cluster="prod"}'
+        values: '1x60 _x10 1x5'
+
+    alert_rule_test:
+      - eval_time: 66m
+        alertname: QuayFailureAlert
+
+      - eval_time: 67m
+        alertname: QuayFailureAlert
+
+      - eval_time: 75m
+        alertname: QuayFailureAlert
