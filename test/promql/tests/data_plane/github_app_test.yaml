@@ -1,0 +1,67 @@
+rule_files:
+  - prometheus.build_service_alerts.yaml
+
+evaluation_interval: 1m
+
+tests:
+  # Check that the alert is triggered in build-service on check 'github'
+  - interval: 1m
+    input_series:
+      - series: 'konflux_up{service="build-service", check="github", source_cluster="prod"}'
+        values: '1x60 _x10 1x60'
+
+    alert_rule_test:
+      - eval_time: 66m
+        alertname: GitHubAppFailureAlert
+
+      - eval_time: 67m
+        alertname: GitHubAppFailureAlert
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              check: github
+              service: build-service
+              source_cluster: prod
+            exp_annotations:
+              summary: Availability metric 'konflux_up' is missing for GitHub App in build-service.
+              description: >-
+                The 'konflux_up' availability metric is missing for GitHub App in build-service on cluster prod indicating a possible service disruption.
+              team: build
+              alert_team_handle: <!subteam^S03DM1RL0TF>
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/build-service/availability_github_app.md
+
+      - eval_time: 75m
+        alertname: GitHubAppFailureAlert
+
+      - eval_time: 125m
+        alertname: GitHubAppFailureAlert
+
+  # Ensure the alert is not triggered on a different check than 'github'
+  - input_series:
+    - series: 'konflux_up{service="build-service", check="foo-check", source_cluster="prod"}'
+      values: '1x60 _x10 1x5'
+
+    alert_rule_test:
+      - eval_time: 66m
+        alertname: GitHubAppFailureAlert
+
+      - eval_time: 67m
+        alertname: GitHubAppFailureAlert
+
+      - eval_time: 75m
+        alertname: GitHubAppFailureAlert
+
+  # Ensure the alert is not triggered in a different service than 'build-service'
+  - input_series:
+      - series: 'konflux_up{service="foo-service", check="github", source_cluster="prod"}'
+        values: '1x60 _x10 1x5'
+
+    alert_rule_test:
+      - eval_time: 66m
+        alertname: GitHubAppFailureAlert
+
+      - eval_time: 67m
+        alertname: GitHubAppFailureAlert
+
+      - eval_time: 75m
+        alertname: GitHubAppFailureAlert
