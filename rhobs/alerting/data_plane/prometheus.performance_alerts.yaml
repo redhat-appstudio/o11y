@@ -12,7 +12,7 @@ spec:
         # ETCD alerts
         - alert: EtcdFsyncLatency
           expr: |
-            avg_over_time(histogram_quantile(0.99, rate(etcd_disk_wal_fsync_duration_seconds_bucket[2m]))[10m:]) > 1
+            avg_over_time(histogram_quantile(0.99, rate(etcd_disk_wal_fsync_duration_seconds_bucket[2m]))[10m:]) > 0.01
           for: 10m
           labels:
             severity: warning
@@ -21,8 +21,6 @@ spec:
               ETCD slow file system synchronization.
             description: >-
               10 minutes avg. 99th etcd fsync latency on {{$labels.pod}} higher than 1s. {{$value}}s.
-            alert_team_handle: <!subteam^S04PYECHCCU>
-            team: pipelines
 
         - alert: EtcdCommitLatency
           expr: |
@@ -35,8 +33,6 @@ spec:
               ETCD slow writes observed.
             description: >-
               10 minutes avg. 99th etcd commit latency on {{$labels.pod}} higher than 30ms. {{$value}}s
-            alert_team_handle: <!subteam^S04PYECHCCU>
-            team: pipelines
 
         - alert: EtcdProposalFailures
           expr: |
@@ -49,8 +45,6 @@ spec:
               ETCD raft proposal failures.
             description: >-
               ETCD cluster has high number of proposal failures.
-            alert_team_handle: <!subteam^S04PYECHCCU>
-            team: pipelines
 
 
         - alert: EtcdSlowNetworkRTT
@@ -64,8 +58,6 @@ spec:
               ETCD slow network.
             description: >-
               ETCD cluster member communication is slow.
-            alert_team_handle: <!subteam^S04PYECHCCU>
-            team: pipelines
 
         - alert: EtcdSlowGRPC
           expr: |
@@ -78,8 +70,6 @@ spec:
               ETCD slow requests.
             description: >-
               Slow GRPC request processing by ETCD server.
-            alert_team_handle: <!subteam^S04PYECHCCU>
-            team: pipelines
 
         - alert: EtcdHighCPU
           expr: |
@@ -92,8 +82,6 @@ spec:
               ETCD High CPU Usage.
             description: >-
               ETCD CPU usage increased significantly
-            alert_team_handle: <!subteam^S04PYECHCCU>
-            team: pipelines
 
         - alert: EtcdHighMemory
           expr: |
@@ -106,10 +94,8 @@ spec:
               ETCD High Memory Usage.
             description: >-
               ETCD memory usage increased significantly
-            alert_team_handle: <!subteam^S04PYECHCCU>
-            team: pipelines
 
-
+        # KubeAPI Alerts
         - alert: KubeAPIHighLatency
           expr: |
             avg_over_time(histogram_quantile(0.99, sum(irate(apiserver_request_duration_seconds_bucket{apiserver="kube-apiserver", verb=~"LIST|GET", subresource!~"log|exec|portforward|attach|proxy", scope="cluster"}[5m])) by (le, resource, verb, scope))[5m:]) > 30
@@ -121,8 +107,6 @@ spec:
               High Latency on Kube API Server Requests.
             description: >-
               5 minutes avg. 99th read-only API call latency for {{$labels.verb}}/{{$labels.resource}} in scope {{$labels.scope}} higher than 30 seconds. {{$value}}s
-            alert_team_handle: <!subteam^S04PYECHCCU>
-            team: pipelines
 
         - alert: KubeAPIHighCPU
           expr: |
@@ -135,8 +119,6 @@ spec:
               KubeAPI Server High CPU Usage.
             description: >-
               KubeAPI Server CPU usage increased significantly by {{$value}}%
-            alert_team_handle: <!subteam^S04PYECHCCU>
-            team: pipelines
 
         - alert: KubeAPIHighMemory
           expr: |
@@ -149,9 +131,8 @@ spec:
               KubeAPI Server High Memory Usage.
             description: >-
               KubeAPI Server Memory usage increased significantly by {{$value}}%
-            alert_team_handle: <!subteam^S04PYECHCCU>
-            team: pipelines
 
+        # Node based Alerts
         - alert: NodeHighCPU
           expr: |
             (100 * avg(1 - rate(node_cpu_seconds_total{mode="idle"}[5m])) by (instance)) > 95
@@ -163,8 +144,6 @@ spec:
               Node High CPU Usage.
             description: >-
               CPU Usage is above {{$value}}% on node {{ $labels.instance }}
-            alert_team_handle: <!subteam^S04PYECHCCU>
-            team: pipelines
 
         - alert: NodeHighMemory
           expr: |
@@ -177,5 +156,3 @@ spec:
               Node High Memory Usage.
             description: >-
               Memory Usage is above {{$value}}% on node {{ $labels.instance }}
-            alert_team_handle: <!subteam^S04PYECHCCU>
-            team: pipelines
