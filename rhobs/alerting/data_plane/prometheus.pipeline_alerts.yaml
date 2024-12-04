@@ -15,8 +15,8 @@ spec:
             sum by (source_cluster) (increase(kube_pod_container_status_restarts_total{namespace="openshift-pipelines", pod=~"tekton-.*|pipelines-as-code-.*"}[5m])) > 0
           for: 5m
           labels:
-            severity: critical
-            slo: "true"
+            severity: warning
+            slo: "false"
           annotations:
             summary: >-
               Tekton controller is rapidly restarting.
