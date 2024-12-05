@@ -4,55 +4,43 @@ rule_files:
   - prometheus.performance_alerts.yaml
 
 tests:
-  # Test for ETCD Alerts
-  # - interval: 1m
-  #   input_series:
-  #     # Average Etcd FSync Latency is higher than 10ms, so it will be alerted.
-  #     - series: 'etcd_disk_wal_fsync_duration_seconds_bucket{le="0.005"}'
-  #       values: '0+10x10'  # Starts at 0 and increases by 10 for 10 steps
-  #     - series: 'etcd_disk_wal_fsync_duration_seconds_bucket{le="0.01"}'
-  #       values: '0+20x10'  # Starts at 0 and increases by 20 for 10 steps
-  #     - series: 'etcd_disk_wal_fsync_duration_seconds_bucket{le="+Inf"}'
-  #       values: '0+30x10'  # Starts at 0 and increases by 30 for 10 steps
+  # Etcd Alerts
+  - interval: 1m
+    input_series:
+      # Increase in Etcd raft proposal failures over time, so it will be alerted.
+      - series: 'etcd_server_proposals_failed_total{pod="etcd-pod-1"}'
+        values: '0+5x59'  # Total Memory on Node
 
-  #   alert_rule_test:
-  #     - eval_time: 10m
-  #       alertname: EtcdFsyncLatency
-  #       exp_alerts:
-  #         - exp_labels:
-  #             severity: warning
+    alert_rule_test:
+      - eval_time: 1h
+        alertname: EtcdProposalFailures
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              pod: etcd-pod-1
+            exp_annotations:
+              summary: "ETCD raft proposal failures."
+              description: "Etcd high number of failed proposals on pod etcd-pod-1"
+
+  - interval: 1m
+    input_series:
+      # Etcd raft proposals failures within threshold limit, so it will not be alerted.
+      - series: 'etcd_server_proposals_failed_total{pod="etcd-pod-1"}'
+        values: '0+5x30 1+0x29'  # Total Memory on Node
+
+    alert_rule_test:
+      - eval_time: 1h
+        alertname: EtcdProposalFailures
 
 
   # Node based Alerts
-  # - interval: 1m
-  #   input_series:
-  #     # Node is running above 95% usage, so it will be alerted.
-
-  #     # Simulating high CPU usage for instance1
-  #     - series: 'node_cpu_seconds_total{mode="idle", instance="instance1"}'
-  #       values: '1x20'  # Fast increase simulating high CPU usage
-  #     # Simulating normal CPU usage for instance2
-  #     - series: 'node_cpu_seconds_total{mode="idle", instance="instance2"}'
-  #       values: '10x20'  # Slow increase simulating low CPU usage
-
-  #   alert_rule_test:
-  #     - eval_time: 10m
-  #       alertname: NodeHighCPU
-  #       exp_alerts:
-  #         - exp_labels:
-  #             severity: warning
-  #             instance: instance1
-  #           exp_annotations:
-  #             summary: "Node High CPU Usage."
-  #             description: "CPU Usage is above {{ $value }}% on node instance1"
-
   - interval: 1m
     input_series:
       # Node is running with 98% memory usage, so it will be alerted.
       - series: 'node_memory_MemTotal_bytes{instance="instance1"}'
-        values: '100x20'  # Total Memory on Node
+        values: '100+0x9'  # Total Memory on Node
       - series: 'node_memory_MemAvailable_bytes{instance="instance1"}'
-        values: '2x20'  # Free Memory on Node
+        values: '2+0x9'  # Free Memory on Node
 
     alert_rule_test:
       - eval_time: 10m
@@ -69,9 +57,9 @@ tests:
     input_series:
       # Node is running under 90% memory usage, so it will not be alerted.
       - series: 'node_memory_MemTotal_bytes{instance="instance2"}'
-        values: '100x20'  # Total Memory on Node
+        values: '100x9'  # Total Memory on Node
       - series: 'node_memory_MemAvailable_bytes{instance="instance2"}'
-        values: '98x20'   # Free Memory on Node
+        values: '98x9'   # Free Memory on Node
 
     alert_rule_test:
       - eval_time: 10m
