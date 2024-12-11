@@ -36,6 +36,37 @@ tests:
   # Node based Alerts
   - interval: 1m
     input_series:
+      # Node is running with 95.275% CPU usage, so it will be alerted.
+      - series: 'node_cpu_seconds_total{instance="instance1", mode="idle"}'
+        values: '0.05-0.1x10 8.5'
+      - series: 'node_cpu_seconds_total{instance="instance2", mode="idle"}'
+        values: '0.85+0x3 0.05x4'
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: NodeHighCPU
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              instance: instance1
+            exp_annotations:
+              summary: "Node High CPU Usage."
+              description: "CPU Usage is 95.275% on node instance1"
+
+  - interval: 1m
+    input_series:
+      # Node is running under 95% CPU usage, so it will not be alerted.
+      - series: 'node_cpu_seconds_total{instance="instance1", mode="idle"}'
+        values: '0.75-0.1x10'
+      - series: 'node_cpu_seconds_total{instance="instance2", mode="idle"}'
+        values: '0.85+0x10'
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: NodeHighCPU
+
+  - interval: 1m
+    input_series:
       # Node is running with 98% memory usage, so it will be alerted.
       - series: 'node_memory_MemTotal_bytes{instance="instance1"}'
         values: '100+0x9'  # Total Memory on Node
@@ -51,7 +82,7 @@ tests:
               instance: instance1
             exp_annotations:
               summary: "Node High Memory Usage."
-              description: "Memory Usage is above 98% on node instance1"
+              description: "Memory Usage is 98% on node instance1"
 
   - interval: 1m
     input_series:
