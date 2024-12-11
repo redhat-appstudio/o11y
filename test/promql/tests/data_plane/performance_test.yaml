@@ -58,13 +58,46 @@ tests:
 
   - interval: 1m
     input_series:
-      # Average Fsync latency is below alert threshold, so it will not be alerted.
+      # Average Fsync latency is below alert threshold count, so it will not be alerted.
       - series: 'etcd_disk_backend_commit_duration_seconds_bucket{le="0.03", pod="etcd-pod-2"}'
         values: '2+0.01x15'
 
     alert_rule_test:
       - eval_time: 15m
         alertname: EtcdCommitLatency
+
+  - interval: 1m
+    input_series:
+      # Average Fsync latency higher than 10ms, so it will be alerted.
+      - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="0.01", pod="etcd-pod-1"}'
+        values: '0.1+0.3x15'  # Starting at 10, increasing by 1 for 15 steps
+
+      - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="0.2", pod="etcd-pod-1"}'
+        values: '0.1+0.5x15'  # Starting at 50, increasing by 5 for 15 steps
+
+      - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="+Inf", pod="etcd-pod-1"}'
+        values: '0.1+0.2x15'  # Starting at 200, increasing by 10 for 15 steps
+
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: EtcdSlowNetworkRTT
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              pod: etcd-pod-1
+            exp_annotations:
+              summary: "High RTT latency on ETCD cluster member requests."
+              description: "99th etcd RTT latency rate on etcd-pod-1 higher than 0.1"
+
+  - interval: 1m
+    input_series:
+      # Average Fsync latency is below alert threshold, so it will not be alerted.
+      - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="0.1", pod="etcd-pod-2"}'
+        values: '0.1+0.01x15'
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: EtcdSlowNetworkRTT
 
 
   - interval: 1m
