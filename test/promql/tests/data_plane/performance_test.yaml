@@ -8,11 +8,11 @@ tests:
   - interval: 1m
     input_series:
       # Average Fsync latency higher than 10ms, so it will be alerted.
-      - series: 'etcd_disk_wal_fsync_duration_seconds_bucket{le="0.05", pod="etcd-pod-1"}'
+      - series: 'etcd_disk_wal_fsync_duration_seconds_bucket{le="0.02", pod="etcd-pod-1"}'
         values: '0+0.01x15'
 
       - series: 'etcd_disk_wal_fsync_duration_seconds_bucket{le="+Inf", pod="etcd-pod-1"}'
-        values: '10+0.1x15'
+        values: '0+0.1x15'
 
     alert_rule_test:
       - eval_time: 15m
@@ -28,12 +28,44 @@ tests:
   - interval: 1m
     input_series:
       # Average Fsync latency is below alert threshold, so it will not be alerted.
-      - series: 'etcd_disk_wal_fsync_duration_seconds_bucket{le="0.05", pod="etcd-pod-2"}'
+      - series: 'etcd_disk_wal_fsync_duration_seconds_bucket{le="0.01", pod="etcd-pod-2"}'
         values: '2+0.01x15'
 
     alert_rule_test:
       - eval_time: 15m
         alertname: EtcdFsyncLatency
+
+
+  - interval: 1m
+    input_series:
+      # Average Fsync latency higher than 10ms, so it will be alerted.
+      - series: 'etcd_disk_backend_commit_duration_seconds_bucket{le="0.04", pod="etcd-pod-1"}'
+        values: '0+0.01x15'
+
+      - series: 'etcd_disk_backend_commit_duration_seconds_bucket{le="+Inf", pod="etcd-pod-1"}'
+        values: '0+0.5x15'
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: EtcdCommitLatency
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              pod: etcd-pod-1
+            exp_annotations:
+              summary: "ETCD slow writes observed."
+              description: "10 minutes avg. 99th etcd commit latency on etcd-pod-1 higher than 30ms."
+
+  - interval: 1m
+    input_series:
+      # Average Fsync latency is below alert threshold, so it will not be alerted.
+      - series: 'etcd_disk_backend_commit_duration_seconds_bucket{le="0.03", pod="etcd-pod-2"}'
+        values: '2+0.01x15'
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: EtcdCommitLatency
+
 
   - interval: 1m
     input_series:
