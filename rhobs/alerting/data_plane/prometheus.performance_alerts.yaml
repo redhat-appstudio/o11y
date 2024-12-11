@@ -48,7 +48,7 @@ spec:
 
         - alert: EtcdSlowNetworkRTT
           expr: |
-            histogram_quantile(0.99, rate(etcd_network_peer_round_trip_time_seconds_bucket{job=~".*etcd.*"}[15m])) > 0.15
+            histogram_quantile(0.99, rate(etcd_network_peer_round_trip_time_seconds_bucket[15m])) > 0.1
           for: 15m
           labels:
             severity: warning
@@ -70,30 +70,6 @@ spec:
             description: >-
               Slow GRPC request processing by ETCD server.
 
-        - alert: EtcdHighCPU
-          expr: |
-            sum(rate(container_cpu_usage_seconds_total{image!='', namespace='openshift-etcd', container='etcd'}[10m])) * 100 / sum(machine_cpu_cores)  > 5
-          for: 10m
-          labels:
-            severity: warning
-          annotations:
-            summary: >-
-              ETCD High CPU Usage.
-            description: >-
-              ETCD CPU usage increased significantly
-
-        - alert: EtcdHighMemory
-          expr: |
-            sum(deriv(container_memory_usage_bytes{image!='', namespace='openshift-etcd', container='etcd'}[10m])) * 100 / sum(node_memory_MemTotal_bytes) > 5
-          for: 10m
-          labels:
-            severity: warning
-          annotations:
-            summary: >-
-              ETCD High Memory Usage.
-            description: >-
-              ETCD memory usage increased significantly
-
         # KubeAPI Alerts
         - alert: KubeAPIHighLatency
           expr: |
@@ -103,33 +79,9 @@ spec:
             severity: warning
           annotations:
             summary: >-
-              High Latency on Kube API Server Requests.
+              High Latency on Kube API Server Request.
             description: >-
               5 minutes avg. 99th read-only API call latency for {{$labels.verb}}/{{$labels.resource}} in scope {{$labels.scope}} higher than 30 seconds. {{$value}}s
-
-        - alert: KubeAPIHighCPU
-          expr: |
-            sum(rate(container_cpu_usage_seconds_total{image!='', namespace='openshift-kube-apiserver', container='kube-apiserver'}[1m])) * 100 / sum(machine_cpu_cores) > 5
-          for: 10m
-          labels:
-            severity: warning
-          annotations:
-            summary: >-
-              KubeAPI Server High CPU Usage.
-            description: >-
-              KubeAPI Server CPU usage increased significantly by {{$value}}%
-
-        - alert: KubeAPIHighMemory
-          expr: |
-            (sum(deriv(container_memory_usage_bytes{namespace='openshift-kube-apiserver', container='kube-apiserver'}[10m]))) * 100 / sum(node_memory_MemTotal_bytes) > 5
-          for: 10m
-          labels:
-            severity: warning
-          annotations:
-            summary: >-
-              KubeAPI Server High Memory Usage.
-            description: >-
-              KubeAPI Server Memory usage increased significantly by {{$value}}%
 
         # Node based Alerts
         - alert: NodeHighCPU
@@ -142,7 +94,7 @@ spec:
             summary: >-
               Node High CPU Usage.
             description: >-
-              CPU Usage is above {{$value}}% on node {{ $labels.instance }}
+              CPU Usage is {{$value}}% on node {{ $labels.instance }}
 
         - alert: NodeHighMemory
           expr: |
@@ -154,4 +106,4 @@ spec:
             summary: >-
               Node High Memory Usage.
             description: >-
-              Memory Usage is above {{$value}}% on node {{ $labels.instance }}
+              Memory Usage is {{$value}}% on node {{ $labels.instance }}
