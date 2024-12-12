@@ -15,8 +15,8 @@ spec:
             sum by (source_cluster) (increase(kube_pod_container_status_restarts_total{namespace="openshift-pipelines", pod=~"tekton-.*|pipelines-as-code-.*"}[5m])) > 0
           for: 5m
           labels:
-            severity: critical
-            slo: "true"
+            severity: warning
+            slo: "false"
           annotations:
             summary: >-
               Tekton controller is rapidly restarting.
@@ -163,9 +163,9 @@ spec:
             description: >-
               Tekton Pipelines controller PipelineRun reconciler leases not distributed across more than one pod
               on cluster {{ $labels.source_cluster }}.
-            alert_team_handle: <!subteam^S04PYECHCCU>
+            alert_routing_key: <!subteam^S04PYECHCCU>
             team: pipelines
-            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-PipelinesControllerLeasesNotDistributed.md
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-LeasesNotDistributed.md
         - alert: PipelinesControllerTaskRunRecLeasesNotDistributed
           expr: (count by (source_cluster) (count by (lease_holder, source_cluster) (kube_lease_owner{lease=~"tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.taskrun.reconciler..*", lease_holder!=""}))) <= 1
           for: 5m
@@ -176,9 +176,9 @@ spec:
             description: >-
               Tekton Pipelines controller TaskRun reconciler leases not distributed across more than one pod
               on cluster {{ $labels.source_cluster }}.
-            alert_team_handle: <!subteam^S04PYECHCCU>
+            alert_routing_key: <!subteam^S04PYECHCCU>
             team: pipelines
-            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-PipelinesControllerLeasesNotDistributed.md
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-LeasesNotDistributed.md
         - alert: PipelinesControllerResReqRecLeasesNotDistributed
           expr: (count by (source_cluster) (count by (lease_holder, source_cluster) (kube_lease_owner{lease=~"tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.resolutionrequest.reconciler..*", lease_holder!=""}))) <= 1
           for: 5m
@@ -189,9 +189,9 @@ spec:
             description: >-
               Tekton Pipelines controller ResolutionRequest reconciler leases not distributed across more than one pod
               on cluster {{ $labels.source_cluster }}.
-            alert_team_handle: <!subteam^S04PYECHCCU>
+            alert_routing_key: <!subteam^S04PYECHCCU>
             team: pipelines
-            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-PipelinesControllerLeasesNotDistributed.md
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-LeasesNotDistributed.md
         - alert: PipelinesControllerPipelineRunRecLeasesHolderMissing
           expr: kube_lease_owner{lease=~"tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.pipelinerun.reconciler..*", lease_holder=""}
           for: 5m
@@ -200,9 +200,9 @@ spec:
           annotations:
             summary: Tekton Pipelines controller PipelineRun reconciler leases holder is missing
             description: Tekton Pipelines controller PipelineRun reconciler leases lease_holder is empty on cluster {{ $labels.source_cluster }}.
-            alert_team_handle: <!subteam^S04PYECHCCU>
+            alert_routing_key: <!subteam^S04PYECHCCU>
             team: pipelines
-            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-PipelinesControllerLeasesNotDistributed.md
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-LeasesNotDistributed.md
         - alert: PipelinesControllerTaskRunRecLeasesHolderMissing
           expr: kube_lease_owner{lease=~"tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.taskrun.reconciler..*", lease_holder=""}
           for: 5m
@@ -211,9 +211,9 @@ spec:
           annotations:
             summary: Tekton Pipelines controller TaskRun reconciler leases holder is missing
             description: Tekton Pipelines controller TaskRun reconciler leases lease_holder is empty on cluster {{ $labels.source_cluster }}.
-            alert_team_handle: <!subteam^S04PYECHCCU>
+            alert_routing_key: <!subteam^S04PYECHCCU>
             team: pipelines
-            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-PipelinesControllerLeasesNotDistributed.md
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-LeasesNotDistributed.md
         - alert: PipelinesControllerResReqRecLeasesHolderMissing
           expr: kube_lease_owner{lease=~"tekton-pipelines-controller.github.com.tektoncd.pipeline.pkg.reconciler.resolutionrequest.reconciler..*", lease_holder=""}
           for: 5m
@@ -222,6 +222,136 @@ spec:
           annotations:
             summary: Tekton Pipelines controller ResolutionRequest reconciler leases holder is missing
             description: Tekton Pipelines controller ResolutionRequest reconciler leases lease_holder is empty on cluster {{ $labels.source_cluster }}.
+            alert_routing_key: <!subteam^S04PYECHCCU>
+            team: pipelines
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-LeasesNotDistributed.md
+        - alert: TektonResolverBundleResolverLeasesNotDistributed
+          expr: (count by (source_cluster) (count by (lease_holder, source_cluster) (kube_lease_owner{lease=~"controller.tektonresolverframework.bundleresolver..*", lease_holder!=""}))) <= 1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: Tekton Resolver Bundle resolver leases not distributed across more than one pod
+            description: >-
+              Tekton Resolver Bundle resolver leases not distributed across more than one pod
+              on cluster {{ $labels.source_cluster }}.
             alert_team_handle: <!subteam^S04PYECHCCU>
             team: pipelines
-            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-PipelinesControllerLeasesNotDistributed.md
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-LeasesNotDistributed.md
+        - alert: TektonResolverBundleResolverLeasesHolderMissing
+          expr: kube_lease_owner{lease=~"controller.tektonresolverframework.bundleresolver..*", lease_holder=""}
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: Tekton Resolver Bundle resolver leases holder does not have pod assigned to it
+            description: >-
+              Tekton Resolver Bundle resolver leases holder does not have pod assigned to it
+              on cluster {{ $labels.source_cluster }}.
+            alert_team_handle: <!subteam^S04PYECHCCU>
+            team: pipelines
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-LeasesNotDistributed.md
+        - alert: TektonResolverClusterResolverLeasesNotDistributed
+          expr: (count by (source_cluster) (count by (lease_holder, source_cluster) (kube_lease_owner{lease=~"controller.tektonresolverframework.cluster..*", lease_holder!=""}))) <= 1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: Tekton Resolver Cluster resolver leases not distributed across more than one pod
+            description: >-
+              Tekton Resolver Cluster resolver leases not distributed across more than one pod
+              on cluster {{ $labels.source_cluster }}.
+            alert_team_handle: <!subteam^S04PYECHCCU>
+            team: pipelines
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-LeasesNotDistributed.md
+        - alert: TektonResolverClusterResolverLeasesHolderMissing
+          expr: kube_lease_owner{lease=~"controller.tektonresolverframework.cluster..*", lease_holder=""}
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: Tekton Resolver Cluster resolver leases holder does not have pod assigned to it
+            description: >-
+              Tekton Resolver Cluster resolver leases holder does not have pod assigned to it
+              on cluster {{ $labels.source_cluster }}.
+            alert_team_handle: <!subteam^S04PYECHCCU>
+            team: pipelines
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-LeasesNotDistributed.md
+        - alert: TektonResolverGitResolverLeasesNotDistributed
+          expr: (count by (source_cluster) (count by (lease_holder, source_cluster) (kube_lease_owner{lease=~"controller.tektonresolverframework.git..*", lease_holder!=""}))) <= 1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: Tekton Resolver Git resolver leases not distributed across more than one pod
+            description: >-
+              Tekton Resolver Git resolver leases not distributed across more than one pod
+              on cluster {{ $labels.source_cluster }}.
+            alert_team_handle: <!subteam^S04PYECHCCU>
+            team: pipelines
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-LeasesNotDistributed.md
+        - alert: TektonResolverGitResolverLeasesHolderMissing
+          expr: kube_lease_owner{lease=~"controller.tektonresolverframework.git..*", lease_holder=""}
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: Tekton Resolver Git resolver leases holder does not have pod assigned to it
+            description: >-
+              Tekton Resolver Git resolver leases holder does not have pod assigned to it
+              on cluster {{ $labels.source_cluster }}.
+            alert_team_handle: <!subteam^S04PYECHCCU>
+            team: pipelines
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-LeasesNotDistributed.md
+        - alert: TektonResolverHttpResolverLeasesNotDistributed
+          expr: (count by (source_cluster) (count by (lease_holder, source_cluster) (kube_lease_owner{lease=~"controller.tektonresolverframework.http..*", lease_holder!=""}))) <= 1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: Tekton Resolver Http resolver leases not distributed across more than one pod
+            description: >-
+              Tekton Resolver Http resolver leases not distributed across more than one pod
+              on cluster {{ $labels.source_cluster }}.
+            alert_team_handle: <!subteam^S04PYECHCCU>
+            team: pipelines
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-LeasesNotDistributed.md
+        - alert: TektonResolverHttpResolverLeasesHolderMissing
+          expr: kube_lease_owner{lease=~"controller.tektonresolverframework.http..*", lease_holder=""}
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: Tekton Resolver Http resolver leases holder does not have pod assigned to it
+            description: >-
+              Tekton Resolver Http resolver leases holder does not have pod assigned to it
+              on cluster {{ $labels.source_cluster }}.
+            alert_team_handle: <!subteam^S04PYECHCCU>
+            team: pipelines
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-LeasesNotDistributed.md
+        - alert: TektonResolverHubResolverLeasesNotDistributed
+          expr: (count by (source_cluster) (count by (lease_holder, source_cluster) (kube_lease_owner{lease=~"controller.tektonresolverframework.hub..*", lease_holder!=""}))) <= 1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: Tekton Resolver Hub resolver leases not distributed across more than one pod
+            description: >-
+              Tekton Resolver Hub resolver leases not distributed across more than one pod
+              on cluster {{ $labels.source_cluster }}.
+            alert_team_handle: <!subteam^S04PYECHCCU>
+            team: pipelines
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-LeasesNotDistributed.md
+        - alert: TektonResolverHubResolverLeasesHolderMissing
+          expr: kube_lease_owner{lease=~"controller.tektonresolverframework.hub..*", lease_holder=""}
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: Tekton Resolver Hub resolver leases holder does not have pod assigned to it
+            description: >-
+              Tekton Resolver Hub resolver leases holder does not have pod assigned to it
+              on cluster {{ $labels.source_cluster }}.
+            alert_team_handle: <!subteam^S04PYECHCCU>
+            team: pipelines
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-LeasesNotDistributed.md
