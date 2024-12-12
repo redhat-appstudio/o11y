@@ -58,18 +58,6 @@ spec:
             description: >-
               99th etcd RTT latency rate on {{$labels.pod}} higher than 0.1
 
-        - alert: EtcdSlowGRPC
-          expr: |
-            histogram_quantile(0.99, sum(rate(grpc_server_handling_seconds_bucket{grpc_type="unary"}[1m])) by (grpc_service, grpc_method, le)) > 0.15
-          for: 15m
-          labels:
-            severity: warning
-          annotations:
-            summary: >-
-              Delay in Etcd GRPC request.
-            description: >-
-              99th percentile of etcd GRPC request {{$labels.grpc_method}} for service {{$labels.grpc_service}} is over 0.15s.
-
         # KubeAPI Alerts
         - alert: KubernetesJobSlowCompletion
           expr: |
