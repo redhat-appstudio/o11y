@@ -38,7 +38,7 @@ tests:
 
   - interval: 1m
     input_series:
-      # Average Fsync latency higher than 10ms, so it will be alerted.
+      # Average commit latency higher than 30ms, so it will be alerted.
       - series: 'etcd_disk_backend_commit_duration_seconds_bucket{le="0.04", pod="etcd-pod-1"}'
         values: '0+0.01x15'
 
@@ -58,7 +58,7 @@ tests:
 
   - interval: 1m
     input_series:
-      # Average Fsync latency is below alert threshold count, so it will not be alerted.
+      # Average commit latency is below alert threshold count, so it will not be alerted.
       - series: 'etcd_disk_backend_commit_duration_seconds_bucket{le="0.03", pod="etcd-pod-2"}'
         values: '2+0.01x15'
 
@@ -68,7 +68,7 @@ tests:
 
   - interval: 1m
     input_series:
-      # Average Fsync latency higher than 10ms, so it will be alerted.
+      # Etcd cluster member RTT delay is over 0.1, so it will be alerted.
       - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="0.01", pod="etcd-pod-1"}'
         values: '0.1+0.3x15'  # Starting at 10, increasing by 1 for 15 steps
 
@@ -91,7 +91,7 @@ tests:
 
   - interval: 1m
     input_series:
-      # Average Fsync latency is below alert threshold, so it will not be alerted.
+      # Etcd cluster member RTT delay is below alert threshold rate, so it will not be alerted.
       - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="0.1", pod="etcd-pod-2"}'
         values: '0.1+0.01x15'
 
@@ -127,6 +127,94 @@ tests:
       - eval_time: 1h
         alertname: EtcdProposalFailures
 
+  # KubeAPI Alerts
+  - interval: 1m
+    input_series:
+      # Run status of 2 jobs are not available, so it will be alerted.
+      - series: 'kube_job_spec_completions{namespace="default", job_name="example-job"}'
+        values: '3+0x15'
+
+      # Status: 0 job succeeded
+      - series: 'kube_job_status_succeeded{namespace="default", job_name="example-job"}'
+        values: '0+0x15'
+
+      # Status: 1 jobs failed
+      - series: 'kube_job_status_failed{namespace="default", job_name="example-job"}'
+        values: '1+0x15'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: KubernetesJobSlowCompletion
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job_name: example-job
+              namespace: default
+            exp_annotations:
+              summary: "Kubernetes Job slow completion."
+              description: "Kubernetes Job default/example-job did not complete in time."
+
+  - interval: 1m
+    input_series:
+      # Run status of 1 job is not available, so it will be alerted.
+      - series: 'kube_job_spec_completions{namespace="default", job_name="example-job"}'
+        values: '3+0x15'
+
+      # Status: 2 job succeeded
+      - series: 'kube_job_status_succeeded{namespace="default", job_name="example-job"}'
+        values: '2+0x15'
+
+      # Status: 0 jobs failed
+      - series: 'kube_job_status_failed{namespace="default", job_name="example-job"}'
+        values: '0+0x15'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: KubernetesJobSlowCompletion
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job_name: example-job
+              namespace: default
+            exp_annotations:
+              summary: "Kubernetes Job slow completion."
+              description: "Kubernetes Job default/example-job did not complete in time."
+
+  - interval: 1m
+    input_series:
+      # Run status of all jobs are available, so it will not be alerted.
+      - series: 'kube_job_spec_completions{namespace="default", job_name="example-job"}'
+        values: '3+0x15'
+
+      # Status: 3 job succeeded
+      - series: 'kube_job_status_succeeded{namespace="default", job_name="example-job"}'
+        values: '3+0x15'
+
+      # Status: 0 jobs failed
+      - series: 'kube_job_status_failed{namespace="default", job_name="example-job"}'
+        values: '0+0x15'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: KubernetesJobSlowCompletion
+
+  - interval: 1m
+    input_series:
+      #  Run status of all jobs are available, so it will not be alerted.
+      - series: 'kube_job_spec_completions{namespace="default", job_name="example-job"}'
+        values: '3+0x15'
+
+      # Status: 2 job succeeded
+      - series: 'kube_job_status_succeeded{namespace="default", job_name="example-job"}'
+        values: '2+0x15'
+
+      # Status: 0 jobs failed
+      - series: 'kube_job_status_failed{namespace="default", job_name="example-job"}'
+        values: '1+0x15'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: KubernetesJobSlowCompletion
 
   # Node based Alerts
   - interval: 1m
