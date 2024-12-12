@@ -60,28 +60,28 @@ spec:
 
         - alert: EtcdSlowGRPC
           expr: |
-            histogram_quantile(0.99, sum(rate(grpc_server_handling_seconds_bucket{job=~".*etcd.*", grpc_method!="Defragment", grpc_type="unary"}[15m])) without(grpc_type)) > 0.15
+            histogram_quantile(0.99, sum(rate(grpc_server_handling_seconds_bucket{grpc_type="unary"}[1m])) by (grpc_service, grpc_method, le)) > 0.15
           for: 15m
           labels:
             severity: warning
           annotations:
             summary: >-
-              ETCD slow requests.
+              Delay in Etcd GRPC request.
             description: >-
-              Slow GRPC request processing by ETCD server {{ $labels.pod }}.
+              99th percentile of etcd GRPC request {{$labels.grpc_method}} for service {{$labels.grpc_service}} is over 0.15s.
 
         # KubeAPI Alerts
-        - alert: KubeAPIHighLatency
+        - alert: KubernetesJobSlowCompletion
           expr: |
-            avg_over_time(histogram_quantile(0.99, sum(irate(apiserver_request_duration_seconds_bucket{apiserver="kube-apiserver", verb=~"LIST|GET", subresource!~"log|exec|portforward|attach|proxy", scope="cluster"}[5m])) by (le, resource, verb, scope))[5m:]) > 30
-          for: 5m
+            kube_job_spec_completions - kube_job_status_succeeded - kube_job_status_failed > 0
+          for: 10m
           labels:
             severity: warning
           annotations:
             summary: >-
-              High Latency on Kube API Server Request.
+              Kubernetes Job slow completion.
             description: >-
-              5 minutes avg. 99th read-only API call latency for {{$labels.verb}}/{{$labels.resource}} in scope {{$labels.scope}} higher than 30 seconds. {{$value}}s
+              Kubernetes Job {{ $labels.namespace }}/{{ $labels.job_name }} did not complete in time.
 
         # Node based Alerts
         - alert: NodeHighCPU
