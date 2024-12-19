@@ -1,0 +1,97 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-performance-alerting
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: performance_alerts
+      interval: 1m
+      rules:
+        # ETCD alerts
+        - alert: EtcdFsyncLatency
+          expr: |
+            avg_over_time(histogram_quantile(0.99, rate(etcd_disk_wal_fsync_duration_seconds_bucket[2m]))[10m:]) > 0.01
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: >-
+              ETCD slow file system synchronization.
+            description: >-
+              10 minutes avg. 99th etcd fsync latency on {{$labels.pod}} higher than 10ms.
+
+        - alert: EtcdCommitLatency
+          expr: |
+            avg_over_time(histogram_quantile(0.99, rate(etcd_disk_backend_commit_duration_seconds_bucket[2m]))[10m:]) > 0.03
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: >-
+              ETCD slow writes observed.
+            description: >-
+              10 minutes avg. 99th etcd commit latency on {{$labels.pod}} higher than 30ms.
+
+        - alert: EtcdProposalFailures
+          expr: |
+            rate(etcd_server_proposals_failed_total[1h]) > 0.05
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: >-
+              ETCD raft proposal failures.
+            description: >-
+              Etcd high number of failed proposals on pod {{ $labels.pod }}
+
+        - alert: EtcdSlowNetworkRTT
+          expr: |
+            histogram_quantile(0.99, rate(etcd_network_peer_round_trip_time_seconds_bucket[5m])) > 0.1
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: >-
+              High RTT latency on ETCD cluster member requests.
+            description: >-
+              99th etcd RTT latency rate on {{$labels.pod}} higher than 0.1
+
+        # KubeAPI Alerts
+        - alert: KubernetesLongRunningJob
+          expr: |
+            kube_job_spec_completions - kube_job_status_succeeded - kube_job_status_failed > 0
+          for: 20m
+          labels:
+            severity: warning
+          annotations:
+            summary: >-
+              Kubernetes Job slow completion.
+            description: >-
+              Kubernetes Job {{ $labels.namespace }}/{{ $labels.job_name }} running for long duration.
+
+        # Node based Alerts
+        - alert: NodeHighCPU
+          expr: |
+            (100 * avg(1 - rate(node_cpu_seconds_total{mode="idle"}[5m])) by (instance)) > 95
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: >-
+              Node High CPU Usage.
+            description: >-
+              CPU Usage is {{$value}}% on node {{ $labels.instance }}
+
+        - alert: NodeHighMemory
+          expr: |
+            100*((node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes)/node_memory_MemTotal_bytes) > 90
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: >-
+              Node High Memory Usage.
+            description: >-
+              Memory Usage is {{$value}}% on node {{ $labels.instance }}
