@@ -59,17 +59,17 @@ spec:
               99th etcd RTT latency rate on {{$labels.pod}} higher than 0.1
 
         # KubeAPI Alerts
-        - alert: KubernetesJobSlowCompletion
+        - alert: KubernetesLongRunningJob
           expr: |
             kube_job_spec_completions - kube_job_status_succeeded - kube_job_status_failed > 0
-          for: 10m
+          for: 20m
           labels:
             severity: warning
           annotations:
             summary: >-
               Kubernetes Job slow completion.
             description: >-
-              Kubernetes Job {{ $labels.namespace }}/{{ $labels.job_name }} did not complete in time.
+              Kubernetes Job {{ $labels.namespace }}/{{ $labels.job_name }} running for long duration.
 
         # Node based Alerts
         - alert: NodeHighCPU

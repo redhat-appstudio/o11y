@@ -70,13 +70,13 @@ tests:
     input_series:
       # Etcd cluster member RTT delay is over 0.1, so it will be alerted.
       - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="0.01", pod="etcd-pod-1"}'
-        values: '0.1+0.3x15'  # Starting at 10, increasing by 1 for 15 steps
+        values: '0.1+0.3x15'
 
       - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="0.2", pod="etcd-pod-1"}'
-        values: '0.1+0.5x15'  # Starting at 50, increasing by 5 for 15 steps
+        values: '0.1+0.5x15'
 
       - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="+Inf", pod="etcd-pod-1"}'
-        values: '0.1+0.2x15'  # Starting at 200, increasing by 10 for 15 steps
+        values: '0.1+0.2x15'
 
     alert_rule_test:
       - eval_time: 16m
@@ -104,7 +104,7 @@ tests:
     input_series:
       # Increase in Etcd raft proposal failures over time, so it will be alerted.
       - series: 'etcd_server_proposals_failed_total{pod="etcd-pod-1"}'
-        values: '0+5x59'  # Total Memory on Node
+        values: '0+5x59'
 
     alert_rule_test:
       - eval_time: 1h
@@ -121,7 +121,7 @@ tests:
     input_series:
       # Etcd raft proposals failures within threshold limit, so it will not be alerted.
       - series: 'etcd_server_proposals_failed_total{pod="etcd-pod-1"}'
-        values: '0+5x30 1+0x29'  # Total Memory on Node
+        values: '0+5x30 1+0x29'
 
     alert_rule_test:
       - eval_time: 1h
@@ -143,8 +143,8 @@ tests:
         values: '1+0x15'
 
     alert_rule_test:
-      - eval_time: 10m
-        alertname: KubernetesJobSlowCompletion
+      - eval_time: 20m
+        alertname: KubernetesLongRunningJob
         exp_alerts:
           - exp_labels:
               severity: warning
@@ -152,25 +152,25 @@ tests:
               namespace: default
             exp_annotations:
               summary: "Kubernetes Job slow completion."
-              description: "Kubernetes Job default/example-job did not complete in time."
+              description: "Kubernetes Job default/example-job running for long duration."
 
   - interval: 1m
     input_series:
       # Run status of 1 job is not available, so it will be alerted.
       - series: 'kube_job_spec_completions{namespace="default", job_name="example-job"}'
-        values: '3+0x15'
+        values: '3+0x20'
 
       # Status: 2 job succeeded
       - series: 'kube_job_status_succeeded{namespace="default", job_name="example-job"}'
-        values: '2+0x15'
+        values: '2+0x20'
 
       # Status: 0 jobs failed
       - series: 'kube_job_status_failed{namespace="default", job_name="example-job"}'
-        values: '0+0x15'
+        values: '0+0x20'
 
     alert_rule_test:
-      - eval_time: 10m
-        alertname: KubernetesJobSlowCompletion
+      - eval_time: 20m
+        alertname: KubernetesLongRunningJob
         exp_alerts:
           - exp_labels:
               severity: warning
@@ -178,52 +178,52 @@ tests:
               namespace: default
             exp_annotations:
               summary: "Kubernetes Job slow completion."
-              description: "Kubernetes Job default/example-job did not complete in time."
+              description: "Kubernetes Job default/example-job running for long duration."
 
   - interval: 1m
     input_series:
       # Run status of all jobs are available, so it will not be alerted.
       - series: 'kube_job_spec_completions{namespace="default", job_name="example-job"}'
-        values: '3+0x15'
+        values: '3+0x20'
 
       # Status: 3 job succeeded
       - series: 'kube_job_status_succeeded{namespace="default", job_name="example-job"}'
-        values: '3+0x15'
+        values: '3+0x20'
 
       # Status: 0 jobs failed
       - series: 'kube_job_status_failed{namespace="default", job_name="example-job"}'
-        values: '0+0x15'
+        values: '0+0x20'
 
     alert_rule_test:
-      - eval_time: 10m
-        alertname: KubernetesJobSlowCompletion
+      - eval_time: 20m
+        alertname: KubernetesLongRunningJob
 
   - interval: 1m
     input_series:
       #  Run status of all jobs are available, so it will not be alerted.
       - series: 'kube_job_spec_completions{namespace="default", job_name="example-job"}'
-        values: '3+0x15'
+        values: '3+0x20'
 
       # Status: 2 job succeeded
       - series: 'kube_job_status_succeeded{namespace="default", job_name="example-job"}'
-        values: '2+0x15'
+        values: '2+0x20'
 
       # Status: 0 jobs failed
       - series: 'kube_job_status_failed{namespace="default", job_name="example-job"}'
-        values: '1+0x15'
+        values: '1+0x20'
 
     alert_rule_test:
-      - eval_time: 10m
-        alertname: KubernetesJobSlowCompletion
+      - eval_time: 20m
+        alertname: KubernetesLongRunningJob
 
   # Node based Alerts
   - interval: 1m
     input_series:
-      # Node is running with 95.275% CPU usage, so it will be alerted.
+      # Node is running with 100% CPU usage, so it will be alerted.
       - series: 'node_cpu_seconds_total{instance="instance1", mode="idle"}'
-        values: '0.05-0.1x10 8.5'
+        values: '0.01+0x15'
       - series: 'node_cpu_seconds_total{instance="instance2", mode="idle"}'
-        values: '0.85+0x3 0.05x4'
+        values: '0.85+0x10'
 
     alert_rule_test:
       - eval_time: 15m
@@ -234,7 +234,7 @@ tests:
               instance: instance1
             exp_annotations:
               summary: "Node High CPU Usage."
-              description: "CPU Usage is 95.275% on node instance1"
+              description: "CPU Usage is 100% on node instance1"
 
   - interval: 1m
     input_series:
@@ -252,9 +252,9 @@ tests:
     input_series:
       # Node is running with 98% memory usage, so it will be alerted.
       - series: 'node_memory_MemTotal_bytes{instance="instance1"}'
-        values: '100+0x9'  # Total Memory on Node
+        values: '100+0x9'
       - series: 'node_memory_MemAvailable_bytes{instance="instance1"}'
-        values: '2+0x9'  # Free Memory on Node
+        values: '2+0x9'
 
     alert_rule_test:
       - eval_time: 10m
@@ -271,9 +271,9 @@ tests:
     input_series:
       # Node is running under 90% memory usage, so it will not be alerted.
       - series: 'node_memory_MemTotal_bytes{instance="instance2"}'
-        values: '100x9'  # Total Memory on Node
+        values: '100x9'
       - series: 'node_memory_MemAvailable_bytes{instance="instance2"}'
-        values: '98x9'   # Free Memory on Node
+        values: '98x9'
 
     alert_rule_test:
       - eval_time: 10m
