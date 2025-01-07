@@ -21,6 +21,7 @@ spec:
               ETCD slow file system synchronization.
             description: >-
               10 minutes avg. 99th etcd fsync latency on {{$labels.pod}} higher than 10ms.
+            alert_routing_key: perfandscale
 
         - alert: EtcdCommitLatency
           expr: |
@@ -33,6 +34,7 @@ spec:
               ETCD slow writes observed.
             description: >-
               10 minutes avg. 99th etcd commit latency on {{$labels.pod}} higher than 30ms.
+            alert_routing_key: perfandscale
 
         - alert: EtcdProposalFailures
           expr: |
@@ -45,6 +47,7 @@ spec:
               ETCD raft proposal failures.
             description: >-
               Etcd high number of failed proposals on pod {{ $labels.pod }}
+            alert_routing_key: perfandscale
 
         - alert: EtcdSlowNetworkRTT
           expr: |
@@ -57,6 +60,7 @@ spec:
               High RTT latency on ETCD cluster member requests.
             description: >-
               99th etcd RTT latency rate on {{$labels.pod}} higher than 0.1
+            alert_routing_key: perfandscale
 
         # KubeAPI Alerts
         - alert: KubernetesLongRunningJob
@@ -70,6 +74,7 @@ spec:
               Kubernetes Job slow completion.
             description: >-
               Kubernetes Job {{ $labels.namespace }}/{{ $labels.job_name }} running for long duration.
+            alert_routing_key: perfandscale
 
         # Node based Alerts
         - alert: NodeHighCPU
@@ -83,6 +88,7 @@ spec:
               Node High CPU Usage.
             description: >-
               CPU Usage is {{$value}}% on node {{ $labels.instance }}
+            alert_routing_key: perfandscale
 
         - alert: NodeHighMemory
           expr: |
@@ -95,3 +101,4 @@ spec:
               Node High Memory Usage.
             description: >-
               Memory Usage is {{$value}}% on node {{ $labels.instance }}
+            alert_routing_key: perfandscale
