@@ -182,3 +182,4 @@ See detailed documentation on
 ## Support
 
 - Slack: [#forum-konflux-o11y](https://app.slack.com/client/E030G10V24F/C04FDFTF8EB)
+
