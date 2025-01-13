@@ -7,8 +7,8 @@ tests:
   # Etcd Alerts
   - interval: 1m
     input_series:
-      # Average Fsync latency higher than 10ms, so it will be alerted.
-      - series: 'etcd_disk_wal_fsync_duration_seconds_bucket{le="0.02", pod="etcd-pod-1"}'
+      # Average Fsync latency higher than 40ms, so it will be alerted.
+      - series: 'etcd_disk_wal_fsync_duration_seconds_bucket{le="0.05", pod="etcd-pod-1"}'
         values: '0+0.01x15'
 
       - series: 'etcd_disk_wal_fsync_duration_seconds_bucket{le="+Inf", pod="etcd-pod-1"}'
@@ -23,7 +23,7 @@ tests:
               pod: etcd-pod-1
             exp_annotations:
               summary: "ETCD slow file system synchronization."
-              description: "10 minutes avg. 99th etcd fsync latency on etcd-pod-1 higher than 10ms."
+              description: "10 minutes avg. 99th etcd fsync latency on etcd-pod-1 higher than 40ms."
               alert_routing_key: perfandscale
 
   - interval: 1m
@@ -39,8 +39,8 @@ tests:
 
   - interval: 1m
     input_series:
-      # Average commit latency higher than 30ms, so it will be alerted.
-      - series: 'etcd_disk_backend_commit_duration_seconds_bucket{le="0.04", pod="etcd-pod-1"}'
+      # Average commit latency higher than 40ms, so it will be alerted.
+      - series: 'etcd_disk_backend_commit_duration_seconds_bucket{le="0.05", pod="etcd-pod-1"}'
         values: '0+0.01x15'
 
       - series: 'etcd_disk_backend_commit_duration_seconds_bucket{le="+Inf", pod="etcd-pod-1"}'
@@ -55,7 +55,7 @@ tests:
               pod: etcd-pod-1
             exp_annotations:
               summary: "ETCD slow writes observed."
-              description: "10 minutes avg. 99th etcd commit latency on etcd-pod-1 higher than 30ms."
+              description: "10 minutes avg. 99th etcd commit latency on etcd-pod-1 higher than 40ms."
               alert_routing_key: perfandscale
 
   - interval: 1m
