@@ -12,7 +12,7 @@ spec:
         # ETCD alerts
         - alert: EtcdFsyncLatency
           expr: |
-            avg_over_time(histogram_quantile(0.99, rate(etcd_disk_wal_fsync_duration_seconds_bucket[2m]))[10m:]) > 0.01
+            avg_over_time(histogram_quantile(0.99, rate(etcd_disk_wal_fsync_duration_seconds_bucket[2m]))[10m:]) > 0.04
           for: 10m
           labels:
             severity: warning
@@ -20,12 +20,12 @@ spec:
             summary: >-
               ETCD slow file system synchronization.
             description: >-
-              10 minutes avg. 99th etcd fsync latency on {{$labels.pod}} higher than 10ms.
+              10 minutes avg. 99th etcd fsync latency on {{$labels.pod}} higher than 40ms.
             alert_routing_key: perfandscale
 
         - alert: EtcdCommitLatency
           expr: |
-            avg_over_time(histogram_quantile(0.99, rate(etcd_disk_backend_commit_duration_seconds_bucket[2m]))[10m:]) > 0.03
+            avg_over_time(histogram_quantile(0.99, rate(etcd_disk_backend_commit_duration_seconds_bucket[2m]))[10m:]) > 0.04
           for: 10m
           labels:
             severity: warning
@@ -33,7 +33,7 @@ spec:
             summary: >-
               ETCD slow writes observed.
             description: >-
-              10 minutes avg. 99th etcd commit latency on {{$labels.pod}} higher than 30ms.
+              10 minutes avg. 99th etcd commit latency on {{$labels.pod}} higher than 40ms.
             alert_routing_key: perfandscale
 
         - alert: EtcdProposalFailures
