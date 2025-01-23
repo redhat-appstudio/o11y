@@ -268,6 +268,7 @@ data:
                 "lastNotNull"
               ],
               "fields": "",
+              "limit": 1,
               "values": false
             },
             "showPercentChange": false,
@@ -296,12 +297,181 @@ data:
           "type": "stat"
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${Datasource}"
+          },
+          "description": "List of all degraded services in the period with the origin of the alert and source cluster.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "left",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "filterable": true,
+                "inspect": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "service"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Service"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "check"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "From check"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "source_cluster"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Source Cluster"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "From check"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 132
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Service"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 320
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 12,
+            "x": 12,
+            "y": 6
+          },
+          "id": 19,
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "enablePagination": false,
+              "fields": "",
+              "reducer": [
+                "sum"
+              ],
+              "show": false
+            },
+            "showHeader": true,
+            "sortBy": []
+          },
+          "pluginVersion": "10.4.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${Datasource}"
+              },
+              "disableTextWrap": false,
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "(count by (service, check,source_cluster) (konflux_up{service=~\"$service\"} == 0))",
+              "format": "table",
+              "fullMetaSearch": false,
+              "hide": false,
+              "includeNullMetadata": true,
+              "instant": false,
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "A",
+              "useBackend": false
+            }
+          ],
+          "title": "Degraded services list",
+          "transformations": [
+            {
+              "id": "groupBy",
+              "options": {
+                "fields": {
+                  "Time": {
+                    "aggregations": [
+                      "logmin"
+                    ]
+                  },
+                  "check": {
+                    "aggregations": [],
+                    "operation": "groupby"
+                  },
+                  "service": {
+                    "aggregations": [],
+                    "operation": "groupby"
+                  },
+                  "source_cluster": {
+                    "aggregations": [],
+                    "operation": "groupby"
+                  }
+                }
+              }
+            }
+          ],
+          "type": "table"
+        },
+        {
           "collapsed": false,
           "gridPos": {
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 6
+            "y": 11
           },
           "id": 11,
           "panels": [],
@@ -378,7 +548,7 @@ data:
             "h": 12,
             "w": 24,
             "x": 0,
-            "y": 7
+            "y": 12
           },
           "id": 18,
           "options": {
@@ -422,8 +592,8 @@ data:
           {
             "current": {
               "selected": true,
-              "text": "rhtap-observatorium-stage",
-              "value": "PDCCF087A30F0737B"
+              "text": "rhtap-observatorium-production",
+              "value": "P22466E8E7855F1E0"
             },
             "hide": 0,
             "includeAll": false,
@@ -473,7 +643,7 @@ data:
           {
             "allValue": "",
             "current": {
-              "selected": false,
+              "selected": true,
               "text": "All",
               "value": "$__all"
             },
@@ -508,7 +678,7 @@ data:
       "timezone": "browser",
       "title": "Availability Exporter Dashboard",
       "uid": "fdifr5mbapv5sb",
-      "version": 180,
+      "version": 3,
       "weekStart": ""
     }
 kind: ConfigMap
