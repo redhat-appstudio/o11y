@@ -1,0 +1,32 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.eaas_alerts.yaml
+
+tests:
+  - interval: 1m
+    input_series:
+      - series: platform:hypershift_hostedclusters:max{platform="AWS", source_cluster="cluster01"}
+        values: '80x15 0'
+      - series: platform:hypershift_hostedclusters:max{platform="AWS", source_cluster="cluster02"}
+        values: '79x15 0'
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: HypershiftAWSQuotaAlmostFull
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              source_cluster: cluster01
+              platform: AWS
+            exp_annotations:
+              summary: Environment as a Service is approaching the quota for concurrent HyperShift AWS clusters
+              description: >-
+                Environment as a Service has 80 concurrent HyperShift AWS clusters on cluster cluster01.
+                The maximum allowed is 100.
+              alert_team_handle: <!subteam^S07NDQV6A4D>
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/eaas/hypershift-aws-quota-almost-full.md
+
+      - eval_time: 16m
+        alertname: HypershiftAWSQuotaAlmostFull
+        exp_alerts: []
