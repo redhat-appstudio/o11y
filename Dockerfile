@@ -9,14 +9,14 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY --chown=default:root exporters/**/*.go .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o /bin/exporters .
+RUN CGO_ENABLED=0 GOOS=linux go build -o /tmp/exporters .
 
 EXPOSE 8090
 
 
 FROM registry.access.redhat.com/ubi9-micro@sha256:d115f8aad9c4ae7ee21ae75bbcb3dc2c5dbf9b57bf6dad6dcb5aac5c02003bde
 
-COPY --from=builder /bin/exporters /bin/exporters
+COPY --from=builder /tmp/exporters /bin/exporters
 
 # It is mandatory to set these labels
 LABEL name="Konflux Observability Exporters"
