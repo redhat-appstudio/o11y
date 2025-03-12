@@ -14,7 +14,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o /tmp/exporters .
 EXPOSE 8090
 
 
-FROM registry.access.redhat.com/ubi9-micro@sha256:d115f8aad9c4ae7ee21ae75bbcb3dc2c5dbf9b57bf6dad6dcb5aac5c02003bde
+FROM registry.access.redhat.com/ubi9-micro@sha256:91828a5ca154132e18072cf885f6bb41bb881e6158f30b793f4b424ec144b87d
 
 COPY --from=builder /tmp/exporters /bin/exporters
 
