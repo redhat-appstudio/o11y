@@ -205,6 +205,12 @@ tests:
       - series: 'kube_pod_status_unschedulable{namespace="konflux-ci", pod="test-pod", source_cluster="cluster01"}'
         values: '0x29'
 
+      # Pod is in the Pending state and scheduled, but it's in the 'mintmaker' namespace so it's ignored.
+      - series: 'kube_pod_status_phase{pod="renovate-123-pod", namespace="mintmaker", phase="Pending"}'
+        values: '1x29'
+      - series: 'kube_pod_status_unschedulable{namespace="mintmaker", pod="renovate-123-pod", source_cluster="cluster01"}'
+        values: '0x29'
+
     alert_rule_test:
       - eval_time: 30m
         alertname: PodNotReady
