@@ -2,7 +2,7 @@ module github.com/redhat-appstudio/o11y.git
 
 go 1.21
 
-require github.com/prometheus/client_golang v1.21.0
+require github.com/prometheus/client_golang v1.21.1
 
 require (
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
