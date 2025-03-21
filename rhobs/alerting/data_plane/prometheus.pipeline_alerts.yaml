@@ -85,18 +85,18 @@ spec:
             alert_team_handle: <!subteam^S04PYECHCCU>
             team: pipelines
             runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/sre/tekton-pipeline-related-deadlocks.md
-        - alert: ChainsControllerDeadlock
+        - alert: ChainsControllerOverhead
           expr: |
-            sum by (source_cluster) (increase(watcher_workqueue_depth{container='tekton-chains-controller',app='tekton-chains-controller'}[2m])) > 50
-          for: 75m
+            sum by (source_cluster) (increase(watcher_workqueue_depth{container='tekton-chains-controller',app='tekton-chains-controller'}[2m])) > 100
+          for: 55m
           labels:
             severity: critical
             slo: "true"
           annotations:
             summary: >-
-              Tekton chains controller appears to have stopped processing active pipelineruns.
+              Tekton chains controller is experiencing high overhead in processing pipelineruns.
             description: >-
-              Tekton chains controller on cluster {{ $labels.source_cluster }} has appeared deadlocked on {{ $value }} pipelinerun events.
+              Tekton chains controller on cluster {{ $labels.source_cluster }} has recorded {{ $value }} pipelinerun events. This suggests potential performance degradation and a risk of an eventual deadlock condition.
             alert_team_handle: <!subteam^S04PYECHCCU>
             team: pipelines
             runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/sre/tekton-pipeline-related-deadlocks.md
