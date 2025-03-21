@@ -87,8 +87,8 @@ spec:
             runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/sre/tekton-pipeline-related-deadlocks.md
         - alert: ChainsControllerDeadlock
           expr: |
-            sum by (source_cluster) (increase(watcher_workqueue_depth{container='tekton-chains-controller',app='tekton-chains-controller'}[2m])) > 50
-          for: 75m
+            sum by (source_cluster) (increase(watcher_workqueue_depth{container='tekton-chains-controller',app='tekton-chains-controller'}[2m])) > 100
+          for: 45m
           labels:
             severity: critical
             slo: "true"
