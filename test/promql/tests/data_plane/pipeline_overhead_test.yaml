@@ -113,3 +113,44 @@ tests:
         values: '1x780'
       - series: 'pac_watcher_client_latency_bucket{le="+Inf", source_cluster="cluster02"}'
         values: '1x780'
+
+  # ----- Chains Controller Overhead Test----
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # tekton chains controller is experiencing delays processing pipelineruns in tenant-1 started and should alert.  Also make sure the lack
+      # of issues in another app does not affect the value of the query
+      - series: 'watcher_workqueue_depth{container="tekton-chains-controller", app="tekton-chains-controller", source_cluster="cluster01"}'
+        values: '300+300x780'
+      - series: 'watcher_workqueue_depth{container="tekton-pipelines-controller", app="tekton-pipelines-controller", source_cluster="cluster01"}'
+        values: '0x780'
+
+    alert_rule_test:
+      - eval_time: 75m
+        alertname: ChainsControllerOverhead
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              source_cluster: cluster01
+            exp_annotations:
+              summary: >-
+                Tekton chains controller is experiencing high overhead in processing pipelineruns.
+              description: >-
+                Tekton chains controller on cluster cluster01 has recorded 600 pipelinerun events. This suggests potential performance degradation and a risk of an eventual deadlock condition.
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/sre/tekton-pipeline-related-deadlocks.md
+
+  - interval: 1m
+    input_series:
+
+      # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
+      # tekton chains controller is experiencing some delays processing pipelineruns but not fast enough so it should not alert
+      - series: 'watcher_workqueue_depth{container="tekton-chains-controller", app="tekton-chains-controller", source_cluster="cluster01"}'
+        values: '1x780'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: ChainsControllerOverhead
