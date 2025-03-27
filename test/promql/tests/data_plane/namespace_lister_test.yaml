@@ -1,0 +1,120 @@
+evaluation_interval: 1m
+
+rule_files:
+- prometheus.namespace_lister_alerts.yaml
+
+tests:
+# --- alerts for synchronization failures ---
+
+# repeated failures over a long time (using default sync time of 10 minutes) should trigger an alert
+- interval: 1m
+  input_series:
+  - series: 'namespace_lister_accesscache_synch_op_total{source_cluster="stone-stg-m01", status="success"}'
+    values: '1x30'
+  - series: 'namespace_lister_accesscache_synch_op_total{source_cluster="stone-stg-m01", status="failed", error="foo"}'
+    values: '1x10 2x10 3x10 4x10 5x10 6x10'
+  alert_rule_test:
+  - eval_time: 60m
+    alertname: NamespaceListerSynchronizationFailure
+    exp_alerts:
+    - exp_labels:
+        error: foo
+        severity: warning
+        source_cluster: stone-stg-m01
+        status: failed
+      exp_annotations:
+        alert_team_handle: "<!subteam^S06G3MJT516>"
+        summary:
+          Namespace-lister cache has reported 2 synchronization failures in 30 minutes
+        description: >-
+          Namespace-lister's cache on cluster 'stone-stg-m01' has reported 2
+          synchronization failures in 30 minutes
+        team: workspaces
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/namespace-lister/README.md
+
+# a series of rapid-fire failures should trigger an alert
+- interval: 1m
+  input_series:
+  - series: 'namespace_lister_accesscache_synch_op_total{source_cluster="stone-stg-m01", status="success"}'
+    values: '1+1x15 15 15+1x14'
+  - series: 'namespace_lister_accesscache_synch_op_total{source_cluster="stone-stg-m01", status="failed", error="bar"}'
+    values: '_x15 1 2 3 4 5x40'
+  alert_rule_test:
+  - eval_time: 26m
+    alertname: NamespaceListerSynchronizationFailure
+    exp_alerts:
+    - exp_labels:
+        error: bar
+        severity: warning
+        source_cluster: stone-stg-m01
+        status: failed
+      exp_annotations:
+        alert_team_handle: "<!subteam^S06G3MJT516>"
+        summary: >-
+          Namespace-lister cache has reported 2 synchronization failures in 30 minutes
+        description: >-
+          Namespace-lister's cache on cluster 'stone-stg-m01' has reported 2
+          synchronization failures in 30 minutes
+        team: workspaces
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/namespace-lister/README.md
+
+# a single failure shouldn't trigger an alert
+- interval: 1m
+  input_series:
+  - series: 'namespace_lister_accesscache_synch_op_total{source_cluster="stone-stg-m01", status="success"}'
+    values: '1 2x30'
+  - series: 'namespace_lister_accesscache_synch_op_total{source_cluster="stone-stg-m01", status="failed", error="baz"}'
+    values: '_x15 1x15'
+
+  alert_rule_test:
+  - eval_time: 31m
+    alertname: NamespaceListerSynchronizationFailure
+    exp_alerts: []
+
+# two failures shouldn't trigger an alert
+- interval: 1m
+  input_series:
+  - series: 'namespace_lister_accesscache_synch_op_total{source_cluster="stone-stg-m01", status="success"}'
+    values: '1 2x30'
+  - series: 'namespace_lister_accesscache_synch_op_total{source_cluster="stone-stg-m01", status="failed", error="baz"}'
+    values: '_x15 1 2x14'
+
+  alert_rule_test:
+  - eval_time: 30m
+    alertname: NamespaceListerSynchronizationFailure
+    exp_alerts: []
+
+# --- alerts for namespace-lister returning internal errors ---
+
+# a steady stream of 500s should be an alert
+- interval: 1m
+  input_series:
+  - series: 'namespace_lister_api_counter{source_cluster="stone-stg-m01", code="500", pod="namespace-lister-5b59b78dd5-xx58b"}'
+    values: '1+1x20'
+  alert_rule_test:
+  - eval_time: 20m
+    alertname: NamespaceListerInternalError
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        pod: namespace-lister-5b59b78dd5-xx58b
+        code: "500"
+        source_cluster: stone-stg-m01
+      exp_annotations:
+        alert_team_handle: "<!subteam^S06G3MJT516>"
+        summary: >-
+          Namespace-lister is reporting too many internal errors
+        description: >-
+          Namespace-lister pod 'namespace-lister-5b59b78dd5-xx58b' on cluster 'stone-stg-m01' is returning internal errors
+        team: workspaces
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/namespace-lister/README.md
+
+# no change in 500-level errors should have no alerts
+- interval: 1m
+  input_series:
+  - series: 'namespace_lister_api_counter{source_cluster="stone-stg-m01", code="500"}'
+    values: '1x10'
+  alert_rule_test:
+  - eval_time: 10m
+    alertname: NamespaceListerInternalError
+    exp_alerts: []
