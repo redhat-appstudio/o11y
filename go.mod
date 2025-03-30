@@ -1,6 +1,8 @@
 module github.com/redhat-appstudio/o11y.git
 
-go 1.21
+go 1.22
+
+toolchain go1.22.9
 
 require github.com/prometheus/client_golang v1.21.1
 
@@ -52,7 +54,7 @@ require (
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/sys v0.28.0 // indirect
-	google.golang.org/protobuf v1.36.1 // indirect
+	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/client-go v0.29.0
 	sigs.k8s.io/controller-runtime v0.17.0
