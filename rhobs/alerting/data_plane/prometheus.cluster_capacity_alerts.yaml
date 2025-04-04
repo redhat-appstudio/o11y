@@ -1,0 +1,71 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-etcd-cluster-capacity-alerting
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: etcd_cluster_capacity_alerts
+      interval: 1m
+      rules:
+
+      - alert: EtcdDatabaseQuotaLowSpaceWarning
+        expr: |
+          (last_over_time(etcd_mvcc_db_total_size_in_bytes{job="etcd"}[5m]) / last_over_time(etcd_server_quota_backend_bytes{job="etcd"}[5m]))*100 > 75
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: >-
+             Etcd cluster database is running full.
+          description: >-
+             Database size exceeds warning threshold on etcd instances in cluster {{ $labels.source_cluster }}.
+          alert_team_handle: <!subteam^S06LGCC3C2V>
+          team: o11y
+          slo: "false"
+
+      - alert: EtcdDatabaseQuotaLowSpaceHigh
+        expr: |
+          (last_over_time(etcd_mvcc_db_total_size_in_bytes{job="etcd"}[5m]) / last_over_time(etcd_server_quota_backend_bytes{job="etcd"}[5m]))*100 > 80
+        for: 5m
+        labels:
+          severity: high
+        annotations:
+          summary: >-
+             Etcd cluster database is running full.
+          description: >-
+             Database size exceeds high usage threshold on etcd instances in cluster {{ $labels.source_cluster }}.
+          alert_team_handle: <!subteam^S06LGCC3C2V>
+          team: o11y
+          slo: "false"
+
+      - alert: EtcdNoLeader
+        expr: |
+          etcd_server_has_leader{namespace="openshift-etcd"} == 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: >-
+            ETCD no Leader
+          description: >-
+            Etcd has no leader in cluster {{ $labels.source_cluster }}.
+          alert_team_handle: <!subteam^S06LGCC3C2V>
+          team: o11y
+          slo: "false"
+
+      - alert: EtcdHighNumberOfLeaderChanges
+        expr: |
+          increase(etcd_server_leader_changes_seen_total{namespace="openshift-etcd"}[10m]) > 2
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: >-
+            Etcd high number of leader changes
+          description: >-
+            Etcd leader changed more than 2 times during 10 minutes in cluster {{ $labels.source_cluster }}.
+          alert_team_handle: <!subteam^S06LGCC3C2V>
+          team: o11y
+          slo: "false"
