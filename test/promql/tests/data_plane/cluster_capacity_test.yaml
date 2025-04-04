@@ -1,0 +1,132 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.cluster_capacity_alerts.yaml
+
+tests:
+
+  - interval: 1m
+    input_series:
+      - series: etcd_mvcc_db_total_size_in_bytes{job="etcd",source_cluster="cluster01"}
+        values: 80+0x240
+      - series: etcd_server_quota_backend_bytes{job="etcd",source_cluster="cluster01"}
+        values: 100+0x240
+    alert_rule_test:
+      - eval_time: 11m
+        alertname: EtcdDatabaseQuotaLowSpaceWarning
+        exp_alerts:
+          - exp_labels:
+              job: etcd
+              severity: warning
+              source_cluster: cluster01
+            exp_annotations:
+              description: 'Database size exceeds warning threshold on etcd instances in cluster cluster01.'
+              summary: Etcd cluster database is running full.
+              alert_team_handle: <!subteam^S06LGCC3C2V>
+              slo: 'false'
+              team: 'o11y'
+
+  - interval: 1m
+    input_series:
+      - series: etcd_mvcc_db_total_size_in_bytes{job="etcd",source_cluster="cluster01"}
+        values: 10+0x240
+      - series: etcd_server_quota_backend_bytes{job="etcd",source_cluster="cluster01"}
+        values: 100+0x240
+
+    alert_rule_test:
+      - eval_time: 11m
+        alertname: EtcdDatabaseQuotaLowSpaceWarning
+
+  - interval: 1m
+    input_series:
+      - series: etcd_mvcc_db_total_size_in_bytes{job="etcd",source_cluster="cluster01"}
+        values: 81+10x240
+      - series: etcd_server_quota_backend_bytes{job="etcd",source_cluster="cluster01"}
+        values: 100+0x240
+    alert_rule_test:
+      - eval_time: 11m
+        alertname: EtcdDatabaseQuotaLowSpaceHigh
+        exp_alerts:
+          - exp_labels:
+              job: etcd
+              severity: high
+              source_cluster: cluster01
+            exp_annotations:
+              description: 'Database size exceeds high usage threshold on etcd instances in cluster cluster01.'
+              summary: Etcd cluster database is running full.
+              alert_team_handle: <!subteam^S06LGCC3C2V>
+              slo: 'false'
+              team: 'o11y'
+
+  - interval: 1m
+    input_series:
+      - series: etcd_mvcc_db_total_size_in_bytes{job="etcd",source_cluster="cluster01"}
+        values: 15+0x240
+      - series: etcd_server_quota_backend_bytes{job="etcd",source_cluster="cluster01"}
+        values: 100+0x240
+
+    alert_rule_test:
+      - eval_time: 11m
+        alertname: EtcdDatabaseQuotaLowSpaceHigh
+
+  - interval: 1m
+    input_series:
+      # Etcd No Leader failures within threshold limit, so it will be alerted.
+      - series: 'etcd_server_has_leader{namespace="openshift-etcd",source_cluster="cluster01"}'
+        values: '0x10 1x50'
+
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: EtcdNoLeader
+        exp_alerts:
+          - exp_labels:
+              namespace: openshift-etcd
+              severity: warning
+              source_cluster: cluster01
+            exp_annotations:
+              summary: 'ETCD no Leader'
+              description: 'Etcd has no leader in cluster cluster01.'
+              alert_team_handle: <!subteam^S06LGCC3C2V>
+              team: o11y
+              slo: 'false'
+
+  - interval: 1m
+    input_series:
+      # Etcd has Leader within threshold limit, so it will not be alerted.
+      - series: 'etcd_server_has_leader{job="etcd",source_cluster="cluster01"}'
+        values: '1x60'
+
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: EtcdNoLeader
+
+  - interval: 1m
+    input_series:
+      # Etcd No Leader failures within threshold limit, so it will be alerted.
+      - series: 'etcd_server_leader_changes_seen_total{namespace="openshift-etcd",source_cluster="cluster01"}'
+        values: '3+2x60'
+
+    alert_rule_test:
+      - eval_time: 11m
+        alertname: EtcdHighNumberOfLeaderChanges
+        exp_alerts:
+          - exp_labels:
+              namespace: openshift-etcd
+              severity: warning
+              source_cluster: cluster01
+            exp_annotations:
+              summary: 'Etcd high number of leader changes'
+              description: 'Etcd leader changed more than 2 times during 10 minutes in cluster cluster01.'
+              alert_team_handle: <!subteam^S06LGCC3C2V>
+              team: o11y
+              slo: 'false'
+
+  - interval: 1m
+    input_series:
+      # Etcd has Leader within threshold limit, so it will not be alerted.
+      - series: 'etcd_server_leader_changes_seen_total{source_cluster="cluster01"}'
+        values: '1+0x60'
+
+    alert_rule_test:
+      - eval_time: 11m
+        alertname: EtcdHighNumberOfLeaderChanges
