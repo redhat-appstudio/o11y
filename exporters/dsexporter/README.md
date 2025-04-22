@@ -8,7 +8,7 @@ another system/component.
 ## Availability Exporter
 
 In the context of the Konflux ecosystem, the `dsexporter` serves as an 
-[Availability Exporter](https://gitlab.cee.redhat.com/konflux/docs/documentation/-/blob/main/o11y/monitoring/availability_exporters.md),
+[Availability Exporter](https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/monitoring/availability_exporters.md),
 contributing to the evaluation of the availability of each component within the system.
 By exposing this metric, it allows for monitoring and analyzing the 
 workload and performance of the associated service.
