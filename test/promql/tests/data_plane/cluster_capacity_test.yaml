@@ -8,7 +8,7 @@ tests:
   - interval: 1m
     input_series:
       - series: etcd_mvcc_db_total_size_in_bytes{job="etcd",source_cluster="cluster01"}
-        values: 80+0x240
+        values: 5+0x240
       - series: etcd_server_quota_backend_bytes{job="etcd",source_cluster="cluster01"}
         values: 100+0x240
     alert_rule_test:
@@ -29,7 +29,7 @@ tests:
   - interval: 1m
     input_series:
       - series: etcd_mvcc_db_total_size_in_bytes{job="etcd",source_cluster="cluster01"}
-        values: 10+0x240
+        values: 2+0x240
       - series: etcd_server_quota_backend_bytes{job="etcd",source_cluster="cluster01"}
         values: 100+0x240
 
@@ -40,7 +40,7 @@ tests:
   - interval: 1m
     input_series:
       - series: etcd_mvcc_db_total_size_in_bytes{job="etcd",source_cluster="cluster01"}
-        values: 81+10x240
+        values: 5+10x240
       - series: etcd_server_quota_backend_bytes{job="etcd",source_cluster="cluster01"}
         values: 100+0x240
     alert_rule_test:
@@ -61,7 +61,7 @@ tests:
   - interval: 1m
     input_series:
       - series: etcd_mvcc_db_total_size_in_bytes{job="etcd",source_cluster="cluster01"}
-        values: 15+0x240
+        values: 1+0x240
       - series: etcd_server_quota_backend_bytes{job="etcd",source_cluster="cluster01"}
         values: 100+0x240
 
@@ -73,7 +73,7 @@ tests:
     input_series:
       # Etcd No Leader failures within threshold limit, so it will be alerted.
       - series: 'etcd_server_has_leader{namespace="openshift-etcd",source_cluster="cluster01"}'
-        values: '0x10 1x50'
+        values: '1x10 1x50'
 
     alert_rule_test:
       - eval_time: 1m
@@ -94,7 +94,7 @@ tests:
     input_series:
       # Etcd has Leader within threshold limit, so it will not be alerted.
       - series: 'etcd_server_has_leader{job="etcd",source_cluster="cluster01"}'
-        values: '1x60'
+        values: '0x60'
 
     alert_rule_test:
       - eval_time: 1m
