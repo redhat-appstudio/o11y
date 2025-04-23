@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi9/go-toolset:1.23.6-1744294473 AS builder
+FROM registry.access.redhat.com/ubi9/go-toolset:1.23.6-1745328278 AS builder
 
 # Set the working directory
 WORKDIR /opt/app-root/src
