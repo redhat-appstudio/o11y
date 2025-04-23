@@ -1,0 +1,60 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.pod_alerts.yaml
+
+tests:
+  - interval: 1m
+    input_series:
+
+      # CPU exceeding requested
+      - series: 'container_cpu_usage_seconds_total{namespace="appstudio-grafana", pod="prod-pod-1", container="test-container-1", source_cluster="cluster01"}'
+        values: '2x10'
+
+      - series: 'kube_pod_container_resource_requests{resource="cpu", namespace="appstudio-grafana", pod="prod-pod-1", container="test-container-1", source_cluster="cluster01"}'
+        values: '1x10'
+
+    alert_rule_test:
+      - alertname: PodCPUUsageExceedsRequested
+        eval_time: 10m
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: appstudio-grafana
+              pod: prod-pod-1
+              container: test-container-1
+              source_cluster: cluster01
+            exp_annotations:
+              slo: false
+              team: o11y
+              summary: Pod prod-pod-1 cpu usage is exceeding the requested resource.
+              description: >-
+                Pod prod-pod-1 in namespace appstudio-grafana on cluster
+                cluster01 has been running above the requested cpu resources.
+  - interval: 1m
+    input_series:
+
+      # Memory exceeding requested
+      - series: 'container_memory_usage_bytes{namespace="appstudio-grafana", pod="prod-pod-2", container="test-container-2", source_cluster="cluster01"}'
+        values: '2x10'
+
+      - series: 'kube_pod_container_resource_requests{resource="memory", namespace="appstudio-grafana", pod="prod-pod-2", container="test-container-2", source_cluster="cluster01"}'
+        values: '1x10'
+
+    alert_rule_test:
+      - alertname: PodMemoryUsageExceedsRequested
+        eval_time: 10m
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: appstudio-grafana
+              pod: prod-pod-2
+              container: test-container-2
+              source_cluster: cluster01
+            exp_annotations:
+              slo: false
+              team: o11y
+              summary: Pod prod-pod-2 memory usage is exceeding the requested resource.
+              description: >-
+                Pod prod-pod-2 in namespace appstudio-grafana on cluster
+                cluster01 has been running above the requested memory resources.
