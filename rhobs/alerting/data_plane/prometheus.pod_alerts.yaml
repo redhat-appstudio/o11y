@@ -49,3 +49,37 @@ spec:
           {{ $labels.source_cluster }} is not ready for more than 30 minutes.
         alert_routing_key: '{{ $labels.namespace }}'
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-PodNotReady.md
+
+    - alert: PodMemoryUsageExceedsRequested
+      expr: |
+        avg_over_time(container_memory_usage_bytes{namespace="appstudio-grafana"}[5m])
+        > on(namespace, pod, container, source_cluster)
+        kube_pod_container_resource_requests{resource="memory", namespace="appstudio-grafana"}
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        team: o11y
+        slo: "false"
+        summary: >-
+          Pod {{ $labels.pod }} memory usage is exceeding the requested resource.
+        description: >-
+          Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster
+          {{ $labels.source_cluster }} has been running above the requested memory resources.
+
+    - alert: PodCPUUsageExceedsRequested
+      expr: |
+        avg_over_time(container_cpu_usage_seconds_total{namespace="appstudio-grafana"}[5m])
+        > on(namespace, pod, container, source_cluster)
+        kube_pod_container_resource_requests{resource="cpu", namespace="appstudio-grafana"}
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        team: o11y
+        slo: "false"
+        summary: >-
+          Pod {{ $labels.pod }} cpu usage is exceeding the requested resource.
+        description: >-
+          Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster
+          {{ $labels.source_cluster }} has been running above the requested cpu resources.
