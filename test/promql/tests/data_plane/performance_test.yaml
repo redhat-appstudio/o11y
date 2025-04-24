@@ -74,13 +74,13 @@ tests:
     input_series:
       # Etcd cluster member RTT delay is over 0.1, so it will be alerted.
       - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="0.01", pod="etcd-pod-1", source_cluster="cluster01"}'
-        values: '0.1+0.3x15'
+        values: '0.1+0.3x16'
 
       - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="0.2", pod="etcd-pod-1", source_cluster="cluster01"}'
-        values: '0.1+0.5x15'
+        values: '0.1+0.5x16'
 
       - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="+Inf", pod="etcd-pod-1", source_cluster="cluster01"}'
-        values: '0.1+0.2x15'
+        values: '0.1+0.2x16'
 
     alert_rule_test:
       - eval_time: 16m
@@ -97,12 +97,46 @@ tests:
 
   - interval: 1m
     input_series:
-      # Etcd cluster member RTT delay is below alert threshold rate, so it will not be alerted.
-      - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="0.1", pod="etcd-pod-2", source_cluster="cluster01"}'
-        values: '0.1+0.01x15'
+      # Etcd cluster member RTT delay is over 0.1 on second pod, so it will be alerted.
+      - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="0.01", pod="etcd-pod-1", source_cluster="cluster01"}'
+        values: '0.01+0x15'
+
+      - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="0.2", pod="etcd-pod-1", source_cluster="cluster01"}'
+        values: '0.01+0x15'
+
+      - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="+Inf", pod="etcd-pod-1", source_cluster="cluster01"}'
+        values: '0.01+0x15'
+
+      - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="0.01", pod="etcd-pod-2", source_cluster="cluster01"}'
+        values: '0.1+0.3x15'
+
+      - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="0.2", pod="etcd-pod-2", source_cluster="cluster01"}'
+        values: '0.1+0.5x15'
+
+      - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="+Inf", pod="etcd-pod-2", source_cluster="cluster01"}'
+        values: '0.1+0.2x15'
 
     alert_rule_test:
-      - eval_time: 15m
+      - eval_time: 16m
+        alertname: EtcdSlowNetworkRTT
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              pod: etcd-pod-2
+              source_cluster: cluster01
+            exp_annotations:
+              summary: "High RTT latency on ETCD cluster member requests."
+              description: "99th etcd RTT latency rate on etcd-pod-2 higher than 0.1 in cluster cluster01."
+              alert_routing_key: perfandscale
+
+  - interval: 1m
+    input_series:
+      # Etcd cluster member RTT delay is below alert threshold rate, so it will not be alerted.
+      - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="0.1", pod="etcd-pod-2", source_cluster="cluster01"}'
+        values: '0.1+0.01x16'
+
+    alert_rule_test:
+      - eval_time: 16m
         alertname: EtcdSlowNetworkRTT
 
 

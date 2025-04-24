@@ -51,7 +51,7 @@ spec:
 
         - alert: EtcdSlowNetworkRTT
           expr: |
-            histogram_quantile(0.99, rate(etcd_network_peer_round_trip_time_seconds_bucket[5m])) > 0.1
+            max by (source_cluster, pod) (histogram_quantile(0.99, rate(etcd_network_peer_round_trip_time_seconds_bucket[5m]))) > 0.1
           for: 15m
           labels:
             severity: warning
