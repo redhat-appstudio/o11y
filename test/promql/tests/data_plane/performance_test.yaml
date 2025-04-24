@@ -193,18 +193,18 @@ tests:
     input_series:
       # Run status of 2 jobs are not available, so it will be alerted.
       - series: 'kube_job_spec_completions{namespace="default", job_name="example-job", source_cluster="cluster01"}'
-        values: '3+0x15'
+        values: '3+0x70'
 
       # Status: 0 job succeeded
       - series: 'kube_job_status_succeeded{namespace="default", job_name="example-job", source_cluster="cluster01"}'
-        values: '0+0x15'
+        values: '0+0x70'
 
       # Status: 1 jobs failed
       - series: 'kube_job_status_failed{namespace="default", job_name="example-job", source_cluster="cluster01"}'
-        values: '1+0x15'
+        values: '1+0x70'
 
     alert_rule_test:
-      - eval_time: 20m
+      - eval_time: 70m
         alertname: KubernetesLongRunningJob
         exp_alerts:
           - exp_labels:
@@ -221,18 +221,18 @@ tests:
     input_series:
       # Run status of 1 job is not available, so it will be alerted.
       - series: 'kube_job_spec_completions{namespace="default", job_name="example-job", source_cluster="cluster01"}'
-        values: '3+0x20'
+        values: '3+0x70'
 
       # Status: 2 job succeeded
       - series: 'kube_job_status_succeeded{namespace="default", job_name="example-job", source_cluster="cluster01"}'
-        values: '2+0x20'
+        values: '2+0x70'
 
       # Status: 0 jobs failed
       - series: 'kube_job_status_failed{namespace="default", job_name="example-job", source_cluster="cluster01"}'
-        values: '0+0x20'
+        values: '0+0x70'
 
     alert_rule_test:
-      - eval_time: 20m
+      - eval_time: 70m
         alertname: KubernetesLongRunningJob
         exp_alerts:
           - exp_labels:
@@ -249,36 +249,36 @@ tests:
     input_series:
       # Run status of all jobs are available, so it will not be alerted.
       - series: 'kube_job_spec_completions{namespace="default", job_name="example-job", source_cluster="cluster01"}'
-        values: '3+0x20'
+        values: '3+0x70'
 
       # Status: 3 job succeeded
       - series: 'kube_job_status_succeeded{namespace="default", job_name="example-job", source_cluster="cluster01"}'
-        values: '3+0x20'
+        values: '3+0x70'
 
       # Status: 0 jobs failed
       - series: 'kube_job_status_failed{namespace="default", job_name="example-job", source_cluster="cluster01"}'
-        values: '0+0x20'
+        values: '0+0x70'
 
     alert_rule_test:
-      - eval_time: 20m
+      - eval_time: 70m
         alertname: KubernetesLongRunningJob
 
   - interval: 1m
     input_series:
       #  Run status of all jobs are available, so it will not be alerted.
       - series: 'kube_job_spec_completions{namespace="default", job_name="example-job", source_cluster="cluster01"}'
-        values: '3+0x20'
+        values: '3+0x70'
 
       # Status: 2 job succeeded
       - series: 'kube_job_status_succeeded{namespace="default", job_name="example-job", source_cluster="cluster01"}'
-        values: '2+0x20'
+        values: '2+0x70'
 
       # Status: 0 jobs failed
       - series: 'kube_job_status_failed{namespace="default", job_name="example-job", source_cluster="cluster01"}'
-        values: '1+0x20'
+        values: '1+0x70'
 
     alert_rule_test:
-      - eval_time: 20m
+      - eval_time: 70m
         alertname: KubernetesLongRunningJob
 
   # Node based Alerts
