@@ -110,7 +110,13 @@ tests:
     input_series:
       # Increase in Etcd raft proposal failures over time, so it will be alerted.
       - series: 'etcd_server_proposals_failed_total{pod="etcd-pod-1", source_cluster="cluster01"}'
-        values: '0+5x59'
+        values: '0+5x60'
+
+      - series: 'etcd_server_proposals_failed_total{pod="etcd-pod-2", source_cluster="cluster01"}'
+        values: '0+0x60'
+
+      - series: 'etcd_server_proposals_failed_total{pod="etcd-pod-3", source_cluster="cluster01"}'
+        values: '0+0x60'
 
     alert_rule_test:
       - eval_time: 1h
@@ -118,18 +124,23 @@ tests:
         exp_alerts:
           - exp_labels:
               severity: warning
-              pod: etcd-pod-1
               source_cluster: cluster01
             exp_annotations:
               summary: "ETCD raft proposal failures."
-              description: "Etcd high number of failed proposals on pod etcd-pod-1 in cluster cluster01."
+              description: "Etcd high number of failed proposals on some etcd pod in cluster cluster01."
               alert_routing_key: perfandscale
 
   - interval: 1m
     input_series:
       # Etcd raft proposals failures within threshold limit, so it will not be alerted.
       - series: 'etcd_server_proposals_failed_total{pod="etcd-pod-1", source_cluster="cluster01"}'
-        values: '0+5x30 1+0x29'
+        values: '0+5x30 1+0x30'
+
+      - series: 'etcd_server_proposals_failed_total{pod="etcd-pod-2", source_cluster="cluster01"}'
+        values: '0+5x30 1+0x30'
+
+      - series: 'etcd_server_proposals_failed_total{pod="etcd-pod-3", source_cluster="cluster01"}'
+        values: '0+5x30 1+0x30'
 
     alert_rule_test:
       - eval_time: 1h
