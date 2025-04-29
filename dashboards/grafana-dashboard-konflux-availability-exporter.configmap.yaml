@@ -21,7 +21,7 @@ data:
       "editable": true,
       "fiscalYearStartMonth": 0,
       "graphTooltip": 0,
-      "id": 689731,
+      "id": 761221,
       "links": [],
       "panels": [
         {
@@ -108,7 +108,7 @@ data:
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "avg(sum_over_time((konflux_up{service=~\"$service\"} == 1)[$__range:]) * 100 / sum_over_time(konflux_up{service=~\"$service\"}[$__range:]))",
+              "expr": "avg(sum_over_time((konflux_up{service=~\"$service\", source_cluster=~\"$cluster\"} == 1)[$__range:]) * 100 / sum_over_time(konflux_up{service=~\"$service\"}[$__range:]))",
               "format": "time_series",
               "instant": false,
               "interval": "",
@@ -195,7 +195,7 @@ data:
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "sum( sum by (service, check) (konflux_up{service=~\"$service\"} == 1))",
+              "expr": "sum( sum by (service, check) (konflux_up{service=~\"$service\", source_cluster=~\"$cluster\"} == 1))",
               "format": "time_series",
               "instant": false,
               "interval": "",
@@ -284,7 +284,7 @@ data:
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "sum( count by (service, check) (konflux_up{service=~\"$service\"} == 0))",
+              "expr": "sum( count by (service, check) (konflux_up{service=~\"$service\", source_cluster=~\"$cluster\"} == 0))",
               "format": "time_series",
               "instant": false,
               "interval": "",
@@ -424,7 +424,7 @@ data:
               "disableTextWrap": false,
               "editorMode": "code",
               "exemplar": false,
-              "expr": "(count by (service, check,source_cluster) (konflux_up{service=~\"$service\"} == 0))",
+              "expr": "(count by (service, check,source_cluster) (konflux_up{service=~\"$service\", source_cluster=~\"$cluster\"} == 0))",
               "format": "table",
               "fullMetaSearch": false,
               "hide": false,
@@ -573,7 +573,7 @@ data:
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "(group by (service, check, source_cluster) (count_over_time((konflux_up{service=~\"$service\", check=~\"$check\"} == 1)[$__range:])) / group by (service, check, source_cluster) (count_over_time(konflux_up{service=~\"$service\", check=~\"$check\"}[$__range:])) ) * 100",
+              "expr": "(group by (service, check, source_cluster) (count_over_time((konflux_up{service=~\"$service\", check=~\"$check\", source_cluster=~\"$cluster\"} == 1)[$__range:])) / group by (service, check, source_cluster) (count_over_time(konflux_up{service=~\"$service\", check=~\"$check\", source_cluster=~\"$cluster\"}[$__range:])) ) * 100",
               "instant": false,
               "legendFormat": "{{source_cluster}} - {{service}} - {{check}} ",
               "range": true,
@@ -591,7 +591,7 @@ data:
         "list": [
           {
             "current": {
-              "selected": true,
+              "selected": false,
               "text": "rhtap-observatorium-production",
               "value": "P22466E8E7855F1E0"
             },
@@ -643,7 +643,7 @@ data:
           {
             "allValue": "",
             "current": {
-              "selected": true,
+              "selected": false,
               "text": "All",
               "value": "$__all"
             },
@@ -667,6 +667,39 @@ data:
             "skipUrlSync": false,
             "sort": 1,
             "type": "query"
+          },
+          {
+            "current": {
+              "selected": true,
+              "text": [
+                "All"
+              ],
+              "value": [
+                "$__all"
+              ]
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${Datasource}"
+            },
+            "definition": "label_values(source_cluster)",
+            "description": "Choose a source cluster for the alerts shown",
+            "hide": 0,
+            "includeAll": true,
+            "label": "Cluster",
+            "multi": true,
+            "name": "cluster",
+            "options": [],
+            "query": {
+              "qryType": 1,
+              "query": "label_values(source_cluster)",
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "refresh": 1,
+            "regex": "",
+            "skipUrlSync": false,
+            "sort": 3,
+            "type": "query"
           }
         ]
       },
@@ -678,7 +711,7 @@ data:
       "timezone": "browser",
       "title": "Availability Exporter Dashboard",
       "uid": "fdifr5mbapv5sb",
-      "version": 3,
+      "version": 4,
       "weekStart": ""
     }
 kind: ConfigMap
