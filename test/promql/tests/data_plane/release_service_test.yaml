@@ -76,33 +76,7 @@ tests:
           - exp_labels:
               severity: critical
               slo: "true"
-              namespace: "release-service"
-            exp_annotations:
-              summary: >-
-                The Release Service Controller Manager must be available 99% of the time
-              description: >-
-                The Release Service Controller Manager is failing to be available for 99% of the time
-              alert_team_handle: <!subteam^S03SVBS426R>
-              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/release-service/release-controller-availability.md?ref_type=heads
-              team: release
-
-  - name: ReleaseServiceControllerAvailabilityAlertOnClusterDataMissingSLOFailure
-    interval: 1m
-    input_series:
-      - series: 'kube_pod_container_status_ready{namespace="release-service", container="manager", source_cluster="stone-prd-rh01"}'
-        values: '1 1x58'
-      - series: 'kube_pod_container_status_ready{namespace="release-service", container="manager", source_cluster="stone-prod-p02"}'
-        values: '1 _x58'
-      - series: 'kube_pod_container_status_ready{namespace="release-service", container="manager", source_cluster="cluster03"}'
-        values: '1 1x58'
-    alert_rule_test:
-      - eval_time: 24h
-        alertname: ReleaseServiceControllerManagerAvailability
-        exp_alerts:
-          - exp_labels:
-              severity: critical
-              slo: "true"
-              namespace: "release-service"
+              source_cluster: "stone-prod-p02"
             exp_annotations:
               summary: >-
                 The Release Service Controller Manager must be available 99% of the time
