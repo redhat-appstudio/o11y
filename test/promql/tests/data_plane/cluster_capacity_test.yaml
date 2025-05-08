@@ -165,12 +165,10 @@ tests:
 
   - interval: 1m
     input_series:
-      # Etcd No Leader failures within threshold limit, so it will be alerted.
+      # Etcd insufficient members threshold limit, so it will be alerted.
       - series: 'etcd_server_id{source_cluster="cluster01",instance="instance1"}'
         values: '1+0x60'
       - series: 'etcd_server_id{source_cluster="cluster01",instance="instance2"}'
-        values: '1+0x60'
-      - series: 'etcd_server_id{source_cluster="cluster01",instance="instance3"}'
         values: '1+0x60'
 
     alert_rule_test:
@@ -189,11 +187,14 @@ tests:
 
   - interval: 1m
     input_series:
-      # Etcd has Leader within threshold limit, so it will not be alerted.
+      # Etcd with 3 instances limit, so it will not be alerted.
       - series: 'etcd_server_id{source_cluster="cluster01",instance="instance1"}'
         values: '1+0x60'
       - series: 'etcd_server_id{source_cluster="cluster01",instance="instance2"}'
         values: '1+0x60'
+      - series: 'etcd_server_id{source_cluster="cluster01",instance="instance3"}'
+        values: '1+0x60'
+
     alert_rule_test:
       - eval_time: 11m
         alertname: EtcdInsufficientMembers
