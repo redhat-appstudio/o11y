@@ -2,7 +2,7 @@ module github.com/redhat-appstudio/o11y.git
 
 go 1.23.0
 
-toolchain go1.24.2
+toolchain go1.24.3
 
 require github.com/prometheus/client_golang v1.21.1
 
