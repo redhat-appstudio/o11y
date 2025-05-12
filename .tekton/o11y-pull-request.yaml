@@ -9,7 +9,7 @@ metadata:
     pipelinesascode.tekton.dev/max-keep-runs: "3"
     pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch
       == "main"
-    pipelinesascode.tekton.dev/task: "[.tekton/kube-linter-oci-ta.yaml]"
+    pipelinesascode.tekton.dev/task: '[.tekton/kube-linter-oci-ta.yaml]'
   creationTimestamp: null
   labels:
     appstudio.openshift.io/application: o11y
@@ -148,15 +148,15 @@ spec:
       - name: image-digest
         value: $(tasks.build-container.results.IMAGE_DIGEST)
       - name: fail-unsigned
-        value: true
+        value: "true"
       taskRef:
         params:
-          - name: name
-            value: rpms-signature-scan
-          - name: bundle
-            value: quay.io/konflux-ci/tekton-catalog/task-rpms-signature-scan:0.2@sha256:2366b2f394610192736dd8edac1a702964daeb961603dfc9ceb6b8188e39a009
-          - name: kind
-            value: task
+        - name: name
+          value: rpms-signature-scan
+        - name: bundle
+          value: quay.io/konflux-ci/tekton-catalog/task-rpms-signature-scan:0.2@sha256:2366b2f394610192736dd8edac1a702964daeb961603dfc9ceb6b8188e39a009
+        - name: kind
+          value: task
         resolver: bundles
     - name: init
       params:
@@ -188,9 +188,9 @@ spec:
       - name: revision
         value: $(params.revision)
       - name: ociStorage
-        value: "$(params.output-image).git"
+        value: $(params.output-image).git
       - name: ociArtifactExpiresAfter
-        value: "$(params.image-expires-after)"
+        value: $(params.image-expires-after)
       runAfter:
       - init
       taskRef:
@@ -215,7 +215,7 @@ spec:
       - name: input
         value: $(params.prefetch-input)
       - name: hermetic
-        value: "$(params.hermetic)"
+        value: $(params.hermetic)
       - name: dev-package-managers
         value: $(params.prefetch-dev-package-managers-enabled)
       - name: SOURCE_ARTIFACT
@@ -237,174 +237,200 @@ spec:
         resolver: bundles
     - name: check-and-test-prometheus-rules
       params:
-        - name: SOURCE_ARTIFACT
-          value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
-      runAfter:
-        - clone-repository
-      taskSpec:
-        params:
-          - description: The Trusted Artifact URI pointing to the artifact with the application source code.
-            name: SOURCE_ARTIFACT
-            type: string
-        stepTemplate:
-          volumeMounts:
-            - mountPath: /var/workdir
-              name: workdir
-        steps:
-          - name: use-trusted-artifact
-            image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
-            args:
-              - use
-              - $(params.SOURCE_ARTIFACT)=/var/workdir/source
-          - name: check-and-test-all
-            image: quay.io/rhobs/obsctl-reloader-rules-checker:1.0.7
-            workingDir: /var/workdir/source
-            script: |
-              yum install -y make && \
-              CMD=obsctl-reloader-rules-checker make check-and-test
-        volumes:
-          - name: workdir
-            emptyDir: {}
-    - name: yaml-lint
-      runAfter:
-        - clone-repository
-      params:
-        - name: SOURCE_ARTIFACT
-          value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
-      taskSpec:
-        params:
-          - description: The Trusted Artifact URI pointing to the artifact with the application source code.
-            name: SOURCE_ARTIFACT
-            type: string
-        stepTemplate:
-          volumeMounts:
-            - mountPath: /var/workdir
-              name: workdir
-        steps:
-          - name: use-trusted-artifact
-            image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
-            args:
-              - use
-              - $(params.SOURCE_ARTIFACT)=/var/workdir/source
-          - name: yaml-lint
-            image: registry.access.redhat.com/ubi9/python-39:latest
-            workingDir: /var/workdir/source
-            script: make install_pipenv sync_pipenv lint_yamls
-        volumes:
-          - name: workdir
-            emptyDir: {}
-    - name: run-gitlint
-      params:
-        - name: target-branch
-          value: $(params.target-branch)
-        - name: SOURCE_ARTIFACT
-          value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
-      runAfter:
-        - clone-repository
-      taskSpec:
-        params:
-          - name: target-branch
-          - description: The Trusted Artifact URI pointing to the artifact with the application source code.
-            name: SOURCE_ARTIFACT
-            type: string
-        stepTemplate:
-          volumeMounts:
-            - mountPath: /var/workdir
-              name: workdir
-          # This is needed because the steps below both write to git source but execute as
-          # different users by default.
-          securityContext:
-            runAsUser: 0
-        steps:
-          - name: use-trusted-artifact
-            image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
-            args:
-              - use
-              - $(params.SOURCE_ARTIFACT)=/var/workdir/source
-          - name: run-gitlint
-            image: registry.access.redhat.com/ubi9/python-39:latest
-            workingDir: /var/workdir/source
-            script: |
-              #!/bin/bash -ex
-              python -m pip install gitlint
-              git config --global --add safe.directory '*'
-              git fetch origin "$(params.target-branch)"
-              gitlint --fail-without-commits --commits "origin/$(params.target-branch)..HEAD"
-        volumes:
-          - name: workdir
-            emptyDir: {}
-    - name: run-kubelint
+      - name: SOURCE_ARTIFACT
+        value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
       runAfter:
       - clone-repository
-      taskRef:
-        name: kube-linter-oci-ta
+      taskSpec:
+        metadata: {}
+        params:
+        - description: The Trusted Artifact URI pointing to the artifact with the
+            application source code.
+          name: SOURCE_ARTIFACT
+          type: string
+        spec: null
+        stepTemplate:
+          computeResources: {}
+          volumeMounts:
+          - mountPath: /var/workdir
+            name: workdir
+        steps:
+        - args:
+          - use
+          - $(params.SOURCE_ARTIFACT)=/var/workdir/source
+          computeResources: {}
+          image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+          name: use-trusted-artifact
+        - computeResources: {}
+          image: quay.io/rhobs/obsctl-reloader-rules-checker:1.0.7
+          name: check-and-test-all
+          script: |
+            yum install -y make && \
+            CMD=obsctl-reloader-rules-checker make check-and-test
+          workingDir: /var/workdir/source
+        volumes:
+        - emptyDir: {}
+          name: workdir
+    - name: yaml-lint
+      params:
+      - name: SOURCE_ARTIFACT
+        value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
+      runAfter:
+      - clone-repository
+      taskSpec:
+        metadata: {}
+        params:
+        - description: The Trusted Artifact URI pointing to the artifact with the
+            application source code.
+          name: SOURCE_ARTIFACT
+          type: string
+        spec: null
+        stepTemplate:
+          computeResources: {}
+          volumeMounts:
+          - mountPath: /var/workdir
+            name: workdir
+        steps:
+        - args:
+          - use
+          - $(params.SOURCE_ARTIFACT)=/var/workdir/source
+          computeResources: {}
+          image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+          name: use-trusted-artifact
+        - computeResources: {}
+          image: registry.access.redhat.com/ubi9/python-39:latest
+          name: yaml-lint
+          script: make install_pipenv sync_pipenv lint_yamls
+          workingDir: /var/workdir/source
+        volumes:
+        - emptyDir: {}
+          name: workdir
+    - name: run-gitlint
+      params:
+      - name: target-branch
+        value: $(params.target-branch)
+      - name: SOURCE_ARTIFACT
+        value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
+      runAfter:
+      - clone-repository
+      taskSpec:
+        metadata: {}
+        params:
+        - name: target-branch
+        - description: The Trusted Artifact URI pointing to the artifact with the
+            application source code.
+          name: SOURCE_ARTIFACT
+          type: string
+        spec: null
+        stepTemplate:
+          computeResources: {}
+          securityContext:
+            runAsUser: 0
+          volumeMounts:
+          - mountPath: /var/workdir
+            name: workdir
+        steps:
+        - args:
+          - use
+          - $(params.SOURCE_ARTIFACT)=/var/workdir/source
+          computeResources: {}
+          image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+          name: use-trusted-artifact
+        - computeResources: {}
+          image: registry.access.redhat.com/ubi9/python-39:latest
+          name: run-gitlint
+          script: |
+            #!/bin/bash -ex
+            python -m pip install gitlint
+            git config --global --add safe.directory '*'
+            git fetch origin "$(params.target-branch)"
+            gitlint --fail-without-commits --commits "origin/$(params.target-branch)..HEAD"
+          workingDir: /var/workdir/source
+        volumes:
+        - emptyDir: {}
+          name: workdir
+    - name: run-kubelint
       params:
       - name: SOURCE_ARTIFACT
         value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
       - name: config_file_path
         value: .kube-linter.yaml
+      runAfter:
+      - clone-repository
+      taskRef:
+        name: kube-linter-oci-ta
     - name: run-go-unit-tests
       params:
-        - name: SOURCE_ARTIFACT
-          value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
+      - name: SOURCE_ARTIFACT
+        value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
       runAfter:
-        - clone-repository
+      - clone-repository
       taskSpec:
+        metadata: {}
         params:
-          - description: The Trusted Artifact URI pointing to the artifact with the application source code.
-            name: SOURCE_ARTIFACT
-            type: string
+        - description: The Trusted Artifact URI pointing to the artifact with the
+            application source code.
+          name: SOURCE_ARTIFACT
+          type: string
+        spec: null
         stepTemplate:
-          volumeMounts:
-            - mountPath: /var/workdir
-              name: workdir
-          # This is needed because the steps below both write to git source but execute as
-          # different users by default.
+          computeResources: {}
           securityContext:
             runAsUser: 0
+          volumeMounts:
+          - mountPath: /var/workdir
+            name: workdir
         steps:
-          - name: use-trusted-artifact
-            image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
-            args:
-              - use
-              - $(params.SOURCE_ARTIFACT)=/var/workdir/source
-          - name: go-unit-tests
-            image: registry.access.redhat.com/ubi9/go-toolset:1.23.6-1746547777
-            workingDir: /var/workdir/source
-            script: |
-              go get -v -t -d ./...
-              go test -v ./...
+        - args:
+          - use
+          - $(params.SOURCE_ARTIFACT)=/var/workdir/source
+          computeResources: {}
+          image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+          name: use-trusted-artifact
+        - computeResources: {}
+          image: registry.access.redhat.com/ubi9/go-toolset:1.23.6-1746547777
+          name: go-unit-tests
+          script: |
+            go get -v -t -d ./...
+            go test -v ./...
+          workingDir: /var/workdir/source
         volumes:
-          - name: workdir
-            emptyDir: {}
+        - emptyDir: {}
+          name: workdir
     - name: test-kustomize-build
       params:
-        - name: SOURCE_ARTIFACT
-          value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
+      - name: SOURCE_ARTIFACT
+        value: $(tasks.clone-repository.results.SOURCE_ARTIFACT)
       runAfter:
-        - clone-repository
+      - clone-repository
       taskSpec:
+        metadata: {}
         params:
-          - description: The Trusted Artifact URI pointing to the artifact with the application source code.
-            name: SOURCE_ARTIFACT
-            type: string
+        - description: The Trusted Artifact URI pointing to the artifact with the
+            application source code.
+          name: SOURCE_ARTIFACT
+          type: string
+        spec: null
         stepTemplate:
+          computeResources: {}
           volumeMounts:
-            - mountPath: /var/workdir
-              name: workdir
+          - mountPath: /var/workdir
+            name: workdir
         steps:
-          - name: use-trusted-artifact
-            image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
-            args:
-              - use
-              - $(params.SOURCE_ARTIFACT)=/var/workdir/source
-          - name: kustomize-build
-            image: registry.access.redhat.com/ubi8/ubi:latest
-            workingDir: /var/workdir/source
-            script: yum install -y make && make kustomize-build
+        - args:
+          - use
+          - $(params.SOURCE_ARTIFACT)=/var/workdir/source
+          computeResources: {}
+          image: quay.io/redhat-appstudio/build-trusted-artifacts:latest@sha256:9b180776a41d9a22a1c51539f1647c60defbbd55b44bbebdd4130e33512d8b0d
+          name: use-trusted-artifact
+        - computeResources: {}
+          image: registry.access.redhat.com/ubi8/ubi:latest
+          name: kustomize-build
+          script: yum install -y make && make kustomize-build
+          workingDir: /var/workdir/source
         volumes:
-          - name: workdir
-            emptyDir: {}
+        - emptyDir: {}
+          name: workdir
     - name: build-container
       params:
       - name: IMAGE
@@ -539,56 +565,54 @@ spec:
         - "false"
     - name: sast-shell-check
       params:
-        - name: image-digest
-          value: $(tasks.build-container.results.IMAGE_DIGEST)
-        - name: image-url
-          value: $(tasks.build-container.results.IMAGE_URL)
-        - name: SOURCE_ARTIFACT
-          value: $(tasks.prefetch-dependencies.results.SOURCE_ARTIFACT)
-        - name: CACHI2_ARTIFACT
-          value: $(tasks.prefetch-dependencies.results.CACHI2_ARTIFACT)
+      - name: image-digest
+        value: $(tasks.build-container.results.IMAGE_DIGEST)
+      - name: image-url
+        value: $(tasks.build-container.results.IMAGE_URL)
+      - name: SOURCE_ARTIFACT
+        value: $(tasks.prefetch-dependencies.results.SOURCE_ARTIFACT)
+      - name: CACHI2_ARTIFACT
+        value: $(tasks.prefetch-dependencies.results.CACHI2_ARTIFACT)
       runAfter:
-        - build-container
+      - build-container
       taskRef:
         params:
-          - name: name
-            value: sast-shell-check-oci-ta
-          - name: bundle
-            value: quay.io/konflux-ci/tekton-catalog/task-sast-shell-check-oci-ta:0.1@sha256:57b3262138eb06186ae7375f84ca53788bba2a66cfd03d39cb82c78df050aba5
-          - name: kind
-            value: task
+        - name: name
+          value: sast-shell-check-oci-ta
+        - name: bundle
+          value: quay.io/konflux-ci/tekton-catalog/task-sast-shell-check-oci-ta:0.1@sha256:57b3262138eb06186ae7375f84ca53788bba2a66cfd03d39cb82c78df050aba5
+        - name: kind
+          value: task
         resolver: bundles
       when:
-        - input: $(params.skip-checks)
-          operator: in
-          values:
-            - "false"
-      workspaces: []
+      - input: $(params.skip-checks)
+        operator: in
+        values:
+        - "false"
     - name: sast-unicode-check
       params:
-        - name: image-url
-          value: $(tasks.build-container.results.IMAGE_URL)
-        - name: SOURCE_ARTIFACT
-          value: $(tasks.prefetch-dependencies.results.SOURCE_ARTIFACT)
-        - name: CACHI2_ARTIFACT
-          value: $(tasks.prefetch-dependencies.results.CACHI2_ARTIFACT)
+      - name: image-url
+        value: $(tasks.build-container.results.IMAGE_URL)
+      - name: SOURCE_ARTIFACT
+        value: $(tasks.prefetch-dependencies.results.SOURCE_ARTIFACT)
+      - name: CACHI2_ARTIFACT
+        value: $(tasks.prefetch-dependencies.results.CACHI2_ARTIFACT)
       runAfter:
-        - build-container
+      - build-container
       taskRef:
         params:
-          - name: name
-            value: sast-unicode-check-oci-ta
-          - name: bundle
-            value: quay.io/konflux-ci/tekton-catalog/task-sast-unicode-check-oci-ta:0.2@sha256:df185dbe4e2852668f9c46f938dd752e90ea9c79696363378435a6499596c319
-          - name: kind
-            value: task
+        - name: name
+          value: sast-unicode-check-oci-ta
+        - name: bundle
+          value: quay.io/konflux-ci/tekton-catalog/task-sast-unicode-check-oci-ta:0.2@sha256:df185dbe4e2852668f9c46f938dd752e90ea9c79696363378435a6499596c319
+        - name: kind
+          value: task
         resolver: bundles
       when:
-        - input: $(params.skip-checks)
-          operator: in
-          values:
-            - "false"
-      workspaces: []
+      - input: $(params.skip-checks)
+        operator: in
+        values:
+        - "false"
     - name: clamav-scan
       params:
       - name: image-digest
@@ -614,7 +638,8 @@ spec:
     workspaces:
     - name: git-auth
       optional: true
-  taskRunTemplate: {}
+  taskRunTemplate:
+    serviceAccountName: build-pipeline-o11y
   workspaces:
   - name: git-auth
     secret:
