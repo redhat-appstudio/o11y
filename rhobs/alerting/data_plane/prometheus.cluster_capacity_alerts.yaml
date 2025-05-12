@@ -21,7 +21,7 @@ spec:
              Etcd cluster database is running full.
           description: >-
              Database size exceeds warning threshold on etcd instances in cluster {{ $labels.source_cluster }}.
-          alert_team_handle: <!subteam^S06LGCC3C2V>
+          alert_routing_key: spreandinfra
           team: o11y
           slo: "false"
 
@@ -36,7 +36,7 @@ spec:
              Etcd cluster database is running full.
           description: >-
              Database size exceeds high usage threshold on etcd instances in cluster {{ $labels.source_cluster }}.
-          alert_team_handle: <!subteam^S06LGCC3C2V>
+          alert_routing_key: spreandinfra
           team: o11y
           slo: "false"
 
@@ -45,13 +45,15 @@ spec:
           (last_over_time(etcd_mvcc_db_total_size_in_bytes{job="etcd"}[5m]) / last_over_time(etcd_server_quota_backend_bytes{job="etcd"}[5m]))*100 > 95
         for: 5m
         labels:
-          severity: high
+          severity: critical
+          slo: "true"
         annotations:
           summary: >-
              Etcd cluster database is running full.
           description: >-
              Database size exceeds critical usage threshold on etcd instances in cluster {{ $labels.source_cluster }}.
-          alert_team_handle: <!subteam^S06LGCC3C2V>
+          alert_team_handle: >-
+            <!subteam^S07SW2EEW3D> <!subteam^S05Q1P4Q2TG>
           team: o11y
           slo: "false"
 
@@ -66,7 +68,7 @@ spec:
             ETCD no Leader
           description: >-
             Etcd has no leader in cluster {{ $labels.source_cluster }}.
-          alert_team_handle: <!subteam^S06LGCC3C2V>
+          alert_routing_key: spreandinfra
           team: o11y
           slo: "false"
 
@@ -81,7 +83,7 @@ spec:
             Etcd high number of leader changes
           description: >-
             Etcd leader changed more than 2 times during 10 minutes in cluster {{ $labels.source_cluster }}.
-          alert_team_handle: <!subteam^S06LGCC3C2V>
+          alert_routing_key: spreandinfra
           team: o11y
           slo: "false"
 
@@ -96,6 +98,6 @@ spec:
             Cluster has insufficient number of members.
           description: >-
             Insufficient Etcd members in cluster {{ $labels.source_cluster }}.
-          alert_team_handle: <!subteam^S06LGCC3C2V>
+          alert_routing_key: spreandinfra
           team: o11y
           slo: "false"
