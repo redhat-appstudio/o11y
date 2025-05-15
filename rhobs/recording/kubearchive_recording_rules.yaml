@@ -1,0 +1,21 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-kubearchive-availability
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: kubearchive_availability
+      interval: 1m
+      rules:
+        - record: konflux_up
+          expr: |
+            clamp_max(
+              label_replace(label_replace(
+                floor(avg(
+                  kube_deployment_status_replicas_available{namespace="product-kubearchive", deployment=~"kubearchive-.*"} / kube_deployment_spec_replicas
+                ))
+              , "check", "replicas-available", "", ""), "service","kubearchive", "", "")
+            , 1)
