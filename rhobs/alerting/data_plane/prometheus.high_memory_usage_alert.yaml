@@ -1,0 +1,95 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-pod-alerting-rules
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: pod_alert_high_memory_usage
+    interval: 5m
+    rules:
+    - alert: container_cpu_usage_seconds_total
+      expr: sum by (pod, namespace)(rate(container_cpu_usage_seconds_total{container="",pod!=""}[5m])){}
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: pod {{ $labels.pod}} pod identified with memory usage above 90%
+        description: >-
+          Pod {{ $labels.pod }} for namespace {{ $labels.namespace }} on cluster
+          {{ $labels.source_cluster }}  cluster_name
+        alert_routing_key: '{{ $labels.namespace }}'
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-HighMemoryAlertUsage.md
+    - alert: container_memory_usage_bytes
+      expr: sum by (namespace)(container_memory_usage_bytes{container!=""})
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Pod {{ $labels.pod }}
+        description: >-
+          Pod {{ $labels.namespace }}/{{ $labels.pod }} ({{ $labels.container }})
+          {{ $labels.source_cluster }} for more than 5 minutes.
+        alert_routing_key: '{{ $labels.namespace }}'
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-HighMemoryAlertUsage.>
+
+    - alert: container_memory_usage_bytes
+      expr: sum by (namespace) (container_memory_usage_bytes{container!=""})
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: >-
+          Pod {{ $labels.pod }} is not ready
+        description: >-
+          Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster
+          {{ $labels.source_cluster }} is not ready for more than 5 minutes.
+        alert_routing_key: '{{ $labels.namespace }}'
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-HighMemoryAlertUsage.>
+
+    - alert: container_cpu_usage_seconds_total
+      expr: container_cpu_usage_seconds_total
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        team: o11y
+        slo: "true"
+        summary: >-
+          Pod {{ $labels.pod }} container cpu utiliztion above 90%
+        description: >-
+          Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster
+          {{ $labels.source_cluster }} has been running above the requested memory resources.
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-HighMemoryAlertUsage.
+
+    - alert: kube_pod_container_resource_limits ar at or about 90% utilization
+      expr: kube_pod_container_resource_limits
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        team: o11y
+        slo: "true"
+        summary: >-
+          Pod {{ $labels.pod }} cpu usage is exceeding the requested resource.
+        description: >-
+          Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster
+          {{ $labels.source_cluster }} has been running above the requested cpu resources.
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-HighMemoryAlertUsage.
+
+     - alert: resource_usage_query_limits
+      expr:(resource_usage_query)/(resource_limit_query)*300
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        team: o11y
+        slo: "true"
+        summary: >-
+          Pod {{ $labels.pod }} resource usage and resource limits query
+        description: >-
+          Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster
+          {{ $labels.source_cluster }} has been running above the requested cpu resources.
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-HighMemoryAlertUsage.
+
