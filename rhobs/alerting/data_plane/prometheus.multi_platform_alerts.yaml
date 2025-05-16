@@ -1,0 +1,51 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-multiplatform-availability-alerting-rules
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: multi-platform-controller-availability
+    interval: 1m
+    rules:
+    - alert: MultiPlatformControllerDown
+      expr: |
+        konflux_up{
+          namespace="multi-platform-controller",
+          check="replicas-available",
+          service="multi-platform-controller"
+        } != 1
+      for: 5m
+      labels:
+        severity: critical
+        slo: "true"
+      annotations:
+        summary: >-
+          Multiplatform controller is down in cluster {{ $labels.source_cluster }}
+        description: >
+          The multi-platform-controller pod has been down for 5min in cluster {{ $labels.source_cluster }}
+        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        team: konflux-infra
+
+  - name: multi-platform-otp-availability
+    interval: 1m
+    rules:
+    - alert: MuiltiPlatformOTPDown
+      expr: |
+        konflux_up{
+          namespace="multi-platform-controller",
+          check="replicas-available",
+          service="multi-platform-otp-server"
+        } != 1
+      for: 5m
+      labels:
+        severity: critical
+        slo: "true"
+      annotations:
+        summary: >-
+          Multiplatform OTP is down in cluster {{ $labels.source_cluster }}
+        description: >
+          The multi-platform otp pod has been down for 5min in cluster {{ $labels.source_cluster }}
+        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        team: konflux-infra

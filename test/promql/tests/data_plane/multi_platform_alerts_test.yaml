@@ -1,0 +1,55 @@
+evaluation_interval: 1m
+
+rule_files:
+  - 'prometheus.multi_platform_alerts.yaml'
+
+tests:
+  - interval: 1m
+    input_series:
+      - series: 'konflux_up{namespace="multi-platform-controller", check="replicas-available", service="multi-platform-controller", source_cluster="c1"}'
+        values: '0 0 0 0 0'
+      - series: 'konflux_up{namespace="multi-platform-controller", check="replicas-available", service="multi-platform-controller", source_cluster="c2"}'
+        values: '1 1 1 1 1'
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: MultiPlatformControllerDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              check: replicas-available
+              namespace: multi-platform-controller
+              service: multi-platform-controller
+              slo: "true"
+              source_cluster: c1
+            exp_annotations:
+              summary: Multiplatform controller is down in cluster c1
+              description: >
+                The multi-platform-controller pod has been down for 5min in cluster c1
+              alert_team_handle: <!subteam^S05Q1P4Q2TG>
+              team: konflux-infra
+
+  - interval: 1m
+    input_series:
+      - series: 'konflux_up{namespace="multi-platform-controller", check="replicas-available", service="multi-platform-otp-server", source_cluster="c3"}'
+        values: '0 0 0 0 0'
+      - series: 'konflux_up{namespace="multi-platform-controller", check="replicas-available", service="multi-platform-otp-server", source_cluster="c4"}'
+        values: '1 1 1 1 1'
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: MuiltiPlatformOTPDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              check: replicas-available
+              namespace: multi-platform-controller
+              service: multi-platform-otp-server
+              slo: "true"
+              source_cluster: c3
+            exp_annotations:
+              summary: Multiplatform OTP is down in cluster c3
+              description: >
+                The multi-platform otp pod has been down for 5min in cluster c3
+              alert_team_handle: <!subteam^S05Q1P4Q2TG>
+              team: konflux-infra
