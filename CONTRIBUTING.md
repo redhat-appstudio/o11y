@@ -82,11 +82,7 @@ before the PR was merged and after it was merged. They should NOT convey the pro
 of the code within the PR lifecycle (e.g. no `addressing comments` commit messages).
 
 ### Commit Messages
-The project is using [gitlint](https://jorisroovers.com/gitlint/) for enforcing commit
-message structure. The linting rules are defined [here](.gitlint) and are enforced by
-the CI system.
-
-[Conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) is used as
+[Conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) is recommended as
 the commit message standard.
 
 If the commit message (also applicable to PR names and branch names) includes a Jira
