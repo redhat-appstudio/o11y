@@ -7,12 +7,12 @@ tests:
   - interval: 1m
     input_series:
       - series: 'konflux_up{namespace="project-controller", check="replicas-available", service="project-controller-controller-manager", source_cluster="c1"}'
-        values: '0 0 0 0 0'
+        values: '0x15'
       - series: 'konflux_up{namespace="project-controller", check="replicas-available", service="project-controller-controller-manager", source_cluster="c2"}'
-        values: '1 1 1 1 1'
+        values: '1x15'
 
     alert_rule_test:
-      - eval_time: 5m
+      - eval_time: 12m
         alertname: ProjectControllerDown
         exp_alerts:
           - exp_labels:
