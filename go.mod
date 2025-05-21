@@ -4,7 +4,10 @@ go 1.23.0
 
 toolchain go1.24.3
 
-require github.com/prometheus/client_golang v1.22.0
+require (
+	github.com/lib/pq v1.10.9
+	github.com/prometheus/client_golang v1.22.0
+)
 
 require (
 	github.com/emicklei/go-restful/v3 v3.12.2 // indirect
