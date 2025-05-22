@@ -1,6 +1,6 @@
 apiVersion: v1
 data:
-  cluster-capacity-dashboard.json: |-
+  cluster_capacity.json: |-
     {
       "annotations": {
         "list": [
@@ -21,7 +21,7 @@ data:
       "editable": true,
       "fiscalYearStartMonth": 0,
       "graphTooltip": 0,
-      "id": 1004806,
+      "id": 1008113,
       "links": [],
       "panels": [
         {
@@ -34,8 +34,228 @@ data:
           },
           "id": 29,
           "panels": [],
-          "title": "Overview",
+          "title": "Cluster Overview",
           "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Cluster node metrics.",
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 1
+          },
+          "id": 68,
+          "options": {
+            "code": {
+              "language": "plaintext",
+              "showLineNumbers": false,
+              "showMiniMap": false
+            },
+            "content": "",
+            "mode": "markdown"
+          },
+          "pluginVersion": "10.4.1",
+          "title": "Node Overview",
+          "type": "text"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "The average memory usage by nodes in each cluster.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "max": 100,
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "#EAB839",
+                    "value": 75
+                  },
+                  {
+                    "color": "orange",
+                    "value": 80
+                  },
+                  {
+                    "color": "red",
+                    "value": 90
+                  }
+                ]
+              },
+              "unit": "percent"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 12,
+            "w": 12,
+            "x": 0,
+            "y": 2
+          },
+          "id": 63,
+          "options": {
+            "displayMode": "basic",
+            "maxVizHeight": 101,
+            "minVizHeight": 0,
+            "minVizWidth": 8,
+            "namePlacement": "top",
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showUnfilled": true,
+            "sizing": "auto",
+            "valueMode": "text"
+          },
+          "pluginVersion": "10.4.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "avg by (source_cluster) (100 * ((node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes))",
+              "instant": true,
+              "interval": "",
+              "legendFormat": "{{source_cluster}} {{instance}}",
+              "range": false,
+              "refId": "A"
+            }
+          ],
+          "title": "Average Memory Utilization",
+          "type": "bargauge"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Node with highest memory usage in each cluster.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "max": 100,
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "#EAB839",
+                    "value": 75
+                  },
+                  {
+                    "color": "orange",
+                    "value": 80
+                  },
+                  {
+                    "color": "red",
+                    "value": 90
+                  }
+                ]
+              },
+              "unit": "percent"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 12,
+            "w": 12,
+            "x": 12,
+            "y": 2
+          },
+          "id": 50,
+          "options": {
+            "displayMode": "basic",
+            "maxVizHeight": 300,
+            "minVizHeight": 16,
+            "minVizWidth": 8,
+            "namePlacement": "top",
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showUnfilled": true,
+            "sizing": "auto",
+            "valueMode": "text"
+          },
+          "pluginVersion": "10.4.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "topk(1, \n  max by (source_cluster, instance) (\n    100 * ((node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes)\n  )\n)  by (source_cluster)",
+              "instant": true,
+              "interval": "",
+              "legendFormat": "{{source_cluster}} {{instance}}",
+              "range": false,
+              "refId": "A"
+            }
+          ],
+          "title": "Cluster Node with Highest Memory Usage",
+          "type": "bargauge"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Key ETCD metrics.",
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 14
+          },
+          "id": 69,
+          "options": {
+            "code": {
+              "language": "plaintext",
+              "showLineNumbers": false,
+              "showMiniMap": false
+            },
+            "content": "",
+            "mode": "markdown"
+          },
+          "pluginVersion": "10.4.1",
+          "title": "ETCD Overview",
+          "type": "text"
         },
         {
           "datasource": {
@@ -78,10 +298,10 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 12,
-            "w": 5,
+            "h": 13,
+            "w": 6,
             "x": 0,
-            "y": 1
+            "y": 15
           },
           "id": 37,
           "options": {
@@ -111,10 +331,11 @@ data:
               },
               "editorMode": "code",
               "expr": "sum(etcd_server_has_leader{job=\"etcd\"}) by (source_cluster)",
+              "hide": false,
               "instant": false,
               "legendFormat": "__auto",
               "range": true,
-              "refId": "A"
+              "refId": "B"
             }
           ],
           "title": "ETCD Instances Up",
@@ -125,7 +346,7 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "description": "Max ETCD database usage per instance by cluster.",
+          "description": "Highest ETCD database usage instance per cluster sorted in descending order.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -160,15 +381,15 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 12,
-            "w": 9,
-            "x": 5,
-            "y": 1
+            "h": 13,
+            "w": 11,
+            "x": 6,
+            "y": 15
           },
           "id": 39,
           "options": {
             "displayMode": "basic",
-            "maxVizHeight": 101,
+            "maxVizHeight": 88,
             "minVizHeight": 0,
             "minVizWidth": 8,
             "namePlacement": "top",
@@ -193,14 +414,14 @@ data:
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "max(last_over_time(etcd_mvcc_db_total_size_in_bytes{job=\"etcd\"}[5m]) / last_over_time(etcd_server_quota_backend_bytes{job=\"etcd\"}[5m])*100) by (source_cluster)",
-              "instant": false,
-              "legendFormat": "{{source_cluster}}",
-              "range": true,
+              "expr": "sort_desc(topk(1, \n  max by (source_cluster, instance) (\n    (last_over_time(etcd_mvcc_db_total_size_in_bytes{job=\"etcd\"}[5m]) / last_over_time(etcd_server_quota_backend_bytes{job=\"etcd\"}[5m])*100)\n  )\n)  by (source_cluster))",
+              "instant": true,
+              "legendFormat": "{{source_cluster}} {{instance}}",
+              "range": false,
               "refId": "A"
             }
           ],
-          "title": "ETCD Max Database Usage",
+          "title": "Highest ETCD Database Utilization Instances",
           "type": "bargauge"
         },
         {
@@ -252,10 +473,10 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 12,
-            "w": 8,
-            "x": 14,
-            "y": 1
+            "h": 13,
+            "w": 7,
+            "x": 17,
+            "y": 15
           },
           "id": 41,
           "options": {
@@ -300,163 +521,67 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "description": "Max node memory usage per cluster.",
+          "description": "Heatmap of ETCD defragmentation counts per cluster.",
           "fieldConfig": {
             "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [],
-              "max": 100,
-              "min": 0,
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "#EAB839",
-                    "value": 75
-                  },
-                  {
-                    "color": "orange",
-                    "value": 80
-                  },
-                  {
-                    "color": "red",
-                    "value": 90
-                  }
-                ]
-              },
-              "unit": "percent"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 12,
-            "w": 5,
-            "x": 0,
-            "y": 13
-          },
-          "id": 50,
-          "options": {
-            "displayMode": "basic",
-            "maxVizHeight": 101,
-            "minVizHeight": 0,
-            "minVizWidth": 8,
-            "namePlacement": "top",
-            "orientation": "horizontal",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showUnfilled": true,
-            "sizing": "auto",
-            "valueMode": "text"
-          },
-          "pluginVersion": "10.4.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "exemplar": false,
-              "expr": "max(100*((node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes)/node_memory_MemTotal_bytes)) by (source_cluster)",
-              "instant": false,
-              "legendFormat": "{{source_cluster}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Node Max Memory Usage",
-          "type": "bargauge"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
               "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisGridShow": true,
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
                 "hideFrom": {
                   "legend": false,
                   "tooltip": false,
                   "viz": false
                 },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineStyle": {
-                  "fill": "solid"
-                },
-                "lineWidth": 2,
-                "pointSize": 5,
                 "scaleDistribution": {
                   "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "dashed"
                 }
-              },
-              "fieldMinMax": false,
-              "links": [],
-              "mappings": [],
-              "thresholds": {
-                "mode": "percentage",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  }
-                ]
-              },
-              "unit": "none"
+              }
             },
             "overrides": []
           },
           "gridPos": {
-            "h": 12,
-            "w": 6,
-            "x": 5,
-            "y": 13
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 28
           },
-          "id": 56,
+          "id": 57,
           "options": {
+            "calculate": false,
+            "cellGap": 2,
+            "cellValues": {
+              "unit": "none"
+            },
+            "color": {
+              "exponent": 0.5,
+              "fill": "purple",
+              "max": 4,
+              "min": 0,
+              "mode": "opacity",
+              "reverse": true,
+              "scale": "linear",
+              "scheme": "Oranges",
+              "steps": 3
+            },
+            "exemplars": {
+              "color": "rgba(255,0,255,0.7)"
+            },
+            "filterValues": {
+              "le": 1
+            },
             "legend": {
-              "calcs": [],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
+              "show": true
+            },
+            "rowsFrame": {
+              "layout": "unknown"
             },
             "tooltip": {
-              "mode": "multi",
-              "sort": "none"
+              "mode": "single",
+              "showColorScale": false,
+              "yHistogram": false
+            },
+            "yAxis": {
+              "axisPlacement": "left",
+              "reverse": true,
+              "unit": "none"
             }
           },
           "pluginVersion": "10.4.1",
@@ -467,95 +592,106 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "avg(rate(node_cpu_seconds_total{mode=\"idle\"}[1m])) by (source_cluster) ",
+              "expr": "sum(etcd_disk_defrag_inflight) by (source_cluster)",
               "instant": false,
               "legendFormat": "{{source_cluster}} {{instance}}",
               "range": true,
               "refId": "A"
             }
           ],
-          "title": "CPU Seconds average Rate per Minute",
-          "type": "timeseries"
+          "title": "ETCD Defragmentation Heatmap",
+          "type": "heatmap"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "description": "Tekton Pipelinerun metrics per cluster.",
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 36
+          },
+          "id": 70,
+          "options": {
+            "code": {
+              "language": "plaintext",
+              "showLineNumbers": false,
+              "showMiniMap": false
+            },
+            "content": "",
+            "mode": "markdown"
+          },
+          "pluginVersion": "10.4.1",
+          "title": "Tekton Pipelinerun Overview",
+          "type": "text"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "A Heatmap of hourly rate of running Pipelineruns per cluster.",
           "fieldConfig": {
             "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
               "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisGridShow": true,
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
                 "hideFrom": {
                   "legend": false,
                   "tooltip": false,
                   "viz": false
                 },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineStyle": {
-                  "fill": "solid"
-                },
-                "lineWidth": 2,
-                "pointSize": 5,
                 "scaleDistribution": {
                   "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "dashed"
                 }
               },
               "fieldMinMax": false,
-              "links": [],
-              "mappings": [],
-              "thresholds": {
-                "mode": "percentage",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  }
-                ]
-              },
-              "unit": "none"
+              "links": []
             },
             "overrides": []
           },
           "gridPos": {
-            "h": 12,
-            "w": 6,
-            "x": 11,
-            "y": 13
+            "h": 14,
+            "w": 24,
+            "x": 0,
+            "y": 37
           },
           "id": 30,
           "options": {
+            "calculate": false,
+            "cellGap": 5,
+            "color": {
+              "exponent": 0.4,
+              "fill": "light-blue",
+              "min": 0,
+              "mode": "opacity",
+              "reverse": false,
+              "scale": "linear",
+              "scheme": "RdBu",
+              "steps": 10
+            },
+            "exemplars": {
+              "color": "rgba(255,0,255,0.7)"
+            },
+            "filterValues": {
+              "le": 0
+            },
             "legend": {
-              "calcs": [],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
+              "show": true
+            },
+            "rowsFrame": {
+              "layout": "auto"
             },
             "tooltip": {
-              "mode": "multi",
-              "sort": "none"
+              "mode": "single",
+              "showColorScale": false,
+              "yHistogram": false
+            },
+            "yAxis": {
+              "axisPlacement": "left",
+              "reverse": false,
+              "unit": "none"
             }
           },
           "pluginVersion": "10.4.1",
@@ -567,113 +703,61 @@ data:
               },
               "editorMode": "code",
               "expr": "sum(rate(tekton_pipelines_controller_running_pipelineruns_count[1h])) by (source_cluster)",
+              "hide": false,
               "instant": false,
-              "legendFormat": "{{source_cluster}} {{instance}}",
+              "legendFormat": "__auto",
               "range": true,
               "refId": "A"
             }
           ],
-          "title": "Running Pipelineruns Hourly Rate",
-          "type": "timeseries"
+          "title": "Running Pipelineruns Hourly Rate Heatmap",
+          "type": "heatmap"
         },
         {
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisGridShow": true,
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineStyle": {
-                  "fill": "solid"
-                },
-                "lineWidth": 2,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "dashed"
-                }
-              },
-              "fieldMinMax": false,
-              "links": [],
-              "mappings": [],
-              "thresholds": {
-                "mode": "percentage",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  }
-                ]
-              },
-              "unit": "none"
-            },
-            "overrides": []
-          },
+          "description": "Standard Operation Procedure dashboard reference.",
           "gridPos": {
-            "h": 12,
-            "w": 6,
-            "x": 17,
-            "y": 13
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 51
           },
-          "id": 57,
-          "options": {
-            "legend": {
-              "calcs": [],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "multi",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "10.4.1",
-          "targets": [
+          "id": 72,
+          "links": [
             {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "max(etcd_disk_defrag_inflight) by (source_cluster)",
-              "instant": false,
-              "legendFormat": "{{source_cluster}} {{instance}}",
-              "range": true,
-              "refId": "A"
+              "targetBlank": true,
+              "title": "Dashboard SOP",
+              "url": "https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/cluster_capacity_dashboard.md"
             }
           ],
-          "title": "ETCD DB Defrag Inflight",
-          "type": "timeseries"
+          "options": {
+            "code": {
+              "language": "plaintext",
+              "showLineNumbers": false,
+              "showMiniMap": false
+            },
+            "content": "",
+            "mode": "markdown"
+          },
+          "pluginVersion": "10.4.1",
+          "title": "Dashboard Reference",
+          "type": "text"
+        },
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 52
+          },
+          "id": 60,
+          "panels": [],
+          "title": "Alert List",
+          "type": "row"
         },
         {
           "dashboardFilter": "",
@@ -681,12 +765,12 @@ data:
             "type": "prometheus",
             "uid": "PD776AFABBE26000A"
           },
-          "description": "ETCD alerts",
+          "description": "ETCD Production Alerts.",
           "gridPos": {
             "h": 12,
-            "w": 24,
+            "w": 12,
             "x": 0,
-            "y": 25
+            "y": 53
           },
           "id": 40,
           "limit": 10,
@@ -713,8 +797,6 @@ data:
             "viewMode": "list"
           },
           "pluginVersion": "10.4.1",
-          "repeat": "datasource",
-          "repeatDirection": "h",
           "show": "current",
           "sortOrder": 1,
           "stateFilter": [],
@@ -727,7 +809,7 @@ data:
               "refId": "A"
             }
           ],
-          "title": "Alert List Production",
+          "title": "ETCD Alert List Production",
           "type": "alertlist"
         },
         {
@@ -736,12 +818,65 @@ data:
             "type": "prometheus",
             "uid": "PD776AFABBE26000A"
           },
-          "description": "ETCD alerts",
+          "description": "Node Production Alerts.",
           "gridPos": {
             "h": 12,
-            "w": 24,
+            "w": 12,
+            "x": 12,
+            "y": 53
+          },
+          "id": 65,
+          "limit": 10,
+          "nameFilter": "",
+          "onlyAlertsOnDashboard": false,
+          "options": {
+            "alertInstanceLabelFilter": "",
+            "alertName": "Node",
+            "dashboardAlerts": false,
+            "datasource": "rhtap-observatorium-production",
+            "groupBy": [
+              "source_cluster"
+            ],
+            "groupMode": "custom",
+            "maxItems": 20,
+            "sortOrder": 5,
+            "stateFilter": {
+              "error": true,
+              "firing": true,
+              "noData": false,
+              "normal": true,
+              "pending": true
+            },
+            "viewMode": "list"
+          },
+          "pluginVersion": "10.4.1",
+          "show": "current",
+          "sortOrder": 1,
+          "stateFilter": [],
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PD776AFABBE26000A"
+              },
+              "refId": "A"
+            }
+          ],
+          "title": "Node Alert List Production",
+          "type": "alertlist"
+        },
+        {
+          "dashboardFilter": "",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PD776AFABBE26000A"
+          },
+          "description": "ETCD Stage Alerts.",
+          "gridPos": {
+            "h": 12,
+            "w": 12,
             "x": 0,
-            "y": 37
+            "y": 65
           },
           "id": 53,
           "limit": 10,
@@ -781,8 +916,389 @@ data:
               "refId": "A"
             }
           ],
-          "title": "Alert List Stage",
+          "title": "ETCD Alert List Stage",
           "type": "alertlist"
+        },
+        {
+          "dashboardFilter": "",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PD776AFABBE26000A"
+          },
+          "description": "Node Stage Alerts.",
+          "gridPos": {
+            "h": 12,
+            "w": 12,
+            "x": 12,
+            "y": 65
+          },
+          "id": 66,
+          "limit": 10,
+          "nameFilter": "",
+          "onlyAlertsOnDashboard": false,
+          "options": {
+            "alertInstanceLabelFilter": "",
+            "alertName": "Node",
+            "dashboardAlerts": false,
+            "datasource": "rhtap-observatorium-stage",
+            "groupBy": [
+              "source_cluster"
+            ],
+            "groupMode": "custom",
+            "maxItems": 20,
+            "sortOrder": 5,
+            "stateFilter": {
+              "error": true,
+              "firing": true,
+              "noData": false,
+              "normal": true,
+              "pending": true
+            },
+            "viewMode": "list"
+          },
+          "pluginVersion": "10.4.1",
+          "repeatDirection": "h",
+          "show": "current",
+          "sortOrder": 1,
+          "stateFilter": [],
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PD776AFABBE26000A"
+              },
+              "refId": "A"
+            }
+          ],
+          "title": "Node Alert List Stage",
+          "type": "alertlist"
+        },
+        {
+          "collapsed": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PD776AFABBE26000A"
+          },
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 77
+          },
+          "id": 22,
+          "panels": [],
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "PD776AFABBE26000A"
+              },
+              "refId": "A"
+            }
+          ],
+          "title": "Node Usage Graphs",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Average node memory usage per cluster.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisGridShow": true,
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "axisSoftMax": 100,
+                "axisSoftMin": 0,
+                "barAlignment": -1,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "stepAfter",
+                "lineStyle": {
+                  "fill": "solid"
+                },
+                "lineWidth": 3,
+                "pointSize": 4,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "dashed"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 90
+                  }
+                ]
+              },
+              "unit": "percent"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 24,
+            "x": 0,
+            "y": 78
+          },
+          "id": 64,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "10.4.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "avg by (source_cluster) (100 * ((node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes))",
+              "instant": false,
+              "legendFormat": "{{source_cluster}} {{instance}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Average Node Memory Usage",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Node memory usage across clusters.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisGridShow": true,
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "axisSoftMax": 100,
+                "axisSoftMin": 0,
+                "barAlignment": -1,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineStyle": {
+                  "fill": "solid"
+                },
+                "lineWidth": 3,
+                "pointSize": 4,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "dashed"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 0
+                  },
+                  {
+                    "color": "red",
+                    "value": 90
+                  }
+                ]
+              },
+              "unit": "percent"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 14,
+            "w": 24,
+            "x": 0,
+            "y": 87
+          },
+          "id": 49,
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Alert Rule",
+              "url": "https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.performance_alerts.yaml"
+            }
+          ],
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "maxHeight": 10,
+              "maxWidth": 10,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "10.4.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "100*((node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes)/node_memory_MemTotal_bytes)",
+              "instant": false,
+              "legendFormat": "{{source_cluster}} {{instance}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Node  Memory Usage",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Top 4 Cluster Nodes with highest memory usage in each cluster with usage above 50%.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "#EAB839",
+                    "value": 70
+                  },
+                  {
+                    "color": "orange",
+                    "value": 85
+                  },
+                  {
+                    "color": "red",
+                    "value": 90
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 24,
+            "x": 0,
+            "y": 101
+          },
+          "id": 71,
+          "options": {
+            "displayMode": "basic",
+            "maxVizHeight": 300,
+            "minVizHeight": 16,
+            "minVizWidth": 8,
+            "namePlacement": "top",
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showUnfilled": true,
+            "sizing": "auto",
+            "valueMode": "text"
+          },
+          "pluginVersion": "10.4.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "P22466E8E7855F1E0"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "topk(4, \n  max by (source_cluster, instance) (\n    100 * ((node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes)\n  )\n)  by (source_cluster) > 50",
+              "instant": true,
+              "legendFormat": "{{source_cluster}} {{instance}}",
+              "range": false,
+              "refId": "A"
+            }
+          ],
+          "title": "Top 4 Cluster Nodes with High Memory Usage",
+          "type": "bargauge"
         },
         {
           "collapsed": false,
@@ -790,9 +1306,123 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 49
+            "y": 110
           },
           "id": 35,
+          "panels": [],
+          "title": "Pipelineruns Graphs",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Hourly rate of running Pipelineruns per cluster.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisGridShow": true,
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 2,
+                "pointSize": 3,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "fieldMinMax": false,
+              "links": [],
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 24,
+            "x": 0,
+            "y": 111
+          },
+          "id": 59,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "pluginVersion": "10.4.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum(rate(tekton_pipelines_controller_running_pipelineruns_count[1h])) by (source_cluster)",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Running Pipelineruns Hourly Rate",
+          "type": "timeseries"
+        },
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 120
+          },
+          "id": 62,
           "panels": [],
           "title": "ETCD Graphs",
           "type": "row"
@@ -802,6 +1432,7 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "description": "Database usage per ETCD instance.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -818,7 +1449,7 @@ data:
                 "axisSoftMin": 0,
                 "barAlignment": 0,
                 "drawStyle": "line",
-                "fillOpacity": 10,
+                "fillOpacity": 0,
                 "gradientMode": "none",
                 "hideFrom": {
                   "legend": false,
@@ -877,9 +1508,16 @@ data:
             "h": 9,
             "w": 24,
             "x": 0,
-            "y": 50
+            "y": 121
           },
-          "id": 30,
+          "id": 58,
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Critical Alert Rule",
+              "url": "https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.cluster_capacity_alerts.yaml"
+            }
+          ],
           "options": {
             "legend": {
               "calcs": [],
@@ -889,7 +1527,7 @@ data:
             },
             "tooltip": {
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "10.4.1",
@@ -915,6 +1553,7 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "description": "Total ETCD defragmentation operations per cluster.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -927,7 +1566,7 @@ data:
                 "axisGridShow": true,
                 "axisLabel": "",
                 "axisPlacement": "auto",
-                "axisSoftMax": 10,
+                "axisSoftMax": 6,
                 "axisSoftMin": 0,
                 "barAlignment": 0,
                 "drawStyle": "line",
@@ -939,7 +1578,7 @@ data:
                   "viz": false
                 },
                 "insertNulls": false,
-                "lineInterpolation": "linear",
+                "lineInterpolation": "stepAfter",
                 "lineStyle": {
                   "fill": "solid"
                 },
@@ -978,7 +1617,7 @@ data:
             "h": 9,
             "w": 24,
             "x": 0,
-            "y": 59
+            "y": 130
           },
           "id": 54,
           "options": {
@@ -990,7 +1629,7 @@ data:
             },
             "tooltip": {
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "10.4.1",
@@ -1016,6 +1655,7 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "description": "Increase of number ETCD leader changes over the past 10 minutes.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -1078,9 +1718,16 @@ data:
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 68
+            "y": 139
           },
           "id": 32,
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Alert Rule",
+              "url": "https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.cluster_capacity_alerts.yaml"
+            }
+          ],
           "options": {
             "legend": {
               "calcs": [],
@@ -1090,7 +1737,7 @@ data:
             },
             "tooltip": {
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "10.4.1",
@@ -1108,7 +1755,7 @@ data:
               "refId": "A"
             }
           ],
-          "title": "ETCD Server Leader Changes Seen 10m Increase",
+          "title": "ETCD Server Leader Changes Increase",
           "type": "timeseries"
         },
         {
@@ -1180,12 +1827,19 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 7,
+            "h": 8,
             "w": 24,
             "x": 0,
-            "y": 75
+            "y": 146
           },
           "id": 52,
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Alert Rule",
+              "url": "https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.cluster_capacity_alerts.yaml"
+            }
+          ],
           "options": {
             "legend": {
               "calcs": [],
@@ -1195,7 +1849,7 @@ data:
             },
             "tooltip": {
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "10.4.1",
@@ -1236,7 +1890,7 @@ data:
                 "axisPlacement": "auto",
                 "barAlignment": -1,
                 "drawStyle": "line",
-                "fillOpacity": 8,
+                "fillOpacity": 6,
                 "gradientMode": "none",
                 "hideFrom": {
                   "legend": false,
@@ -1249,7 +1903,7 @@ data:
                   "fill": "solid"
                 },
                 "lineWidth": 2,
-                "pointSize": 8,
+                "pointSize": 4,
                 "scaleDistribution": {
                   "type": "linear"
                 },
@@ -1289,9 +1943,16 @@ data:
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 82
+            "y": 154
           },
           "id": 43,
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Alert Rule",
+              "url": "https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.cluster_capacity_alerts.yaml"
+            }
+          ],
           "options": {
             "legend": {
               "calcs": [],
@@ -1300,8 +1961,8 @@ data:
               "showLegend": true
             },
             "tooltip": {
-              "mode": "single",
-              "sort": "none"
+              "mode": "multi",
+              "sort": "desc"
             }
           },
           "pluginVersion": "10.4.1",
@@ -1341,7 +2002,7 @@ data:
                 "axisPlacement": "auto",
                 "barAlignment": 0,
                 "drawStyle": "line",
-                "fillOpacity": 10,
+                "fillOpacity": 0,
                 "gradientMode": "none",
                 "hideFrom": {
                   "legend": false,
@@ -1350,7 +2011,7 @@ data:
                 },
                 "insertNulls": false,
                 "lineInterpolation": "linear",
-                "lineWidth": 1,
+                "lineWidth": 2,
                 "pointSize": 5,
                 "scaleDistribution": {
                   "type": "linear"
@@ -1385,12 +2046,19 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 11,
+            "h": 9,
             "w": 24,
             "x": 0,
-            "y": 90
+            "y": 162
           },
           "id": 31,
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Alert Rule",
+              "url": "https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.performance_alerts.yaml"
+            }
+          ],
           "options": {
             "legend": {
               "calcs": [],
@@ -1400,7 +2068,7 @@ data:
             },
             "tooltip": {
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "10.4.1",
@@ -1426,7 +2094,7 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "description": "Etcd member communication slowing down, 99th percentile is over 0.15s",
+          "description": "The 99th percentile of ETCD's disk backend commit duration over the last 24 minutes, calculated per instance, indicates the time within which 99% of these operations were completed.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -1440,7 +2108,7 @@ data:
                 "axisPlacement": "auto",
                 "barAlignment": 0,
                 "drawStyle": "line",
-                "fillOpacity": 10,
+                "fillOpacity": 0,
                 "gradientMode": "none",
                 "hideFrom": {
                   "legend": false,
@@ -1449,105 +2117,7 @@ data:
                 },
                 "insertNulls": false,
                 "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "dashed"
-                }
-              },
-              "links": [],
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 0.15
-                  }
-                ]
-              },
-              "unit": "short"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 24,
-            "x": 0,
-            "y": 101
-          },
-          "id": 42,
-          "options": {
-            "legend": {
-              "calcs": [],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "multi",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "10.4.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "histogram_quantile(0.99, sum by (instance,source_cluster, le) (rate(etcd_network_peer_round_trip_time_seconds_bucket{job=\"etcd\"}[5m])))",
-              "instant": false,
-              "legendFormat": "{{source_cluster}} {{instance}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "ETCD Member Communication Slow",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
+                "lineWidth": 2,
                 "pointSize": 5,
                 "scaleDistribution": {
                   "type": "linear"
@@ -1582,12 +2152,19 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 7,
+            "h": 8,
             "w": 24,
             "x": 0,
-            "y": 108
+            "y": 171
           },
           "id": 38,
+          "links": [
+            {
+              "targetBlank": true,
+              "title": "Alert Rule",
+              "url": "https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.performance_alerts.yaml"
+            }
+          ],
           "options": {
             "legend": {
               "calcs": [],
@@ -1597,7 +2174,7 @@ data:
             },
             "tooltip": {
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "10.4.1",
@@ -1638,7 +2215,7 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "description": "etcd cluster 99th percentile fsync durations are too high.",
+          "description": "10 minutes average of 99th etcd commit latency higher than 40ms in cluster.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -1652,7 +2229,7 @@ data:
                 "axisPlacement": "auto",
                 "barAlignment": 0,
                 "drawStyle": "line",
-                "fillOpacity": 10,
+                "fillOpacity": 0,
                 "gradientMode": "none",
                 "hideFrom": {
                   "legend": false,
@@ -1661,7 +2238,116 @@ data:
                 },
                 "insertNulls": false,
                 "lineInterpolation": "linear",
-                "lineWidth": 1,
+                "lineWidth": 2,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "dashed"
+                }
+              },
+              "links": [],
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 0.04
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 24,
+            "x": 0,
+            "y": 179
+          },
+          "id": 45,
+          "links": [
+            {
+              "title": "Alert Rule",
+              "url": "https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.performance_alerts.yaml"
+            }
+          ],
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true,
+              "sortBy": "Name",
+              "sortDesc": false
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "10.4.1",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "avg_over_time(histogram_quantile(0.99, rate(etcd_disk_backend_commit_duration_seconds_bucket{job=\"etcd\"}[2m]))[10m:]) ",
+              "instant": false,
+              "interval": "",
+              "legendFormat": "{{source_cluster}} {{instance}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Etcd Commit Latency",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "99th percentile of the etcd WAL fsync durations over the last 5 minutes. Provides insight into the disk I/O performance.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 2,
                 "pointSize": 5,
                 "scaleDistribution": {
                   "type": "linear"
@@ -1700,10 +2386,10 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 7,
+            "h": 8,
             "w": 24,
             "x": 0,
-            "y": 115
+            "y": 186
           },
           "id": 44,
           "options": {
@@ -1744,6 +2430,7 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "description": "Percentage of failed ETCD gRPC requests over the last 5 minutes when request per second are above 2 req/s and excluded Installer Provisioned Infrastructure and Bare metal cluster setups.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -1757,7 +2444,7 @@ data:
                 "axisPlacement": "auto",
                 "barAlignment": 0,
                 "drawStyle": "line",
-                "fillOpacity": 10,
+                "fillOpacity": 0,
                 "gradientMode": "none",
                 "hideFrom": {
                   "legend": false,
@@ -1766,211 +2453,7 @@ data:
                 },
                 "insertNulls": false,
                 "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "dashed"
-                }
-              },
-              "links": [],
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 0.04
-                  }
-                ]
-              },
-              "unit": "short"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 24,
-            "x": 0,
-            "y": 122
-          },
-          "id": 45,
-          "options": {
-            "legend": {
-              "calcs": [],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true,
-              "sortBy": "Name",
-              "sortDesc": false
-            },
-            "tooltip": {
-              "mode": "multi",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "10.4.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "exemplar": false,
-              "expr": "avg_over_time(histogram_quantile(0.99, rate(etcd_disk_backend_commit_duration_seconds_bucket{job=\"etcd\"}[2m]))[10m:]) ",
-              "instant": false,
-              "interval": "",
-              "legendFormat": "{{source_cluster}} {{instance}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Etcd Commit Latency",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "dashed"
-                }
-              },
-              "links": [],
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "red",
-                    "value": 0.15
-                  }
-                ]
-              },
-              "unit": "short"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 24,
-            "x": 0,
-            "y": 129
-          },
-          "id": 46,
-          "options": {
-            "legend": {
-              "calcs": [],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true,
-              "sortBy": "Name",
-              "sortDesc": false
-            },
-            "tooltip": {
-              "mode": "multi",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "10.4.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "exemplar": false,
-              "expr": "histogram_quantile(0.99, rate(etcd_network_peer_round_trip_time_seconds_bucket{job=\"etcd\"}[5m]))",
-              "instant": false,
-              "interval": "",
-              "legendFormat": "{{source_cluster}} {{instance}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Etcd Slow NetworkRTT",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "drawStyle": "line",
-                "fillOpacity": 15,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
+                "lineWidth": 2,
                 "pointSize": 5,
                 "scaleDistribution": {
                   "type": "linear"
@@ -2005,10 +2488,10 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 7,
+            "h": 9,
             "w": 24,
             "x": 0,
-            "y": 136
+            "y": 194
           },
           "id": 47,
           "options": {
@@ -2022,7 +2505,7 @@ data:
             },
             "tooltip": {
               "mode": "multi",
-              "sort": "none"
+              "sort": "desc"
             }
           },
           "pluginVersion": "10.4.1",
@@ -2042,7 +2525,7 @@ data:
               "refId": "A"
             }
           ],
-          "title": " Etcd high number of failed GRPC requests",
+          "title": " Etcd Number of Failed GRPC Requests",
           "type": "timeseries"
         },
         {
@@ -2050,7 +2533,7 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "description": "GRPC requests slowing down, 99th percentile is over 0.15s",
+          "description": "99th percentile of gRPC server handling durations within the openshift-etcd namespace. It aggregates the request rates by source cluster, gRPC service, and method to provide a view of latency distribution.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -2064,7 +2547,7 @@ data:
                 "axisPlacement": "auto",
                 "barAlignment": 0,
                 "drawStyle": "line",
-                "fillOpacity": 15,
+                "fillOpacity": 2,
                 "gradientMode": "none",
                 "hideFrom": {
                   "legend": false,
@@ -2073,7 +2556,7 @@ data:
                 },
                 "insertNulls": false,
                 "lineInterpolation": "linear",
-                "lineWidth": 1,
+                "lineWidth": 2,
                 "pointSize": 5,
                 "scaleDistribution": {
                   "type": "linear"
@@ -2108,10 +2591,10 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 7,
+            "h": 13,
             "w": 24,
             "x": 0,
-            "y": 143
+            "y": 203
           },
           "id": 48,
           "options": {
@@ -2124,8 +2607,8 @@ data:
               "sortDesc": false
             },
             "tooltip": {
-              "mode": "multi",
-              "sort": "none"
+              "mode": "single",
+              "sort": "desc"
             }
           },
           "pluginVersion": "10.4.1",
@@ -2137,149 +2620,15 @@ data:
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "histogram_quantile(0.99, sum(rate(grpc_server_handling_seconds_bucket{namespace=\"openshift-etcd\"}[1m])) by (grpc_service, grpc_method, le))",
+              "expr": "histogram_quantile(0.99, sum(rate(grpc_server_handling_seconds_bucket{namespace=\"openshift-etcd\"}[1m])) by (source_cluster,grpc_service, grpc_method, le))",
               "instant": false,
               "interval": "",
-              "legendFormat": "__auto",
+              "legendFormat": "{{source_cluster}} {{grpc_service}} {{grpc_method}}",
               "range": true,
               "refId": "A"
             }
           ],
           "title": "Etcd GRPC requests slow",
-          "type": "timeseries"
-        },
-        {
-          "collapsed": false,
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PD776AFABBE26000A"
-          },
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 150
-          },
-          "id": 22,
-          "panels": [],
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "PD776AFABBE26000A"
-              },
-              "refId": "A"
-            }
-          ],
-          "title": "Node Usage Graphs",
-          "type": "row"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "Node high memory usage",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisGridShow": true,
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "axisSoftMax": 100,
-                "axisSoftMin": 0,
-                "barAlignment": -1,
-                "drawStyle": "line",
-                "fillOpacity": 8,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "stepAfter",
-                "lineStyle": {
-                  "fill": "solid"
-                },
-                "lineWidth": 2,
-                "pointSize": 6,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "auto",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "dashed"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green",
-                    "value": null
-                  },
-                  {
-                    "color": "green",
-                    "value": 0
-                  },
-                  {
-                    "color": "red",
-                    "value": 90
-                  }
-                ]
-              },
-              "unit": "percent"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 24,
-            "x": 0,
-            "y": 151
-          },
-          "id": 49,
-          "options": {
-            "legend": {
-              "calcs": [],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "10.4.1",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "100*((node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes)/node_memory_MemTotal_bytes)",
-              "instant": false,
-              "legendFormat": "{{source_cluster}} {{instance}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Node High Memory Usage",
           "type": "timeseries"
         }
       ],
@@ -2290,9 +2639,9 @@ data:
         "list": [
           {
             "current": {
-              "selected": true,
-              "text": "default",
-              "value": "default"
+              "selected": false,
+              "text": "rhtap-observatorium-production",
+              "value": "P22466E8E7855F1E0"
             },
             "hide": 0,
             "includeAll": false,
@@ -2300,7 +2649,7 @@ data:
             "name": "datasource",
             "options": [],
             "query": "prometheus",
-            "queryValue": "de",
+            "queryValue": "rht",
             "refresh": 1,
             "regex": "",
             "skipUrlSync": false,
@@ -2309,7 +2658,7 @@ data:
         ]
       },
       "time": {
-        "from": "now-30m",
+        "from": "now-1h",
         "to": "now"
       },
       "timepicker": {
@@ -2339,8 +2688,8 @@ data:
       },
       "timezone": "",
       "title": "Cluster Capacity",
-      "uid": "beiwi7m518ef4b",
-      "version": 70,
+      "uid": "beiwi7m518ef47",
+      "version": 109,
       "weekStart": ""
     }
 kind: ConfigMap
