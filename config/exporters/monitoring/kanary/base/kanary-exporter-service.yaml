@@ -1,0 +1,113 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: appstudio-kanary-exporter
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec: {}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: exporter-sa
+  namespace: appstudio-kanary-exporter
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kube-rbac-proxy-kanary
+rules:
+- apiGroups: ["authentication.k8s.io"]
+  resources:
+  - tokenreviews
+  verbs: ["create"]
+- apiGroups: ["authorization.k8s.io"]
+  resources:
+  - subjectaccessreviews
+  verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kanary-exporter-role-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kube-rbac-proxy-kanary
+subjects:
+- kind: ServiceAccount
+  name: exporter-sa
+  namespace: appstudio-kanary-exporter
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: kanary-exporter
+  name: exporter-service
+  namespace: appstudio-kanary-exporter
+spec:
+  ports:
+  - name: https
+    port: 8443
+    targetPort: https
+  selector:
+    app: kanary-exporter
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: exporter-service-deployment
+  namespace: appstudio-kanary-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kanary-exporter
+  template:
+    metadata:
+      labels:
+        app: kanary-exporter
+    spec:
+      serviceAccountName: exporter-sa
+      containers:
+      - name: kube-rbac-proxy-kanary
+        image: quay.io/brancz/kube-rbac-proxy:v0.14.0
+        args:
+        - "--secure-listen-address=0.0.0.0:8443"
+        - "--upstream=http://127.0.0.1:8000/"
+        - "--logtostderr=true"
+        - "--v=10"
+        ports:
+        - containerPort: 8443
+          name: https
+        resources:
+          limits:
+            cpu: 100m
+            memory: 200Mi
+          requests:
+            cpu: 100m
+            memory: 200Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
+      - name: exporters
+        image: exporter:latest
+        args: ["kanaryexporter"]
+        env:
+          - name: CONNECTION_STRING
+            valueFrom:
+              secretKeyRef:
+                name: kanary-db-credentials
+                key: connection-string
+        resources:
+          limits:
+            cpu: 100m
+            memory: 200Mi
+          requests:
+            cpu: 100m
+            memory: 200Mi
+        securityContext:
+          readOnlyRootFilesystem: true
+          runAsNonRoot: true
