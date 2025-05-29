@@ -89,6 +89,24 @@ which makes them present in [AppSRE Grafana](https://grafana.app-sre.devshift.ne
 
 Rules should be created together with the [unit tests](test/promql/tests/recording/).
 
+### Faster Selective Rule Testing
+
+To accelerate the development and validation of specific alerting or recording rules, a selective testing mechanism is available. This allows you to run the rules checker (e.g., `obsctl-reloader-rules-checker`, or as configured in the Makefile via the `CMD` variable) only on a chosen set of rule files and their corresponding test case files, rather than processing the entire suite. This is particularly useful for quick validation of changes and a faster feedback loop during development.
+
+The selective testing process involves:
+1.  Creating a temporary, isolated environment.
+2.  Copying only the specified rule and test files into this environment.
+3.  Executing the rules checker against these isolated files.
+4.  Automatically cleaning up the temporary environment afterward.
+
+#### Usage
+
+You can invoke this selective test by running the following `make` command:
+
+```sh
+make selective-check-and-test RULE_FILES="<space_separated_rule_files>" TEST_CASE_FILES="<space_separated_test_files>"
+```
+
 ## Updating Alert and Recording Rules
 
 Alert rules for data plane clusters and recording rules are being deployed by
