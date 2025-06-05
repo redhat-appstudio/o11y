@@ -1,0 +1,24 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-high-memory-usage-alert-rule
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: high_memory_alerts
+    interval: 5m
+    rules:
+    - alert: PodAlertHighMemoryUsage
+      expr: |
+        (kube_pod_container_memory_usage_bytes{container!="",namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-templates-e2e|konflux-ci|mintmaker)"} 
+        / kube_pod_container_resource_limits_memory_bytes{container!="",namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-templates-e2e|konflux-ci|mintmaker)"}) * 100 > 90
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: Pod {{ $labels.pod }} has high memory usage
+        description: >-
+          Pod {{ $labels.pod }} for namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} has high memory usage
+        alert_routing_key: '{{ $labels.namespace }}'
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-HighMemoryAlertUsage.md
