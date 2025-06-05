@@ -1,0 +1,58 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-kanary-alerting-rules
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: kanary_alerts
+    interval: 1m
+    rules:
+      - alert: KanarySignalTriggered
+        expr: kanary_up == 0
+        for: 0m
+        labels:
+          severity: critical
+          slo: "true"
+        annotations:
+          alert_team_handle: '<@U03S3DRLPH6> <@U067S2N67N3>'
+          team: o11y
+          summary: "Kanary signal has been triggered for cluster {{ $labels.tested_cluster }}"
+          description: "The e2e load tests failed multiple times in a row for cluster {{ $labels.tested_cluster }}"
+
+      - alert: KanaryDBError
+        expr: kanary_error{reason="db_error"} == 1
+        for: 0m
+        labels:
+          severity: warning
+          slo: "false"
+        annotations:
+          team: o11y
+          alert_routing_key: o11y
+          summary: "Kanary signal processing failed due to a database error on cluster {{ $labels.tested_cluster }}"
+          description: "Encountered a database error while processing the kanary signal for cluster {{ $labels.tested_cluster }}"
+
+      - alert: KanaryMissingTestResults
+        expr: kanary_error{reason="no_test_results"} == 1
+        for: 0m
+        labels:
+          severity: warning
+          slo: "false"
+        annotations:
+          team: o11y
+          alert_routing_key: o11y
+          summary: "Missing recent e2e results for cluster {{ $labels.tested_cluster }}"
+          description: "Could not find any recent e2e load test results for cluster {{ $labels.tested_cluster }}."
+
+      - alert: KanaryExporterDown
+        expr: up{job="kanary-exporter-service"} == 0
+        for: 5m
+        labels:
+          severity: warning
+          slo: "false"
+        annotations:
+          team: o11y
+          alert_routing_key: o11y
+          summary: "Kanary Exporter is down in {{ $labels.source_cluster }}"
+          description: "Prometheus is unable to scrape metrics from the Kanary Exporter running in {{ $labels.source_cluster }}."
