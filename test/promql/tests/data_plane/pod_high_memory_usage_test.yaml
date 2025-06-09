@@ -1,0 +1,29 @@
+evaluation_interval: 1m
+
+rule_files:
+  - 'pod_high_memory_usage_test.yaml'
+
+tests:
+  - interval: 1m
+    input_series:
+      - series: "kube_pod_container_memory_usage_bytes{tenant_id='{{ $labels.tenant_id }}', pod='{{ $labels.pod }}', namespace='{{ $labels.namespace }}'}"
+        values: "1700000000 1800000000 1900000000 2000000000 2100000000"
+      - series: "kube_pod_container_resource_limits{tenant_id='{{ $labels.tenant_id }}', resource='memory', pod='{{ $labels.pod }}', namespace='{{ $labels.namespace}}'}"
+        values: "2000000000 2000000000 2000000000 2000000000 2000000000"
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: pod_high_memory_usage_tesst
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              tenant_id: "{{ $labels.tenant_id }}"
+              pod: "{{ $labels.pod }}"
+              namespace: "{{ $labels.namespace }}"
+              slo: "true"
+            exp_annotations:
+              summary: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace}} (Tenant: {{ $labels.tenant_id }}) has exceeded it memory limit for more than 5 minutes"
+              description: >
+                "The pod {{ $labels.pod }} (Tenant: {{ labels.tenant_id}}) has been consuming more than its defined limit in namespace {{ $labels.namespace}} for at least 5 minutes. Consider investigating resource usage."
+              alert_team_handle: <!subteam^S05Q1P4Q2TG>
+              team: konflux-infra
