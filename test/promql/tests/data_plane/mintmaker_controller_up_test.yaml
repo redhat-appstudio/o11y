@@ -41,3 +41,41 @@ tests:
       - eval_time: 5m
         alertname: MintMakerControllerDown
         exp_alerts: null
+
+  - interval: 1m
+    input_series:
+      - series: 'konflux_up{namespace="mintmaker", check="replicas-available", service="redis", source_cluster="c5"}'
+        values: '0 0 0 0 0'
+      - series: 'konflux_up{namespace="mintmaker", check="replicas-available", service="redis", source_cluster="c6"}'
+        values: '1 1 1 1 1'
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: MintMakerCacheDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              check: replicas-available
+              namespace: mintmaker
+              service: redis
+              slo: "true"
+              source_cluster: c5
+            exp_annotations:
+              summary: MintMaker cache is down in cluster c5
+              description: >
+                The MintMaker cache pod has been down for 5min in cluster c5
+              alert_team_handle: <!subteam^S078T8TMQP5>
+              team: mintmaker
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/mintmaker/faq.md
+
+  - interval: 1m
+    input_series:
+      - series: 'konflux_up{namespace="mintmaker", check="replicas-available", service="redis", source_cluster="kflux-rhel-p01"}'
+        values: '0 0 0 0 0'
+      - series: 'konflux_up{namespace="mintmaker", check="replicas-available", service="redis", source_cluster="c8"}'
+        values: '1 1 1 1 1'
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: MintMakerCacheDown
+        exp_alerts: null
