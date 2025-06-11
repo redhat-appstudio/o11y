@@ -34,7 +34,7 @@ var (
 			// Help string updated to reflect the new logic: UP if at least one error reading <= 0, DOWN if all > 0.
 			Help: fmt.Sprintf("Kanary signal: 1 if at least one of last %d error readings is 0 or less, 0 if all last %d error readings are greater than 0. Only updated when %d valid data points are available.", requiredNumberOfRows, requiredNumberOfRows, requiredNumberOfRows),
 		},
-		[]string{"instance"},
+		[]string{"tested_cluster"},
 	)
 
 	kanaryErrorMetric = prometheus.NewGaugeVec(
@@ -42,7 +42,7 @@ var (
 			Name: "kanary_error",
 			Help: "Binary indicator of an error in processing for Kanary signal (1 if interrupted, 0 otherwise). An error prevents kanary_up from being updated. The 'reason' label provides details on the error type.",
 		},
-		[]string{"instance", "reason"},
+		[]string{"tested_cluster", "reason"},
 	)
 
 	// cluster shortnames.
