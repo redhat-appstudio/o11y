@@ -1,0 +1,29 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-prometheus-availability
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: prometheus_availability
+      interval: 1m
+
+      rules:
+        - record: konflux_up
+          expr: clamp_max(sum without (pod)(prometheus_ready{job="prometheus-user-workload"}), 1)
+          labels:
+            service: prometheus
+            check: prometheus_ready_user_workload
+
+        - record: konflux_up
+          expr: clamp_max(sum without (pod)(prometheus_ready{job="prometheus-k8s"}), 1)
+          labels:
+            service: prometheus
+            check: prometheus_ready_openshift_monitoring
+
+        - record: konflux_up
+          expr: clamp_max(sum without (pod)(prometheus_ready{job="prometheus-self"}), 1)
+          labels:
+            service: prometheus
+            check: prometheus_ready_federation
