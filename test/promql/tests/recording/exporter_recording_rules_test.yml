@@ -7,19 +7,19 @@ tests:
 - interval: 1m
   name: DSExporterTest
   input_series:
-    - series: "grafana_ds_up{check='appstudio-ds'}"
+    - series: "grafana_ds_up{check='appstudio-ds', label='label'}"
       values: "1 1 1 1 1"
-    - series: "grafana_ds_up{check='github'}"
+    - series: "grafana_ds_up{check='github', label='label'}"
       values: "0 0 0 0 0"
-    - series: "grafana_ds_up{other_label='sso'}"
+    - series: "grafana_ds_up{other_label='sso', label='label'}"
       values: "0 1 0 1 0"
   promql_expr_test:
     - expr: konflux_up
       eval_time: 5m
       exp_samples:
-        - labels: konflux_up{service='grafana', check='appstudio-ds'}
+        - labels: konflux_up{service='grafana', check='appstudio-ds', label='label'}
           value: 1
-        - labels: konflux_up{service='grafana', check='github'}
+        - labels: konflux_up{service='grafana', check='github', label='label'}
           value: 0
-        - labels: konflux_up{service='grafana', other_label='sso'}
+        - labels: konflux_up{service='grafana', other_label='sso', label='label'}
           value: 0

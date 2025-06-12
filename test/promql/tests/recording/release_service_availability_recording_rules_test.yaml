@@ -7,53 +7,53 @@ tests:
   - interval: 1m
     name: RSExporterGithubTest
     input_series:
-      - series: "release_service_check_gauge{service='release-service-availability-monitor-service1', check='github'}"
+      - series: "release_service_check_gauge{service='release-service-availability-monitor-service1', check='github', label='label'}"
         values: "1 1 1 1 1"
-      - series: "release_service_check_gauge{service='release-service-availability-monitor-service2', check='github'}"
+      - series: "release_service_check_gauge{service='release-service-availability-monitor-service2', check='github', label='label'}"
         values: "0 0 0 0 0"
-      - series: "release_service_check_gauge{service='release-service-availability-monitor-service3', check='github'}"
+      - series: "release_service_check_gauge{service='release-service-availability-monitor-service3', check='github', label='label'}"
         values: "0 1 0 1 0"
     promql_expr_test:
       - expr: konflux_up
         eval_time: 5m
         exp_samples:
-          - labels: konflux_up{Name='release_service_check_gauge', service='release-service-availability-monitor-service1', check='github'}
+          - labels: konflux_up{Name='release_service_check_gauge', service='release-service-availability-monitor-service1', check='github', label='label'}
             value: 1
-          - labels: konflux_up{Name='release_service_check_gauge', service='release-service-availability-monitor-service2', check='github'}
+          - labels: konflux_up{Name='release_service_check_gauge', service='release-service-availability-monitor-service2', check='github', label='label'}
             value: 0
-          - labels: konflux_up{Name='release_service_check_gauge', service='release-service-availability-monitor-service3', check='github'}
+          - labels: konflux_up{Name='release_service_check_gauge', service='release-service-availability-monitor-service3', check='github', label='label'}
             value: 0
           # need to check release as well because we are forcing it to be present by default
-          - labels: konflux_up{Name='release_service_check_gauge', service='release-service-availability-monitor-service1', check='release'}
+          - labels: konflux_up{Name='release_service_check_gauge', service='release-service-availability-monitor-service1', check='release', label='label'}
             value: 1
-          - labels: konflux_up{Name='release_service_check_gauge', service='release-service-availability-monitor-service2', check='release'}
+          - labels: konflux_up{Name='release_service_check_gauge', service='release-service-availability-monitor-service2', check='release', label='label'}
             value: 0
-          - labels: konflux_up{Name='release_service_check_gauge', service='release-service-availability-monitor-service3', check='release'}
+          - labels: konflux_up{Name='release_service_check_gauge', service='release-service-availability-monitor-service3', check='release', label='label'}
             value: 0
 
   - interval: 1m
     name: RSExporterPyxisTest
     input_series:
-      - series: "release_service_check_gauge{Name='release_service_check_gauge', service='release-service-availability-monitor-service1', check='pyxis'}"
+      - series: "release_service_check_gauge{Name='release_service_check_gauge', service='release-service-availability-monitor-service1', check='pyxis', label='label'}"
         values: "1 1 1 1 1"
-      - series: "release_service_check_gauge{Name='release_service_check_gauge', service='release-service-availability-monitor-service2', check='pyxis'}"
+      - series: "release_service_check_gauge{Name='release_service_check_gauge', service='release-service-availability-monitor-service2', check='pyxis', label='label'}"
         values: "0 0 0 0 0"
-      - series: "release_service_check_gauge{Name='release_service_check_gauge', service='release-service-availability-monitor-service3', check='pyxis'}"
+      - series: "release_service_check_gauge{Name='release_service_check_gauge', service='release-service-availability-monitor-service3', check='pyxis', label='label'}"
         values: "0 1 0 1 0"
     promql_expr_test:
       - expr: konflux_up
         eval_time: 5m
         exp_samples:
-          - labels: konflux_up{Name='release_service_check_gauge', service='release-service-availability-monitor-service1', check='pyxis'}
+          - labels: konflux_up{Name='release_service_check_gauge', service='release-service-availability-monitor-service1', check='pyxis', label='label'}
             value: 1
-          - labels: konflux_up{Name='release_service_check_gauge', service='release-service-availability-monitor-service2', check='pyxis'}
+          - labels: konflux_up{Name='release_service_check_gauge', service='release-service-availability-monitor-service2', check='pyxis', label='label'}
             value: 0
-          - labels: konflux_up{Name='release_service_check_gauge', service='release-service-availability-monitor-service3', check='pyxis'}
+          - labels: konflux_up{Name='release_service_check_gauge', service='release-service-availability-monitor-service3', check='pyxis', label='label'}
             value: 0
           # need to check release as well because we are forcing it to be present by default
-          - labels: konflux_up{Name='release_service_check_gauge', service='release-service-availability-monitor-service1', check='release'}
+          - labels: konflux_up{Name='release_service_check_gauge', service='release-service-availability-monitor-service1', check='release', label='label'}
             value: 1
-          - labels: konflux_up{Name='release_service_check_gauge', service='release-service-availability-monitor-service2', check='release'}
+          - labels: konflux_up{Name='release_service_check_gauge', service='release-service-availability-monitor-service2', check='release', label='label'}
             value: 0
-          - labels: konflux_up{Name='release_service_check_gauge', service='release-service-availability-monitor-service3', check='release'}
+          - labels: konflux_up{Name='release_service_check_gauge', service='release-service-availability-monitor-service3', check='release', label='label'}
             value: 0
