@@ -33,3 +33,27 @@ spec:
         alert_team_handle: <!subteam^S06G3MJT516>
         team: workspaces
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/namespace-lister/README.md
+
+  - name: namespace-lister-availability
+    interval: 1m
+    rules:
+
+    - alert: NameSpaceListerDown
+      expr: |
+        konflux_up{
+          namespace="namespace-lister",
+          check="replicas-available",
+          service="namespace-lister"
+        } != 1
+      for: 5m
+      labels:
+        severity: critical
+        slo: "true"
+      annotations:
+        summary: >-
+          namespace-lister is down in cluster {{ $labels.source_cluster }}
+        description: >
+          The namespace-lister pod has been down for 5min in cluster {{ $labels.source_cluster }}
+        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        team: konflux-infra
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/namespace-lister/README.md
