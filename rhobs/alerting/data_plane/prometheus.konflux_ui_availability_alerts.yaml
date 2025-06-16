@@ -1,0 +1,73 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-konflux-ui-availability-alerting-rules
+  labels:
+    tenant: rhtap
+
+spec:
+  groups:
+  - name: konflux-ui-proxy-availability
+    interval: 1m
+    rules:
+    - alert: KonfluxUIProxyDown
+      expr: |
+        konflux_up{
+          namespace="konflux-ui",
+          check="replicas-available",
+          service="proxy"
+        } != 1
+      for: 5m
+      labels:
+        severity: critical
+        slo: "true"
+      annotations:
+        summary: >-
+          Konflux UI proxy pod is down in cluster {{ $labels.source_cluster }}
+        description: >
+          The Konflux UI proxy pod has been down for 5min in cluster {{ $labels.source_cluster }}
+        alert_team_handle: <!subteam^S04HY632621>
+        team: konflux-ui
+        runbook_url: null
+
+  - name: konflux-ui-dex-availability
+    interval: 1m
+    rules:
+    - alert: KonfluxUIDexDown
+      expr: |
+        konflux_up{
+          namespace="konflux-ui",
+          check="replicas-available",
+          service="dex"
+        } != 1
+      for: 5m
+      labels:
+        severity: critical
+        slo: "true"
+      annotations:
+        summary: >-
+          Konflux UI dex pod is down in cluster {{ $labels.source_cluster }}
+        description: >
+          The Konflux UI dex pod has been down for 5min in cluster {{ $labels.source_cluster }}
+        alert_team_handle: <!subteam^S04HY632621>
+        team: konflux-ui
+        runbook_url: null
+
+  - name: konflux-ui-endpoint-availability
+    interval: 1m
+    rules:
+    - alert: KonfluxUIEndpointDown
+      expr: |
+        sum without (cluster) (kube_endpoint_address{namespace="konflux-ui", endpoint="proxy"}) == 0
+      for: 5m
+      labels:
+        severity: critical
+        slo: "true"
+      annotations:
+        summary: >-
+          Konflux UI endpoint is down in cluster {{ $labels.source_cluster }}
+        description: >
+          There were no Konflux UI proxy pods behind the endopint for 5min in cluster {{ $labels.source_cluster }}
+        alert_team_handle: <!subteam^S04HY632621>
+        team: konflux-ui
+        runbook_url: null
