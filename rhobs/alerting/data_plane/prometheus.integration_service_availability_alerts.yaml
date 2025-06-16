@@ -1,0 +1,30 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-integration-service-availability-slo-alerting-rules
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: integration-service-availability-slo
+      interval: 1m
+      rules:
+        - alert: IntegrationServiceAvailabilitySLOViolation
+          expr: |
+            (
+              avg_over_time(konflux_up{check="replicas-available"}[24h]) * 100
+            ) < 99
+          for: 10m
+          labels:
+            severity: critical
+            slo: "true"
+            tenant: rhtap
+          annotations:
+            summary: >-
+              Integration Service Availability SLO Violation
+            description: >-
+              Availability of deployment '{{ $labels.service }}' in namespace '{{ $labels.namespace }}'
+              has dropped below 99% over the last 24h.
+            alert_team_handle: <!subteam^S05M4AG8CJH>
+            team: integration
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/sre/integration_service_availability_replicas_available.md
