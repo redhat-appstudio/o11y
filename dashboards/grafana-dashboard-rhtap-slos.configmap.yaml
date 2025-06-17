@@ -1718,12 +1718,143 @@ data:
                 "type": "stat"
             },
             {
-                "collapsed": true,
+                "collapsed": false,
                 "gridPos": {
                     "h": 1,
                     "w": 24,
                     "x": 0,
                     "y": 104
+                },
+                "id": 125,
+                "panels": [],
+                "title": "Project Controller SLOs",
+                "type": "row"
+                },
+                {
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "The objective for the given time window.",
+                "gridPos": {
+                    "h": 7,
+                    "w": 10,
+                    "x": 0,
+                    "y": 105
+                },
+                "id": 126,
+                "options": {
+                    "code": {
+                    "language": "plaintext",
+                    "showLineNumbers": false,
+                    "showMiniMap": false
+                    },
+                    "content": "<h1><center>100% of service replicas must be available within the measurment timeframe</center></h1>",
+                    "mode": "html"
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
+                    {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "refId": "A"
+                    }
+                ],
+                "title": "Availability SLO",
+                "type": "text"
+                },
+                {
+                "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                },
+                "description": "The current measurement for the given time window.",
+                "fieldConfig": {
+                    "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [
+                        {
+                        "options": {
+                            "match": "null",
+                            "result": {
+                            "text": "N/A"
+                            }
+                        },
+                        "type": "special"
+                        }
+                    ],
+                    "max": 1,
+                    "min": 0,
+                    "noValue": "-",
+                    "thresholds": {
+                        "mode": "percentage",
+                        "steps": [
+                        {
+                            "color": "red",
+                            "value": null
+                        },
+                        {
+                            "color": "green",
+                            "value": 90
+                        }
+                        ]
+                    },
+                    "unit": "percentunit"
+                    },
+                    "overrides": []
+                },
+                "gridPos": {
+                    "h": 7,
+                    "w": 5,
+                    "x": 10,
+                    "y": 105
+                },
+                "id": 127,
+                "maxDataPoints": 100,
+                "options": {
+                    "minVizHeight": 75,
+                    "minVizWidth": 75,
+                    "orientation": "horizontal",
+                    "reduceOptions": {
+                    "calcs": [],
+                    "fields": "",
+                    "values": false
+                    },
+                    "showThresholdLabels": false,
+                    "showThresholdMarkers": false,
+                    "sizing": "auto"
+                },
+                "pluginVersion": "10.4.1",
+                "targets": [
+                    {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "${datasource}"
+                    },
+                    "editorMode": "code",
+                    "exemplar": false,
+                    "expr": "sum(kube_deployment_status_replicas_available{namespace=\"project-controller\"})\n/\nsum(kube_deployment_spec_replicas{namespace=\"project-controller\"})",
+                    "format": "time_series",
+                    "instant": true,
+                    "legendFormat": "__auto",
+                    "range": false,
+                    "refId": "A"
+                    }
+                ],
+                "title": "Measured",
+                "type": "gauge"
+                },
+                {
+                "collapsed": true,
+                "gridPos": {
+                    "h": 1,
+                    "w": 24,
+                    "x": 0,
+                    "y": 112
                 },
                 "id": 33,
                 "panels": [
@@ -1737,7 +1868,7 @@ data:
                             "h": 7,
                             "w": 10,
                             "x": 0,
-                            "y": 48
+                            "y": 56
                         },
                         "id": 10,
                         "options": {
@@ -1804,7 +1935,7 @@ data:
                             "h": 7,
                             "w": 5,
                             "x": 0,
-                            "y": 55
+                            "y": 63
                         },
                         "id": 98,
                         "maxDataPoints": 100,
@@ -1879,7 +2010,7 @@ data:
                             "h": 7,
                             "w": 5,
                             "x": 5,
-                            "y": 55
+                            "y": 63
                         },
                         "id": 29,
                         "maxDataPoints": 100,
