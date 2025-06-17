@@ -148,6 +148,8 @@ commit
 [reference](https://gitlab.cee.redhat.com/service/app-interface/-/blob/b03e4336a3223ec7b90dc9bc69707c9ee0ff9af6/data/services/stonesoup/cicd/saas-stonesoup-dashboards.yml#L37)
 in app-interface.
 
+Note: The dashboard UID must always be unique in each Grafana instance. Make sure to modify it by changing a few characters or deleting the test dashboard in staging instance. If the test dashboard is kept and the uid is not updated, glitches will occur insta grafana as it will juggle between the two dashboards with identical UIDs.
+
 ## Adding Metrics and Labels
 
 Only a subset of the metrics and labels available within the Konflux clusters is
