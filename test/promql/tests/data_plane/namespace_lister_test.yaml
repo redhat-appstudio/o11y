@@ -1,7 +1,8 @@
+---
 evaluation_interval: 1m
 
 rule_files:
-- prometheus.namespace_lister_alerts.yaml
+  - prometheus.namespace_lister_alerts.yaml
 
 tests:
 # --- alerts for synchronization failures ---
@@ -118,3 +119,30 @@ tests:
   - eval_time: 10m
     alertname: NamespaceListerInternalError
     exp_alerts: []
+
+# replica count = 0
+- interval: 1m
+  input_series:
+    - series: 'konflux_up{namespace="namespace-lister", check="replicas-available", service="namespace-lister", source_cluster="c1"}'
+      values: '0 0 0 0 0'
+    - series: 'konflux_up{namespace="namespace-lister", check="replicas-available", service="namespace-listerr", source_cluster="c2"}'
+      values: '1 1 1 1 1'
+
+  alert_rule_test:
+    - eval_time: 5m
+      alertname: NameSpaceListerDown
+      exp_alerts:
+        - exp_labels:
+            severity: critical
+            check: replicas-available
+            namespace: namespace-lister
+            service: namespace-lister
+            slo: "true"
+            source_cluster: c1
+          exp_annotations:
+            summary: namespace-lister is down in cluster c1
+            description: >
+              The namespace-lister pod has been down for 5min in cluster c1
+            alert_team_handle: <!subteam^S05Q1P4Q2TG>
+            team: konflux-infra
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/namespace-lister/README.md

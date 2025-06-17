@@ -11,7 +11,7 @@ spec:
     rules:
       - alert: KanarySignalTriggered
         expr: kanary_up == 0
-        for: 0m
+        for: 1s
         labels:
           severity: critical
           slo: "true"
@@ -23,7 +23,7 @@ spec:
 
       - alert: KanaryDBError
         expr: kanary_error{reason="db_error"} == 1
-        for: 0m
+        for: 1s
         labels:
           severity: warning
           slo: "false"
@@ -35,7 +35,7 @@ spec:
 
       - alert: KanaryMissingTestResults
         expr: kanary_error{reason="no_test_results"} == 1
-        for: 0m
+        for: 1s
         labels:
           severity: warning
           slo: "false"
