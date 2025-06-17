@@ -82,23 +82,23 @@ spec:
             (100 * avg(1 - rate(node_cpu_seconds_total{mode="idle"}[5m])) by (instance, source_cluster)) > 95
           for: 10m
           labels:
-            severity: warning
+            severity: high
           annotations:
             summary: >-
               Node High CPU Usage.
             description: >-
               CPU Usage is {{$value}}% on node {{ $labels.instance }} in cluster {{ $labels.source_cluster }}.
-            alert_routing_key: perfandscale
+            alert_routing_key: perfandspreandinfra
 
         - alert: NodeHighMemory
           expr: |
             100*((node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes)/node_memory_MemTotal_bytes) > 90
           for: 10m
           labels:
-            severity: warning
+            severity: high
           annotations:
             summary: >-
               Node High Memory Usage.
             description: >-
               Memory Usage is {{$value}}% on node {{ $labels.instance }} in cluster {{ $labels.source_cluster }}.
-            alert_routing_key: perfandscale
+            alert_routing_key: perfandspreandinfra
