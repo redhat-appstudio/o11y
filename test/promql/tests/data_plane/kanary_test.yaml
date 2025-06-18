@@ -15,33 +15,6 @@ tests:
       - series: 'kanary_up{tested_cluster="cluster-2"}'
         values: '1x5 0x2 1x8'
 
-      # --- KanaryDBError Test Cases ---
-      # Cluster 3: db_error goes to 1 and stays, should trigger alert
-      - series: 'kanary_error{tested_cluster="cluster-3", reason="db_error"}'
-        values: '0x5 1x10'
-
-      # Cluster 4: db_error goes to 1 but recovers, should NOT trigger alert (because for: 0m means immediate)
-      - series: 'kanary_error{tested_cluster="cluster-4", reason="db_error"}'
-        values: '0x5 1x2 0x8'
-
-      # --- KanaryMissingTestResults Test Cases ---
-      # Cluster 5: no_test_results goes to 1 and stays, should trigger alert
-      - series: 'kanary_error{tested_cluster="cluster-5", reason="no_test_results"}'
-        values: '0x5 1x10'
-
-      # Cluster 6: no_test_results goes to 1 but recovers, should NOT trigger alert (because for: 0m means immediate)
-      - series: 'kanary_error{tested_cluster="cluster-6", reason="no_test_results"}'
-        values: '0x5 1x2 0x8'
-
-      # --- KanaryExporterDown Test Cases ---
-      # Cluster 7: Exporter goes down (up=0) and stays down for 5m+ 'for' duration, should trigger alert
-      - series: 'up{job="kanary-exporter-service", source_cluster="cluster-7"}'
-        values: '1x5 0x10'
-
-      # Cluster 8: Exporter goes down (up=0) but recovers before 'for' duration, should NOT trigger alert
-      - series: 'up{job="kanary-exporter-service", source_cluster="cluster-8"}'
-        values: '1x5 0x4 1x6'
-
     alert_rule_test:
       - alertname: KanarySignalTriggered
         eval_time: 15m
@@ -56,6 +29,18 @@ tests:
               summary: "Kanary signal has been triggered for cluster cluster-1"
               description: "The e2e load tests failed multiple times in a row for cluster cluster-1"
 
+  - interval: 1m
+    input_series:
+      # --- KanaryDBError Test Cases ---
+      # Cluster 3: db_error goes to 1 and stays, should trigger alert
+      - series: 'kanary_error{tested_cluster="cluster-3", reason="db_error"}'
+        values: '0x5 1x10'
+
+      # Cluster 4: db_error goes to 1 but recovers, should NOT trigger alert (because for: 0m means immediate)
+      - series: 'kanary_error{tested_cluster="cluster-4", reason="db_error"}'
+        values: '0x5 1x2 0x8'
+
+    alert_rule_test:
       - alertname: KanaryDBError
         eval_time: 15m
         exp_alerts:
@@ -70,7 +55,18 @@ tests:
               summary: "Kanary signal processing failed due to a database error on cluster cluster-3"
               description: "Encountered a database error while processing the kanary signal for cluster cluster-3"
 
+  - interval: 1m
+    input_series:
+      # --- KanaryMissingTestResults Test Cases ---
+      # Cluster 5: no_test_results goes to 1 and stays, should trigger alert
+      - series: 'kanary_error{tested_cluster="cluster-5", reason="no_test_results"}'
+        values: '0x5 1x10'
 
+      # Cluster 6: no_test_results goes to 1 but recovers, should NOT trigger alert (because for: 0m means immediate)
+      - series: 'kanary_error{tested_cluster="cluster-6", reason="no_test_results"}'
+        values: '0x5 1x2 0x8'
+
+    alert_rule_test:
       - alertname: KanaryMissingTestResults
         eval_time: 15m
         exp_alerts:
@@ -85,6 +81,18 @@ tests:
               summary: "Missing recent e2e results for cluster cluster-5"
               description: "Could not find any recent e2e load test results for cluster cluster-5."
 
+  - interval: 1m
+    input_series:
+      # --- KanaryExporterDown Test Cases ---
+      # Cluster 7: Exporter goes down (up=0) and stays down for 5m+ 'for' duration, should trigger alert
+      - series: 'up{job="kanary-exporter-service", source_cluster="cluster-7"}'
+        values: '1x5 0x10'
+
+      # Cluster 8: Exporter goes down (up=0) but recovers before 'for' duration, should NOT trigger alert
+      - series: 'up{job="kanary-exporter-service", source_cluster="cluster-8"}'
+        values: '1x5 0x4 1x6'
+
+    alert_rule_test:
       - alertname: KanaryExporterDown
         eval_time: 15m
         exp_alerts:
@@ -97,4 +105,20 @@ tests:
               team: o11y
               alert_routing_key: o11y
               summary: "Kanary Exporter is down in cluster-7"
-              description: "Prometheus is unable to scrape metrics from the Kanary Exporter running in cluster-7."
+              description: "The kanary exporter (running in cluster-7) is unable to set the kanary metrics."
+
+  - interval: 1m
+    input_series: []
+    alert_rule_test:
+      - alertname: KanaryAbsentExporterMetrics
+        eval_time: 15m
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: kanary-exporter-service
+              slo: "false"
+            exp_annotations:
+              team: o11y
+              alert_routing_key: o11y
+              summary: "Kanary Exporter metrics are absent"
+              description: "Prometheus is unable to scrape metrics from the Kanary Exporter."
