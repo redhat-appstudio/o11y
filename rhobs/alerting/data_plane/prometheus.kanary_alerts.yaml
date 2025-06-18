@@ -55,4 +55,16 @@ spec:
           team: o11y
           alert_routing_key: o11y
           summary: "Kanary Exporter is down in {{ $labels.source_cluster }}"
-          description: "Prometheus is unable to scrape metrics from the Kanary Exporter running in {{ $labels.source_cluster }}."
+          description: "The kanary exporter (running in {{ $labels.source_cluster }}) is unable to set the kanary metrics."
+
+      - alert: KanaryAbsentExporterMetrics
+        expr: absent(up{job="kanary-exporter-service"}) == 1
+        for: 5m
+        labels:
+          severity: warning
+          slo: "false"
+        annotations:
+          team: o11y
+          alert_routing_key: o11y
+          summary: "Kanary Exporter metrics are absent"
+          description: "Prometheus is unable to scrape metrics from the Kanary Exporter."
