@@ -10,7 +10,11 @@ spec:
     interval: 1m
     rules:
       - alert: KanarySignalTriggered
-        expr: kanary_up == 0
+        # For slo alerts only use production metrics (tested_cluster) that are exported from a
+        # production cluster (source_clusterj) by the kanary exporter.
+        # We have a stage and production exporter, and both are pushing metrics for all konflux clusters to
+        # their respective datasource ('rhtap-observatorium-stage' and 'rhtap-observatorium-prod').
+        expr: kanary_up{tested_cluster=~".*prod.*", source_cluster=~".*prod.*"} == 0
         for: 1s
         labels:
           severity: critical
@@ -55,9 +59,11 @@ spec:
           team: o11y
           alert_routing_key: o11y
           summary: "Kanary Exporter is down in {{ $labels.source_cluster }}"
-          description: "The kanary exporter (running in {{ $labels.source_cluster }}) is unable to set the kanary metrics."
+          description: "Prometheus is unable to scrape metrics from the Kanary Exporter running in {{ $labels.source_cluster }}."
 
       - alert: KanaryAbsentExporterMetrics
+        # Consideration: the value returned by absent() does not return the source_cluster label.
+        # The environment can only be determined by looking at the source alertmanager in the alert's slack message.
         expr: absent(up{job="kanary-exporter-service"}) == 1
         for: 5m
         labels:
@@ -67,4 +73,4 @@ spec:
           team: o11y
           alert_routing_key: o11y
           summary: "Kanary Exporter metrics are absent"
-          description: "Prometheus is unable to scrape metrics from the Kanary Exporter."
+          description: "Metrics from the Kanary Exporter are absent."
