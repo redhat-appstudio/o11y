@@ -1,11 +1,339 @@
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
-  name: rhtap-pipeline-alerting
+  name: rhtap-pipelines-availability-alerting-rules
   labels:
     tenant: rhtap
 spec:
   groups:
+    - name: pipeline-metrics-exporter-availability
+      interval: 1m
+      rules:
+      - alert: PipelineMetricsExporterDown
+        expr: |
+          konflux_up{
+            namespace="openshift-pipelines",
+            check="replicas-available",
+            service="pipeline-metrics-exporter",
+          } != 1
+        for: 5m
+        labels:
+          severity: high
+        annotations:
+          summary: >-
+            Pipeline metrics exporter is down in cluster {{ $labels.source_cluster }}
+          description: >
+            The Pipelines Metrics Exporter pod has been down for 5min in cluster {{ $labels.source_cluster }}
+          alert_team_handle: <!subteam^S04PYECHCCU>
+          team: pipelines
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
+    - name: pipelines-as-code-controller-availability
+      interval: 1m
+      rules:
+      - alert: PipelinesAsCodeControllDown
+        expr: |
+          konflux_up{
+            namespace="openshift-pipelines",
+            check="replicas-available",
+            service="pipelines-as-code-controller",
+          } != 1
+        for: 5m
+        labels:
+          severity: critical
+          slo: "true"
+        annotations:
+          summary: >-
+            Pipelines as Code controller is down in cluster {{ $labels.source_cluster }}
+          description: >
+            The Pipelines as Code controller pod has been down for 5min in cluster {{ $labels.source_cluster }}
+          alert_team_handle: <!subteam^S04PYECHCCU>
+          team: pipelines
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
+    - name: pipelines-as-code-watcher-availability
+      interval: 1m
+      rules:
+      - alert: PipelinesAsCodeWatcherDown
+        expr: |
+          konflux_up{
+            namespace="openshift-pipelines",
+            check="replicas-available",
+            service="pipelines-as-code-watcher",
+          } != 1
+        for: 5m
+        labels:
+          severity: critical
+          slo: "true"
+        annotations:
+          summary: >-
+            Pipelines as Code watcher is down in cluster {{ $labels.source_cluster }}
+          description: >
+            The Pipelines as Code watcher pod has been down for 5min in cluster {{ $labels.source_cluster }}
+          alert_team_handle: <!subteam^S04PYECHCCU>
+          team: pipelines
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
+    - name: pipelines-as-code-webhook-availability
+      interval: 1m
+      rules:
+      - alert: PipelinesAsCodeWebhookDown
+        expr: |
+          konflux_up{
+            namespace="openshift-pipelines",
+            check="replicas-available",
+            service="pipelines-as-code-webhook",
+          } != 1
+        for: 5m
+        labels:
+          # Causes issues when creating new Repository CRs, onboarding new Components
+          severity: High
+        annotations:
+          summary: >-
+            Pipelines as Code webhook is down in cluster {{ $labels.source_cluster }}
+          description: >
+            The Pipelines as Code webhook pod has been down for 5min in cluster {{ $labels.source_cluster }}
+          alert_team_handle: <!subteam^S04PYECHCCU>
+          team: pipelines
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
+    - name: tekton-chains-controller-availability
+      interval: 1m
+      rules:
+      - alert: TektonChainsControllerDown
+        expr: |
+          konflux_up{
+            namespace="openshift-pipelines",
+            check="replicas-available",
+            service="tekton-chains-controller",
+          } != 1
+        for: 5m
+        labels:
+          severity: critical
+          slo: "true"
+        annotations:
+          summary: >-
+            Tekton Chians controller is down in cluster {{ $labels.source_cluster }}
+          description: >
+            The Tekton Chains controller pod has been down for 5min in cluster {{ $labels.source_cluster }}
+          alert_team_handle: <!subteam^S04PYECHCCU>
+          team: pipelines
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
+    - name: tekton-events-controller-availability
+      interval: 1m
+      rules:
+      - alert: TektonEventsControllerDown
+        expr: |
+          konflux_up{
+            namespace="openshift-pipelines",
+            check="replicas-available",
+            service="tekton-events-controller",
+          } != 1
+        for: 5m
+        labels:
+          severity: high
+        annotations:
+          summary: >-
+            Tekton Events controller is down in cluster {{ $labels.source_cluster }}
+          description: >
+            The Tekton Events controller pod has been down for 5min in cluster {{ $labels.source_cluster }}
+          alert_team_handle: <!subteam^S04PYECHCCU>
+          team: pipelines
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
+    - name: tekton-operator-proxy-webhook-availability
+      interval: 1m
+      rules:
+      - alert: TektonOperatorProxyWebhookDown
+        expr: |
+          konflux_up{
+            namespace="openshift-pipelines",
+            check="replicas-available",
+            service="tekton-operator-proxy-webhook",
+          } != 1
+        for: 5m
+        labels:
+          severity: critical
+          slo: "true"
+        annotations:
+          summary: >-
+            Tekton Operator Proxy Webhook is down in cluster {{ $labels.source_cluster }}
+          description: >
+            The Tekton Operator Proxy webhook pod has been down for 5min in cluster {{ $labels.source_cluster }}
+          alert_team_handle: <!subteam^S04PYECHCCU>
+          team: pipelines
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
+    - name: tekton-pipelines-webhook-availability
+      interval: 1m
+      rules:
+      - alert: TektonPipelinesWebhookDown
+        expr: |
+          konflux_up{
+            namespace="openshift-pipelines",
+            check="replicas-available",
+            service="tekton-pipelines-webhook",
+          } != 1
+        for: 5m
+        labels:
+          severity: critical
+          slo: "true"
+        annotations:
+          summary: >-
+            TektonPipelinesWebhook is down in cluster {{ $labels.source_cluster }}
+          description: >
+            The Tekton Pipelines webhook pod has been down for 5min in cluster {{ $labels.source_cluster }}
+          alert_team_handle: <!subteam^S04PYECHCCU>
+          team: pipelines
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
+    - name: tkn-cli-serve-availability
+      interval: 1m
+      rules:
+      - alert: TektonCLIServeDown
+        expr: |
+          konflux_up{
+            namespace="openshift-pipelines",
+            check="replicas-available",
+            service="tkn-cli-serve",
+          } != 1
+        for: 5m
+        labels:
+          # No functional impact, just on users trying to use the CLI
+          severity: warning
+        annotations:
+          summary: >-
+            Tekton CLI Serve is down in cluster {{ $labels.source_cluster }}
+          description: >
+            The Tekton CLI Serve controller pod has been down for 5min in cluster {{ $labels.source_cluster }}
+          alert_team_handle: <!subteam^S04PYECHCCU>
+          team: pipelines
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
+    - name: tekton-results-api-availability
+      interval: 1m
+      rules:
+      - alert: TektonResultsAPIReaderDown
+        expr: |
+          konflux_up{
+            namespace="tekton-results",
+            check="replicas-available",
+            service="tekton-results-api",
+          } != 1
+        for: 5m
+        labels:
+          severity: critical
+          slo: "true"
+        annotations:
+          summary: >-
+            Tekton Results API reader is down in cluster {{ $labels.source_cluster }}
+          description: >
+            The Tekton Results API pod (reader instance) has been down for 5min in cluster {{ $labels.source_cluster }}
+          alert_team_handle: <!subteam^S04PYECHCCU>
+          team: pipelines
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
+    - name: tekton-results-api-for-watcher-availability
+      interval: 1m
+      rules:
+      - alert: TektonResultsAPIDown
+        expr: |
+          konflux_up{
+            namespace="tekton-results",
+            check="replicas-available",
+            service="tekton-results-api-for-watcher",
+          } != 1
+        for: 5m
+        labels:
+          severity: critical
+          slo: "true"
+        annotations:
+          summary: >-
+            Tekton Results API writer is down in cluster {{ $labels.source_cluster }}
+          description: >
+            The Tekton Results API pod (writer instance) has been down for 5min in cluster {{ $labels.source_cluster }}
+          alert_team_handle: <!subteam^S04PYECHCCU>
+          team: pipelines
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
+    - name: tekton-results-watcher-availability
+      interval: 1m
+      rules:
+      - alert: TektonResultsWatcherDown
+        expr: |
+          konflux_up{
+            namespace="tekton-results",
+            check="replicas-available",
+            service="tekton-results-watcher",
+          } != 1
+        for: 5m
+        labels:
+          severity: critical
+          slo: "true"
+        annotations:
+          summary: >-
+            Tekton Results watcher is down in cluster {{ $labels.source_cluster }}
+          description: >
+            The Tekton Results watcher pod has been down for 5min in cluster {{ $labels.source_cluster }}
+          alert_team_handle: <!subteam^S04PYECHCCU>
+          team: pipelines
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
+    - name: tekton-results-retention-policy-agent-availability
+      interval: 1m
+      rules:
+      - alert: TektonResultsRetentionPolicyAgentDown
+        expr: |
+          konflux_up{
+            namespace="tekton-results",
+            check="replicas-available",
+            service="tekton-results-retention-policy-agent",
+          } != 1
+        for: 5m
+        labels:
+          # Only affects record pruning
+          severity: warning
+        annotations:
+          summary: >-
+            Tekton Results Retention Policy Agent is down in cluster {{ $labels.source_cluster }}
+          description: >
+            The Tekton Results Retention Policy Agent pod has been down for 5min in cluster {{ $labels.source_cluster }}
+          alert_team_handle: <!subteam^S04PYECHCCU>
+          team: pipelines
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
+    - name: tekton-pipelines-controller-availability
+      interval: 1m
+      rules:
+      - alert: TektonPipelinesControllerDown
+        expr: |
+          konflux_up{
+            namespace="openshift-pipelines",
+            check="replicas-available",
+            service="tekton-pipelines-controller",
+          } != 1
+        for: 5m
+        labels:
+          severity: critical
+          slo: "true"
+        annotations:
+          summary: >-
+            Tekton Pipelines Controller is down in cluster {{ $labels.source_cluster }}
+          description: >
+            Tekton Pipelines Controller pod has been down for 5min in cluster {{ $labels.source_cluster }}
+          alert_team_handle: <!subteam^S04PYECHCCU>
+          team: pipelines
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
+    - name: tekton-pipelines-remote-resolvers-availability
+      interval: 1m
+      rules:
+      - alert: TektonPipelinesRemoteResolversDown
+        expr: |
+          konflux_up{
+            namespace="openshift-pipelines",
+            check="replicas-available",
+            service="tekton-pipelines-remote-resolvers",
+          } != 1
+        for: 5m
+        labels:
+          severity: critical
+          slo: "true"
+        annotations:
+          summary: >-
+            Tekton Pipelines Remote Resolvers is down in cluster {{ $labels.source_cluster }}
+          description: >
+            Tekton Pipelines Remote Resolvers pod has been down for 5min in cluster {{ $labels.source_cluster }}
+          alert_team_handle: <!subteam^S04PYECHCCU>
+          team: pipelines
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
     - name: pipeline_alerts
       interval: 1m
       rules:
