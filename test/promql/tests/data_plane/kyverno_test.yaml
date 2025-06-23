@@ -1,0 +1,65 @@
+---
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.kyverno_alerts.yaml
+
+tests:
+# --- alerts for kyverno pods failures ---
+
+  # Scenario 1: Deployment is continuously down for 5 minutes, alert should fire.
+  - interval: 1m
+    input_series:
+      - series: 'kube_deployment_spec_replicas{deployment="kyverno-admission-controller", namespace="konflux-kyverno", source_cluster="stone-stg-rh01"}'
+        values: '1 1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas{deployment="kyverno-admission-controller", namespace="konflux-kyverno", source_cluster="stone-stg-rh01"}'
+        values: '0 0 0 0 0 0'
+      - series: 'kube_deployment_spec_replicas{deployment="kyverno-background-controller", namespace="konflux-kyverno", source_cluster="stone-stg-rh01"}'
+        values: '1 1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas{deployment="kyverno-background-controller", namespace="konflux-kyverno", source_cluster="stone-stg-rh01"}'
+        values: '1 1 1 1 1 1'
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: KyvernoDeploymentDown
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: KyvernoDeploymentDown
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              deployment: kyverno-admission-controller
+              namespace: konflux-kyverno
+              source_cluster: stone-stg-rh01
+            exp_annotations:
+              summary: kyverno has reported that not all the deployments pods are up and running 5 minutes
+              description: "kyverno on cluster 'stone-stg-rh01' has that not all the deployments pods are up and running for 5 minutes"
+              team: konflux-infra
+              alert_team_handle: <!subteam^S05Q1P4Q2TG>
+      - eval_time: 6m
+        alertname: KyvernoDeploymentDown
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              deployment: kyverno-admission-controller
+              namespace: konflux-kyverno
+              source_cluster: stone-stg-rh01
+            exp_annotations:
+              summary: kyverno has reported that not all the deployments pods are up and running 5 minutes
+              description: "kyverno on cluster 'stone-stg-rh01' has that not all the deployments pods are up and running for 5 minutes"
+              team: konflux-infra
+              alert_team_handle: <!subteam^S05Q1P4Q2TG>
+
+  # Scenario 2: Deployment is down for less than 5 minutes, alert should NOT fire.
+  - interval: 1m
+    input_series:
+      - series: 'kube_deployment_spec_replicas{deployment="kyverno-background-controller", namespace="konflux-kyverno", source_cluster="stone-stg-rh01"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas{deployment="kyverno-background-controller", namespace="konflux-kyverno", source_cluster="stone-stg-rh01"}'
+        values: '0 0 1 1 1'
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: KyvernoDeploymentDown
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: KyvernoDeploymentDown
+        exp_alerts: []
