@@ -11,10 +11,11 @@ spec:
       rules:
         - alert: IntegrationServiceAvailabilitySLOViolation
           expr: |
-            (
-              avg_over_time(konflux_up{check="replicas-available"}[24h]) * 100
-            ) < 99
-          for: 10m
+            konflux_up{
+              namespace="integration-service",
+              check="replicas-available"
+            } != 1
+          for: 5m
           labels:
             severity: critical
             slo: "true"
@@ -23,8 +24,7 @@ spec:
             summary: >-
               Integration Service Availability SLO Violation
             description: >-
-              Availability of deployment '{{ $labels.service }}' in namespace '{{ $labels.namespace }}'
-              has dropped below 99% over the last 24h.
+              Integration service '{{ $labels.service }}' in namespace '{{ $labels.namespace }}' on {{ $labels.source_cluster }} has been down for 5min.
             alert_team_handle: <!subteam^S05M4AG8CJH>
             team: integration
             runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/sre/integration_service_availability_replicas_available.md
