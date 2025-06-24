@@ -1,0 +1,82 @@
+evaluation_interval: 1m
+
+rule_files:
+  - 'prometheus.konflux_ui_availability_alerts.yaml'
+
+tests:
+  - interval: 1m
+    input_series:
+      - series: 'konflux_up{namespace="konflux-ui", check="replicas-available", service="proxy", source_cluster="c1"}'
+        values: '0 0 0 0 0'
+      - series: 'konflux_up{namespace="proxy", check="replicas-available", service="proxy", source_cluster="c2"}'
+        values: '1 1 1 1 1'
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: KonfluxUIProxyDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              check: replicas-available
+              namespace: konflux-ui
+              service: proxy
+              slo: "true"
+              source_cluster: c1
+            exp_annotations:
+              summary: Konflux UI proxy pod is down in cluster c1
+              description: >
+                The Konflux UI proxy pod has been down for 5min in cluster c1
+              alert_team_handle: <!subteam^S04HY632621>
+              team: konflux-ui
+              runbook_url: null
+
+  - interval: 1m
+    input_series:
+      - series: 'konflux_up{namespace="konflux-ui", check="replicas-available", service="dex", source_cluster="c3"}'
+        values: '0 0 0 0 0'
+      - series: 'konflux_up{namespace="proxy", check="replicas-available", service="dex", source_cluster="c4"}'
+        values: '1 1 1 1 1'
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: KonfluxUIDexDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              check: replicas-available
+              namespace: konflux-ui
+              service: dex
+              slo: "true"
+              source_cluster: c3
+            exp_annotations:
+              summary: Konflux UI dex pod is down in cluster c3
+              description: >
+                The Konflux UI dex pod has been down for 5min in cluster c3
+              alert_team_handle: <!subteam^S04HY632621>
+              team: konflux-ui
+              runbook_url: null
+
+  - interval: 1m
+    input_series:
+      - series: 'kube_endpoint_address{namespace="konflux-ui", endpoint="proxy", source_cluster="c5"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_endpoint_address{namespace="konflux-ui", endpoint="proxy", source_cluster="c6"}'
+        values: '1 1 1 1 1'
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: KonfluxUIEndpointDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              namespace: konflux-ui
+              endpoint: proxy
+              slo: "true"
+              source_cluster: c5
+            exp_annotations:
+              summary: Konflux UI endpoint is down in cluster c5
+              description: >
+                There were no Konflux UI proxy pods behind the endopint for 5min in cluster c5
+              alert_team_handle: <!subteam^S04HY632621>
+              team: konflux-ui
+              runbook_url: null
