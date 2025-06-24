@@ -1,0 +1,65 @@
+evaluation_interval: 1m
+
+rule_files:
+  - konflux_ui_availability_recording_rules.yaml
+
+tests:
+  - name: KonfluxUIProxyAvailabilityAllUpTest
+    interval: 1m
+    input_series:
+      - series: "kube_deployment_status_replicas_available{namespace='konflux-ui', deployment='proxy'}"
+        values: "3 3 3 3 3"
+      - series: "kube_deployment_spec_replicas{namespace='konflux-ui', deployment='proxy'}"
+        values: "3 3 3 3 3"
+
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples:
+          - labels: konflux_up{service='proxy', check='replicas-available', namespace='konflux-ui', deployment='proxy'}
+            value: 1
+
+  - name: KonfluxUIProxyAvailabilitySomeUpTest
+    interval: 1m
+    input_series:
+      - series: "kube_deployment_status_replicas_available{namespace='konflux-ui', deployment='proxy'}"
+        values: "2 2 2 2 2"
+      - series: "kube_deployment_spec_replicas{namespace='konflux-ui', deployment='proxy'}"
+        values: "3 3 3 3 3"
+
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples:
+          - labels: konflux_up{service='proxy', check='replicas-available', namespace='konflux-ui', deployment='proxy'}
+            value: 0
+
+  - name: KonfluxUIDexAvailabilityAllUpTest
+    interval: 1m
+    input_series:
+      - series: "kube_deployment_status_replicas_available{namespace='konflux-ui', deployment='dex'}"
+        values: "3 3 3 3 3"
+      - series: "kube_deployment_spec_replicas{namespace='konflux-ui', deployment='dex'}"
+        values: "3 3 3 3 3"
+
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples:
+          - labels: konflux_up{service='dex', check='replicas-available', namespace='konflux-ui', deployment='dex'}
+            value: 1
+
+  - name: KonfluxUIDexAvailabilitySomeUpTest
+    interval: 1m
+    input_series:
+      - series: "kube_deployment_status_replicas_available{namespace='konflux-ui', deployment='dex'}"
+        values: "2 2 2 2 2"
+      - series: "kube_deployment_spec_replicas{namespace='konflux-ui', deployment='dex'}"
+        values: "3 3 3 3 3"
+
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples:
+          - labels: konflux_up{service='dex', check='replicas-available', namespace='konflux-ui', deployment='dex'}
+            value: 0
