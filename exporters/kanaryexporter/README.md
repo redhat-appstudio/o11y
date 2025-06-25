@@ -51,6 +51,12 @@ The `kanary_error` metric reports any errors preventing the exporter from export
 
 ---
 
+## Unit Tests
+
+Comprehensive unit tests for the Kanary Exporter are provided in [`kanaryexporter_test.go`](https://github.com/redhat-appstudio/o11y/tree/main/exporters/kanaryexporter_test.go). These tests cover metric state logic, database interactions, and error handling to ensure exporter reliability.
+
+---
+
 The o11y team provides this Kanary exporter and its configuration as a reference:
 
 * [Kanary Exporter code](https://github.com/redhat-appstudio/o11y/tree/main/exporters/kanaryexporter.go)
