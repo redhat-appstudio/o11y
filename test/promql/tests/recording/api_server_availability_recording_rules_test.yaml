@@ -8,16 +8,16 @@ tests:
   - name: Test KonfluxAPIServerHighErrorRate
     interval: 1m # Correct placement and spelling of interval
     input_series:
-      - series: 'apiserver_request_total{code="503", job="kube-apiserver"}'
+      - series: 'code:apiserver_request_total:rate5m{code="503"}'
         values: '0+4x60'
-      - series: 'apiserver_request_total{code="429", job="kube-apiserver"}'
+      - series: 'code:apiserver_request_total:rate5m{code="429"}'
         values: '0+1x60'
-      - series: 'apiserver_request_total{code="200", job="kube-apiserver"}'
+      - series: 'code:apiserver_request_total:rate5m{code="200"}'
         values: '0+95x60'
 
     promql_expr_test:
       - expr: konflux_up
         eval_time: 1m
         exp_samples:
-          - labels: 'konflux_up'
+          - labels: '{__name__="konflux_up", service="api-server"}'
             value: 5

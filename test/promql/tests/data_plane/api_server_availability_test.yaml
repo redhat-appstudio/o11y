@@ -8,11 +8,11 @@ tests:
   - name: Test KonfluxAPIServerHighErrorRate
     interval: 1m # Correct placement and spelling of interval
     input_series:
-      - series: 'apiserver_request_total{code="503", job="kube-apiserver", source_cluster="kflux-prd-es01"}'
+      - series: 'code:apiserver_request_total:rate5m{code="503", source_cluster="kflux-prd-es01"}'
         values: '0+10x60'
-      - series: 'apiserver_request_total{code="429", job="kube-apiserver", source_cluster="kflux-prd-es01"}'
+      - series: 'code:apiserver_request_total:rate5m{code="429", source_cluster="kflux-prd-es01"}'
         values: '0+5x60'
-      - series: 'apiserver_request_total{code="200", job="kube-apiserver", source_cluster="kflux-prd-es01"}'
+      - series: 'code:apiserver_request_total:rate5m{code="200", source_cluster="kflux-prd-es01"}'
         values: '0+50x60'
 
     # This block tests the alert's state (PENDING/FIRING).
