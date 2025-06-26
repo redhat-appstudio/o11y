@@ -12,7 +12,14 @@ spec:
     rules:
     - alert: KonfluxAPIServerHighErrorRate
       expr: |
-        (sum by (source_cluster) (rate(apiserver_request_total[5m])) / sum by (source_cluster) (rate(apiserver_request_total[5m]))) * 100 > 5
+        (
+          sum by(source_cluster) (
+            code:apiserver_request_total:rate5m{code=~"429|5.."}
+          ) /
+          sum by(source_cluster) (
+            code:apiserver_request_total:rate5m{code!="0"}
+          )
+        ) * 100 > 5
       for: 5m
       labels:
         severity: critical
