@@ -1,0 +1,26 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-api-server-availability-alerting-rules
+  labels:
+    tenant: rhtap
+
+spec:
+  groups:
+  - name: api_server_service_availability
+    interval: 1m
+    rules:
+    - alert: KonfluxAPIServerHighErrorRate
+      expr: |
+        (sum by (source_cluster) (rate(apiserver_request_total[5m])) / sum by (source_cluster) (rate(apiserver_request_total[5m]))) * 100 > 5
+      for: 5m
+      labels:
+        severity: critical
+        slo: "true"
+      annotations:
+        summary: >-
+          API Server 5XX error count in cluster {{ $labels.source_cluster }}
+        description: "API Server is experiencing 5% of 5XX/429 failures based on the total requests for 5min in cluster {{ $labels.source_cluster }}"
+        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        team: konflux-infra
+        runbook_url: null
