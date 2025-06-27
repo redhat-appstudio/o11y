@@ -12,4 +12,13 @@ spec:
       rules:
         - record: konflux_up
           expr: |
-            (sum by (source_cluster) (rate(apiserver_request_total{code=~"5..|429"}[5m])) / sum by (source_cluster) (rate(apiserver_request_total[5m]))) * 100 > 5
+            label_replace(
+              (
+                sum by(source_cluster) (
+                  code:apiserver_request_total:rate5m{code=~"429|5.."}
+                ) /
+                sum by(source_cluster) (
+                  code:apiserver_request_total:rate5m{code!="0"}
+                )
+              ) * 100, "service", "api-server", "", ""
+            )
