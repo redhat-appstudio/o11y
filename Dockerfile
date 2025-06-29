@@ -29,7 +29,7 @@ RUN cd exporters && \
     done
 
 
-FROM registry.access.redhat.com/ubi9-micro@sha256:9d241cec87d22681d8e4ffe76d98d960b48d967c108cd627a139df670b793186
+FROM registry.access.redhat.com/ubi9-micro@sha256:c2f11c487861612f877e624f092d991aa271cb2c1a5a001a95007a3ea8761140
 
 # Copy all compiled binaries from the builder stage to the final image.
 COPY --from=builder /tmp/built_exporters/* /bin/
