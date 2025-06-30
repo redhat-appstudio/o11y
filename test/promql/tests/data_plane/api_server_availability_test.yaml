@@ -1,0 +1,33 @@
+# `evaluation_interval` is not a valid top-level key.
+# `rule_files` is correct.
+rule_files:
+  - 'prometheus.api_server_alerts.yaml'
+
+tests:
+  # Start of a new test case. The interval and input series must be under this item.
+  - name: Test KonfluxAPIServerHighErrorRate
+    interval: 1m # Correct placement and spelling of interval
+    input_series:
+      - series: 'code:apiserver_request_total:rate5m{code="503", source_cluster="kflux-prd-es01"}'
+        values: '0+10x60'
+      - series: 'code:apiserver_request_total:rate5m{code="429", source_cluster="kflux-prd-es01"}'
+        values: '0+5x60'
+      - series: 'code:apiserver_request_total:rate5m{code="200", source_cluster="kflux-prd-es01"}'
+        values: '0+50x60'
+
+    # This block tests the alert's state (PENDING/FIRING).
+    alert_rule_test:
+      # This checks for a FIRING alert. It must be checked AFTER the 'for' duration.
+      - eval_time: 7m # Check after the 'for: 5m' has elapsed.
+        alertname: KonfluxAPIServerHighErrorRate
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              source_cluster: "kflux-prd-es01"
+            exp_annotations:
+              summary: "API Server 5XX error count in cluster kflux-prd-es01"
+              description: "API Server is experiencing 5% of 5XX/429 failures based on the total requests for 5min in cluster kflux-prd-es01"
+              alert_team_handle: "<!subteam^S05Q1P4Q2TG>"
+              team: konflux-infra
+              runbook_url: ""

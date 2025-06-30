@@ -1,0 +1,23 @@
+evaluation_interval: 1m
+
+rule_files:
+  - api_server_availability_recording_rules.yaml
+
+tests:
+  # Start of a new test case. The interval and input series must be under this item.
+  - name: Test KonfluxAPIServerHighErrorRate
+    interval: 1m # Correct placement and spelling of interval
+    input_series:
+      - series: 'code:apiserver_request_total:rate5m{code="503"}'
+        values: '0+4x60'
+      - series: 'code:apiserver_request_total:rate5m{code="429"}'
+        values: '0+1x60'
+      - series: 'code:apiserver_request_total:rate5m{code="200"}'
+        values: '0+95x60'
+
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 1m
+        exp_samples:
+          - labels: '{__name__="konflux_up", service="api-server"}'
+            value: 5

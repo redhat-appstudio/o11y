@@ -1,0 +1,57 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-prometheus-alerting-rules
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: prometheus-ready-fed-alerts
+    interval: 1m
+    rules:
+    - alert: PrometheusReadyFederateAlert
+      expr: konflux_up{service="prometheus", check="prometheus_ready_federation", namespace="appstudio-monitoring"} != 1
+      for: 5m
+      labels:
+        severity: critical
+        slo: "true"
+      annotations:
+        summary: Prometheus Federate Instance is down in cluster {{ $labels.source_cluster }}
+        description: >-
+          Prometheus Federate instance on cluster {{ $labels.source_cluster }} has declared 'prometheus_ready' = 0. Namespace 'appstudio-monitoring'.
+          ArgoCD Application name 'monitoring-workload-prometheus-{{ $labels.source_cluster}}'
+        alert_team_handle: '<!subteam^S07SW2EEW3D> <!subteam^S05Q1P4Q2TG>'
+        team: o11y
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-prometheus.md
+  - name: prometheus-ready-openshift-monitoring-alerts
+    interval: 1m
+    rules:
+    - alert: PrometheusReadyOpenshiftMonitoringAlert
+      expr: konflux_up{service="prometheus", check="prometheus_ready_openshift_monitoring", namespace="openshift-monitoring"} != 1
+      for: 5m
+      labels:
+        severity: critical
+        slo: "true"
+      annotations:
+        summary: Prometheus Instance in Openshift Monitoring is down in cluster {{ $labels.source_cluster }}
+        description: >-
+          Prometheus Openshift Monitoring instance on cluster {{ $labels.source_cluster }} has declared 'prometheus_ready' = 0. Namespace 'openshift-monitoring'.
+        alert_team_handle: '<!subteam^S07SW2EEW3D> <!subteam^S05Q1P4Q2TG>'
+        team: o11y
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-prometheus.md
+  - name: prometheus-ready-user-workload-alerts
+    interval: 1m
+    rules:
+    - alert: PrometheusReadyUserWorkloadAlert
+      expr: konflux_up{service="prometheus", check="prometheus_ready_user_workload", namespace="openshift-user-workload-monitoring"} != 1
+      for: 5m
+      labels:
+        severity: critical
+        slo: "true"
+      annotations:
+        summary: Prometheus User Workload Instance is down in cluster {{ $labels.source_cluster }}
+        description: >-
+          Prometheus User Workload instance on cluster {{ $labels.source_cluster }} has declared 'prometheus_ready' = 0. Namespace 'openshift-user-workload-monitoring'.
+        alert_team_handle: '<!subteam^S07SW2EEW3D> <!subteam^S05Q1P4Q2TG>'
+        team: o11y
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-prometheus.md
