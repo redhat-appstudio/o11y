@@ -10,16 +10,21 @@ spec:
     interval: 1m
     rules:
       - alert: KanarySignalTriggered
-        expr: kanary_up == 0
+        # For slo alerts only use production metrics (tested_cluster) that are exported from a
+        # production cluster (source_clusterj) by the kanary exporter.
+        # We have a stage and production exporter, and both are pushing metrics for all konflux clusters to
+        # their respective datasource ('rhtap-observatorium-stage' and 'rhtap-observatorium-prod').
+        expr: kanary_up{tested_cluster=~".*prod.*", source_cluster=~".*prod.*"} == 0
         for: 1s
         labels:
           severity: critical
           slo: "true"
         annotations:
-          alert_team_handle: '<@U03S3DRLPH6> <@U067S2N67N3>'
+          alert_team_handle: '<!subteam^S06V06A36F5>'
           team: o11y
           summary: "Kanary signal has been triggered for cluster {{ $labels.tested_cluster }}"
           description: "The e2e load tests failed multiple times in a row for cluster {{ $labels.tested_cluster }}"
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-kanary.md
 
       - alert: KanaryDBError
         expr: kanary_error{reason="db_error"} == 1
@@ -56,3 +61,17 @@ spec:
           alert_routing_key: o11y
           summary: "Kanary Exporter is down in {{ $labels.source_cluster }}"
           description: "Prometheus is unable to scrape metrics from the Kanary Exporter running in {{ $labels.source_cluster }}."
+
+      - alert: KanaryAbsentExporterMetrics
+        # Consideration: the value returned by absent() does not return the source_cluster label.
+        # The environment can only be determined by looking at the source alertmanager in the alert's slack message.
+        expr: absent(up{job="kanary-exporter-service"}) == 1
+        for: 5m
+        labels:
+          severity: warning
+          slo: "false"
+        annotations:
+          team: o11y
+          alert_routing_key: o11y
+          summary: "Kanary Exporter metrics are absent"
+          description: "Metrics from the Kanary Exporter are absent."

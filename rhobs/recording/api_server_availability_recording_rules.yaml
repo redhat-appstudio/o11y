@@ -1,0 +1,24 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-api-server-availability
+  labels:
+    tenant: rhtap
+
+spec:
+  groups:
+    - name: api_server_service_availability
+      interval: 1m
+      rules:
+        - record: konflux_up
+          expr: |
+            label_replace(
+              (
+                sum by(source_cluster) (
+                  code:apiserver_request_total:rate5m{code=~"429|5.."}
+                ) /
+                sum by(source_cluster) (
+                  code:apiserver_request_total:rate5m{code!="0"}
+                )
+              ) * 100, "service", "api-server", "", ""
+            )
