@@ -1,0 +1,30 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-smee-availability-alerting-rules
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: smee-availability
+    interval: 1m
+    rules:
+    - alert: SmeeDown
+      expr: |
+        konflux_up{
+          namespace=~"smee|smee-client",
+          check="replicas-available",
+        } != 1
+      for: 10m
+      labels:
+        severity: critical
+        slo: "true"
+      annotations:
+        summary: >-
+          {{ $labels.service }} is down on cluster {{ $labels.source_cluster }}
+        description: >
+          Some of the replicas of {{ $labels.service }} are down on namespace
+          {{ $labels.namespace }} in cluster {{ $labels.source_cluster }}
+        alert_team_handle: <!subteam^S07NDQV6A4D>
+        team: vanguard
+        runbook_url: TBD

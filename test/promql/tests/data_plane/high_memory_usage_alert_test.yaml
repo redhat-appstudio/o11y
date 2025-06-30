@@ -7,16 +7,16 @@ tests:
   - interval: 1m
     input_series:
       - series: "kube_pod_container_memory_usage_bytes{tenant_id='{{ $labels.tenant_id }}', pod='{{ $labels.pod }}', namespace='{{ $labels.namespace }}'}"
-        values: "1700000000 1800000000 1900000000 2000000000 2100000000"
+        values: "1700000000 1800000000 1900000000 200000000 2100000000"
       - series: "kube_pod_container_resource_limits{tenant_id='{{ $labels.tenant_id }}', resource='memory', pod='{{ $labels.pod }}', namespace='{{ $labels.namespace}}'}"
-        values: "2000000000 2000000000 2000000000 2000000000 2000000000"
+        values: "200000000 200000000 200000000 200000000 200000000"
 
     alert_rule_test:
       - eval_time: 5m
         alertname: high_memory_usage_alert
         exp_alerts:
           - exp_labels:
-              severity: critical
+              severity: warning
               tenant_id: "{{ $labels.tenant_id }}"
               pod: "{{ $labels.pod }}"
               namespace: "{{ $labels.namespace }}"

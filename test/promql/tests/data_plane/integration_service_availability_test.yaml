@@ -4,7 +4,7 @@ rule_files:
   - prometheus.integration_service_availability_alerts.yaml
 
 tests:
-  # Test 1: Availability drops below 99% for more than 10 minutes on cluster01, triggering an alert.
+  # Test 1: Availability failes on cluster01 for 5 mins - alert fires
   - interval: 1m
     input_series:
       - series: 'konflux_up{service="integration-service-controller-manager", namespace="integration-service", check="replicas-available", source_cluster="cluster01"}'
@@ -26,12 +26,12 @@ tests:
               check: replicas-available
             exp_annotations:
               summary: Integration Service Availability SLO Violation
-              description: Availability of deployment 'integration-service-controller-manager' in namespace 'integration-service' has dropped below 99% over the last 24h.
+              description: Integration service 'integration-service-controller-manager' in namespace 'integration-service' on cluster01 has been down for 5min.
               alert_team_handle: <!subteam^S05M4AG8CJH>
               team: integration
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/sre/integration_service_availability_replicas_available.md
 
-  # Test 2: No alert, 100% availability on both clusters.
+  # Test 2: 100% availability on both clusters - no alert
   - interval: 1m
     input_series:
       - series: 'konflux_up{service="integration-service-controller-manager", namespace="integration-service", check="replicas-available", source_cluster="cluster01"}'
@@ -44,11 +44,39 @@ tests:
         alertname: IntegrationServiceAvailabilitySLOViolation
         exp_alerts: []
 
-  # Test 3: Brief downtime, still >99% availability → no alert.
+  # Test 3: Downtime for exactly 5 minutes - alert fires
   - interval: 1m
     input_series:
       - series: 'konflux_up{service="integration-service-controller-manager", namespace="integration-service", check="replicas-available", source_cluster="cluster01"}'
-        values: '1x1425 0x15'
+        values: '1x1434 0x6'
+      - series: 'konflux_up{service="integration-service-controller-manager", namespace="integration-service", check="replicas-available", source_cluster="cluster02"}'
+        values: '1x1440'
+
+    alert_rule_test:
+      - eval_time: 1440m
+        alertname: IntegrationServiceAvailabilitySLOViolation
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              tenant: rhtap
+              service: integration-service-controller-manager
+              namespace: integration-service
+              source_cluster: cluster01
+              check: replicas-available
+            exp_annotations:
+              summary: Integration Service Availability SLO Violation
+              description: Integration service 'integration-service-controller-manager' in namespace 'integration-service' on cluster01 has been down for 5min.
+
+              alert_team_handle: <!subteam^S05M4AG8CJH>
+              team: integration
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/sre/integration_service_availability_replicas_available.md
+
+  # Test: 4 minutes downtime - no alert
+  - interval: 1m
+    input_series:
+      - series: 'konflux_up{service="integration-service-controller-manager", namespace="integration-service", check="replicas-available", source_cluster="cluster01"}'
+        values: '1x1436 0x4'
       - series: 'konflux_up{service="integration-service-controller-manager", namespace="integration-service", check="replicas-available", source_cluster="cluster02"}'
         values: '1x1440'
 
