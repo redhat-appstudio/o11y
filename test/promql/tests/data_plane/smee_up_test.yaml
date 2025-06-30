@@ -1,0 +1,48 @@
+evaluation_interval: 1m
+
+rule_files:
+  - 'prometheus.smee_up_alerts.yaml'
+
+tests:
+  - interval: 1m
+    input_series:
+      - series: 'konflux_up{namespace="smee", check="replicas-available", service="smee", source_cluster="c1"}'
+        values: '0x15'
+      - series: 'konflux_up{namespace="smee-client", check="replicas-available", service="smee-client", source_cluster="c2"}'
+        values: '0x15'
+      - series: 'konflux_up{namespace="smee-client", check="replicas-available", service="smee-client", source_cluster="c3"}'
+        values: '1x15'
+
+    alert_rule_test:
+      - eval_time: 12m
+        alertname: SmeeDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              check: replicas-available
+              namespace: smee
+              service: smee
+              slo: "true"
+              source_cluster: c1
+            exp_annotations:
+              summary: smee is down on cluster c1
+              description: >
+                Some of the replicas of smee are down on namespace smee in cluster c1
+              alert_team_handle: <!subteam^S07NDQV6A4D>
+              team: vanguard
+              runbook_url: TBD
+          - exp_labels:
+              severity: critical
+              check: replicas-available
+              namespace: smee-client
+              service: smee-client
+              slo: "true"
+              source_cluster: c2
+            exp_annotations:
+              summary: smee-client is down on cluster c2
+              description: >
+                Some of the replicas of smee-client are down on namespace smee-client
+                in cluster c2
+              alert_team_handle: <!subteam^S07NDQV6A4D>
+              team: vanguard
+              runbook_url: TBD
