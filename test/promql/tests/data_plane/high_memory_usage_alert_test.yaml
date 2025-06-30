@@ -6,25 +6,25 @@ rule_files:
 tests:
   - interval: 1m
     input_series:
-      - series: "kube_pod_container_memory_usage_bytes{tenant_id='{{ $labels.tenant_id }}', pod='{{ $labels.pod }}', namespace='{{ $labels.namespace }}'}"
+      - series: "kube_pod_container_memory_usage_bytes{tenant_id='{{ $my_tenant_id }}', pod='{{ $my_pod}}', namespace='{{ $my_namespace }}'}"
         values: '1x60'
 
-      - series: "kube_pod_container_resource_limits{tenant_id='{{ $labels.tenant_id }}', resource='memory', pod='{{ $labels.pod }}', namespace='{{ $labels.namespace}}'}"
-        values: "200000000 200000000 200000000 200000000 200000000"
+      - series: "kube_pod_container_resource_limits{tenant_id='{{ $my_tenant_id }}', resource='memory', pod='{{ $my_pod}}', namespace='{{ $my_namespace}}'}"
+        values: "1x60"
 
-    # alert_rule_test:
-    #   - eval_time: 5m
-    #     alertname: high_memory_usage_alert
-    #     exp_alerts:
-    #       - exp_labels:
-    #           severity: warning
-    #           tenant_id: "{{ $tenant_id }}"
-    #           pod: "{{ $pod }}"
-    #           namespace: "{{ $namespace }}"
-    #           slo: "true"
-    #         exp_annotations:
-    #           summary: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace}} (Tenant: {{ $labels.tenant_id }}) has exceeded it memory limit for more than 5 minutes"
-    #           description: >
-    #             "The pod {{ $labels.pod }} (Tenant: {{ labels.tenant_id}}) has been consuming more than its defined limit in namespace {{ $labels.namespace}} for at least 5 minutes. Consider investigating resource usage."
-    #           alert_team_handle: <!subteam^S05Q1P4Q2TG>
-    #           team: konflux-infra
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: high_memory_usage_alert
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              tenant_id: "{{ $my_tenant_id }}"
+              pod: "{{ $my_pod }}"
+              namespace: "{{ $my_namespace }}"
+              slo: "true"
+            exp_annotations:
+              summary: "Pod {{ $my_pod}} in namespace {{ $my_namespace}} (Tenant: {{ my_tenant_id }}) has exceeded it memory limit for more than 5 minutes"
+              description: >
+                "The pod {{ $my_pod}} (Tenant: {{ $my_tenant_id }}) has been consuming more than its defined limit in namespace {{ $my_namespace}} for at least 5 minutes. Consider investigating resource usage."
+              alert_team_handle: <!subteam^S05Q1P4Q2TG>
+              team: konflux-infra
