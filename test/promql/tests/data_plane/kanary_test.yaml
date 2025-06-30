@@ -8,11 +8,11 @@ tests:
     input_series:
       # --- KanarySignalTriggered Test Cases ---
       # Prod cluster: kanary_up goes to 0 and stays, should trigger alert
-      - series: 'kanary_up{tested_cluster="prod-cluster-1", source_cluster="stone-prod-p01"}'
+      - series: 'kanary_up{tested_cluster="prod-cluster-1", source_cluster="stone-prod-p01", type="container"}'
         values: '1x5 0x10'
 
       # Prod cluster: kanary_up goes to 0 but recovers, should NOT trigger alert (because for: 0m means immediate)
-      - series: 'kanary_up{tested_cluster="prod-cluster-2", source_cluster="stone-prod-p02"}'
+      - series: 'kanary_up{tested_cluster="prod-cluster-2", source_cluster="stone-prod-p02", type="container"}'
         values: '1x5 0x2 1x8'
 
     alert_rule_test:
@@ -23,23 +23,24 @@ tests:
               severity: critical
               tested_cluster: prod-cluster-1
               source_cluster: stone-prod-p01
+              type: container
               slo: "true"
             exp_annotations:
               team: o11y
               alert_team_handle: '<!subteam^S06V06A36F5>'
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-kanary.md
-              summary: "Kanary signal has been triggered for cluster prod-cluster-1"
-              description: "The e2e load tests failed multiple times in a row for cluster prod-cluster-1"
+              summary: "Kanary signal for container artifacts has been triggered for cluster prod-cluster-1"
+              description: "The e2e load tests for container artifacts failed multiple times in a row for cluster prod-cluster-1"
 
   - interval: 1m
     input_series:
       # --- KanaryDBError Test Cases ---
       # Cluster 3: db_error goes to 1 and stays, should trigger alert
-      - series: 'kanary_error{tested_cluster="cluster-3", reason="db_error"}'
+      - series: 'kanary_error{tested_cluster="cluster-3", reason="db_error", type="container"}'
         values: '0x5 1x10'
 
       # Cluster 4: db_error goes to 1 but recovers, should NOT trigger alert (because for: 0m means immediate)
-      - series: 'kanary_error{tested_cluster="cluster-4", reason="db_error"}'
+      - series: 'kanary_error{tested_cluster="cluster-4", reason="db_error", type="container"}'
         values: '0x5 1x2 0x8'
 
     alert_rule_test:
@@ -49,23 +50,24 @@ tests:
           - exp_labels:
               tested_cluster: cluster-3
               reason: db_error
+              type: container
               severity: warning
               slo: "false"
             exp_annotations:
               team: o11y
               alert_routing_key: o11y
-              summary: "Kanary signal processing failed due to a database error on cluster cluster-3"
-              description: "Encountered a database error while processing the kanary signal for cluster cluster-3"
+              summary: "Kanary signal processing for container artifacts failed due to a database error on cluster cluster-3"
+              description: "Encountered a database error while processing the kanary signal for container artifacts for cluster cluster-3"
 
   - interval: 1m
     input_series:
       # --- KanaryMissingTestResults Test Cases ---
       # Cluster 5: no_test_results goes to 1 and stays, should trigger alert
-      - series: 'kanary_error{tested_cluster="cluster-5", reason="no_test_results"}'
+      - series: 'kanary_error{tested_cluster="cluster-5", reason="no_test_results", type="container"}'
         values: '0x5 1x10'
 
       # Cluster 6: no_test_results goes to 1 but recovers, should NOT trigger alert (because for: 0m means immediate)
-      - series: 'kanary_error{tested_cluster="cluster-6", reason="no_test_results"}'
+      - series: 'kanary_error{tested_cluster="cluster-6", reason="no_test_results", type="container"}'
         values: '0x5 1x2 0x8'
 
     alert_rule_test:
@@ -75,13 +77,14 @@ tests:
           - exp_labels:
               tested_cluster: cluster-5
               reason: no_test_results
+              type: container
               severity: warning
               slo: "false"
             exp_annotations:
               team: o11y
               alert_routing_key: o11y
-              summary: "Missing recent e2e results for cluster cluster-5"
-              description: "Could not find any recent e2e load test results for cluster cluster-5."
+              summary: "Missing recent e2e results for container artifacts for cluster cluster-5"
+              description: "Could not find any recent e2e load test results for container artifacts for cluster cluster-5."
 
   - interval: 1m
     input_series:
