@@ -22,8 +22,8 @@ spec:
         annotations:
           alert_team_handle: '<!subteam^S06V06A36F5>'
           team: o11y
-          summary: "Kanary signal has been triggered for cluster {{ $labels.tested_cluster }}"
-          description: "The e2e load tests failed multiple times in a row for cluster {{ $labels.tested_cluster }}"
+          summary: "Kanary signal for {{ $labels.type }} artifacts has been triggered for cluster {{ $labels.tested_cluster }}"
+          description: "The e2e load tests for {{ $labels.type }} artifacts failed multiple times in a row for cluster {{ $labels.tested_cluster }}"
           runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-kanary.md
 
       - alert: KanaryDBError
@@ -35,8 +35,8 @@ spec:
         annotations:
           team: o11y
           alert_routing_key: o11y
-          summary: "Kanary signal processing failed due to a database error on cluster {{ $labels.tested_cluster }}"
-          description: "Encountered a database error while processing the kanary signal for cluster {{ $labels.tested_cluster }}"
+          summary: "Kanary signal processing for {{ $labels.type }} artifacts failed due to a database error on cluster {{ $labels.tested_cluster }}"
+          description: "Encountered a database error while processing the kanary signal for {{ $labels.type }} artifacts for cluster {{ $labels.tested_cluster }}"
 
       - alert: KanaryMissingTestResults
         expr: kanary_error{reason="no_test_results"} == 1
@@ -47,8 +47,8 @@ spec:
         annotations:
           team: o11y
           alert_routing_key: o11y
-          summary: "Missing recent e2e results for cluster {{ $labels.tested_cluster }}"
-          description: "Could not find any recent e2e load test results for cluster {{ $labels.tested_cluster }}."
+          summary: "Missing recent e2e results for {{ $labels.type }} artifacts for cluster {{ $labels.tested_cluster }}"
+          description: "Could not find any recent e2e load test results for {{ $labels.type }} artifacts for cluster {{ $labels.tested_cluster }}."
 
       - alert: KanaryExporterDown
         expr: up{job="kanary-exporter-service"} == 0
