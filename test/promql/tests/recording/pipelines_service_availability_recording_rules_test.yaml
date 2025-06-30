@@ -1,0 +1,397 @@
+evaluation_interval: 1m
+
+rule_files:
+  - pipelines_availability_recording_rules.yaml
+
+tests:
+  - name: PipelinesComponentsUp
+    interval: 1m
+    input_series:
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="pipeline-metrics-exporter"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="pipeline-metrics-exporter"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="pipelines-as-code-controller"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="pipelines-as-code-controller"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="pipelines-as-code-watcher"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="pipelines-as-code-watcher"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="pipelines-as-code-webhook"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="pipelines-as-code-webhook"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="tekton-chains-controller"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="tekton-chains-controller"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="tekton-events-controller"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="tekton-events-controller"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="tekton-operator-proxy-webhook"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="tekton-operator-proxy-webhook"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="tekton-pipelines-webhook"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="tekton-pipelines-webhook"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="tkn-cli-serve"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="tkn-cli-serve"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_spec_replicas{namespace="tekton-results", deployment="tekton-results-api"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="tekton-results", deployment="tekton-results-api"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_spec_replicas{namespace="tekton-results", deployment="tekton-results-api-for-watcher"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="tekton-results", deployment="tekton-results-api-for-watcher"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_spec_replicas{namespace="tekton-results", deployment="tekton-results-watcher"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="tekton-results", deployment="tekton-results-watcher"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_spec_replicas{namespace="tekton-results", deployment="tekton-results-retention-policy-agent"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="tekton-results", deployment="tekton-results-retention-policy-agent"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_statefulset_replicas{namespace="openshift-pipelines", statefulset="tekton-pipelines-controller"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_statefulset_status_replicas_available{namespace="openshift-pipelines", statefulset="tekton-pipelines-controller"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_statefulset_replicas{namespace="openshift-pipelines", statefulset="tekton-pipelines-remote-resolvers"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_statefulset_status_replicas_available{namespace="openshift-pipelines", statefulset="tekton-pipelines-remote-resolvers"}'
+        values: '1 1 1 1 1'
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples:
+          - labels: konflux_up{deployment='pipeline-metrics-exporter', service='pipeline-metrics-exporter', check='replicas-available', namespace='openshift-pipelines'}
+            value: 1
+          - labels: konflux_up{deployment='pipelines-as-code-controller', service='pipelines-as-code-controller', check='replicas-available', namespace='openshift-pipelines'}
+            value: 1
+          - labels: konflux_up{deployment='pipelines-as-code-watcher', service='pipelines-as-code-watcher', check='replicas-available', namespace='openshift-pipelines'}
+            value: 1
+          - labels: konflux_up{deployment='pipelines-as-code-webhook', service='pipelines-as-code-webhook', check='replicas-available', namespace='openshift-pipelines'}
+            value: 1
+          - labels: konflux_up{deployment='tekton-chains-controller', service='tekton-chains-controller', check='replicas-available', namespace='openshift-pipelines'}
+            value: 1
+          - labels: konflux_up{deployment='tekton-events-controller', service='tekton-events-controller', check='replicas-available', namespace='openshift-pipelines'}
+            value: 1
+          - labels: konflux_up{deployment='tekton-operator-proxy-webhook', service='tekton-operator-proxy-webhook', check='replicas-available', namespace='openshift-pipelines'}
+            value: 1
+          - labels: konflux_up{deployment='tekton-pipelines-webhook', service='tekton-pipelines-webhook', check='replicas-available', namespace='openshift-pipelines'}
+            value: 1
+          - labels: konflux_up{deployment='tkn-cli-serve', service='tkn-cli-serve', check='replicas-available', namespace='openshift-pipelines'}
+            value: 1
+          - labels: konflux_up{deployment='tekton-results-api', service='tekton-results-api', check='replicas-available', namespace='tekton-results'}
+            value: 1
+          - labels: konflux_up{deployment='tekton-results-api-for-watcher', service='tekton-results-api-for-watcher', check='replicas-available', namespace='tekton-results'}
+            value: 1
+          - labels: konflux_up{deployment='tekton-results-watcher', service='tekton-results-watcher', check='replicas-available', namespace='tekton-results'}
+            value: 1
+          - labels: konflux_up{deployment='tekton-results-retention-policy-agent', service='tekton-results-retention-policy-agent', check='replicas-available', namespace='tekton-results'}
+            value: 1
+          - labels: konflux_up{statefulset='tekton-pipelines-controller', service='tekton-pipelines-controller', check='replicas-available', namespace='openshift-pipelines'}
+            value: 1
+          - labels: konflux_up{statefulset='tekton-pipelines-remote-resolvers', service='tekton-pipelines-remote-resolvers', check='replicas-available', namespace='openshift-pipelines'}
+            value: 1
+
+  - name: PipelinesComponentsFlapping
+    interval: 1m
+    input_series:
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="pipeline-metrics-exporter"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="pipeline-metrics-exporter"}'
+        values: '0 1 0 1 0'
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="pipelines-as-code-controller"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="pipelines-as-code-controller"}'
+        values: '0 1 0 1 0'
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="pipelines-as-code-watcher"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="pipelines-as-code-watcher"}'
+        values: '0 1 0 1 0'
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="pipelines-as-code-webhook"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="pipelines-as-code-webhook"}'
+        values: '0 1 0 1 0'
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="tekton-chains-controller"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="tekton-chains-controller"}'
+        values: '0 1 0 1 0'
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="tekton-events-controller"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="tekton-events-controller"}'
+        values: '0 1 0 1 0'
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="tekton-operator-proxy-webhook"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="tekton-operator-proxy-webhook"}'
+        values: '0 1 0 1 0'
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="tekton-pipelines-webhook"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="tekton-pipelines-webhook"}'
+        values: '0 1 0 1 0'
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="tkn-cli-serve"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="tkn-cli-serve"}'
+        values: '0 1 0 1 0'
+      - series: 'kube_deployment_spec_replicas{namespace="tekton-results", deployment="tekton-results-api"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="tekton-results", deployment="tekton-results-api"}'
+        values: '0 1 0 1 0'
+      - series: 'kube_deployment_spec_replicas{namespace="tekton-results", deployment="tekton-results-api-for-watcher"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="tekton-results", deployment="tekton-results-api-for-watcher"}'
+        values: '0 1 0 1 0'
+      - series: 'kube_deployment_spec_replicas{namespace="tekton-results", deployment="tekton-results-watcher"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="tekton-results", deployment="tekton-results-watcher"}'
+        values: '0 1 0 1 0'
+      - series: 'kube_deployment_spec_replicas{namespace="tekton-results", deployment="tekton-results-retention-policy-agent"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="tekton-results", deployment="tekton-results-retention-policy-agent"}'
+        values: '0 1 0 1 0'
+      - series: 'kube_statefulset_replicas{namespace="openshift-pipelines", statefulset="tekton-pipelines-controller"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_statefulset_status_replicas_available{namespace="openshift-pipelines", statefulset="tekton-pipelines-controller"}'
+        values: '0 1 0 1 0'
+      - series: 'kube_statefulset_replicas{namespace="openshift-pipelines", statefulset="tekton-pipelines-remote-resolvers"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_statefulset_status_replicas_available{namespace="openshift-pipelines", statefulset="tekton-pipelines-remote-resolvers"}'
+        values: '0 1 0 1 0'
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples:
+          - labels: konflux_up{deployment='pipeline-metrics-exporter', service='pipeline-metrics-exporter', check='replicas-available', namespace='openshift-pipelines'}
+            value: 0
+          - labels: konflux_up{deployment='pipelines-as-code-controller', service='pipelines-as-code-controller', check='replicas-available', namespace='openshift-pipelines'}
+            value: 0
+          - labels: konflux_up{deployment='pipelines-as-code-watcher', service='pipelines-as-code-watcher', check='replicas-available', namespace='openshift-pipelines'}
+            value: 0
+          - labels: konflux_up{deployment='pipelines-as-code-webhook', service='pipelines-as-code-webhook', check='replicas-available', namespace='openshift-pipelines'}
+            value: 0
+          - labels: konflux_up{deployment='tekton-chains-controller', service='tekton-chains-controller', check='replicas-available', namespace='openshift-pipelines'}
+            value: 0
+          - labels: konflux_up{deployment='tekton-events-controller', service='tekton-events-controller', check='replicas-available', namespace='openshift-pipelines'}
+            value: 0
+          - labels: konflux_up{deployment='tekton-operator-proxy-webhook', service='tekton-operator-proxy-webhook', check='replicas-available', namespace='openshift-pipelines'}
+            value: 0
+          - labels: konflux_up{deployment='tekton-pipelines-webhook', service='tekton-pipelines-webhook', check='replicas-available', namespace='openshift-pipelines'}
+            value: 0
+          - labels: konflux_up{deployment='tkn-cli-serve', service='tkn-cli-serve', check='replicas-available', namespace='openshift-pipelines'}
+            value: 0
+          - labels: konflux_up{deployment='tekton-results-api', service='tekton-results-api', check='replicas-available', namespace='tekton-results'}
+            value: 0
+          - labels: konflux_up{deployment='tekton-results-api-for-watcher', service='tekton-results-api-for-watcher', check='replicas-available', namespace='tekton-results'}
+            value: 0
+          - labels: konflux_up{deployment='tekton-results-watcher', service='tekton-results-watcher', check='replicas-available', namespace='tekton-results'}
+            value: 0
+          - labels: konflux_up{deployment='tekton-results-retention-policy-agent', service='tekton-results-retention-policy-agent', check='replicas-available', namespace='tekton-results'}
+            value: 0
+          - labels: konflux_up{statefulset='tekton-pipelines-controller', service='tekton-pipelines-controller', check='replicas-available', namespace='openshift-pipelines'}
+            value: 0
+          - labels: konflux_up{statefulset='tekton-pipelines-remote-resolvers', service='tekton-pipelines-remote-resolvers', check='replicas-available', namespace='openshift-pipelines'}
+            value: 0
+
+  - name: PipelinesComponentsDown
+    interval: 1m
+    input_series:
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="pipeline-metrics-exporter"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="pipeline-metrics-exporter"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="pipelines-as-code-controller"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="pipelines-as-code-controller"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="pipelines-as-code-watcher"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="pipelines-as-code-watcher"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="pipelines-as-code-webhook"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="pipelines-as-code-webhook"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="tekton-chains-controller"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="tekton-chains-controller"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="tekton-events-controller"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="tekton-events-controller"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="tekton-operator-proxy-webhook"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="tekton-operator-proxy-webhook"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="tekton-pipelines-webhook"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="tekton-pipelines-webhook"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="tkn-cli-serve"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="tkn-cli-serve"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_spec_replicas{namespace="tekton-results", deployment="tekton-results-api"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="tekton-results", deployment="tekton-results-api"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_spec_replicas{namespace="tekton-results", deployment="tekton-results-api-for-watcher"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="tekton-results", deployment="tekton-results-api-for-watcher"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_spec_replicas{namespace="tekton-results", deployment="tekton-results-watcher"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="tekton-results", deployment="tekton-results-watcher"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_spec_replicas{namespace="tekton-results", deployment="tekton-results-retention-policy-agent"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="tekton-results", deployment="tekton-results-retention-policy-agent"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_statefulset_replicas{namespace="openshift-pipelines", statefulset="tekton-pipelines-controller"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_statefulset_status_replicas_available{namespace="openshift-pipelines", statefulset="tekton-pipelines-controller"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_statefulset_replicas{namespace="openshift-pipelines", statefulset="tekton-pipelines-remote-resolvers"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_statefulset_status_replicas_available{namespace="openshift-pipelines", statefulset="tekton-pipelines-remote-resolvers"}'
+        values: '0 0 0 0 0'
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples:
+          - labels: konflux_up{deployment='pipeline-metrics-exporter', service='pipeline-metrics-exporter', check='replicas-available', namespace='openshift-pipelines'}
+            value: 0
+          - labels: konflux_up{deployment='pipelines-as-code-controller', service='pipelines-as-code-controller', check='replicas-available', namespace='openshift-pipelines'}
+            value: 0
+          - labels: konflux_up{deployment='pipelines-as-code-watcher', service='pipelines-as-code-watcher', check='replicas-available', namespace='openshift-pipelines'}
+            value: 0
+          - labels: konflux_up{deployment='pipelines-as-code-webhook', service='pipelines-as-code-webhook', check='replicas-available', namespace='openshift-pipelines'}
+            value: 0
+          - labels: konflux_up{deployment='tekton-chains-controller', service='tekton-chains-controller', check='replicas-available', namespace='openshift-pipelines'}
+            value: 0
+          - labels: konflux_up{deployment='tekton-events-controller', service='tekton-events-controller', check='replicas-available', namespace='openshift-pipelines'}
+            value: 0
+          - labels: konflux_up{deployment='tekton-operator-proxy-webhook', service='tekton-operator-proxy-webhook', check='replicas-available', namespace='openshift-pipelines'}
+            value: 0
+          - labels: konflux_up{deployment='tekton-pipelines-webhook', service='tekton-pipelines-webhook', check='replicas-available', namespace='openshift-pipelines'}
+            value: 0
+          - labels: konflux_up{deployment='tkn-cli-serve', service='tkn-cli-serve', check='replicas-available', namespace='openshift-pipelines'}
+            value: 0
+          - labels: konflux_up{deployment='tekton-results-api', service='tekton-results-api', check='replicas-available', namespace='tekton-results'}
+            value: 0
+          - labels: konflux_up{deployment='tekton-results-api-for-watcher', service='tekton-results-api-for-watcher', check='replicas-available', namespace='tekton-results'}
+            value: 0
+          - labels: konflux_up{deployment='tekton-results-watcher', service='tekton-results-watcher', check='replicas-available', namespace='tekton-results'}
+            value: 0
+          - labels: konflux_up{deployment='tekton-results-retention-policy-agent', service='tekton-results-retention-policy-agent', check='replicas-available', namespace='tekton-results'}
+            value: 0
+          - labels: konflux_up{statefulset='tekton-pipelines-controller', service='tekton-pipelines-controller', check='replicas-available', namespace='openshift-pipelines'}
+            value: 0
+          - labels: konflux_up{statefulset='tekton-pipelines-remote-resolvers', service='tekton-pipelines-remote-resolvers', check='replicas-available', namespace='openshift-pipelines'}
+            value: 0
+
+  - name: PipelinesComponentsDisabled
+    interval: 1m
+    input_series:
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="pipeline-metrics-exporter"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="pipeline-metrics-exporter"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="pipelines-as-code-controller"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="pipelines-as-code-controller"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="pipelines-as-code-watcher"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="pipelines-as-code-watcher"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="pipelines-as-code-webhook"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="pipelines-as-code-webhook"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="tekton-chains-controller"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="tekton-chains-controller"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="tekton-events-controller"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="tekton-events-controller"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="tekton-operator-proxy-webhook"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="tekton-operator-proxy-webhook"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="tekton-pipelines-webhook"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="tekton-pipelines-webhook"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="tkn-cli-serve"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="tkn-cli-serve"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_spec_replicas{namespace="tekton-results", deployment="tekton-results-api"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_status_replicas_available{namespace="tekton-results", deployment="tekton-results-api"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_spec_replicas{namespace="tekton-results", deployment="tekton-results-api-for-watcher"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_status_replicas_available{namespace="tekton-results", deployment="tekton-results-api-for-watcher"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_spec_replicas{namespace="tekton-results", deployment="tekton-results-watcher"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_status_replicas_available{namespace="tekton-results", deployment="tekton-results-watcher"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_spec_replicas{namespace="tekton-results", deployment="tekton-results-retention-policy-agent"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_status_replicas_available{namespace="tekton-results", deployment="tekton-results-retention-policy-agent"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_statefulset_replicas{namespace="openshift-pipelines", statefulset="tekton-pipelines-controller"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_statefulset_status_replicas_available{namespace="openshift-pipelines", statefulset="tekton-pipelines-controller"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_statefulset_replicas{namespace="openshift-pipelines", statefulset="tekton-pipelines-remote-resolvers"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_statefulset_status_replicas_available{namespace="openshift-pipelines", statefulset="tekton-pipelines-remote-resolvers"}'
+        values: '0 0 0 0 0'
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples:
+          - labels: konflux_up{deployment='pipeline-metrics-exporter', service='pipeline-metrics-exporter', check='replicas-available', namespace='openshift-pipelines'}
+            value: 0
+          - labels: konflux_up{deployment='pipelines-as-code-controller', service='pipelines-as-code-controller', check='replicas-available', namespace='openshift-pipelines'}
+            value: 0
+          - labels: konflux_up{deployment='pipelines-as-code-watcher', service='pipelines-as-code-watcher', check='replicas-available', namespace='openshift-pipelines'}
+            value: 0
+          - labels: konflux_up{deployment='pipelines-as-code-webhook', service='pipelines-as-code-webhook', check='replicas-available', namespace='openshift-pipelines'}
+            value: 0
+          - labels: konflux_up{deployment='tekton-chains-controller', service='tekton-chains-controller', check='replicas-available', namespace='openshift-pipelines'}
+            value: 0
+          - labels: konflux_up{deployment='tekton-events-controller', service='tekton-events-controller', check='replicas-available', namespace='openshift-pipelines'}
+            value: 0
+          - labels: konflux_up{deployment='tekton-operator-proxy-webhook', service='tekton-operator-proxy-webhook', check='replicas-available', namespace='openshift-pipelines'}
+            value: 0
+          - labels: konflux_up{deployment='tekton-pipelines-webhook', service='tekton-pipelines-webhook', check='replicas-available', namespace='openshift-pipelines'}
+            value: 0
+          - labels: konflux_up{deployment='tkn-cli-serve', service='tkn-cli-serve', check='replicas-available', namespace='openshift-pipelines'}
+            value: 0
+          - labels: konflux_up{deployment='tekton-results-api', service='tekton-results-api', check='replicas-available', namespace='tekton-results'}
+            value: 0
+          - labels: konflux_up{deployment='tekton-results-api-for-watcher', service='tekton-results-api-for-watcher', check='replicas-available', namespace='tekton-results'}
+            value: 0
+          - labels: konflux_up{deployment='tekton-results-watcher', service='tekton-results-watcher', check='replicas-available', namespace='tekton-results'}
+            value: 0
+          - labels: konflux_up{deployment='tekton-results-retention-policy-agent', service='tekton-results-retention-policy-agent', check='replicas-available', namespace='tekton-results'}
+            value: 0
+          - labels: konflux_up{statefulset='tekton-pipelines-controller', service='tekton-pipelines-controller', check='replicas-available', namespace='openshift-pipelines'}
+            value: 0
+          - labels: konflux_up{statefulset='tekton-pipelines-remote-resolvers', service='tekton-pipelines-remote-resolvers', check='replicas-available', namespace='openshift-pipelines'}
+            value: 0
