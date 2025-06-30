@@ -1,0 +1,26 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-kyverno-alerting-rules
+  labels:
+    tenant: rhtap
+
+spec:
+  groups:
+    - name: kyverno-unavailable
+      interval: 1m
+      rules:
+      - alert: KyvernoDeploymentDown
+        expr: |
+          kube_deployment_spec_replicas{namespace="konflux-kyverno"} != kube_deployment_status_replicas_ready{namespace="konflux-kyverno"}
+        for: 5m
+        labels:
+          severity: critical
+          slo: "true"
+        annotations:
+          summary: Kyverno has reported that not all the deployments pods are up and running for the last 5 minutes.
+          description: "The Kyverno Deployment '{{ $labels.deployment }}' in namespace '{{ $labels.namespace }}' on cluster '{{ $labels.source_cluster }}' is unhealthy."
+          alert_team_handle: <!subteam^S05Q1P4Q2TG>
+          team: konflux-infra
+          # kyverno/README.md currently in progress.
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/kyverno/README.md
