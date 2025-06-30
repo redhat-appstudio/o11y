@@ -25,7 +25,58 @@ const (
 	toleranceInSeconds int64 = 3 * 60 * 60
 	// The interval at which metrics will be collected and exported
 	scrapeInterval = 1 * time.Minute
+	// Label filters for different test types
+	containerLabelFilter = "'nodejs-devfile-sample%%'"
+	rpmLabelFilter       = "'libecpg%%'"
+	// Query templates
+	rowCountQueryTemplate = `
+		SELECT COUNT(*)
+		FROM %s
+		WHERE
+			label_values->>'.metadata.env.MEMBER_CLUSTER' LIKE $1
+			AND horreum_testid = 372
+			-- This limits the results to e2e test results
+			AND label_values->>'.repo_type' LIKE %s;
+	`
+	delayCheckQueryTemplate = `
+		SELECT
+			-- The replace is to comply with the Standard ISO 8601 format
+			EXTRACT(epoch FROM (REPLACE(label_values->>'.ended', ',', '.'))::timestamptz) AS ended_epoch
+		FROM
+			%s
+		WHERE
+			label_values->>'.metadata.env.MEMBER_CLUSTER' LIKE $1
+			AND horreum_testid = 372
+			-- This limits the results to e2e test results
+			AND label_values->>'.repo_type' LIKE %s
+		ORDER BY
+			EXTRACT(epoch FROM start) DESC
+		LIMIT 1
+	`
+	dataQueryTemplate = `
+		SELECT
+			(label_values->>'__results_measurements_KPI_errors')::integer AS error_count_int
+		FROM
+			%s
+		WHERE
+			label_values->>'.metadata.env.MEMBER_CLUSTER' LIKE $1
+			AND horreum_testid = 372
+			-- This limits the results to e2e test results
+			AND label_values->>'.repo_type' LIKE %s
+		ORDER BY
+			EXTRACT(epoch FROM start) DESC
+		LIMIT $2;
+	`
 )
+
+// TestType represents the type of test being performed
+type TestType struct {
+	Name            string
+	Clusters        []string
+	RowCountQuery   string
+	DelayCheckQuery string
+	DataQuery       string
+}
 
 var (
 	kanaryUpMetric = prometheus.NewGaugeVec(
@@ -34,7 +85,7 @@ var (
 			// Help string updated to reflect the new logic: UP if at least one error reading <= 0, DOWN if all > 0.
 			Help: fmt.Sprintf("Kanary signal: 1 if at least one of last %d error readings is 0 or less, 0 if all last %d error readings are greater than 0. Only updated when %d valid data points are available.", requiredNumberOfRows, requiredNumberOfRows, requiredNumberOfRows),
 		},
-		[]string{"tested_cluster"},
+		[]string{"tested_cluster", "type"},
 	)
 
 	kanaryErrorMetric = prometheus.NewGaugeVec(
@@ -42,62 +93,40 @@ var (
 			Name: "kanary_error",
 			Help: "Binary indicator of an error in processing for Kanary signal (1 if interrupted, 0 otherwise). An error prevents kanary_up from being updated. The 'reason' label provides details on the error type.",
 		},
-		[]string{"tested_cluster", "reason"},
+		[]string{"tested_cluster", "type", "reason"},
 	)
 
-	// cluster shortnames.
-	targetClusters = []string{
-		// Private Clusters
-		"stone-stage-p01",
-		"stone-prod-p01",
-		"stone-prod-p02",
-		// Public Clusters
-		"stone-stg-rh01",
-		"stone-prd-rh01",
+	// Test type configurations
+	testTypes = map[string]TestType{
+		"container": {
+			Name: "container",
+			Clusters: []string{
+				// Private Clusters
+				"stone-stage-p01",
+				"stone-prod-p01",
+				"stone-prod-p02",
+				// Public Clusters
+				"stone-stg-rh01",
+				"stone-prd-rh01",
+			},
+			RowCountQuery:   fmt.Sprintf(rowCountQueryTemplate, tableName, containerLabelFilter),
+			DelayCheckQuery: fmt.Sprintf(delayCheckQueryTemplate, tableName, containerLabelFilter),
+			DataQuery:       fmt.Sprintf(dataQueryTemplate, tableName, containerLabelFilter),
+		},
+		"rpm": {
+			Name: "rpm",
+			Clusters: []string{
+				// Private Clusters
+				"stone-prod-p02",
+				"kflux-rhel-p01",
+				// Public Clusters
+				"stone-prd-rh01",
+			},
+			RowCountQuery:   fmt.Sprintf(rowCountQueryTemplate, tableName, rpmLabelFilter),
+			DelayCheckQuery: fmt.Sprintf(delayCheckQueryTemplate, tableName, rpmLabelFilter),
+			DataQuery:       fmt.Sprintf(dataQueryTemplate, tableName, rpmLabelFilter),
+		},
 	}
-
-	// --- Db Queries
-
-	// Entries in Db check
-	rowCountQuery = fmt.Sprintf(`
-		SELECT COUNT(*)
-		FROM %s
-		WHERE
-			label_values->>'.metadata.env.MEMBER_CLUSTER' LIKE $1
-			-- This limits the results to container e2e test results
-			AND label_values->>'.repo_type' = 'nodejs-devfile-sample';
-	`, tableName)
-
-	// Delay check
-	delayCheckQuery = fmt.Sprintf(`
-		SELECT
-			-- The replace is to comply with the Standard ISO 8601 format
-			EXTRACT(epoch FROM (REPLACE(label_values->>'.ended', ',', '.'))::timestamptz) AS ended_epoch
-		FROM
-			%s
-		WHERE
-			label_values->>'.metadata.env.MEMBER_CLUSTER' LIKE $1
-			-- This limits the results to container e2e test results
-			AND label_values->>'.repo_type' = 'nodejs-devfile-sample'
-		ORDER BY
-			EXTRACT(epoch FROM start) DESC
-		LIMIT 1
-	`, tableName)
-
-	// Query fetches error counts for X number of most recent Konflux cluster load tests.
-	dataQuery = fmt.Sprintf(`
-		SELECT
-			(label_values->>'__results_measurements_KPI_errors')::integer AS error_count_int
-		FROM
-			%s
-		WHERE
-			label_values->>'.metadata.env.MEMBER_CLUSTER' LIKE $1
-			-- This limits the results to container e2e test results
-			AND label_values->>'.repo_type' = 'nodejs-devfile-sample'
-		ORDER BY
-			EXTRACT(epoch FROM start) DESC
-		LIMIT $2;
-	`, tableName)
 )
 
 /*
@@ -106,10 +135,10 @@ setDataBaseErrorState updates Prometheus metrics for a cluster when a database e
 	It sets kanary_up to 1 (better than giving a false down kanary signal),
 	kanary_error with reason "db_error" to 1, and kanary_error with reason "no_test_results" to 0.
 */
-func setDataBaseErrorState(clusterName string) {
-	kanaryUpMetric.WithLabelValues(clusterName).Set(1)
-	kanaryErrorMetric.WithLabelValues(clusterName, "db_error").Set(1)
-	kanaryErrorMetric.WithLabelValues(clusterName, "no_test_results").Set(0)
+func setDataBaseErrorState(clusterName string, testType string) {
+	kanaryUpMetric.WithLabelValues(clusterName, testType).Set(1)
+	kanaryErrorMetric.WithLabelValues(clusterName, testType, "db_error").Set(1)
+	kanaryErrorMetric.WithLabelValues(clusterName, testType, "no_test_results").Set(0)
 }
 
 /*
@@ -118,10 +147,10 @@ setNoTestResultsErrorState updates Prometheus metrics for a cluster when recent 
 	It sets kanary_up to 1 (better than giving a false down kanary signal),
 	kanary_error with reason "no_test_results" to 1, and kanary_error with reason "db_error" to 0.
 */
-func setNoTestResultsErrorState(clusterName string) {
-	kanaryUpMetric.WithLabelValues(clusterName).Set(1)
-	kanaryErrorMetric.WithLabelValues(clusterName, "db_error").Set(0)
-	kanaryErrorMetric.WithLabelValues(clusterName, "no_test_results").Set(1)
+func setNoTestResultsErrorState(clusterName string, testType string) {
+	kanaryUpMetric.WithLabelValues(clusterName, testType).Set(1)
+	kanaryErrorMetric.WithLabelValues(clusterName, testType, "db_error").Set(0)
+	kanaryErrorMetric.WithLabelValues(clusterName, testType, "no_test_results").Set(1)
 }
 
 /*
@@ -129,10 +158,10 @@ setKanaryUpState updates Prometheus metrics for a cluster to indicate it is heal
 
 	It sets kanary_up to 1 and clears any previous error states by setting kanary_error for "db_error" and "no_test_results" to 0.
 */
-func setKanaryUpState(clusterName string) {
-	kanaryUpMetric.WithLabelValues(clusterName).Set(1)
-	kanaryErrorMetric.WithLabelValues(clusterName, "db_error").Set(0)
-	kanaryErrorMetric.WithLabelValues(clusterName, "no_test_results").Set(0)
+func setKanaryUpState(clusterName string, testType string) {
+	kanaryUpMetric.WithLabelValues(clusterName, testType).Set(1)
+	kanaryErrorMetric.WithLabelValues(clusterName, testType, "db_error").Set(0)
+	kanaryErrorMetric.WithLabelValues(clusterName, testType, "no_test_results").Set(0)
 }
 
 /*
@@ -140,10 +169,10 @@ setKanaryDownState updates Prometheus metrics for a cluster to indicate it is no
 
 	It sets kanary_up to 0 and clears any previous error states by setting kanary_error for "db_error" and "no_test_results" to 0.
 */
-func setKanaryDownState(clusterName string) {
-	kanaryUpMetric.WithLabelValues(clusterName).Set(0)
-	kanaryErrorMetric.WithLabelValues(clusterName, "db_error").Set(0)
-	kanaryErrorMetric.WithLabelValues(clusterName, "no_test_results").Set(0)
+func setKanaryDownState(clusterName string, testType string) {
+	kanaryUpMetric.WithLabelValues(clusterName, testType).Set(0)
+	kanaryErrorMetric.WithLabelValues(clusterName, testType, "db_error").Set(0)
+	kanaryErrorMetric.WithLabelValues(clusterName, testType, "no_test_results").Set(0)
 }
 
 /*
@@ -152,7 +181,7 @@ GetTestErrorCounts retrieves number of errors encounted in X most recent test re
 	Returns a slice of error counts and an error if any database query or row scanning operation fails.
 	Any errors encountered here should be treated as a "db_error"
 */
-func GetTestErrorCounts(db *sql.DB, clusterName string, numTests int) ([]int, error) {
+func GetTestErrorCounts(db *sql.DB, clusterName string, numTests int, dataQuery string) ([]int, error) {
 	clusterSubStringPattern := "%" + clusterName + "%"
 
 	rows, err := db.Query(dataQuery, clusterSubStringPattern, numTests)
@@ -190,7 +219,7 @@ CheckSufficientTests checks if the database row count for clusterName is suffici
 	Returns nil if the number of fetched rows is sufficient. Otherwise, returns err.
 	Any error encountered here should be treated as a "db_error"
 */
-func CheckSufficientTests(db *sql.DB, clusterName string, minTestsCount int) error {
+func CheckSufficientTests(db *sql.DB, clusterName string, minTestsCount int, rowCountQuery string) error {
 	clusterSubStringPattern := "%" + clusterName + "%"
 	var testsCount int
 	err := db.QueryRow(rowCountQuery, clusterSubStringPattern).Scan(&testsCount)
@@ -215,7 +244,7 @@ CheckLatestTestIsRecent checks if the latest test result (row) for a given clust
 	Returns kanary error type ("db_error", "no_test_results"), and an error if there is an error.
 	Returns kanary error type "", and nil error if the check is successful.
 */
-func CheckLatestTestIsRecent(db *sql.DB, clusterName string, maxSecondsSinceLastRun int64) (string, error) {
+func CheckLatestTestIsRecent(db *sql.DB, clusterName string, maxSecondsSinceLastRun int64, delayCheckQuery string) (string, error) {
 	clusterSubStringPattern := "%" + clusterName + "%"
 
 	var latestEndedEpoch float64
@@ -245,43 +274,43 @@ func IsKanaryAlive(errorCounts []int) bool {
 	return slices.Contains(errorCounts, 0)
 }
 
-// fetchAndExportMetrics orchestrates fetching data and updating Prometheus metrics for all target clusters.
-func fetchAndExportMetrics(db *sql.DB) {
-	for _, clusterName := range targetClusters {
-		log.Printf("----- %s -----\n", clusterName)
-		err := CheckSufficientTests(db, clusterName, requiredNumberOfRows)
+// fetchAndExportMetrics orchestrates fetching data and updating Prometheus metrics for all target clusters of a specific test type.
+func fetchAndExportMetrics(db *sql.DB, testType TestType) {
+	for _, clusterName := range testType.Clusters {
+		log.Printf("----- %s (%s) -----\n", clusterName, testType.Name)
+		err := CheckSufficientTests(db, clusterName, requiredNumberOfRows, testType.RowCountQuery)
 
 		if err != nil {
 			log.Println(err)
-			setDataBaseErrorState(clusterName)
+			setDataBaseErrorState(clusterName, testType.Name)
 			continue
 		}
 
-		kanaryErrorType, err := CheckLatestTestIsRecent(db, clusterName, toleranceInSeconds)
+		kanaryErrorType, err := CheckLatestTestIsRecent(db, clusterName, toleranceInSeconds, testType.DelayCheckQuery)
 
 		if err != nil {
 			if kanaryErrorType == "no_test_results" {
-				setNoTestResultsErrorState(clusterName)
+				setNoTestResultsErrorState(clusterName, testType.Name)
 				continue
 			} else {
-				setDataBaseErrorState(clusterName)
+				setDataBaseErrorState(clusterName, testType.Name)
 				continue
 			}
 		}
 
-		errorCounts, err := GetTestErrorCounts(db, clusterName, requiredNumberOfRows)
+		errorCounts, err := GetTestErrorCounts(db, clusterName, requiredNumberOfRows, testType.DataQuery)
 
 		if err != nil {
-			setDataBaseErrorState(clusterName)
+			setDataBaseErrorState(clusterName, testType.Name)
 			continue
 		}
 
 		if IsKanaryAlive(errorCounts) {
-			setKanaryUpState(clusterName)
-			log.Printf("OK: Kanary signal for cluster '%s' is UP: %v.", clusterName, errorCounts)
+			setKanaryUpState(clusterName, testType.Name)
+			log.Printf("OK: Kanary signal for cluster '%s' (%s) is UP: %v.", clusterName, testType.Name, errorCounts)
 		} else {
-			setKanaryDownState(clusterName)
-			log.Printf("KO: Kanary signal for cluster '%s' is DOWN (all last %d error readings > 0): %v.", clusterName, requiredNumberOfRows, errorCounts)
+			setKanaryDownState(clusterName, testType.Name)
+			log.Printf("KO: Kanary signal for cluster '%s' (%s) is DOWN (all last %d error readings > 0): %v.", clusterName, testType.Name, requiredNumberOfRows, errorCounts)
 		}
 	}
 }
@@ -320,7 +349,11 @@ func main() {
 	}()
 
 	log.Println("Performing initial metrics fetch...")
-	fetchAndExportMetrics(db)
+	// Fetch metrics for all test types
+	for testTypeName, testType := range testTypes {
+		log.Printf("Processing test type: %s", testTypeName)
+		fetchAndExportMetrics(db, testType)
+	}
 	log.Println("Initial metrics fetch complete.")
 
 	// Periodically fetch metrics. The interval could be made configurable.
@@ -330,7 +363,11 @@ func main() {
 
 	for range ticker.C {
 		log.Println("Fetching and exporting metrics...")
-		fetchAndExportMetrics(db)
+		// Fetch metrics for all test types
+		for testTypeName, testType := range testTypes {
+			log.Printf("Processing test type: %s", testTypeName)
+			fetchAndExportMetrics(db, testType)
+		}
 		log.Println("Metrics fetch complete.")
 	}
 }
