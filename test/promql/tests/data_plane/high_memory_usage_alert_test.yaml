@@ -6,25 +6,24 @@ rule_files:
 tests:
   - interval: 1m
     input_series:
-      - series: "kube_pod_container_memory_usage_bytes{tenant_id='tenant', pod='pod', namespace='namespace'}"
+      - series: "kube_pod_container_memory_usage_bytes{tenant_id='tenant', pod='pod', namespace='namespace', container='container'}"
         values: '1x60'
 
-      - series: "kube_pod_container_resource_limits_memory_bytes{tenant_id='tenant', resource='memory', pod='pod', namespace='namespace'}"
+      - series: "kube_pod_container_resource_limits_memory_bytes{tenant_id='tenant', pod='pod', namespace='namespace', container='container'}"
         values: "1x60"
 
     alert_rule_test:
       - eval_time: 5m
         alertname: high_memory_usage_alert
-        exp_alerts: |
+        exp_alerts:
           - exp_labels:
-              severity: warning
-              tenant_id: "{{ tenant }}"
-              pod: "{{ pod }}"
-              namespace: "{{ namespace }}"
-              slo: "false"
+              namespace: "namespace"
+              pod: "pod"
+              severity: "warning"
+              tenant_id: "tenant"
+              container: "container"
             exp_annotations:
-              summary: "Pod {{ pod }} in namespace {{ namespace }} (Tenant: {{ tenant }}) has exceeded it memory limit for more than 5 minutes"
-              description: >
-                "The pod {{ pod }} (Tenant: {{ tenant_id }}) has been consuming more than its defined limit in namespace {{ namespace }} for at least 5 minutes. Consider investigating resource usage."
-              alert_team_handle: <!subteam^S05Q1P4Q2TG>
-              team: konflux-infra
+              description: "Pod pod for namespace namespace on cluster has high memory usage"
+              alert_routing_key: "namespace"
+              summary: "Pod pod has high memory usage"
+              runbook_url: 'https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-HighMemoryAlertUsage.md'
