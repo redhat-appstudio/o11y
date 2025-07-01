@@ -6,11 +6,11 @@ rule_files:
 tests:
   - interval: 1m
     input_series:
-      - series: "kube_pod_container_memory_usage_bytes{tenant_id='{{ $my_tenant_id }}', pod='{{ $my_pod}}', namespace='{{ $my_namespace }}'}"
-        values: '1700000000 1800000000 1900000000 2000000000 2100000000'
+      - series: "kube_pod_container_memory_usage_bytes{tenant_id='tenant', pod='pod', namespace='namespace'}"
+        values: '1x60'
 
-      - series: "kube_pod_container_resource_limits_bytes{tenant_id='{{ $my_tenant_id }}', pod='{{ $my_pod}}', namespace='{{ $my_namespace }}'}"
-        values: "2000000000 2000000000 2000000000 2000000000 2000000000"
+      - series: "kube_pod_container_resource_limits_memory_bytes{tenant_id='tenant', pod='pod', namespace='namespace'}"
+        values: "1x60"
 
     alert_rule_test:
       - eval_time: 5m
@@ -18,13 +18,13 @@ tests:
         exp_alerts:
           - exp_labels:
               severity: warning
-              tenant_id: "{{ $my_tenant_id }}"
+              tenant_id: "{{ $tenant_id }}"
               pod: "{{ $my_pod }}"
-              namespace: "{{ $my_namespace }}"
+              namespace: "{{ $namespace }}"
               slo: "true"
             exp_annotations:
-              summary: "Pod {{ $my_pod}} in namespace {{ $my_namespace}} (Tenant: {{ $my_tenant_id }}) has exceeded it memory limit for more than 5 minutes"
+              summary: "Pod {{ $pod }} in namespace {{ $namespace }} (Tenant: {{ $tenant_id }}) has exceeded it memory limit for more than 5 minutes"
               description: >
-                "The pod {{ $my_pod}} (Tenant: {{ $my_tenant_id }}) has been consuming more than its defined limit in namespace {{ $my_namespace}} for at least 5 minutes. Consider investigating resource usage."
+                "The pod {{ $pod }} (Tenant: {{ $tenant_id }}) has been consuming more than its defined limit in namespace {{ $namespace }} for at least 5 minutes. Consider investigating resource usage."
               alert_team_handle: <!subteam^S05Q1P4Q2TG>
               team: konflux-infra
