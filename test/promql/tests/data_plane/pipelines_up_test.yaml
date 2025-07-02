@@ -1,0 +1,456 @@
+evaluation_interval: 1m
+
+rule_files:
+  - 'prometheus.pipeline_alerts.yaml'
+
+tests:
+  - name: PipelinesAlertsGood
+    interval: 1m
+    input_series:
+      - series: 'konflux_up{namespace="openshift-pipelines", service="pipeline-metrics-exporter", source_cluster="c_up"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="pipeline-metrics-exporter", source_cluster="c_down"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="pipelines-as-code-controller", source_cluster="c_up"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="pipelines-as-code-controller", source_cluster="c_down"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="pipelines-as-code-watcher", source_cluster="c_up"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="pipelines-as-code-watcher", source_cluster="c_down"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="pipelines-as-code-webhook", source_cluster="c_up"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="pipelines-as-code-webhook", source_cluster="c_down"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-chains-controller", source_cluster="c_up"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-chains-controller", source_cluster="c_down"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-events-controller", source_cluster="c_up"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-events-controller", source_cluster="c_down"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-operator-proxy-webhook", source_cluster="c_up"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-operator-proxy-webhook", source_cluster="c_down"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-pipelines-webhook", source_cluster="c_up"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-pipelines-webhook", source_cluster="c_down"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="tkn-cli-serve", source_cluster="c_up"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="tkn-cli-serve", source_cluster="c_down"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="tekton-results", service="tekton-results-api", source_cluster="c_up"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="tekton-results", service="tekton-results-api", source_cluster="c_down"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="tekton-results", service="tekton-results-api-for-watcher", source_cluster="c_up"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="tekton-results", service="tekton-results-api-for-watcher", source_cluster="c_down"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="tekton-results", service="tekton-results-watcher", source_cluster="c_up"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="tekton-results", service="tekton-results-watcher", source_cluster="c_down"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="tekton-results", service="tekton-results-retention-policy-agent", source_cluster="c_up"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="tekton-results", service="tekton-results-retention-policy-agent", source_cluster="c_down"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-pipelines-controller", source_cluster="c_up"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-pipelines-controller", source_cluster="c_down"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-pipelines-remote-resolvers", source_cluster="c_up"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-pipelines-remote-resolvers", source_cluster="c_down"}'
+        values: '1 1 1 1 1'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: PipelineMetricsExporterDown
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: PipelinesAsCodeControllDown
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: PipelinesAsCodeWatcherDown
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: PipelinesAsCodeWebhookDown
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: TektonChainsControllerDown
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: TektonEventsControllerDown
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: TektonOperatorProxyWebhookDown
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: TektonPipelinesWebhookDown
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: TektonCLIServeDown
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: TektonResultsAPIReaderDown
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: TektonResultsAPIDown
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: TektonResultsWatcherDown
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: TektonResultsRetentionPolicyAgentDown
+        exp_alerts: []
+  - name: PipelinesAlertsFiring
+    interval: 1m
+    input_series:
+      - series: 'konflux_up{namespace="openshift-pipelines", service="pipeline-metrics-exporter", check="replicas-available", source_cluster="c_up"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="pipeline-metrics-exporter", check="replicas-available", source_cluster="c_down"}'
+        values: '0 0 0 0 0'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="pipelines-as-code-controller", check="replicas-available", source_cluster="c_up"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="pipelines-as-code-controller", check="replicas-available", source_cluster="c_down"}'
+        values: '0 0 0 0 0'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="pipelines-as-code-watcher", check="replicas-available", source_cluster="c_up"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="pipelines-as-code-watcher", check="replicas-available", source_cluster="c_down"}'
+        values: '0 0 0 0 0'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="pipelines-as-code-webhook", check="replicas-available", source_cluster="c_up"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="pipelines-as-code-webhook", check="replicas-available", source_cluster="c_down"}'
+        values: '0 0 0 0 0'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-chains-controller", check="replicas-available", source_cluster="c_up"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-chains-controller", check="replicas-available", source_cluster="c_down"}'
+        values: '0 0 0 0 0'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-events-controller", check="replicas-available", source_cluster="c_up"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-events-controller", check="replicas-available", source_cluster="c_down"}'
+        values: '0 0 0 0 0'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-operator-proxy-webhook", check="replicas-available", source_cluster="c_up"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-operator-proxy-webhook", check="replicas-available", source_cluster="c_down"}'
+        values: '0 0 0 0 0'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-pipelines-webhook", check="replicas-available", source_cluster="c_up"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-pipelines-webhook", check="replicas-available", source_cluster="c_down"}'
+        values: '0 0 0 0 0'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="tkn-cli-serve", check="replicas-available", source_cluster="c_up"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="tkn-cli-serve", check="replicas-available", source_cluster="c_down"}'
+        values: '0 0 0 0 0'
+      - series: 'konflux_up{namespace="tekton-results", service="tekton-results-api", check="replicas-available", source_cluster="c_up"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="tekton-results", service="tekton-results-api", check="replicas-available", source_cluster="c_down"}'
+        values: '0 0 0 0 0'
+      - series: 'konflux_up{namespace="tekton-results", service="tekton-results-api-for-watcher", check="replicas-available", source_cluster="c_up"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="tekton-results", service="tekton-results-api-for-watcher", check="replicas-available", source_cluster="c_down"}'
+        values: '0 0 0 0 0'
+      - series: 'konflux_up{namespace="tekton-results", service="tekton-results-watcher", check="replicas-available", source_cluster="c_up"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="tekton-results", service="tekton-results-watcher", check="replicas-available", source_cluster="c_down"}'
+        values: '0 0 0 0 0'
+      - series: 'konflux_up{namespace="tekton-results", service="tekton-results-retention-policy-agent", check="replicas-available", source_cluster="c_up"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="tekton-results", service="tekton-results-retention-policy-agent", check="replicas-available", source_cluster="c_down"}'
+        values: '0 0 0 0 0'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-pipelines-controller", check="replicas-available", source_cluster="c_up"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-pipelines-controller", check="replicas-available", source_cluster="c_down"}'
+        values: '0 0 0 0 0'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-pipelines-remote-resolvers", check="replicas-available", source_cluster="c_up"}'
+        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-pipelines-remote-resolvers", check="replicas-available", source_cluster="c_down"}'
+        values: '0 0 0 0 0'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: PipelineMetricsExporterDown
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              check: replicas-available
+              namespace: openshift-pipelines
+              service: pipeline-metrics-exporter
+              source_cluster: c_down
+            exp_annotations:
+              summary: Pipeline metrics exporter is down in cluster c_down
+              description: >
+                The Pipelines Metrics Exporter pod has been down for 5min in cluster c_down
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
+      - eval_time: 5m
+        alertname: PipelinesAsCodeControllDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              check: replicas-available
+              namespace: openshift-pipelines
+              service: pipelines-as-code-controller
+              slo: "true"
+              source_cluster: c_down
+            exp_annotations:
+              summary: Pipelines as Code controller is down in cluster c_down
+              description: >
+                The Pipelines as Code controller pod has been down for 5min in cluster c_down
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
+      - eval_time: 5m
+        alertname: PipelinesAsCodeWatcherDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              check: replicas-available
+              namespace: openshift-pipelines
+              service: pipelines-as-code-watcher
+              slo: "true"
+              source_cluster: c_down
+            exp_annotations:
+              summary: Pipelines as Code watcher is down in cluster c_down
+              description: >
+                The Pipelines as Code watcher pod has been down for 5min in cluster c_down
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
+      - eval_time: 5m
+        alertname: PipelinesAsCodeWebhookDown
+        exp_alerts:
+          - exp_labels:
+              severity: High
+              check: replicas-available
+              namespace: openshift-pipelines
+              service: pipelines-as-code-webhook
+              source_cluster: c_down
+            exp_annotations:
+              summary: Pipelines as Code webhook is down in cluster c_down
+              description: >
+                The Pipelines as Code webhook pod has been down for 5min in cluster c_down
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
+      - eval_time: 5m
+        alertname: TektonChainsControllerDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              check: replicas-available
+              namespace: openshift-pipelines
+              service: tekton-chains-controller
+              slo: "true"
+              source_cluster: c_down
+            exp_annotations:
+              summary: Tekton Chians controller is down in cluster c_down
+              description: >
+                The Tekton Chains controller pod has been down for 5min in cluster c_down
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
+      - eval_time: 5m
+        alertname: TektonEventsControllerDown
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              check: replicas-available
+              namespace: openshift-pipelines
+              service: tekton-events-controller
+              source_cluster: c_down
+            exp_annotations:
+              summary: Tekton Events controller is down in cluster c_down
+              description: >
+                The Tekton Events controller pod has been down for 5min in cluster c_down
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
+      - eval_time: 5m
+        alertname: TektonOperatorProxyWebhookDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              check: replicas-available
+              namespace: openshift-pipelines
+              service: tekton-operator-proxy-webhook
+              slo: "true"
+              source_cluster: c_down
+            exp_annotations:
+              summary: Tekton Operator Proxy Webhook is down in cluster c_down
+              description: >
+                The Tekton Operator Proxy webhook pod has been down for 5min in cluster c_down
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
+      - eval_time: 5m
+        alertname: TektonPipelinesWebhookDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              check: replicas-available
+              namespace: openshift-pipelines
+              service: tekton-pipelines-webhook
+              slo: "true"
+              source_cluster: c_down
+            exp_annotations:
+              summary: TektonPipelinesWebhook is down in cluster c_down
+              description: >
+                The Tekton Pipelines webhook pod has been down for 5min in cluster c_down
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
+      - eval_time: 5m
+        alertname: TektonCLIServeDown
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              check: replicas-available
+              namespace: openshift-pipelines
+              service: tkn-cli-serve
+              source_cluster: c_down
+            exp_annotations:
+              summary: Tekton CLI Serve is down in cluster c_down
+              description: >
+                The Tekton CLI Serve controller pod has been down for 5min in cluster c_down
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
+      - eval_time: 5m
+        alertname: TektonResultsAPIReaderDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              check: replicas-available
+              namespace: tekton-results
+              service: tekton-results-api
+              slo: "true"
+              source_cluster: c_down
+            exp_annotations:
+              summary: Tekton Results API reader is down in cluster c_down
+              description: >
+                The Tekton Results API pod (reader instance) has been down for 5min in cluster c_down
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
+      - eval_time: 5m
+        alertname: TektonResultsAPIDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              check: replicas-available
+              namespace: tekton-results
+              service: tekton-results-api-for-watcher
+              slo: "true"
+              source_cluster: c_down
+            exp_annotations:
+              summary: Tekton Results API writer is down in cluster c_down
+              description: >
+                The Tekton Results API pod (writer instance) has been down for 5min in cluster c_down
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
+      - eval_time: 5m
+        alertname: TektonResultsWatcherDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              check: replicas-available
+              namespace: tekton-results
+              service: tekton-results-watcher
+              slo: "true"
+              source_cluster: c_down
+            exp_annotations:
+              summary: Tekton Results watcher is down in cluster c_down
+              description: >
+                The Tekton Results watcher pod has been down for 5min in cluster c_down
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
+      - eval_time: 5m
+        alertname: TektonResultsRetentionPolicyAgentDown
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              check: replicas-available
+              namespace: tekton-results
+              service: tekton-results-retention-policy-agent
+              source_cluster: c_down
+            exp_annotations:
+              summary: Tekton Results Retention Policy Agent is down in cluster c_down
+              description: >
+                The Tekton Results Retention Policy Agent pod has been down for 5min in cluster c_down
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
+      - eval_time: 5m
+        alertname: TektonResultsWatcherDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              check: replicas-available
+              namespace: tekton-results
+              service: tekton-results-watcher
+              slo: "true"
+              source_cluster: c_down
+            exp_annotations:
+              summary: Tekton Results watcher is down in cluster c_down
+              description: >
+                The Tekton Results watcher pod has been down for 5min in cluster c_down
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
+      - eval_time: 5m
+        alertname: TektonResultsRetentionPolicyAgentDown
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              check: replicas-available
+              namespace: tekton-results
+              service: tekton-results-retention-policy-agent
+              source_cluster: c_down
+            exp_annotations:
+              summary: Tekton Results Retention Policy Agent is down in cluster c_down
+              description: >
+                The Tekton Results Retention Policy Agent pod has been down for 5min in cluster c_down
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
+      - eval_time: 5m
+        alertname: TektonPipelinesControllerDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              check: replicas-available
+              namespace: openshift-pipelines
+              service: tekton-pipelines-controller
+              slo: "true"
+              source_cluster: c_down
+            exp_annotations:
+              summary: Tekton Pipelines Controller is down in cluster c_down
+              description: >
+                Tekton Pipelines Controller pod has been down for 5min in cluster c_down
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
+      - eval_time: 5m
+        alertname: TektonPipelinesRemoteResolversDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              check: replicas-available
+              namespace: openshift-pipelines
+              service: tekton-pipelines-remote-resolvers
+              slo: "true"
+              source_cluster: c_down
+            exp_annotations:
+              summary: Tekton Pipelines Remote Resolvers is down in cluster c_down
+              description: >
+                Tekton Pipelines Remote Resolvers pod has been down for 5min in cluster c_down
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md

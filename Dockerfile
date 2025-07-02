@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi9/go-toolset:1.23.9-1749636489 AS builder
+FROM registry.access.redhat.com/ubi9/go-toolset:1.23.9-1751375493 AS builder
 
 # Set the working directory for build operations.
 WORKDIR /opt/app-root/src
@@ -29,7 +29,7 @@ RUN cd exporters && \
     done
 
 
-FROM registry.access.redhat.com/ubi9-micro@sha256:9d241cec87d22681d8e4ffe76d98d960b48d967c108cd627a139df670b793186
+FROM registry.access.redhat.com/ubi9-micro@sha256:ef76ed20e66a9b19ccbbafe5657d73246c78c8f06ef3161e0fce6831ed4f7352
 
 # Copy all compiled binaries from the builder stage to the final image.
 COPY --from=builder /tmp/built_exporters/* /bin/

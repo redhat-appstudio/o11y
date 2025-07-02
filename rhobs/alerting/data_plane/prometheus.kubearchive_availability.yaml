@@ -1,0 +1,72 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-kubearchive-availability-alerting-rules
+  labels:
+    tenant: rhtap
+
+spec:
+  groups:
+    - name: kubearchive-operator-availability
+      interval: 1m
+      rules:
+        - alert: KubeArchiveOperatorDown
+          expr: |
+            konflux_up{
+              check="replicas-available",
+              service="kubearchive-operator"
+            } != 1
+          for: 5m
+          labels:
+            severity: critical
+            slo: "true"
+          annotations:
+            summary: >-
+              KubeArchive Operator pod is down in cluster {{ $labels.source_cluster }}
+            description: >
+              KubeArchive Operator pod has been down for 5min in cluster {{ $labels.source_cluster }}
+            alert_team_handle: <!subteam^S088TRDUGG0>
+            team: kubearchive
+            runbook_url: null
+    - name: kubearchive-api-availability
+      interval: 1m
+      rules:
+        - alert: KubeArchiveOperatorDown
+          expr: |
+            konflux_up{
+              check="replicas-available",
+              service="kubearchive-api-server"
+            } != 1
+          for: 5m
+          labels:
+            severity: critical
+            slo: "true"
+          annotations:
+            summary: >-
+              KubeArchive API Server pod is down in cluster {{ $labels.source_cluster }}
+            description: >
+              KubeArchive API Server pod has been down for 5min in cluster {{ $labels.source_cluster }}
+            alert_team_handle: <!subteam^S088TRDUGG0>
+            team: kubearchive
+            runbook_url: null
+    - name: kubearchive-sink-availability
+      interval: 1m
+      rules:
+        - alert: KubeArchiveSinkDown
+          expr: |
+            konflux_up{
+              check="replicas-available",
+              service="kubearchive-sink"
+            } != 1
+          for: 5m
+          labels:
+            severity: critical
+            slo: "true"
+          annotations:
+            summary: >-
+              KubeArchive Sink pod is down in cluster {{ $labels.source_cluster }}
+            description: >
+              KubeArchive Sink pod has been down for 5min in cluster {{ $labels.source_cluster }}
+            alert_team_handle: <!subteam^S088TRDUGG0>
+            team: kubearchive
+            runbook_url: null
