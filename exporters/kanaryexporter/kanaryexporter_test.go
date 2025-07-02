@@ -63,92 +63,96 @@ func TestIsKanaryAlive(t *testing.T) {
 
 func TestSetDataBaseErrorState(t *testing.T) {
 	cluster := "test-cluster"
+	testType := "container"
 
 	// Reset metrics before test
 	kanaryUpMetric.Reset()
 	kanaryErrorMetric.Reset()
 
-	setDataBaseErrorState(cluster)
+	setDataBaseErrorState(cluster, testType)
 
 	// Check kanary_up = 1
-	if got := testutil.ToFloat64(kanaryUpMetric.WithLabelValues(cluster)); got != 1 {
+	if got := testutil.ToFloat64(kanaryUpMetric.WithLabelValues(cluster, testType)); got != 1 {
 		t.Errorf("kanaryUpMetric = %v; want 1", got)
 	}
 	// Check kanary_error{reason="db_error"} = 1
-	if got := testutil.ToFloat64(kanaryErrorMetric.WithLabelValues(cluster, "db_error")); got != 1 {
+	if got := testutil.ToFloat64(kanaryErrorMetric.WithLabelValues(cluster, testType, "db_error")); got != 1 {
 		t.Errorf("kanaryErrorMetric[db_error] = %v; want 1", got)
 	}
 	// Check kanary_error{reason="no_test_results"} = 0
-	if got := testutil.ToFloat64(kanaryErrorMetric.WithLabelValues(cluster, "no_test_results")); got != 0 {
+	if got := testutil.ToFloat64(kanaryErrorMetric.WithLabelValues(cluster, testType, "no_test_results")); got != 0 {
 		t.Errorf("kanaryErrorMetric[no_test_results] = %v; want 0", got)
 	}
 }
 
 func TestSetNoTestResultsErrorState(t *testing.T) {
 	cluster := "test-cluster"
+	testType := "container"
 
 	// Reset metrics before test
 	kanaryUpMetric.Reset()
 	kanaryErrorMetric.Reset()
 
-	setNoTestResultsErrorState(cluster)
+	setNoTestResultsErrorState(cluster, testType)
 
 	// Check kanary_up = 1
-	if got := testutil.ToFloat64(kanaryUpMetric.WithLabelValues(cluster)); got != 1 {
+	if got := testutil.ToFloat64(kanaryUpMetric.WithLabelValues(cluster, testType)); got != 1 {
 		t.Errorf("kanaryUpMetric = %v; want 1", got)
 	}
 	// Check kanary_error{reason="db_error"} = 0
-	if got := testutil.ToFloat64(kanaryErrorMetric.WithLabelValues(cluster, "db_error")); got != 0 {
+	if got := testutil.ToFloat64(kanaryErrorMetric.WithLabelValues(cluster, testType, "db_error")); got != 0 {
 		t.Errorf("kanaryErrorMetric[db_error] = %v; want 0", got)
 	}
 	// Check kanary_error{reason="no_test_results"} = 1
-	if got := testutil.ToFloat64(kanaryErrorMetric.WithLabelValues(cluster, "no_test_results")); got != 1 {
+	if got := testutil.ToFloat64(kanaryErrorMetric.WithLabelValues(cluster, testType, "no_test_results")); got != 1 {
 		t.Errorf("kanaryErrorMetric[no_test_results] = %v; want 1", got)
 	}
 }
 
 func TestSetKanaryUpState(t *testing.T) {
 	cluster := "test-cluster"
+	testType := "container"
 
 	// Reset metrics before test
 	kanaryUpMetric.Reset()
 	kanaryErrorMetric.Reset()
 
-	setKanaryUpState(cluster)
+	setKanaryUpState(cluster, testType)
 
 	// Check kanary_up = 1
-	if got := testutil.ToFloat64(kanaryUpMetric.WithLabelValues(cluster)); got != 1 {
+	if got := testutil.ToFloat64(kanaryUpMetric.WithLabelValues(cluster, testType)); got != 1 {
 		t.Errorf("kanaryUpMetric = %v; want 1", got)
 	}
 	// Check kanary_error{reason="db_error"} = 0
-	if got := testutil.ToFloat64(kanaryErrorMetric.WithLabelValues(cluster, "db_error")); got != 0 {
+	if got := testutil.ToFloat64(kanaryErrorMetric.WithLabelValues(cluster, testType, "db_error")); got != 0 {
 		t.Errorf("kanaryErrorMetric[db_error] = %v; want 0", got)
 	}
 	// Check kanary_error{reason="no_test_results"} = 0
-	if got := testutil.ToFloat64(kanaryErrorMetric.WithLabelValues(cluster, "no_test_results")); got != 0 {
+	if got := testutil.ToFloat64(kanaryErrorMetric.WithLabelValues(cluster, testType, "no_test_results")); got != 0 {
 		t.Errorf("kanaryErrorMetric[no_test_results] = %v; want 0", got)
 	}
 }
 
 func TestSetKanaryDownState(t *testing.T) {
 	cluster := "test-cluster"
+	testType := "container"
 
 	// Reset metrics before test
 	kanaryUpMetric.Reset()
 	kanaryErrorMetric.Reset()
 
-	setKanaryDownState(cluster)
+	setKanaryDownState(cluster, testType)
 
 	// Check kanary_up = 0
-	if got := testutil.ToFloat64(kanaryUpMetric.WithLabelValues(cluster)); got != 0 {
+	if got := testutil.ToFloat64(kanaryUpMetric.WithLabelValues(cluster, testType)); got != 0 {
 		t.Errorf("kanaryUpMetric = %v; want 0", got)
 	}
 	// Check kanary_error{reason="db_error"} = 0
-	if got := testutil.ToFloat64(kanaryErrorMetric.WithLabelValues(cluster, "db_error")); got != 0 {
+	if got := testutil.ToFloat64(kanaryErrorMetric.WithLabelValues(cluster, testType, "db_error")); got != 0 {
 		t.Errorf("kanaryErrorMetric[db_error] = %v; want 0", got)
 	}
 	// Check kanary_error{reason="no_test_results"} = 0
-	if got := testutil.ToFloat64(kanaryErrorMetric.WithLabelValues(cluster, "no_test_results")); got != 0 {
+	if got := testutil.ToFloat64(kanaryErrorMetric.WithLabelValues(cluster, testType, "no_test_results")); got != 0 {
 		t.Errorf("kanaryErrorMetric[no_test_results] = %v; want 0", got)
 	}
 }
@@ -161,7 +165,10 @@ func TestGetTestErrorCounts(t *testing.T) {
 	defer db.Close()
 
 	cluster := "test-cluster"
+	// Use the container data query for testing
+	dataQuery := testTypes[0].DataQuery
 	queryRegex := regexp.QuoteMeta(dataQuery)
+
 	testCases := []struct {
 		name         string
 		mockSetup    func()
@@ -225,7 +232,7 @@ func TestGetTestErrorCounts(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			mock.ExpectationsWereMet() // Clear any previous expectations
 			tc.mockSetup()
-			result, err := GetTestErrorCounts(db, cluster, 3)
+			result, err := GetTestErrorCounts(db, cluster, 3, dataQuery)
 			if tc.expectErr {
 				if err == nil {
 					t.Errorf("expected error, got nil")
@@ -255,6 +262,8 @@ func TestCheckSufficientTests(t *testing.T) {
 	defer db.Close()
 
 	cluster := "test-cluster"
+	// Use the container row count query for testing
+	rowCountQuery := testTypes[0].RowCountQuery
 	rowCountQueryRegex := regexp.QuoteMeta(rowCountQuery)
 
 	testCases := []struct {
@@ -304,7 +313,7 @@ func TestCheckSufficientTests(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			mock.ExpectationsWereMet() // Clear any previous expectations
 			tc.mockSetup()
-			err := CheckSufficientTests(db, cluster, 3)
+			err := CheckSufficientTests(db, cluster, 3, rowCountQuery)
 			if tc.wantErr {
 				if err == nil {
 					t.Errorf("expected error, got nil")
@@ -326,6 +335,8 @@ func TestCheckLatestTestIsRecent(t *testing.T) {
 	defer db.Close()
 
 	cluster := "test-cluster"
+	// Use the container delay check query for testing
+	delayCheckQuery := testTypes[0].DelayCheckQuery
 	delayCheckQueryRegex := regexp.QuoteMeta(delayCheckQuery)
 	epochNow := time.Now().Unix()
 	tolerance := int64(3600) // 1 hour
@@ -385,7 +396,7 @@ func TestCheckLatestTestIsRecent(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			mock.ExpectationsWereMet() // Clear any previous expectations
 			tc.mockSetup()
-			typeStr, err := CheckLatestTestIsRecent(db, cluster, tolerance)
+			typeStr, err := CheckLatestTestIsRecent(db, cluster, tolerance, delayCheckQuery)
 			if tc.expectErr {
 				if err == nil {
 					t.Errorf("expected error, got nil")
