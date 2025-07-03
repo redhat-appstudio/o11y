@@ -20,7 +20,9 @@ spec:
                 sum by(source_cluster) (
                   code:apiserver_request_total:rate5m{code!="0"}
                 )
+                OR on(source_cluster) vector(0.000001)
               ) * 100, "service", "api-server", "", ""
             )
+            <= 5
           labels:
             service: api-server
