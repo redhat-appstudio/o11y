@@ -17,7 +17,7 @@ spec:
                   floor(
                     kube_deployment_status_replicas_available{
                       namespace="konflux-ui", deployment="proxy"
-                    } / kube_deployment_spec_replicas
+                    } / (kube_deployment_spec_replicas * 2/3)
                   ), "check", "replicas-available", "",""
                 ), "service", "$1", "deployment","(.*)"
               ), 1
@@ -30,7 +30,7 @@ spec:
                   floor(
                     kube_deployment_status_replicas_available{
                       namespace="konflux-ui", deployment="dex"
-                    } / kube_deployment_spec_replicas
+                    } / (kube_deployment_spec_replicas * 2/3)
                   ), "check", "replicas-available", "",""
                 ), "service", "$1", "deployment","(.*)"
               ), 1
