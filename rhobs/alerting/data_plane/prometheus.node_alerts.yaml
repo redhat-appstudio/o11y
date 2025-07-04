@@ -1,0 +1,70 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-node-cluster-alerting
+  labels:
+    tenant: rhtap
+spec:
+
+  groups:
+    - name: node_cluster_alerts
+      interval: 1m
+      rules:
+        # Master Node Alerts 
+        - alert: MasterNodeHighCPU
+          expr: |
+            (100 * avg(1 - rate(node_cpu_seconds_total{mode="idle"}[5m])) by (instance, source_cluster)
+            and on (instance) label_replace( kube_node_role{role="master"}, "instance", "$1", "node", "(.+)" )) > 95
+          for: 10m
+          labels:
+            severity: high
+          annotations:
+            summary: >-
+              Master Node High CPU Usage.
+            description: >-
+              CPU Usage is {{$value}}% on master node {{ $labels.instance }} in cluster {{ $labels.source_cluster }}.
+            alert_routing_key: perfandspreandinfra
+            
+        - alert: MasterNodeHighMemory
+          expr: |
+            (avg by (source_cluster,instance) (100 * ((node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes))
+            and on (instance) label_replace( kube_node_role{role="master"}, "instance", "$1", "node", "(.+)" )) > 90
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: >-
+              Master Node High Memory Usage.
+            description: >-
+              Memory Usage is {{$value}}% on master node {{ $labels.instance }} in cluster {{ $labels.source_cluster }}.
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/node_alerts.md
+            alert_routing_key: perfandspreandinfra
+  
+        # Infra Node Alerts
+        - alert: InfraNodeHighCPU
+          expr: |
+            (100 * avg(1 - rate(node_cpu_seconds_total{mode="idle"}[5m])) by (instance, source_cluster)
+            and on (instance) label_replace( kube_node_role{role="infra"}, "instance", "$1", "node", "(.+)" )) > 95
+          for: 10m
+          labels:
+            severity: high
+          annotations:
+            summary: >-
+              Infra Node High CPU Usage.
+            description: >-
+              CPU Usage is {{$value}}% on infra node {{ $labels.instance }} in cluster {{ $labels.source_cluster }}.
+            alert_routing_key: perfandspreandinfra
+  
+        - alert: InfraNodeHighMemory
+          expr: |
+            (avg by (source_cluster,instance) (100 * ((node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes))
+            and on (instance) label_replace( kube_node_role{role="infra"}, "instance", "$1", "node", "(.+)" )) > 90
+          for: 10m
+          labels:
+            severity: high
+          annotations:
+            summary: >-
+              Infra Node High Memory Usage.
+            description: >-
+              Infra Memory Usage is {{$value}}% on infra node {{ $labels.instance }} in cluster {{ $labels.source_cluster }}.
+            alert_routing_key: perfandspreandinfra
