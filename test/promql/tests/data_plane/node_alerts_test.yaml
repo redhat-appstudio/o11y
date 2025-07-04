@@ -1,0 +1,147 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.node_alerts.yaml
+
+tests:
+  # Master Node Tests
+  - name: Test High CPU Usage on Master Node
+  - interval: 1m
+    input_series:
+      # Node is running with 100% CPU usage, so it will be alerted.
+      - series: 'node_cpu_seconds_total{instance="instance1", mode="idle", source_cluster="cluster01"}'
+        values: '0.01+0x15'
+      - series: 'node_cpu_seconds_total{instance="instance2", mode="idle", source_cluster="cluster01"}'
+        values: '0.85+0x10'
+      - series: 'kube_node_role{node="instance1", role="master"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: MasterNodeHighCPU
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              instance: instance1
+              source_cluster: cluster01
+            exp_annotations:
+              summary: "Master Node High CPU Usage."
+              description: "CPU Usage is 100% on master node instance1 in cluster cluster01."
+              alert_routing_key: perfandspreandinfra
+  - interval: 1m
+    input_series:
+      - series: 'node_cpu_seconds_total{instance="instance1", mode="idle", source_cluster="cluster01"}'
+        values: '0.75-0.1x10'
+      - series: 'node_cpu_seconds_total{instance="instance2", mode="idle", source_cluster="cluster01"}'
+        values: '0.85+0x10'
+      - series: 'kube_node_role{node="instance1", role="master"}'
+        values: '1+0x10'
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: MasterNodeHighCPU
+
+  - name: Test High Memory Usage on Master Node
+  - interval: 1m
+    input_series:
+      # Node is running with 98% memory usage, so it will be alerted.
+      - series: 'node_memory_MemTotal_bytes{instance="instance1", source_cluster="cluster01"}'
+        values: '100+0x9'
+      - series: 'node_memory_MemAvailable_bytes{instance="instance1", source_cluster="cluster01"}'
+        values: '2+0x9'
+      - series: 'kube_node_role{node="instance1", role="master"}'
+        values: '1+0x9'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: MasterNodeHighMemory
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              instance: instance1
+              source_cluster: cluster01
+              slo: "true"
+            exp_annotations:
+              summary: "Master Node High Memory Usage."
+              description: "Memory Usage is 98% on master node instance1 in cluster cluster01."
+              alert_team_handle: '<!subteam^S07SW2EEW3D> <!subteam^S05Q1P4Q2TG>'
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/node_alerts.md
+
+  - interval: 1m
+    input_series:
+      - series: 'node_memory_MemTotal_bytes{instance="instance2", source_cluster="cluster01"}'
+        values: '100x9'
+      - series: 'node_memory_MemAvailable_bytes{instance="instance2", source_cluster="cluster01"}'
+        values: '98x9'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: MasterNodeHighMemory
+  # Infra Node Tests
+  - name: Test High CPU Usage on Infra Node
+  - interval: 1m
+    input_series:
+      # Node is running with 100% CPU usage, so it will be alerted.
+      - series: 'node_cpu_seconds_total{instance="instance1", mode="idle", source_cluster="cluster01"}'
+        values: '0.01+0x15'
+      - series: 'node_cpu_seconds_total{instance="instance2", mode="idle", source_cluster="cluster01"}'
+        values: '0.85+0x10'
+      - series: 'kube_node_role{node="instance1", role="infra"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: InfraNodeHighCPU
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              instance: instance1
+              source_cluster: cluster01
+            exp_annotations:
+              summary: "Infra Node High CPU Usage."
+              description: "CPU Usage is 100% on infra node instance1 in cluster cluster01."
+              alert_routing_key: perfandspreandinfra
+  - interval: 1m
+    input_series:
+      - series: 'node_cpu_seconds_total{instance="instance1", mode="idle", source_cluster="cluster01"}'
+        values: '0.75-0.1x10'
+      - series: 'node_cpu_seconds_total{instance="instance2", mode="idle", source_cluster="cluster01"}'
+        values: '0.85+0x10'
+      - series: 'kube_node_role{node="instance1", role="infra"}'
+        values: '1+0x10'
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: InfraNodeHighCPU
+
+  - name: Test High Memory Usage on Master Node
+  - interval: 1m
+    input_series:
+      # Node is running with 98% memory usage, so it will be alerted.
+      - series: 'node_memory_MemTotal_bytes{instance="instance1", source_cluster="cluster01"}'
+        values: '100+0x9'
+      - series: 'node_memory_MemAvailable_bytes{instance="instance1", source_cluster="cluster01"}'
+        values: '2+0x9'
+      - series: 'kube_node_role{node="instance1", role="infra"}'
+        values: '1+0x9'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: InfraNodeHighMemory
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              instance: instance1
+              source_cluster: cluster01
+            exp_annotations:
+              summary: "Infra Node High Memory Usage."
+              description: "Infra Memory Usage is 98% on infra node instance1 in cluster cluster01."
+              alert_routing_key: perfandspreandinfra
+
+  - interval: 1m
+    input_series:
+      # Node is running under 90% memory usage, so it will not be alerted.
+      - series: 'node_memory_MemTotal_bytes{instance="instance2", source_cluster="cluster01"}'
+        values: '100x9'
+      - series: 'node_memory_MemAvailable_bytes{instance="instance2", source_cluster="cluster01"}'
+        values: '98x9'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: InfraNodeHighMemory
