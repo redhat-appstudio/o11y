@@ -79,15 +79,13 @@ spec:
         # Node based Alerts
         - alert: NodeHighCPU
           expr: |
-            (100 * avg(1 - rate(node_cpu_seconds_total{mode="idle"}[5m])) by (instance, source_cluster)) > 95
+            count by (source_cluster) ((100 * avg(1 - rate(node_cpu_seconds_total{mode="idle"}[5m])) by (instance, source_cluster)) > 95) > 2
           for: 10m
           labels:
             severity: high
           annotations:
-            summary: >-
-              Node High CPU Usage.
-            description: >-
-              CPU Usage is {{$value}}% on node {{ $labels.instance }} in cluster {{ $labels.source_cluster }}.
+            summary: "Instances with high CPU in {{ $labels.source_cluster }}"
+            description: "More than 2 instances in cluster {{ $labels.source_cluster }} have had CPU usage above 95% for the last 5 minutes."
             alert_routing_key: perfandspreandinfra
 
         - alert: NodeHighMemory
