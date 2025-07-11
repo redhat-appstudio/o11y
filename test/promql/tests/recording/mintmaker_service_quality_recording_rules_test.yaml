@@ -1,0 +1,59 @@
+evaluation_interval: 1m
+
+rule_files:
+  - mintmaker_service_quality_recording_rules.yaml
+
+tests:
+  - name: MintMakerClusterRamRequestedHighTest
+    interval: 1m
+    input_series:
+      - series: "kube_pod_container_resource_requests{
+          container='affinity-assistant', namespace='managed-release-team-tenant', resource='memory', unit='byte'
+        }"
+        values: "104857600"
+      - series: "kube_pod_container_resource_requests{
+          container='alertmanager', namespace='openshift-monitoring', resource='memory', unit='byte'
+        }"
+        values: "41943040"
+      - series: "kube_node_status_allocatable{
+          container='kube-rbac-proxy-main', namespace='openshift-monitoring', node='***REMOVED***', resource='memory', unit='byte'
+        }"
+        values: "60523909120"
+      - series: "kube_node_status_allocatable{
+          container='kube-rbac-proxy-main', namespace='openshift-monitoring', node='***REMOVED***', resource='memory', unit='byte'
+        }"
+        values: "29605638144"
+
+    promql_expr_test:
+      - expr: cluster_ram_requested_perc
+        eval_time: 1m
+        exp_samples:
+          - labels: cluster_ram_requested_perc
+            value: 0.0016287737424221574
+
+  - name: MintMakerNodeMemoryPressuredTest
+    interval: 1m
+    input_series:
+      - series: "kube_node_info{
+          container='kube-rbac-proxy-maind-release-team-tenant', node='***REMOVED***'
+        }"
+        values: "1"
+      - series: "kube_node_info{
+          container='kube-rbac-proxy-maind-release-team-tenant', node='***REMOVED***'
+        }"
+        values: "1"
+      - series: "kube_node_status_condition{
+          condition='MemoryPressure', node='***REMOVED***', status='true'
+        }"
+        values: "0"
+      - series: "kube_node_status_condition{
+          condition='MemoryPressure', node='***REMOVED***', status='true'
+        }"
+        values: "1"
+
+    promql_expr_test:
+      - expr: node_memory_pressured_perc
+        eval_time: 1m
+        exp_samples:
+          - labels: node_memory_pressured_perc
+            value: 0.5

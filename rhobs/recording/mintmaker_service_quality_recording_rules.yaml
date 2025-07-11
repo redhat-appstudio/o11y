@@ -1,0 +1,26 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-mintmaker-service-quality
+  labels:
+    tenant: rhtap
+
+spec:
+  groups:
+    - name: mintmaker_cluster_ram_requested_perc
+      interval: 1m
+      rules:
+        - record: cluster_ram_requested_perc
+          expr: |
+            sum(kube_pod_container_resource_requests{resource='memory'})
+            /
+            sum(kube_node_status_allocatable{resource='memory'})
+
+    - name: mintmaker_node_memory_pressured_perc
+      interval: 1m
+      rules:
+        - record: node_memory_pressured_perc
+          expr: |
+            sum(kube_node_status_condition{condition="MemoryPressure", status="true"})
+            /
+            count(kube_node_info)
