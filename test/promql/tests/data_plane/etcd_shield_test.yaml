@@ -1,0 +1,33 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.etcd_shield.yaml
+
+tests:
+
+  - interval: 1m
+    input_series:
+      - series: etcd_shield_alert_triggered{source_cluster="cluster01"}
+        values: 1+0x240
+
+    alert_rule_test:
+      - eval_time: 11m
+        alertname: EtcdShield
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              source_cluster: cluster01
+            exp_annotations:
+              description: 'Etcd Shield Alert Triggered in cluster cluster01.'
+              summary: Etcd Shield Alert Triggered
+              alert_routing_key: spreandinfra
+              slo: 'false'
+
+  - interval: 1m
+    input_series:
+      - series: etcd_shield_alert_triggered{source_cluster="cluster01"}
+        values: 0+0x240
+
+    alert_rule_test:
+      - eval_time: 11m
+        alertname: EtcdShield
