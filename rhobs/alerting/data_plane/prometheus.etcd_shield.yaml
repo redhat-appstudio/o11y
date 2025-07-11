@@ -1,0 +1,25 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-etcd-cluster-capacity-alerting
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: etcd_cluster_capacity_alerts
+      interval: 1m
+      rules:
+
+      - alert: EtcdShield
+        expr: |
+          etcd_shield_alert_triggered > 0.5
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: >-
+             Etcd Shield Alert Triggered
+          description: >-
+             Etcd Shield Alert Triggered in cluster {{ $labels.source_cluster }}.
+          alert_routing_key: spreandinfra
+          slo: "false"
