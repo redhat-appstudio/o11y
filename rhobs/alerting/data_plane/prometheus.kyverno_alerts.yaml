@@ -1,0 +1,54 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-kyverno-alerting-rules
+  labels:
+    tenant: rhtap
+
+spec:
+  groups:
+    - name: kyverno-unavailable
+      interval: 1m
+      rules:
+      - alert: KyvernoDeploymentDown
+        expr: |
+          kube_deployment_spec_replicas{namespace="konflux-kyverno"} != kube_deployment_status_replicas_ready{namespace="konflux-kyverno"}
+        for: 3m
+        labels:
+          severity: critical
+          slo: "true"
+        annotations:
+          summary: Kyverno has reported that not all the deployments pods are up and running for the last 3 minutes.
+          description: "The Kyverno Deployment '{{ $labels.deployment }}' in namespace '{{ $labels.namespace }}' on cluster '{{ $labels.source_cluster }}' is unhealthy."
+          alert_team_handle: <!subteam^S05Q1P4Q2TG>
+          team: konflux-infra
+          # kyverno/README.md currently in progress.
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/kyverno/README.md
+      - alert: KyvernoControllerRequeueErrors
+        expr: |
+          rate(kyverno_controller_requeue_total[1m]) > 0
+        for: 3m
+        labels:
+          severity: critical
+          slo: "true"
+        annotations:
+          summary: Kyverno internal controllers are encountering errors causing items to be re-queued.
+          description: "The Kyverno controller '{{ $labels.controller_name }}' on cluster '{{ $labels.source_cluster }}' is experiencing a consistent rate of requeue errors."
+          alert_team_handle: <!subteam^S05Q1P4Q2TG>
+          team: konflux-infra
+          # kyverno/README.md currently in progress.
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/kyverno/README.md
+      - alert: KyvernoPolicyFailures
+        expr: |
+          increase(kyverno_policy_results_total{rule_result=~"fail|error"}[1m]) > 10
+        for: 3m
+        labels:
+          severity: warning
+          slo: "false"
+        annotations:
+          summary: Kyverno policies are failing or erroring out more often than usual.
+          description: "Kyverno policy '{{ $labels.policy_name }}' with rule '{{ $labels.rule_name }}' is encountering internal errors during evaluation or rejecting resources on instance '{{ $labels.instance }}' on cluster '{{ $labels.source_cluster }}'."
+          alert_routing_key: infra
+          team: konflux-infra
+          # kyverno/README.md currently in progress.
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/kyverno/README.md
