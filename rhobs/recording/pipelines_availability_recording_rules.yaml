@@ -1,14 +1,16 @@
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
-  name: rhtap-konflux-ui-service-availability
+  name: rhtap-pipelines-availability
   labels:
     tenant: rhtap
+
 spec:
   groups:
-    - name: konflux_ui_service_availability
+    - name: pipelines_availability
       interval: 1m
       rules:
+        # Deployments
         - record: konflux_up
           expr: |
             clamp_max(
@@ -16,22 +18,24 @@ spec:
                 label_replace(
                   floor(
                     kube_deployment_status_replicas_available{
-                      namespace="konflux-ui", deployment="proxy"
-                    } / (kube_deployment_spec_replicas * 2/3)
+                      namespace=~"openshift-pipelines|tekton-results"
+                    } / clamp_min(kube_deployment_spec_replicas{namespace=~"openshift-pipelines|tekton-results"}, 1)
                   ), "check", "replicas-available", "",""
                 ), "service", "$1", "deployment","(.*)"
               ), 1
             )
+
+        # Stateful Sets
         - record: konflux_up
           expr: |
             clamp_max(
               label_replace(
                 label_replace(
                   floor(
-                    kube_deployment_status_replicas_available{
-                      namespace="konflux-ui", deployment="dex"
-                    } / (kube_deployment_spec_replicas * 2/3)
+                    kube_statefulset_status_replicas_available{
+                      namespace=~"openshift-pipelines|tekton-results"
+                    } / clamp_min(kube_statefulset_replicas{namespace=~"openshift-pipelines|tekton-results"},1)
                   ), "check", "replicas-available", "",""
-                ), "service", "$1", "deployment","(.*)"
+                ), "service", "$1", "statefulset","(.*)"
               ), 1
             )
