@@ -4,22 +4,76 @@ rule_files:
   - build_service_availability_recording_rules.yaml
 
 tests:
-  - interval: 1m
-    name: RSExporterTest
+  - name: BuildServiceAvailabilityAllUpTest
+    interval: 1m
     input_series:
-      - series: "redhat_appstudio_buildservice_global_github_app_available{service='build-service-controller-manager-metrics-service'}"
-        values: "1 1 1 1 1"
-      - series: "redhat_appstudio_buildservice_global_github_app_available{service='build-service-controller-manager-metrics-service1'}"
-        values: "0 0 0 0 0"
-      - series: "redhat_appstudio_buildservice_global_github_app_available{service='build-service-controller-manager-metrics-service2'}"
-        values: "0 1 0 1 0"
+      - series: "kube_deployment_status_replicas_available{namespace='build-service', deployment='d1'}"
+        values: "3 3 3 3 3"
+      - series: "kube_deployment_spec_replicas{namespace='build-service', deployment='d1'}"
+        values: "3 3 3 3 3"
+
     promql_expr_test:
       - expr: konflux_up
         eval_time: 5m
         exp_samples:
-          - labels: konflux_up{service='build-service-controller-manager-metrics-service', check='github'}
+          - labels: konflux_up{service='d1', check='replicas-available', namespace='build-service', deployment='d1'}
             value: 1
-          - labels: konflux_up{service='build-service-controller-manager-metrics-service1', check='github'}
+
+  - name: BuildServiceAvailabilitySomeUpTest
+    interval: 1m
+    input_series:
+      - series: "kube_deployment_status_replicas_available{namespace='build-service', deployment='d1'}"
+        values: "2 2 2 2 2"
+      - series: "kube_deployment_spec_replicas{namespace='build-service', deployment='d1'}"
+        values: "4 4 4 4 4"
+
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples:
+          - labels: konflux_up{service='d1', check='replicas-available', namespace='build-service', deployment='d1'}
             value: 0
-          - labels: konflux_up{service='build-service-controller-manager-metrics-service2', check='github'}
+
+  - name: BuildServiceAvailabilityMultipleDeploymentsTest
+    interval: 1m
+    input_series:
+      # should be up (c1)
+      - series: "kube_deployment_status_replicas_available{namespace='build-service', deployment='d1', source_cluster='c1'}"
+        values: "1 1 1 1 1"
+      - series: "kube_deployment_spec_replicas{namespace='build-service', deployment='d1', source_cluster='c1'}"
+        values: "1 1 1 1 1"
+
+      # should be down (c2)
+      - series: "kube_deployment_status_replicas_available{namespace='build-service', deployment='d1', source_cluster='c2'}"
+        values: "0 0 0 0 0"
+      - series: "kube_deployment_spec_replicas{namespace='build-service', deployment='d1', source_cluster='c2'}"
+        values: "1 1 1 1 1"
+
+      # should be up (another deployment from c1)
+      - series: "kube_deployment_status_replicas_available{namespace='build-service', deployment='d2', source_cluster='c1'}"
+        values: "2 2 2 2 2"
+      - series: "kube_deployment_spec_replicas{namespace='build-service', deployment='d2', source_cluster='c1'}"
+        values: "1 1 1 1 1"
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples:
+          - labels: konflux_up{service='d1', check='replicas-available', namespace='build-service', deployment='d1', source_cluster='c1'}
+            value: 1
+          - labels: konflux_up{service='d1', check='replicas-available', namespace='build-service', deployment='d1', source_cluster='c2'}
             value: 0
+          - labels: konflux_up{service='d2', check='replicas-available', namespace='build-service', deployment='d2', source_cluster='c1'}
+            value: 1
+
+  - name: BuildServiceAbsent
+    interval: 1m
+    input_series:
+      - series: "kube_deployment_status_replicas_available{namespace='another-controller', deployment='d1'}"
+        values: "1 1 1 1 1"
+      - series: "kube_deployment_spec_replicas{namespace='another-controller', deployment='d1'}"
+        values: "1 1 1 1 1"
+
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples: []
