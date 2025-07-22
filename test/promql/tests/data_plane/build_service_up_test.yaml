@@ -1,0 +1,34 @@
+---
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.build_service_alerts.yaml
+
+tests:
+# replica count = 0
+- interval: 1m
+  input_series:
+    - series: 'konflux_up{namespace="build-service", check="replicas-available", service="build-service", source_cluster="c1"}'
+      values: '0 0 0 0 0'
+    - series: 'konflux_up{namespace="build-service", check="replicas-available", service="build-service", source_cluster="c2"}'
+      values: '1 1 1 1 1'
+
+  alert_rule_test:
+    - eval_time: 5m
+      alertname: BuildServiceDown
+      exp_alerts:
+        - exp_labels:
+            severity: critical
+            check: replicas-available
+            namespace: build-service
+            service: build-service
+            slo: "true"
+            source_cluster: c1
+          exp_annotations:
+            summary: >-
+              build-service is down in cluster c1
+            description: >
+              The build-service pod has been down for 5min in cluster c1
+            team: build
+            alert_team_handle: <!subteam^S03DM1RL0TF>
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/build-service/build-service-availability.md
