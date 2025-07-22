@@ -1,5 +1,3 @@
-# Metric format needed
-# redhat_appstudio_imagecontroller_global_quay_app_available(service="image-controller-controller-manager-metrics-service") -> konflux_up(service="image-controller-controller-manager-metrics-service", check="quay")
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
@@ -8,8 +6,38 @@ metadata:
     tenant: rhtap
 spec:
   groups:
-    - name: image_controller_quay_availability
+    - name: image_controller_availability
       interval: 1m
       rules:
+        # recorded value: 0 if spec is higher than available, 1 otherwise
+        # labels: check=replicas-available, service=<deployment-name>
         - record: konflux_up
-          expr: label_replace(redhat_appstudio_imagecontroller_global_quay_app_available, "check", "quay", "","")
+          expr: |
+            clamp_max(
+              label_replace(
+                label_replace(
+                  floor(
+                    kube_deployment_status_replicas_available{
+                      namespace="image-controller"
+                    } / kube_deployment_spec_replicas
+                  ), "check", "replicas-available", "",""
+                ), "service", "$1", "deployment","(.*)"
+              ), 1
+            )
+
+# PREVIOUS KONFLUX UP CONFIGURATION:
+# Metric format needed
+# redhat_appstudio_imagecontroller_global_quay_app_available(service="image-controller-controller-manager-metrics-service") -> konflux_up(service="image-controller-controller-manager-metrics-service", check="quay")
+# apiVersion: monitoring.coreos.com/v1
+# kind: PrometheusRule
+# metadata:
+#   name: rhtap-image-controller-availability
+#   labels:
+#     tenant: rhtap
+# spec:
+#   groups:
+#     - name: image_controller_quay_availability
+#       interval: 1m
+#       rules:
+#         - record: konflux_up
+#           expr: label_replace(redhat_appstudio_imagecontroller_global_quay_app_available, "check", "quay", "","")

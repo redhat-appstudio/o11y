@@ -1,0 +1,34 @@
+---
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.image_controller_alerts.yaml
+
+tests:
+# replica count = 0
+- interval: 1m
+  input_series:
+    - series: 'konflux_up{namespace="image-controller", check="replicas-available", service="image-controller", source_cluster="c1"}'
+      values: '0 0 0 0 0'
+    - series: 'konflux_up{namespace="image-controller", check="replicas-available", service="image-controller", source_cluster="c2"}'
+      values: '1 1 1 1 1'
+
+  alert_rule_test:
+    - eval_time: 5m
+      alertname: ImageControllerDown
+      exp_alerts:
+        - exp_labels:
+            severity: critical
+            check: replicas-available
+            namespace: image-controller
+            service: image-controller
+            slo: "true"
+            source_cluster: c1
+          exp_annotations:
+            summary: >-
+              image-controller is down in cluster c1
+            description: >
+              The image-controller pod has been down for 5min in cluster c1
+            team: build
+            alert_team_handle: <!subteam^S03DM1RL0TF>
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/image-controller/image-controller-availability.md
