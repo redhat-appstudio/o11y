@@ -1,0 +1,31 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.support_ops_availability_alerts.yaml
+
+tests:
+  - interval: 1m
+    input_series:
+      - series: 'konflux_up{namespace="konflux-user-support", check="replicas-available", service="chat-bot", source_cluster="c1"}'
+        values: '0 0 0 0 0'
+      - series: 'konflux_up{namespace="konflux-user-support", check="replicas-available", service="chat-bot", source_cluster="c2"}'
+        values: '1 1 1 1 1'
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: UserSupportAutomationDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              check: replicas-available
+              namespace: konflux-user-support
+              service: chat-bot
+              slo: "true"
+              source_cluster: c1
+            exp_annotations:
+              summary: User Support Automation is down in cluster c1
+              description: >
+                The User Support Automation (chat-bot) pod has been down for 5min in cluster c1
+              alert_team_handle: <!subteam^S068JNLG03A>
+              team: support-ops
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/support-ops/user-support-automation.md

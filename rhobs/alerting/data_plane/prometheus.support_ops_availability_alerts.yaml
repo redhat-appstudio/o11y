@@ -1,0 +1,30 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-support-ops-availability-alerting-rules
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: user-support-automation-availability
+    interval: 1m
+    rules:
+    - alert: UserSupportAutomationDown
+      expr: |
+        konflux_up{
+          namespace="konflux-user-support",
+          check="replicas-available",
+          service="chat-bot"
+        } != 1
+      for: 5m
+      labels:
+        severity: critical
+        slo: "true"
+      annotations:
+        summary: >-
+          User Support Automation is down in cluster {{ $labels.source_cluster }}
+        description: >
+          The User Support Automation (chat-bot) pod has been down for 5min in cluster {{ $labels.source_cluster }}
+        alert_team_handle: <!subteam^S068JNLG03A>
+        team: support-ops
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/support-ops/user-support-automation.md
