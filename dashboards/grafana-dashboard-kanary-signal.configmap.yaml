@@ -71,8 +71,7 @@ data:
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   }
                 ]
               }
@@ -91,6 +90,7 @@ data:
             "graphMode": "area",
             "justifyMode": "auto",
             "orientation": "horizontal",
+            "percentChangeColorMode": "standard",
             "reduceOptions": {
               "calcs": [
                 "lastNotNull"
@@ -102,7 +102,7 @@ data:
             "textMode": "auto",
             "wideLayout": true
           },
-          "pluginVersion": "10.4.1",
+          "pluginVersion": "11.6.3",
           "targets": [
             {
               "datasource": {
@@ -111,7 +111,7 @@ data:
               },
               "disableTextWrap": false,
               "editorMode": "code",
-              "expr": "min by (tested_cluster) (kanary_up{tested_cluster=~\"${kanary_clusters}\"})",
+              "expr": "min by (tested_cluster) (kanary_up{tested_cluster=~\"${kanary_clusters}\", type=~\"${kanary_type}\"})",
               "fullMetaSearch": false,
               "includeNullMetadata": true,
               "instant": false,
@@ -150,8 +150,7 @@ data:
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   }
                 ]
               }
@@ -170,6 +169,7 @@ data:
             "graphMode": "area",
             "justifyMode": "auto",
             "orientation": "horizontal",
+            "percentChangeColorMode": "standard",
             "reduceOptions": {
               "calcs": [
                 "lastNotNull"
@@ -181,7 +181,7 @@ data:
             "textMode": "auto",
             "wideLayout": true
           },
-          "pluginVersion": "10.4.1",
+          "pluginVersion": "11.6.3",
           "targets": [
             {
               "datasource": {
@@ -190,7 +190,7 @@ data:
               },
               "disableTextWrap": false,
               "editorMode": "code",
-              "expr": "max by (tested_cluster) (kanary_error{tested_cluster=~\"${kanary_clusters}\"})",
+              "expr": "max by (tested_cluster) (kanary_error{tested_cluster=~\"${kanary_clusters}\", type=~\"${kanary_type}\"})",
               "fullMetaSearch": false,
               "includeNullMetadata": true,
               "instant": false,
@@ -232,8 +232,7 @@ data:
                 "mode": "percentage",
                 "steps": [
                   {
-                    "color": "red",
-                    "value": null
+                    "color": "red"
                   },
                   {
                     "color": "green",
@@ -267,7 +266,7 @@ data:
             "showThresholdMarkers": true,
             "sizing": "auto"
           },
-          "pluginVersion": "10.4.1",
+          "pluginVersion": "11.6.3",
           "targets": [
             {
               "datasource": {
@@ -277,7 +276,7 @@ data:
               "disableTextWrap": false,
               "editorMode": "code",
               "exemplar": false,
-              "expr": "avg by (tested_cluster) (avg_over_time(kanary_up{tested_cluster=~\"${kanary_clusters}\"}[$__range]))",
+              "expr": "avg by (tested_cluster) (avg_over_time(kanary_up{tested_cluster=~\"${kanary_clusters}\", type=~\"${kanary_type}\"}[$__range]))",
               "fullMetaSearch": false,
               "includeNullMetadata": true,
               "instant": false,
@@ -306,8 +305,7 @@ data:
                 "mode": "percentage",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -341,7 +339,7 @@ data:
             "showThresholdMarkers": true,
             "sizing": "auto"
           },
-          "pluginVersion": "10.4.1",
+          "pluginVersion": "11.6.3",
           "targets": [
             {
               "datasource": {
@@ -351,7 +349,7 @@ data:
               "disableTextWrap": false,
               "editorMode": "code",
               "exemplar": false,
-              "expr": "avg by (tested_cluster, reason) (avg_over_time(kanary_error{tested_cluster=~\"${kanary_clusters}\"}[$__range]))",
+              "expr": "avg by (tested_cluster, reason) (avg_over_time(kanary_error{tested_cluster=~\"${kanary_clusters}\", type=~\"${kanary_type}\"}[$__range]))",
               "fullMetaSearch": false,
               "includeNullMetadata": true,
               "instant": false,
@@ -387,8 +385,7 @@ data:
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green",
-                    "value": null
+                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -419,7 +416,7 @@ data:
             },
             "showHeader": true
           },
-          "pluginVersion": "10.4.1",
+          "pluginVersion": "11.6.3",
           "targets": [
             {
               "datasource": {
@@ -429,7 +426,7 @@ data:
               "disableTextWrap": false,
               "editorMode": "code",
               "exemplar": false,
-              "expr": "max by (tested_cluster, reason) (kanary_error{tested_cluster=~\"${kanary_clusters}\"})",
+              "expr": "max by (tested_cluster, reason) (kanary_error{tested_cluster=~\"${kanary_clusters}\", type=~\"${kanary_type}\"})",
               "format": "table",
               "fullMetaSearch": false,
               "includeNullMetadata": true,
@@ -490,11 +487,11 @@ data:
           "type": "row"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${kanary_datasource}"
-          },
           "description": "This will show the kanary signal critical alerts.",
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
           "gridPos": {
             "h": 8,
             "w": 12,
@@ -511,6 +508,7 @@ data:
             "groupBy": [],
             "groupMode": "default",
             "maxItems": 20,
+            "showInactiveAlerts": false,
             "sortOrder": 1,
             "stateFilter": {
               "error": true,
@@ -521,15 +519,16 @@ data:
             },
             "viewMode": "list"
           },
+          "pluginVersion": "11.6.3",
           "title": "Kanary Critical Alerts",
           "type": "alertlist"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${kanary_datasource}"
-          },
           "description": "This will show the kanary signal warning alerts.",
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
           "gridPos": {
             "h": 8,
             "w": 12,
@@ -546,6 +545,7 @@ data:
             "groupBy": [],
             "groupMode": "default",
             "maxItems": 20,
+            "showInactiveAlerts": false,
             "sortOrder": 1,
             "stateFilter": {
               "error": true,
@@ -556,38 +556,34 @@ data:
             },
             "viewMode": "list"
           },
+          "pluginVersion": "11.6.3",
           "title": "Kanary Warning Alerts",
           "type": "alertlist"
         }
       ],
+      "preload": false,
       "refresh": "",
-      "schemaVersion": 39,
+      "schemaVersion": 41,
       "tags": [],
       "templating": {
         "list": [
           {
             "current": {
-              "selected": false,
               "text": "rhtap-observatorium-stage",
               "value": "PDCCF087A30F0737B"
             },
             "description": "The datasource in which the kanary signal will be coming from.",
-            "hide": 0,
             "includeAll": false,
             "label": "kanary datasource",
-            "multi": false,
             "name": "kanary_datasource",
             "options": [],
             "query": "prometheus",
-            "queryValue": "",
             "refresh": 1,
             "regex": "/^rhtap-observatorium-/",
-            "skipUrlSync": false,
             "type": "datasource"
           },
           {
             "current": {
-              "selected": true,
               "text": [
                 "stone-prd-rh01",
                 "stone-prod-p01",
@@ -609,7 +605,6 @@ data:
             },
             "definition": "label_values(kanary_up,tested_cluster)",
             "description": "The cluster(s) that the kanary signal is monitoring",
-            "hide": 0,
             "includeAll": false,
             "label": "Kanary Clusters",
             "multi": true,
@@ -622,8 +617,30 @@ data:
             },
             "refresh": 1,
             "regex": "",
-            "skipUrlSync": false,
-            "sort": 0,
+            "type": "query"
+          },
+          {
+            "allowCustomValue": false,
+            "current": {
+              "text": "rpm",
+              "value": "rpm"
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${kanary_datasource}"
+            },
+            "definition": "label_values(kanary_up,type)",
+            "description": "The type of artifacts the canary is monitoring",
+            "label": "Kanary Type",
+            "name": "kanary_type",
+            "options": [],
+            "query": {
+              "qryType": 1,
+              "query": "label_values(kanary_up,type)",
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "refresh": 1,
+            "regex": "",
             "type": "query"
           }
         ]
@@ -636,6 +653,5 @@ data:
       "timezone": "browser",
       "title": "Kanary Signal Dashboard",
       "uid": "eeoimpx3yutq9f",
-      "version": 16,
-      "weekStart": ""
+      "version": 2
     }
