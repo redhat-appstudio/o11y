@@ -1,0 +1,25 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-support-ops-availability
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: support-ops-availability
+      interval: 1m
+      rules:
+        - record: konflux_up
+          expr: |
+            clamp_max(
+              label_replace(
+                label_replace(
+                  floor(
+                    kube_deployment_status_replicas_available{
+                      namespace="konflux-user-support",
+                      deployment="chat-bot"
+                    } / clamp_min(kube_deployment_spec_replicas{namespace="konflux-user-support", deployment="chat-bot"}, 1)
+                  ), "check", "replicas-available", "",""
+                ), "service", "$1", "deployment","(.*)"
+              ), 1
+            )
