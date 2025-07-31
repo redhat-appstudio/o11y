@@ -72,7 +72,7 @@ data:
                 {
                   "options": {
                     "0": {
-                      "color": "green",
+                      "color": "#0c6700",
                       "index": 0,
                       "text": "GOOD"
                     }
@@ -83,7 +83,7 @@ data:
                   "options": {
                     "from": 1,
                     "result": {
-                      "color": "red",
+                      "color": "#b5061a",
                       "index": 1,
                       "text": "BAD"
                     },
@@ -228,21 +228,78 @@ data:
                 },
                 "inspect": false
               },
+              "links": [],
               "mappings": [],
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
                   {
                     "color": "green"
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
                   }
                 ]
               }
             },
-            "overrides": []
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "incident_id"
+                },
+                "properties": [
+                  {
+                    "id": "links",
+                    "value": [
+                      {
+                        "targetBlank": true,
+                        "title": "${__data.fields.incident_id}",
+                        "url": "https://web-rca.devshift.net/incident/${__data.fields.incident_id}/summary"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "status"
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "applyToRow": true,
+                      "mode": "basic",
+                      "type": "color-background"
+                    }
+                  },
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "options": {
+                          "pattern": "/^(resolved|closed)$/",
+                          "result": {
+                            "color": "#0c6700",
+                            "index": 0
+                          }
+                        },
+                        "type": "regex"
+                      },
+                      {
+                        "options": {
+                          "pattern": "/^(new|ongoing)$/",
+                          "result": {
+                            "color": "#b5061a",
+                            "index": 1
+                          }
+                        },
+                        "type": "regex"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
           },
           "gridPos": {
             "h": 7,
@@ -273,7 +330,7 @@ data:
               "editorMode": "code",
               "format": "table",
               "rawQuery": true,
-              "rawSql": "",
+              "rawSql": "SELECT\n i.incident_id,\n i.created_at,\n i.resolved_at,\n i.status,\n i.summary\nFROM\n incidents AS i\nJOIN\n incident_products AS ip ON ip.incident_id = i.id\nWHERE\n i.created_at <= $__timeTo() AND\n (\n   i.resolved_at >= $__timeFrom()\n   OR\n   (i.status != 'paused' AND i.resolved_at IS NULL)\n ) AND\n ip.product_id = 'ebfd6fef-1922-4bcb-a2f9-b33f586955ed'\nORDER BY\n i.created_at DESC;",
               "refId": "A",
               "sql": {
                 "columns": [
@@ -337,5 +394,5 @@ data:
       "timezone": "UTC",
       "title": "Konflux Status Page",
       "uid": "aes1ns0htwni8a",
-      "version": 1
+      "version": 2
     }
