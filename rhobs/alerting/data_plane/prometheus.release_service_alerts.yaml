@@ -65,16 +65,16 @@ spec:
         (
           avg_over_time(
             sum(kube_pod_container_status_ready{namespace="release-service", container="manager", source_cluster=~"stone-prd-rh01|stone-prod-p02"}) by (source_cluster)
-            [1d:]
+            [1h:]
           )
           /
           max_over_time(
             sum(kube_pod_container_status_ready{namespace="release-service", container="manager", source_cluster=~"stone-prd-rh01|stone-prod-p02"}) by (source_cluster)
-            [1d:]
+            [1h:]
           )
         )
         < 0.99
-      for: 1h
+      for: 10m
       labels:
         severity: critical
         slo: "true"
