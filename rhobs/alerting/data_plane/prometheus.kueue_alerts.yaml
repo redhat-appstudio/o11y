@@ -1,0 +1,132 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-kueue-alerts
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: kueue.health
+    interval: 30s
+    rules:
+    - alert: KueueCELEvaluationFailures
+      expr: increase(tekton_kueue_cel_evaluations_total{result="failure"}[5m]) > 0
+      for: 1m
+      labels:
+        severity: critical
+        component: tekton-kueue
+        slo: "true"
+      annotations:
+        summary: "Tekton Kueue CEL evaluation failures detected"
+        description: "{{ $value }} CEL evaluation failures occurred in the last 5 minutes"
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue.md?ref_type=heads
+        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        team: konflux-infra
+
+    - alert: KueueMutatingWebhookLowSuccessRate
+      expr: |
+        100 * sum(increase(apiserver_admission_webhook_request_total{
+          name="pipelinerun-kueue-defaulter.tekton-kueue.io", code=~"2.."
+        }[10m]))
+        /
+        sum(increase(apiserver_admission_webhook_request_total{
+          name="pipelinerun-kueue-defaulter.tekton-kueue.io"
+        }[10m]))
+        < 99
+      for: 10m
+      labels:
+        severity: critical
+        component: kueue
+        slo: "true"
+      annotations:
+        summary: "Kueue mutating webhook success rate is below 99%"
+        description: "The mutating webhook 'pipelinerun-kueue-defaulter.tekton-kueue.io' has had a success rate below 99% over the past 10 minutes. Possible causes include webhook errors, rejections, or unreachability (e.g., code=600)."
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue.md?ref_type=heads
+        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        team: konflux-infra
+
+  - name: kueue.queue
+    interval: 30s
+    rules:
+    - alert: KueueClusterQueueNotActive
+      expr: max by (status) (kueue_cluster_queue_status{cluster_queue="cluster-pipeline-queue", status="active"}) != 1
+      for: 2m
+      labels:
+        severity: critical
+        component: kueue
+        slo: "true"
+      annotations:
+        summary: "Kueue cluster queue is not active"
+        description: "Cluster queue 'cluster-pipeline-queue' is not in active state"
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue.md?ref_type=heads
+        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        team: konflux-infra
+
+    - alert: KueueHighAdmissionWaitTime
+      expr: histogram_quantile(0.99, sum(increase(kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue"}[10m])) by (le)) > 900
+      for: 5m
+      labels:
+        severity: critical
+        component: kueue
+        slo: "true"
+      annotations:
+        summary: "High admission wait time in Kueue"
+        description: "99th percentile admission wait time is {{ $value }}s, which is above 15 minutes"
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue.md?ref_type=heads
+        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        team: konflux-infra
+
+  - name: kueue.deadman
+    interval: 60s
+    rules:
+    - alert: KueueMetricsDown
+      expr: |
+        (up{job="kueue-controller-manager-metrics-service"} == 0)
+        or
+        absent(up{job="kueue-controller-manager-metrics-service"})
+      for: 10m
+      labels:
+        severity: critical
+        component: kueue
+        slo: "true"
+      annotations:
+        summary: "Kueue metrics endpoint is down"
+        description: "Kueue metrics endpoint has been down for more than 10 minutes"
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue.md?ref_type=heads
+        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        team: konflux-infra
+
+    - alert: TektonKueueControllerMetricsDown
+      expr: |
+        (up{job="tekton-kueue-controller-manager-metrics-service"} == 0)
+        or
+        absent(up{job="tekton-kueue-controller-manager-metrics-service"})
+
+      for: 10m
+      labels:
+        severity: critical
+        component: kueue
+        slo: "true"
+      annotations:
+        summary: "Tekton Kueue controller metrics endpoint is down"
+        description: "Tekton Kueue controller metrics endpoint has been down for more than 10 minutes"
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue.md?ref_type=heads
+        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        team: konflux-infra
+
+    - alert: TektonKueueWebhookMetricsDown
+      expr: |
+        (up{job="tekton-kueue-webhook-service"} == 0)
+        or
+        absent(up{job="tekton-kueue-webhook-service"})
+      for: 10m
+      labels:
+        severity: critical
+        component: kueue
+        slo: "true"
+      annotations:
+        summary: "Tekton Kueue webhook metrics endpoint is down"
+        description: "Tekton Kueue webhook metrics endpoint has been down for more than 10 minutes"
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue.md?ref_type=heads
+        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        team: konflux-infra
