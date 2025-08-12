@@ -105,9 +105,15 @@ var (
 				"stone-stage-p01",
 				"stone-prod-p01",
 				"stone-prod-p02",
+				"kflux-rhel-p01",
+				"kflux-ocp-p01",
+				"kflux-prd-rh02",
+				"kflux-prd-rh03",
 				// Public Clusters
 				"stone-stg-rh01",
 				"stone-prd-rh01",
+				// Fedora Clusters
+				"kfluxfedorap01",
 			},
 			RowCountQuery:   fmt.Sprintf(rowCountQueryTemplate, tableName, containerLabelFilter),
 			DelayCheckQuery: fmt.Sprintf(delayCheckQueryTemplate, tableName, containerLabelFilter),
@@ -121,6 +127,8 @@ var (
 				"kflux-rhel-p01",
 				// Public Clusters
 				"stone-prd-rh01",
+				// Fedora Clusters
+				"kfluxfedorap01",
 			},
 			RowCountQuery:   fmt.Sprintf(rowCountQueryTemplate, tableName, rpmLabelFilter),
 			DelayCheckQuery: fmt.Sprintf(delayCheckQueryTemplate, tableName, rpmLabelFilter),
