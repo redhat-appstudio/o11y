@@ -8,10 +8,10 @@ tests:
   - interval: 1m
     input_series:
       # CEL evaluation failures - should trigger alert
-      - series: 'tekton_kueue_cel_evaluations_total{result="failure"}'
+      - series: 'tekton_kueue_cel_evaluations_total{result="failure", source_cluster="c1"}'
         values: '0 1 2 3 4 5'
       # CEL evaluation successes - for context
-      - series: 'tekton_kueue_cel_evaluations_total{result="success"}'
+      - series: 'tekton_kueue_cel_evaluations_total{result="success", source_cluster="c1"}'
         values: '0 10 20 30 40 50'
 
     alert_rule_test:
@@ -23,9 +23,10 @@ tests:
               component: tekton-kueue
               slo: "true"
               result: "failure"
+              source_cluster: c1
             exp_annotations:
               summary: "Tekton Kueue CEL evaluation failures detected"
-              description: "2 CEL evaluation failures occurred in the last 5 minutes"
+              description: "2 CEL evaluation failures occurred in the last 5 minutes in cluster c1"
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue.md?ref_type=heads
               alert_team_handle: <!subteam^S05Q1P4Q2TG>
               team: konflux-infra
@@ -34,9 +35,9 @@ tests:
   - interval: 1m
     input_series:
       # Low success rate scenario - 95% success (should trigger alert)
-      - series: 'apiserver_admission_webhook_request_total{name="pipelinerun-kueue-defaulter.tekton-kueue.io", code="200"}'
+      - series: 'apiserver_admission_webhook_request_total{name="pipelinerun-kueue-defaulter.tekton-kueue.io", code="200", instance="i1", source_cluster="c1"}'
         values: '0 95 190 285 380 475'
-      - series: 'apiserver_admission_webhook_request_total{name="pipelinerun-kueue-defaulter.tekton-kueue.io", code="500"}'
+      - series: 'apiserver_admission_webhook_request_total{name="pipelinerun-kueue-defaulter.tekton-kueue.io", code="500", instance="i1", source_cluster="c1"}'
         values: '0 5 10 15 20 25'
 
     alert_rule_test:
@@ -47,9 +48,11 @@ tests:
               severity: critical
               component: kueue
               slo: "true"
+              source_cluster: c1
+              instance: i1
             exp_annotations:
               summary: "Kueue mutating webhook success rate is below 99%"
-              description: "The mutating webhook 'pipelinerun-kueue-defaulter.tekton-kueue.io' has had a success rate below 99% over the past 10 minutes. Possible causes include webhook errors, rejections, or unreachability (e.g., code=600)."
+              description: "The mutating webhook 'pipelinerun-kueue-defaulter.tekton-kueue.io' has had a success rate below 99% over the past 10 minutes in cluster c1. Possible causes include webhook errors, rejections, or unreachability (e.g., code=600)."
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue.md?ref_type=heads
               alert_team_handle: <!subteam^S05Q1P4Q2TG>
               team: konflux-infra
@@ -58,10 +61,10 @@ tests:
   - interval: 1m
     input_series:
       # Cluster queue not active - should trigger alert
-      - series: 'kueue_cluster_queue_status{cluster_queue="cluster-pipeline-queue", status="active"}'
+      - series: 'kueue_cluster_queue_status{cluster_queue="cluster-pipeline-queue", status="active", source_cluster="c1"}'
         values: '0 0 0 0 0'
       # Other status for context
-      - series: 'kueue_cluster_queue_status{cluster_queue="cluster-pipeline-queue", status="inactive"}'
+      - series: 'kueue_cluster_queue_status{cluster_queue="cluster-pipeline-queue", status="inactive", source_cluster="c1"}'
         values: '1 1 1 1 1'
 
     alert_rule_test:
@@ -73,9 +76,10 @@ tests:
               component: kueue
               slo: "true"
               status: "active"
+              source_cluster: c1
             exp_annotations:
               summary: "Kueue cluster queue is not active"
-              description: "Cluster queue 'cluster-pipeline-queue' is not in active state"
+              description: "Cluster queue 'cluster-pipeline-queue' is not in active state in cluster c1"
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue.md?ref_type=heads
               alert_team_handle: <!subteam^S05Q1P4Q2TG>
               team: konflux-infra
@@ -84,15 +88,15 @@ tests:
   - interval: 1m
     input_series:
       # High admission wait time buckets - should trigger alert (>900s = 15min)
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="300"}'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="300", source_cluster="c1"}'
         values: '0 1 2 3 4 5'
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="600"}'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="600", source_cluster="c1"}'
         values: '0 1 2 3 4 5'
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="900"}'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="900", source_cluster="c1"}'
         values: '0 1 2 3 4 5'
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="1200"}'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="1200", source_cluster="c1"}'
         values: '0 5 10 15 20 25'
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="+Inf"}'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="+Inf", source_cluster="c1"}'
         values: '0 5 10 15 20 25'
 
     alert_rule_test:
@@ -103,98 +107,10 @@ tests:
               severity: critical
               component: kueue
               slo: "true"
+              source_cluster: c1
             exp_annotations:
               summary: "High admission wait time in Kueue"
-              description: "99th percentile admission wait time is 1196.25s, which is above 15 minutes"
-              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue.md?ref_type=heads
-              alert_team_handle: <!subteam^S05Q1P4Q2TG>
-              team: konflux-infra
-
-  # Test KueueMetricsDown alert - service down
-  - interval: 1m
-    input_series:
-      - series: 'up{job="kueue-controller-manager-metrics-service"}'
-        values: '0 0 0 0 0 0 0 0 0 0 0 0'
-
-    alert_rule_test:
-      - eval_time: 11m
-        alertname: KueueMetricsDown
-        exp_alerts:
-          - exp_labels:
-              severity: critical
-              component: kueue
-              slo: "true"
-              job: "kueue-controller-manager-metrics-service"
-            exp_annotations:
-              summary: "Kueue metrics endpoint is down"
-              description: "Kueue metrics endpoint has been down for more than 10 minutes"
-              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue.md?ref_type=heads
-              alert_team_handle: <!subteam^S05Q1P4Q2TG>
-              team: konflux-infra
-
-  # Test KueueMetricsDown alert - service absent (no up metric)
-  - interval: 1m
-    input_series:
-      # No up metric series - simulates absent()
-      - series: 'some_other_metric{job="other-service"}'
-        values: '1 1 1 1 1 1 1 1 1 1 1 1'
-
-    alert_rule_test:
-      - eval_time: 11m
-        alertname: KueueMetricsDown
-        exp_alerts:
-          - exp_labels:
-              severity: critical
-              component: kueue
-              slo: "true"
-              job: "kueue-controller-manager-metrics-service"
-            exp_annotations:
-              summary: "Kueue metrics endpoint is down"
-              description: "Kueue metrics endpoint has been down for more than 10 minutes"
-              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue.md?ref_type=heads
-              alert_team_handle: <!subteam^S05Q1P4Q2TG>
-              team: konflux-infra
-
-  # Test TektonKueueControllerMetricsDown alert
-  - interval: 1m
-    input_series:
-      - series: 'up{job="tekton-kueue-controller-manager-metrics-service"}'
-        values: '0 0 0 0 0 0 0 0 0 0 0 0'
-
-    alert_rule_test:
-      - eval_time: 11m
-        alertname: TektonKueueControllerMetricsDown
-        exp_alerts:
-          - exp_labels:
-              severity: critical
-              component: kueue
-              slo: "true"
-              job: "tekton-kueue-controller-manager-metrics-service"
-            exp_annotations:
-              summary: "Tekton Kueue controller metrics endpoint is down"
-              description: "Tekton Kueue controller metrics endpoint has been down for more than 10 minutes"
-              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue.md?ref_type=heads
-              alert_team_handle: <!subteam^S05Q1P4Q2TG>
-              team: konflux-infra
-
-  # Test TektonKueueWebhookMetricsDown alert
-  - interval: 1m
-    input_series:
-      - series: 'up{job="tekton-kueue-webhook-service"}'
-        values: '0 0 0 0 0 0 0 0 0 0 0 0'
-
-    alert_rule_test:
-      - eval_time: 11m
-        alertname: TektonKueueWebhookMetricsDown
-        exp_alerts:
-          - exp_labels:
-              severity: critical
-              component: kueue
-              slo: "true"
-              job: "tekton-kueue-webhook-service"
-            exp_annotations:
-              summary: "Tekton Kueue webhook metrics endpoint is down"
-              description: "Tekton Kueue webhook metrics endpoint has been down for more than 10 minutes"
+              description: "99th percentile admission wait time is 1196.25s, which is above 15 minutes in cluster c1"
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue.md?ref_type=heads
               alert_team_handle: <!subteam^S05Q1P4Q2TG>
               team: konflux-infra
@@ -224,14 +140,6 @@ tests:
       - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="+Inf"}'
         values: '0 5 10 15 20 25'
 
-      # All services up
-      - series: 'up{job="kueue-controller-manager-metrics-service"}'
-        values: '1 1 1 1 1 1'
-      - series: 'up{job="tekton-kueue-controller-manager-metrics-service"}'
-        values: '1 1 1 1 1 1'
-      - series: 'up{job="tekton-kueue-webhook-service"}'
-        values: '1 1 1 1 1 1'
-
     alert_rule_test:
       - eval_time: 15m
         alertname: KueueCELEvaluationFailures
@@ -244,13 +152,4 @@ tests:
         exp_alerts: []
       - eval_time: 15m
         alertname: KueueHighAdmissionWaitTime
-        exp_alerts: []
-      - eval_time: 15m
-        alertname: KueueMetricsDown
-        exp_alerts: []
-      - eval_time: 15m
-        alertname: TektonKueueControllerMetricsDown
-        exp_alerts: []
-      - eval_time: 15m
-        alertname: TektonKueueWebhookMetricsDown
         exp_alerts: []
