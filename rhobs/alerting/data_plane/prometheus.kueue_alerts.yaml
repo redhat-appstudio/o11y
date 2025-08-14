@@ -26,7 +26,7 @@ spec:
     - alert: KueueMutatingWebhookLowSuccessRate
       expr: |
         100 * sum by (instance, source_cluster) (increase(apiserver_admission_webhook_request_total{
-          name="pipelinerun-kueue-defaulter.tekton-kueue.io", code=~"2.."
+          name="pipelinerun-kueue-defaulter.tekton-kueue.io", code=~"2..|400"
         }[10m]))
         /
         sum by (instance, source_cluster) (increase(apiserver_admission_webhook_request_total{
