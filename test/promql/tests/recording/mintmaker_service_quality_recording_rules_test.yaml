@@ -57,3 +57,22 @@ tests:
         exp_samples:
           - labels: node_memory_pressured_perc
             value: 0.5
+
+  - name: MintMakerRedisNodeMemoryUsageTest
+    interval: 1m
+    input_series:
+      - series: "container_memory_usage_bytes{
+          container='redis'
+        }"
+        values: "104857600"
+      - series: "container_spec_memory_limit_bytes{
+          container='redis'
+        }"
+        values: "2147483648"
+
+    promql_expr_test:
+      - expr: mintmaker_redis_node_memory_usage_perc
+        eval_time: 1m
+        exp_samples:
+          - labels: mintmaker_redis_node_memory_usage_perc{container="redis"}
+            value: 0.048828125

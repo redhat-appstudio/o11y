@@ -24,3 +24,12 @@ spec:
             sum(kube_node_status_condition{condition="MemoryPressure", status="true"})
             /
             count(kube_node_info)
+
+    - name: mintmaker_redis_node_memory_usage_perc
+      interval: 1m
+      rules:
+        - record: mintmaker_redis_node_memory_usage_perc
+          expr: |
+            container_memory_usage_bytes{container="redis"}
+            /
+            container_spec_memory_limit_bytes{container="redis"}
