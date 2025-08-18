@@ -89,14 +89,14 @@ tests:
   # Test KueueHighAdmissionWaitTime alert
   - interval: 1m
     input_series:
-      # High admission wait time buckets - should trigger alert (>900s = 15min)
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="300", source_cluster="c1"}'
-        values: '0 1 2 3 4 5'
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="600", source_cluster="c1"}'
-        values: '0 1 2 3 4 5'
+      # High admission wait time buckets - should trigger alert (>1800s = 30min)
       - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="900", source_cluster="c1"}'
         values: '0 1 2 3 4 5'
       - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="1200", source_cluster="c1"}'
+        values: '0 1 2 3 4 5'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="1800", source_cluster="c1"}'
+        values: '0 1 2 3 4 5'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="2400", source_cluster="c1"}'
         values: '0 5 10 15 20 25'
       - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="+Inf", source_cluster="c1"}'
         values: '0 5 10 15 20 25'
@@ -112,7 +112,7 @@ tests:
               source_cluster: c1
             exp_annotations:
               summary: "High admission wait time in Kueue"
-              description: "99th percentile admission wait time is 1196.25s, which is above 15 minutes in cluster c1"
+              description: "99th percentile admission wait time is 2392.5s, which is above 30 minutes in cluster c1"
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue.md?ref_type=heads
               alert_team_handle: <!subteam^S05Q1P4Q2TG>
               team: konflux-infra
