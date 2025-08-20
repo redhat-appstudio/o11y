@@ -18,9 +18,11 @@ spec:
         for: 1s
         labels:
           severity: critical
+          # slo: "true" # Disabled until we can have more actionable information to support this
           slo: "false"
         annotations:
-          alert_team_handle: '<!subteam^S06V06A36F5>'
+          alert_routing_key: o11y
+          # alert_team_handle: '<!subteam^S06V06A36F5>'
           team: o11y
           summary: "Kanary signal for {{ $labels.type }} artifacts has been triggered for cluster {{ $labels.tested_cluster }}"
           description: "The e2e load tests for {{ $labels.type }} artifacts failed multiple times in a row for cluster {{ $labels.tested_cluster }}"
