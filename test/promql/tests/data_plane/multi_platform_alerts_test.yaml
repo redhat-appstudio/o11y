@@ -53,3 +53,39 @@ tests:
                 The multi-platform otp pod has been down for 5min in cluster c3
               alert_team_handle: <!subteam^S05Q1P4Q2TG>
               team: konflux-infra
+
+  - interval: 1m
+    input_series:
+      - series: 'multi_platform_controller_available{check="s390x", source_cluster="c5"}'
+        values: '0 0 0 0 0'
+      - series: 'multi_platform_controller_available{check="ppc64le", source_cluster="c5"}'
+        values: '0 0 0 0 0'
+      - series: 'multi_platform_controller_available{check="amd64", source_cluster="c6"}'
+        values: '1 1 1 1 1'
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: MultiPlatformControllerPlatformUnhealthy
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              check: s390x
+              slo: "true"
+              source_cluster: c5
+            exp_annotations:
+              summary: Multi-platform controller platform s390x health check failed in cluster c5
+              description: >
+                The multi-platform controller platform health check "s390x" has been failing for 5min in cluster c5
+              alert_team_handle: <!subteam^S05Q1P4Q2TG>
+              team: konflux-infra
+          - exp_labels:
+              severity: critical
+              check: ppc64le
+              slo: "true"
+              source_cluster: c5
+            exp_annotations:
+              summary: Multi-platform controller platform ppc64le health check failed in cluster c5
+              description: >
+                The multi-platform controller platform health check "ppc64le" has been failing for 5min in cluster c5
+              alert_team_handle: <!subteam^S05Q1P4Q2TG>
+              team: konflux-infra
