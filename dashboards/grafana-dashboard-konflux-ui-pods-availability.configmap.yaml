@@ -32,1393 +32,387 @@ data:
       "links": [],
       "panels": [
         {
-          "collapsed": false,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Konflux UI Pod availability per selected cluster.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "red",
+                      "index": 0,
+                      "text": "down"
+                    },
+                    "1": {
+                      "color": "green",
+                      "index": 1,
+                      "text": "up"
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
           "gridPos": {
-            "h": 1,
-            "w": 24,
+            "h": 8,
+            "w": 11,
             "x": 0,
             "y": 0
           },
-          "id": 2,
-          "panels": [],
-          "title": "General Konflux UI Pod availability",
-          "type": "row"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P22466E8E7855F1E0"
-          },
-          "description": "Rate between running pods available over the expected amount of replica pods along the time on prod cluster.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "auto",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "fieldMinMax": false,
-              "mappings": [],
-              "thresholds": {
-                "mode": "percentage",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              },
-              "unit": "percentunit"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 10,
-            "x": 0,
-            "y": 1
-          },
-          "id": 1,
-          "options": {
-            "legend": {
-              "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": false
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "P22466E8E7855F1E0"
-              },
-              "disableTextWrap": false,
-              "editorMode": "builder",
-              "expr": "count(kube_deployment_status_replicas_available{namespace=\"konflux-ui\"})",
-              "fullMetaSearch": false,
-              "hide": true,
-              "includeNullMetadata": true,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "Konflux_UI_pods_available",
-              "useBackend": false
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "P22466E8E7855F1E0"
-              },
-              "disableTextWrap": false,
-              "editorMode": "builder",
-              "expr": "count(kube_deployment_spec_replicas{namespace=\"konflux-ui\"})",
-              "fullMetaSearch": false,
-              "hide": true,
-              "includeNullMetadata": true,
-              "instant": false,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "Target_Konflux_UI_pods",
-              "useBackend": false
-            },
-            {
-              "datasource": {
-                "name": "Expression",
-                "type": "__expr__",
-                "uid": "__expr__"
-              },
-              "expression": "$Konflux_UI_pods_available/$Target_Konflux_UI_pods",
-              "hide": false,
-              "refId": "rate_pods_available",
-              "type": "math"
-            }
-          ],
-          "title": "Konflux UI Pod availability over the time on prod cluster (Actual/Target)",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P22466E8E7855F1E0"
-          },
-          "description": "Rate between running pods available over the expected amount of replica pods on prod cluster.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "fieldMinMax": false,
-              "mappings": [],
-              "thresholds": {
-                "mode": "percentage",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              },
-              "unit": "percentunit"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 10,
-            "x": 10,
-            "y": 1
-          },
-          "id": 3,
-          "options": {
-            "minVizHeight": 75,
-            "minVizWidth": 75,
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": false,
-            "sizing": "auto"
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "P22466E8E7855F1E0"
-              },
-              "disableTextWrap": false,
-              "editorMode": "builder",
-              "expr": "count(kube_deployment_status_replicas_available{namespace=\"konflux-ui\"})",
-              "fullMetaSearch": false,
-              "hide": true,
-              "includeNullMetadata": true,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "Konflux_UI_pods_available",
-              "useBackend": false
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "P22466E8E7855F1E0"
-              },
-              "disableTextWrap": false,
-              "editorMode": "builder",
-              "expr": "count(kube_deployment_spec_replicas{namespace=\"konflux-ui\"})",
-              "fullMetaSearch": false,
-              "hide": true,
-              "includeNullMetadata": true,
-              "instant": false,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "Target_Konflux_UI_pods",
-              "useBackend": false
-            },
-            {
-              "datasource": {
-                "name": "Expression",
-                "type": "__expr__",
-                "uid": "__expr__"
-              },
-              "expression": "$Konflux_UI_pods_available/$Target_Konflux_UI_pods",
-              "hide": false,
-              "refId": "rate_pods_available",
-              "type": "math"
-            }
-          ],
-          "title": "Konflux UI Pod availability on prod cluster (Actual/Target)",
-          "type": "gauge"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PDCCF087A30F0737B"
-          },
-          "description": "Rate between running pods available over the expected amount of replica pods along the time on stage cluster.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "auto",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "fieldMinMax": false,
-              "mappings": [],
-              "thresholds": {
-                "mode": "percentage",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              },
-              "unit": "percentunit"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 10,
-            "x": 0,
-            "y": 9
-          },
-          "id": 10,
-          "options": {
-            "legend": {
-              "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": false
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "PDCCF087A30F0737B"
-              },
-              "disableTextWrap": false,
-              "editorMode": "builder",
-              "expr": "count(kube_deployment_status_replicas_available{namespace=\"konflux-ui\"})",
-              "fullMetaSearch": false,
-              "hide": true,
-              "includeNullMetadata": true,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "Konflux_UI_pods_available",
-              "useBackend": false
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "PDCCF087A30F0737B"
-              },
-              "disableTextWrap": false,
-              "editorMode": "builder",
-              "expr": "count(kube_deployment_spec_replicas{namespace=\"konflux-ui\"})",
-              "fullMetaSearch": false,
-              "hide": true,
-              "includeNullMetadata": true,
-              "instant": false,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "Target_Konflux_UI_pods",
-              "useBackend": false
-            },
-            {
-              "datasource": {
-                "name": "Expression",
-                "type": "__expr__",
-                "uid": "__expr__"
-              },
-              "expression": "$Konflux_UI_pods_available/$Target_Konflux_UI_pods",
-              "hide": false,
-              "refId": "rate_pods_available",
-              "type": "math"
-            }
-          ],
-          "title": "Konflux UI Pod availability over the time on stage cluster (Actual/Target)",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PDCCF087A30F0737B"
-          },
-          "description": "Rate between running pods available over the expected amount of replica pods on stage cluster.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "fieldMinMax": false,
-              "mappings": [],
-              "thresholds": {
-                "mode": "percentage",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              },
-              "unit": "percentunit"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 10,
-            "x": 10,
-            "y": 9
-          },
-          "id": 11,
-          "options": {
-            "minVizHeight": 75,
-            "minVizWidth": 75,
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": false,
-            "sizing": "auto"
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "PDCCF087A30F0737B"
-              },
-              "disableTextWrap": false,
-              "editorMode": "builder",
-              "expr": "count(kube_deployment_status_replicas_available{namespace=\"konflux-ui\"})",
-              "fullMetaSearch": false,
-              "hide": true,
-              "includeNullMetadata": true,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "Konflux_UI_pods_available",
-              "useBackend": false
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "PDCCF087A30F0737B"
-              },
-              "disableTextWrap": false,
-              "editorMode": "builder",
-              "expr": "count(kube_deployment_spec_replicas{namespace=\"konflux-ui\"})",
-              "fullMetaSearch": false,
-              "hide": true,
-              "includeNullMetadata": true,
-              "instant": false,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "Target_Konflux_UI_pods",
-              "useBackend": false
-            },
-            {
-              "datasource": {
-                "name": "Expression",
-                "type": "__expr__",
-                "uid": "__expr__"
-              },
-              "expression": "$Konflux_UI_pods_available/$Target_Konflux_UI_pods",
-              "hide": false,
-              "refId": "rate_pods_available",
-              "type": "math"
-            }
-          ],
-          "title": "Konflux UI Pod availability on stage cluster (Actual/Target)",
-          "type": "gauge"
-        },
-        {
-          "collapsed": false,
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 17
-          },
-          "id": 5,
-          "panels": [],
-          "title": "Konflux UI Proxy pods availability",
-          "type": "row"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P22466E8E7855F1E0"
-          },
-          "description": "Rate between running proxy pods available over the expected amount of replica pods along the time on prod cluster.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "auto",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "fieldMinMax": false,
-              "mappings": [],
-              "thresholds": {
-                "mode": "percentage",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              },
-              "unit": "percentunit"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 10,
-            "x": 0,
-            "y": 18
-          },
-          "id": 4,
-          "options": {
-            "legend": {
-              "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": false
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "P22466E8E7855F1E0"
-              },
-              "disableTextWrap": false,
-              "editorMode": "builder",
-              "expr": "count(kube_deployment_status_replicas_available{namespace=\"konflux-ui\", deployment=\"proxy\"})",
-              "fullMetaSearch": false,
-              "hide": true,
-              "includeNullMetadata": true,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "Konflux_UI_proxy_pods_available",
-              "useBackend": false
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "P22466E8E7855F1E0"
-              },
-              "disableTextWrap": false,
-              "editorMode": "builder",
-              "expr": "count(kube_deployment_spec_replicas{namespace=\"konflux-ui\", deployment=\"proxy\"})",
-              "fullMetaSearch": false,
-              "hide": true,
-              "includeNullMetadata": true,
-              "instant": false,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "Target_Konflux_UI_proxy_pods",
-              "useBackend": false
-            },
-            {
-              "datasource": {
-                "name": "Expression",
-                "type": "__expr__",
-                "uid": "__expr__"
-              },
-              "expression": "$Konflux_UI_proxy_pods_available/$Target_Konflux_UI_proxy_pods",
-              "hide": false,
-              "refId": "rate_proxy_pods_available",
-              "type": "math"
-            }
-          ],
-          "title": "Konflux UI Proxy Pods availability over the time on prod cluster (Actual/Target)",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P22466E8E7855F1E0"
-          },
-          "description": "Rate between running proxy pods available over the expected amount of replica pods on prod cluster.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "fieldMinMax": false,
-              "mappings": [],
-              "thresholds": {
-                "mode": "percentage",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              },
-              "unit": "percentunit"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 10,
-            "x": 10,
-            "y": 18
-          },
-          "id": 6,
-          "options": {
-            "minVizHeight": 75,
-            "minVizWidth": 75,
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": false,
-            "sizing": "auto"
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "P22466E8E7855F1E0"
-              },
-              "disableTextWrap": false,
-              "editorMode": "builder",
-              "expr": "count(kube_deployment_status_replicas_available{namespace=\"konflux-ui\", deployment=\"proxy\"})",
-              "fullMetaSearch": false,
-              "hide": true,
-              "includeNullMetadata": true,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "Konflux_UI_proxy_pods_available",
-              "useBackend": false
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "P22466E8E7855F1E0"
-              },
-              "disableTextWrap": false,
-              "editorMode": "builder",
-              "expr": "count(kube_deployment_spec_replicas{namespace=\"konflux-ui\", deployment=\"proxy\"})",
-              "fullMetaSearch": false,
-              "hide": true,
-              "includeNullMetadata": true,
-              "instant": false,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "Target_Konflux_UI_proxy_pods",
-              "useBackend": false
-            },
-            {
-              "datasource": {
-                "name": "Expression",
-                "type": "__expr__",
-                "uid": "__expr__"
-              },
-              "expression": "$Konflux_UI_proxy_pods_available/$Target_Konflux_UI_proxy_pods",
-              "hide": false,
-              "refId": "rate_proxy_pods_available",
-              "type": "math"
-            }
-          ],
-          "title": "Konflux UI Proxy Pod availability on prod cluster (Actual/Target)",
-          "type": "gauge"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PDCCF087A30F0737B"
-          },
-          "description": "Rate between running proxy pods available over the expected amount of replica pods along the time on stage cluster.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "auto",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "fieldMinMax": false,
-              "mappings": [],
-              "thresholds": {
-                "mode": "percentage",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              },
-              "unit": "percentunit"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 10,
-            "x": 0,
-            "y": 26
-          },
-          "id": 12,
-          "options": {
-            "legend": {
-              "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": false
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "PDCCF087A30F0737B"
-              },
-              "disableTextWrap": false,
-              "editorMode": "builder",
-              "expr": "count(kube_deployment_status_replicas_available{namespace=\"konflux-ui\", deployment=\"proxy\"})",
-              "fullMetaSearch": false,
-              "hide": true,
-              "includeNullMetadata": true,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "Konflux_UI_proxy_pods_available",
-              "useBackend": false
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "PDCCF087A30F0737B"
-              },
-              "disableTextWrap": false,
-              "editorMode": "builder",
-              "expr": "count(kube_deployment_spec_replicas{namespace=\"konflux-ui\", deployment=\"proxy\"})",
-              "fullMetaSearch": false,
-              "hide": true,
-              "includeNullMetadata": true,
-              "instant": false,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "Target_Konflux_UI_proxy_pods",
-              "useBackend": false
-            },
-            {
-              "datasource": {
-                "name": "Expression",
-                "type": "__expr__",
-                "uid": "__expr__"
-              },
-              "expression": "$Konflux_UI_proxy_pods_available/$Target_Konflux_UI_proxy_pods",
-              "hide": false,
-              "refId": "rate_proxy_pods_available",
-              "type": "math"
-            }
-          ],
-          "title": "Konflux UI Proxy Pods availability over the time on stage cluster (Actual/Target)",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PDCCF087A30F0737B"
-          },
-          "description": "Rate between running proxy pods available over the expected amount of replica pods on stage cluster.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "fieldMinMax": false,
-              "mappings": [],
-              "thresholds": {
-                "mode": "percentage",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              },
-              "unit": "percentunit"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 10,
-            "x": 10,
-            "y": 26
-          },
-          "id": 13,
-          "options": {
-            "minVizHeight": 75,
-            "minVizWidth": 75,
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": false,
-            "sizing": "auto"
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "PDCCF087A30F0737B"
-              },
-              "disableTextWrap": false,
-              "editorMode": "builder",
-              "expr": "count(kube_deployment_status_replicas_available{namespace=\"konflux-ui\", deployment=\"proxy\"})",
-              "fullMetaSearch": false,
-              "hide": true,
-              "includeNullMetadata": true,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "Konflux_UI_proxy_pods_available",
-              "useBackend": false
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "PDCCF087A30F0737B"
-              },
-              "disableTextWrap": false,
-              "editorMode": "builder",
-              "expr": "count(kube_deployment_spec_replicas{namespace=\"konflux-ui\", deployment=\"proxy\"})",
-              "fullMetaSearch": false,
-              "hide": true,
-              "includeNullMetadata": true,
-              "instant": false,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "Target_Konflux_UI_proxy_pods",
-              "useBackend": false
-            },
-            {
-              "datasource": {
-                "name": "Expression",
-                "type": "__expr__",
-                "uid": "__expr__"
-              },
-              "expression": "$Konflux_UI_proxy_pods_available/$Target_Konflux_UI_proxy_pods",
-              "hide": false,
-              "refId": "rate_proxy_pods_available",
-              "type": "math"
-            }
-          ],
-          "title": "Konflux UI Proxy Pod availability on stage cluster (Actual/Target)",
-          "type": "gauge"
-        },
-        {
-          "collapsed": false,
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 34
-          },
-          "id": 7,
-          "panels": [],
-          "title": "Konflux UI Dex pods availability",
-          "type": "row"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P22466E8E7855F1E0"
-          },
-          "description": "Rate between running dex pods available over the expected amount of replica pods along the time on prod cluster.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "auto",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "fieldMinMax": false,
-              "mappings": [],
-              "thresholds": {
-                "mode": "percentage",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              },
-              "unit": "percentunit"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 10,
-            "x": 0,
-            "y": 35
-          },
-          "id": 8,
-          "options": {
-            "legend": {
-              "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": false
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "P22466E8E7855F1E0"
-              },
-              "disableTextWrap": false,
-              "editorMode": "builder",
-              "expr": "count(kube_deployment_status_replicas_available{namespace=\"konflux-ui\", deployment=\"dex\"})",
-              "fullMetaSearch": false,
-              "hide": true,
-              "includeNullMetadata": true,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "Konflux_UI_dex_pods_available",
-              "useBackend": false
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "P22466E8E7855F1E0"
-              },
-              "disableTextWrap": false,
-              "editorMode": "builder",
-              "expr": "count(kube_deployment_spec_replicas{namespace=\"konflux-ui\", deployment=\"dex\"})",
-              "fullMetaSearch": false,
-              "hide": true,
-              "includeNullMetadata": true,
-              "instant": false,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "Target_Konflux_UI_dex_pods",
-              "useBackend": false
-            },
-            {
-              "datasource": {
-                "name": "Expression",
-                "type": "__expr__",
-                "uid": "__expr__"
-              },
-              "expression": "$Konflux_UI_dex_pods_available/$Target_Konflux_UI_dex_pods",
-              "hide": false,
-              "refId": "rate_dex_pods_available",
-              "type": "math"
-            }
-          ],
-          "title": "Konflux UI Dex Pods availability over the time on prod cluster (Actual/Target)",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "P22466E8E7855F1E0"
-          },
-          "description": "Rate between running dex pods available over the expected amount of replica pods on prod cluster.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "fieldMinMax": false,
-              "mappings": [],
-              "thresholds": {
-                "mode": "percentage",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              },
-              "unit": "percentunit"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 10,
-            "x": 10,
-            "y": 35
-          },
-          "id": 9,
-          "options": {
-            "minVizHeight": 75,
-            "minVizWidth": 75,
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": false,
-            "sizing": "auto"
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "P22466E8E7855F1E0"
-              },
-              "disableTextWrap": false,
-              "editorMode": "builder",
-              "expr": "count(kube_deployment_status_replicas_available{namespace=\"konflux-ui\", deployment=\"dex\"})",
-              "fullMetaSearch": false,
-              "hide": true,
-              "includeNullMetadata": true,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "Konflux_UI_dex_pods_available",
-              "useBackend": false
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "P22466E8E7855F1E0"
-              },
-              "disableTextWrap": false,
-              "editorMode": "builder",
-              "expr": "count(kube_deployment_spec_replicas{namespace=\"konflux-ui\", deployment=\"dex\"})",
-              "fullMetaSearch": false,
-              "hide": true,
-              "includeNullMetadata": true,
-              "instant": false,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "Target_Konflux_UI_dex_pods",
-              "useBackend": false
-            },
-            {
-              "datasource": {
-                "name": "Expression",
-                "type": "__expr__",
-                "uid": "__expr__"
-              },
-              "expression": "$Konflux_UI_dex_pods_available/$Target_Konflux_UI_dex_pods",
-              "hide": false,
-              "refId": "rate_dex_pods_available",
-              "type": "math"
-            }
-          ],
-          "title": "Konflux UI Dex Pod availability on prod cluster (Actual/Target)",
-          "type": "gauge"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "PDCCF087A30F0737B"
-          },
-          "description": "Rate between running dex pods available over the expected amount of replica pods along the time on stage cluster.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 0,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "auto",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "fieldMinMax": false,
-              "mappings": [],
-              "thresholds": {
-                "mode": "percentage",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              },
-              "unit": "percentunit"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 10,
-            "x": 0,
-            "y": 43
-          },
           "id": 14,
           "options": {
-            "legend": {
-              "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": false
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
             },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "single",
-              "sort": "none"
-            }
+            "showPercentChange": false,
+            "text": {},
+            "textMode": "auto",
+            "wideLayout": true
           },
           "pluginVersion": "11.6.3",
           "targets": [
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "PDCCF087A30F0737B"
+                "uid": "${datasource}"
               },
               "disableTextWrap": false,
               "editorMode": "builder",
-              "expr": "count(kube_deployment_status_replicas_available{namespace=\"konflux-ui\", deployment=\"dex\"})",
+              "expr": "konflux_up{namespace=\"konflux-ui\", check=\"replicas-available\", service=\"$pod\", source_cluster=~\"$cluster\"}",
               "fullMetaSearch": false,
-              "hide": true,
               "includeNullMetadata": true,
-              "legendFormat": "__auto",
+              "legendFormat": "{{source_cluster}}",
               "range": true,
-              "refId": "Konflux_UI_dex_pods_available",
+              "refId": "A",
               "useBackend": false
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "PDCCF087A30F0737B"
-              },
-              "disableTextWrap": false,
-              "editorMode": "builder",
-              "expr": "count(kube_deployment_spec_replicas{namespace=\"konflux-ui\", deployment=\"dex\"})",
-              "fullMetaSearch": false,
-              "hide": true,
-              "includeNullMetadata": true,
-              "instant": false,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "Target_Konflux_UI_dex_pods",
-              "useBackend": false
-            },
-            {
-              "datasource": {
-                "name": "Expression",
-                "type": "__expr__",
-                "uid": "__expr__"
-              },
-              "expression": "$Konflux_UI_dex_pods_available/$Target_Konflux_UI_dex_pods",
-              "hide": false,
-              "refId": "rate_dex_pods_available",
-              "type": "math"
             }
           ],
-          "title": "Konflux UI Dex Pods availability over the time on stage cluster (Actual/Target)",
-          "type": "timeseries"
+          "title": "Pod Availability",
+          "type": "stat"
         },
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "PDCCF087A30F0737B"
+            "uid": "${datasource}"
           },
-          "description": "Rate between running dex pods available over the expected amount of replica pods on stage cluster.",
+          "description": "Konflux UI Pod availability over the time per selected cluster.",
           "fieldConfig": {
             "defaults": {
               "color": {
                 "mode": "thresholds"
               },
-              "fieldMinMax": false,
-              "mappings": [],
+              "custom": {
+                "axisPlacement": "auto",
+                "fillOpacity": 70,
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineWidth": 0,
+                "spanNulls": false
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "red",
+                      "index": 1,
+                      "text": "DOWN"
+                    },
+                    "1": {
+                      "color": "green",
+                      "index": 0,
+                      "text": "UP"
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
               "thresholds": {
-                "mode": "percentage",
+                "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "yellow"
+                  },
+                  {
+                    "color": "red",
+                    "value": 0
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
                   }
                 ]
-              },
-              "unit": "percentunit"
+              }
             },
             "overrides": []
           },
           "gridPos": {
             "h": 8,
-            "w": 10,
-            "x": 10,
-            "y": 43
+            "w": 12,
+            "x": 11,
+            "y": 0
           },
           "id": 15,
           "options": {
-            "minVizHeight": 75,
-            "minVizWidth": 75,
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
+            "alignValue": "left",
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": false
             },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": false,
-            "sizing": "auto"
+            "mergeValues": true,
+            "rowHeight": 0.9,
+            "showValue": "never",
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
           },
           "pluginVersion": "11.6.3",
           "targets": [
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "PDCCF087A30F0737B"
+                "uid": "${datasource}"
               },
               "disableTextWrap": false,
               "editorMode": "builder",
-              "expr": "count(kube_deployment_status_replicas_available{namespace=\"konflux-ui\", deployment=\"dex\"})",
+              "expr": "konflux_up{namespace=\"konflux-ui\", check=\"replicas-available\", service=\"$pod\", source_cluster=~\"$cluster\"}",
               "fullMetaSearch": false,
-              "hide": true,
+              "includeNullMetadata": true,
+              "legendFormat": "{{source_cluster}}",
+              "range": true,
+              "refId": "A",
+              "useBackend": false
+            }
+          ],
+          "title": "Pod Uptime History",
+          "type": "state-timeline"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Total container restart on selected environment",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 3
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 12,
+            "w": 23,
+            "x": 0,
+            "y": 8
+          },
+          "id": 17,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "center",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "range"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.6.3",
+          "repeatDirection": "h",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "disableTextWrap": false,
+              "editorMode": "builder",
+              "expr": "sum by(container) (kube_pod_container_status_restarts_total{namespace=\"konflux-ui\", source_cluster=~\"$cluster\"})",
+              "fullMetaSearch": false,
               "includeNullMetadata": true,
               "legendFormat": "__auto",
               "range": true,
-              "refId": "Konflux_UI_dex_pods_available",
+              "refId": "A",
+              "useBackend": false
+            }
+          ],
+          "title": "Total container restarts",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Actual amount pods available and target amount of replica pods along the time on selected cluster.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "fieldMinMax": false,
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 12,
+            "w": 23,
+            "x": 0,
+            "y": 20
+          },
+          "id": 16,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "disableTextWrap": false,
+              "editorMode": "builder",
+              "expr": "kube_deployment_status_replicas_available{namespace=\"konflux-ui\", deployment=\"$pod\", source_cluster=~\"$cluster\"}",
+              "fullMetaSearch": false,
+              "hide": false,
+              "includeNullMetadata": true,
+              "legendFormat": "Actual $pod in {{source_cluster}}",
+              "range": true,
+              "refId": "Konflux_UI_pods_available",
               "useBackend": false
             },
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "PDCCF087A30F0737B"
+                "uid": "${datasource}"
               },
               "disableTextWrap": false,
               "editorMode": "builder",
-              "expr": "count(kube_deployment_spec_replicas{namespace=\"konflux-ui\", deployment=\"dex\"})",
+              "exemplar": false,
+              "expr": "kube_deployment_spec_replicas{namespace=\"konflux-ui\", deployment=\"$pod\", source_cluster=~\"$cluster\"}",
               "fullMetaSearch": false,
-              "hide": true,
+              "hide": false,
               "includeNullMetadata": true,
               "instant": false,
-              "legendFormat": "__auto",
+              "legendFormat": "Target $pod in {{source_cluster}}",
               "range": true,
-              "refId": "Target_Konflux_UI_dex_pods",
+              "refId": "Target_Konflux_UI_pods",
               "useBackend": false
-            },
-            {
-              "datasource": {
-                "name": "Expression",
-                "type": "__expr__",
-                "uid": "__expr__"
-              },
-              "expression": "$Konflux_UI_dex_pods_available/$Target_Konflux_UI_dex_pods",
-              "hide": false,
-              "refId": "rate_dex_pods_available",
-              "type": "math"
             }
           ],
-          "title": "Konflux UI Dex Pod availability on stage cluster (Actual/Target)",
-          "type": "gauge"
+          "title": "Total amount of Konflux UI Pods availability over the time on selected cluster",
+          "type": "timeseries"
         }
       ],
       "preload": false,
@@ -1427,15 +421,99 @@ data:
         "konflux-ui"
       ],
       "templating": {
-        "list": []
+        "list": [
+          {
+            "current": {
+              "text": "rhtap-observatorium-production",
+              "value": "P22466E8E7855F1E0"
+            },
+            "description": "Data Source of the metrics. Production or Stage.",
+            "label": "Data Source",
+            "name": "datasource",
+            "options": [],
+            "query": "prometheus",
+            "refresh": 1,
+            "regex": "/^rhtap-/",
+            "type": "datasource"
+          },
+          {
+            "current": {
+              "text": "proxy",
+              "value": "proxy"
+            },
+            "description": "Type of pod to expose",
+            "label": "Pod Service",
+            "name": "pod",
+            "options": [
+              {
+                "selected": true,
+                "text": "proxy",
+                "value": "proxy"
+              },
+              {
+                "selected": false,
+                "text": "dex",
+                "value": "dex"
+              }
+            ],
+            "query": "proxy, dex",
+            "type": "custom"
+          },
+          {
+            "current": {
+              "text": [
+                "kflux-ocp-p01",
+                "kflux-osp-p01",
+                "kflux-prd-es01",
+                "kflux-prd-rh02",
+                "kflux-prd-rh03",
+                "kflux-rhel-p01",
+                "stone-prd-host1",
+                "stone-prd-rh01",
+                "stone-prod-p01",
+                "stone-prod-p02"
+              ],
+              "value": [
+                "kflux-ocp-p01",
+                "kflux-osp-p01",
+                "kflux-prd-es01",
+                "kflux-prd-rh02",
+                "kflux-prd-rh03",
+                "kflux-rhel-p01",
+                "stone-prd-host1",
+                "stone-prd-rh01",
+                "stone-prod-p01",
+                "stone-prod-p02"
+              ]
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${datasource}"
+            },
+            "definition": "label_values(source_cluster)",
+            "description": "Cluster environment where the service is running",
+            "label": "Cluster",
+            "multi": true,
+            "name": "cluster",
+            "options": [],
+            "query": {
+              "qryType": 1,
+              "query": "label_values(source_cluster)",
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "refresh": 1,
+            "regex": "",
+            "type": "query"
+          }
+        ]
       },
       "time": {
-        "from": "now-5m",
+        "from": "now-6h",
         "to": "now"
       },
       "timepicker": {},
       "timezone": "UTC",
       "title": "Konflux UI Pods availability",
       "uid": "eesq3uvbvctvky",
-      "version": 26
+      "version": 27
     }
