@@ -85,6 +85,19 @@ data:
           "type": "text"
         },
         {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 3
+          },
+          "id": 16,
+          "panels": [],
+          "title": "Kanary signals",
+          "type": "row"
+        },
+        {
           "datasource": {
             "type": "prometheus",
             "uid": "P22466E8E7855F1E0"
@@ -151,7 +164,7 @@ data:
                       {
                         "targetBlank": true,
                         "title": "Kanary signal dashboard",
-                        "url": "https://grafana.app-sre.devshift.net/d/eeoimpx3yutq9f/kanary-signal-dashboard?var-kanary_clusters=${cluster}"
+                        "url": "https://grafana.app-sre.devshift.net/d/eeoimpx3yutq9f/kanary-signal-dashboard?var-kanary_clusters=${cluster}&var-kanary_type=container"
                       }
                     ]
                   }
@@ -163,7 +176,7 @@ data:
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 3
+            "y": 4
           },
           "id": 10,
           "options": {
@@ -191,14 +204,143 @@ data:
                 "uid": "P22466E8E7855F1E0"
               },
               "editorMode": "code",
-              "expr": "sum(kanary_error{tested_cluster=\"${cluster}\"} == bool 1) + sum(kanary_up{tested_cluster=\"${cluster}\"} == bool 0)",
+              "expr": "sum(kanary_error{tested_cluster=\"${cluster}\",type=\"container\"} == bool 1) + sum(kanary_up{tested_cluster=\"${cluster}\", type=\"container\"} == bool 0)",
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
             }
           ],
-          "title": "Kanary Signal",
+          "title": "Container builds",
           "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "P22466E8E7855F1E0"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "#0c6700",
+                      "index": 0,
+                      "text": "GOOD"
+                    }
+                  },
+                  "type": "value"
+                },
+                {
+                  "options": {
+                    "from": 1,
+                    "result": {
+                      "color": "#b5061a",
+                      "index": 1,
+                      "text": "BAD"
+                    },
+                    "to": 2
+                  },
+                  "type": "range"
+                },
+                {
+                  "options": {
+                    "match": "null",
+                    "result": {
+                      "color": "#808080",
+                      "index": 2,
+                      "text": "N/A"
+                    }
+                  },
+                  "type": "special"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value"
+                },
+                "properties": [
+                  {
+                    "id": "links",
+                    "value": [
+                      {
+                        "targetBlank": true,
+                        "title": "Kanary signal dashboard",
+                        "url": "https://grafana.app-sre.devshift.net/d/eeoimpx3yutq9f/kanary-signal-dashboard?var-kanary_clusters=${cluster}&var-kanary_type=rpm"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 12,
+            "x": 12,
+            "y": 4
+          },
+          "id": 20,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "P22466E8E7855F1E0"
+              },
+              "editorMode": "code",
+              "expr": "sum(kanary_error{tested_cluster=\"${cluster}\",type=\"rpm\"} == bool 1) + sum(kanary_up{tested_cluster=\"${cluster}\", type=\"rpm\"} == bool 0)",
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "RPM builds",
+          "type": "stat"
+        },
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 10
+          },
+          "id": 17,
+          "panels": [],
+          "title": "WebRCA Incidents",
+          "type": "row"
         },
         {
           "fieldConfig": {
@@ -206,36 +348,158 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 6,
-            "w": 12,
-            "x": 12,
-            "y": 3
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 11
           },
-          "id": 11,
+          "id": 25,
           "options": {
-            "alertInstanceLabelFilter": "{slo=\"true\", source_cluster=\"$cluster\", tested_cluster=\"\"}",
-            "alertName": "",
-            "dashboardAlerts": false,
-            "datasource": "rhtap-observatorium-production",
-            "groupBy": [
-              "alertname"
-            ],
-            "groupMode": "default",
-            "maxItems": 20,
-            "showInactiveAlerts": false,
-            "sortOrder": 5,
-            "stateFilter": {
-              "error": true,
-              "firing": true,
-              "noData": false,
-              "normal": false,
-              "pending": false
+            "code": {
+              "language": "plaintext",
+              "showLineNumbers": false,
+              "showMiniMap": false
             },
-            "viewMode": "list"
+            "content": "",
+            "mode": "markdown"
           },
           "pluginVersion": "11.6.3",
-          "title": "Active SLO Alerts",
-          "type": "alertlist"
+          "title": "Number of active incidents is based on given timeframe. If Last 30 days is set, it shows number of incidents that occurred or are ongoing in realtime. ",
+          "transparent": true,
+          "type": "text"
+        },
+        {
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "P3B27F1D5F7A6C265"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "links": [],
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "#0c6700",
+                      "index": 0,
+                      "text": "None"
+                    }
+                  },
+                  "type": "value"
+                },
+                {
+                  "options": {
+                    "from": 1,
+                    "result": {
+                      "color": "#b5061a",
+                      "index": 1
+                    },
+                    "to": 100
+                  },
+                  "type": "range"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "count"
+                },
+                "properties": [
+                  {
+                    "id": "links",
+                    "value": [
+                      {
+                        "targetBlank": true,
+                        "title": "Ongoing incidents for Konflux",
+                        "url": "https://web-rca.devshift.net/overview?product=konflux&status=ongoing"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byValue",
+                  "options": {
+                    "op": "gte",
+                    "reducer": "allIsZero",
+                    "value": 0
+                  }
+                },
+                "properties": []
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 12,
+            "x": 0,
+            "y": 12
+          },
+          "id": 21,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "grafana-postgresql-datasource",
+                "uid": "P3B27F1D5F7A6C265"
+              },
+              "editorMode": "code",
+              "format": "table",
+              "rawQuery": true,
+              "rawSql": "SELECT\n  COUNT(*)\nFROM\n  incidents AS i\nJOIN\n  incident_products AS ip ON ip.incident_id = i.id\nWHERE\n  i.status != 'paused' AND\n  i.created_at <= $__timeTo() AND\n  (\n    i.resolved_at >= $__timeFrom() \n    OR \n    i.resolved_at IS NULL\n  ) AND\n ip.product_id = 'ebfd6fef-1922-4bcb-a2f9-b33f586955ed';",
+              "refId": "A",
+              "sql": {
+                "columns": [
+                  {
+                    "parameters": [],
+                    "type": "function"
+                  }
+                ],
+                "groupBy": [
+                  {
+                    "property": {
+                      "type": "string"
+                    },
+                    "type": "groupBy"
+                  }
+                ],
+                "limit": 50
+              }
+            }
+          ],
+          "title": "Number of active WebRCA incidents",
+          "type": "stat"
         },
         {
           "datasource": {
@@ -324,14 +588,50 @@ data:
                     ]
                   }
                 ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "incident_id"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 150
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "/_at$/"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 180
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "status"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 80
+                  }
+                ]
               }
             ]
           },
           "gridPos": {
-            "h": 7,
+            "h": 6,
             "w": 12,
-            "x": 0,
-            "y": 9
+            "x": 12,
+            "y": 12
           },
           "id": 13,
           "options": {
@@ -379,6 +679,188 @@ data:
           ],
           "title": "WebRCA incidents",
           "type": "table"
+        },
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 18
+          },
+          "id": 18,
+          "panels": [],
+          "title": "SLO Alerts",
+          "type": "row"
+        },
+        {
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 19
+          },
+          "id": 24,
+          "options": {
+            "code": {
+              "language": "plaintext",
+              "showLineNumbers": false,
+              "showMiniMap": false
+            },
+            "content": "",
+            "mode": "markdown"
+          },
+          "pluginVersion": "11.6.3",
+          "title": "The status is dependent on timeframe and it can provide historical data. Firing alerts are real time events.",
+          "transparent": true,
+          "type": "text"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "P22466E8E7855F1E0"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "links": [],
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "#0c6700",
+                      "index": 0,
+                      "text": "None"
+                    }
+                  },
+                  "type": "value"
+                },
+                {
+                  "options": {
+                    "from": 1,
+                    "result": {
+                      "color": "#b5061a",
+                      "index": 1
+                    },
+                    "to": 100
+                  },
+                  "type": "range"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value"
+                },
+                "properties": [
+                  {
+                    "id": "links",
+                    "value": [
+                      {
+                        "targetBlank": true,
+                        "title": "Active SLO alerts for specific cluster",
+                        "url": "https://grafana.app-sre.devshift.net/alerting/list?view=grouped&search=datasource:rhtap-observatorium-production%20label:slo=true%20label:source_cluster=${cluster}"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 12,
+            "x": 0,
+            "y": 20
+          },
+          "id": 23,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "P22466E8E7855F1E0"
+              },
+              "editorMode": "code",
+              "expr": "count(ALERTS{slo=\"true\", alertstate=\"firing\", source_cluster=\"$cluster\", tested_cluster=\"\"})",
+              "instant": false,
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Number of firing SLO Alerts ",
+          "type": "stat"
+        },
+        {
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 12,
+            "x": 12,
+            "y": 20
+          },
+          "id": 11,
+          "options": {
+            "alertInstanceLabelFilter": "{slo=\"true\", source_cluster=\"$cluster\", tested_cluster=\"\"}",
+            "alertName": "",
+            "dashboardAlerts": false,
+            "datasource": "rhtap-observatorium-production",
+            "groupBy": [
+              "alertname"
+            ],
+            "groupMode": "default",
+            "maxItems": 20,
+            "showInactiveAlerts": false,
+            "sortOrder": 5,
+            "stateFilter": {
+              "error": true,
+              "firing": true,
+              "noData": false,
+              "normal": false,
+              "pending": false
+            },
+            "viewMode": "list"
+          },
+          "pluginVersion": "11.6.3",
+          "title": "Active SLO Alerts",
+          "type": "alertlist"
         }
       ],
       "preload": false,
@@ -420,5 +902,5 @@ data:
       "timezone": "UTC",
       "title": "Konflux Status Page",
       "uid": "aes1ns0htwni8a",
-      "version": 3
+      "version": 4
     }
