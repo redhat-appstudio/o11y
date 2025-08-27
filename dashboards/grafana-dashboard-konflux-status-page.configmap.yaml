@@ -178,6 +178,7 @@ data:
             "x": 0,
             "y": 4
           },
+          "hideTimeOverride": true,
           "id": 10,
           "options": {
             "colorMode": "value",
@@ -210,7 +211,8 @@ data:
               "refId": "A"
             }
           ],
-          "title": "Container builds",
+          "timeFrom": "10m",
+          "title": "Container builds status",
           "type": "stat"
         },
         {
@@ -294,6 +296,7 @@ data:
             "x": 12,
             "y": 4
           },
+          "hideTimeOverride": true,
           "id": 20,
           "options": {
             "colorMode": "value",
@@ -326,7 +329,8 @@ data:
               "refId": "A"
             }
           ],
-          "title": "RPM builds",
+          "timeFrom": "10m",
+          "title": "RPM builds status",
           "type": "stat"
         },
         {
@@ -341,32 +345,6 @@ data:
           "panels": [],
           "title": "WebRCA Incidents",
           "type": "row"
-        },
-        {
-          "fieldConfig": {
-            "defaults": {},
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 11
-          },
-          "id": 25,
-          "options": {
-            "code": {
-              "language": "plaintext",
-              "showLineNumbers": false,
-              "showMiniMap": false
-            },
-            "content": "",
-            "mode": "markdown"
-          },
-          "pluginVersion": "11.6.3",
-          "title": "Number of active incidents is based on given timeframe. If Last 30 days is set, it shows number of incidents that occurred or are ongoing in realtime. ",
-          "transparent": true,
-          "type": "text"
         },
         {
           "datasource": {
@@ -447,7 +425,7 @@ data:
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 12
+            "y": 11
           },
           "id": 21,
           "options": {
@@ -477,7 +455,7 @@ data:
               "editorMode": "code",
               "format": "table",
               "rawQuery": true,
-              "rawSql": "SELECT\n  COUNT(*)\nFROM\n  incidents AS i\nJOIN\n  incident_products AS ip ON ip.incident_id = i.id\nWHERE\n  i.status != 'paused' AND\n  i.created_at <= $__timeTo() AND\n  (\n    i.resolved_at >= $__timeFrom() \n    OR \n    i.resolved_at IS NULL\n  ) AND\n ip.product_id = 'ebfd6fef-1922-4bcb-a2f9-b33f586955ed';",
+              "rawSql": "SELECT\n  COUNT(*)\nFROM\n  incidents AS i\nJOIN\n  incident_products AS ip ON ip.incident_id = i.id\nWHERE\n i.status = 'ongoing' AND\n ip.product_id = 'ebfd6fef-1922-4bcb-a2f9-b33f586955ed';",
               "refId": "A",
               "sql": {
                 "columns": [
@@ -498,7 +476,7 @@ data:
               }
             }
           ],
-          "title": "Number of active WebRCA incidents",
+          "title": "Number of currently active WebRCA incidents",
           "type": "stat"
         },
         {
@@ -631,7 +609,7 @@ data:
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 12
+            "y": 11
           },
           "id": 13,
           "options": {
@@ -686,38 +664,12 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 18
+            "y": 17
           },
           "id": 18,
           "panels": [],
           "title": "SLO Alerts",
           "type": "row"
-        },
-        {
-          "fieldConfig": {
-            "defaults": {},
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 19
-          },
-          "id": 24,
-          "options": {
-            "code": {
-              "language": "plaintext",
-              "showLineNumbers": false,
-              "showMiniMap": false
-            },
-            "content": "",
-            "mode": "markdown"
-          },
-          "pluginVersion": "11.6.3",
-          "title": "The status is dependent on timeframe and it can provide historical data. Firing alerts are real time events.",
-          "transparent": true,
-          "type": "text"
         },
         {
           "datasource": {
@@ -798,8 +750,9 @@ data:
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 20
+            "y": 18
           },
+          "hideTimeOverride": true,
           "id": 23,
           "options": {
             "colorMode": "value",
@@ -809,7 +762,7 @@ data:
             "percentChangeColorMode": "standard",
             "reduceOptions": {
               "calcs": [
-                "lastNotNull"
+                "last"
               ],
               "fields": "",
               "values": false
@@ -833,7 +786,8 @@ data:
               "refId": "A"
             }
           ],
-          "title": "Number of firing SLO Alerts ",
+          "timeFrom": "10m",
+          "title": "Number of currently firing SLO Alerts ",
           "type": "stat"
         },
         {
@@ -845,7 +799,7 @@ data:
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 20
+            "y": 18
           },
           "id": 11,
           "options": {
