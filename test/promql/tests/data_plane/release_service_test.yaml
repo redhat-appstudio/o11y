@@ -11,9 +11,9 @@ tests:
         values: '1+8x59'
       - series: 'release_pre_processing_duration_seconds_count{job="release", namespace="foo", source_cluster="cluster01"}'
         values: '1+9x59'
-      - series: 'release_pre_processing_duration_seconds_bucket{le="10", job="release", namespace="foo", source_cluster="cluster02"}'
+      - series: 'release_pre_processing_duration_seconds_bucket{le="10", job="release", namespace="foo", source_cluster="cluster01"}'
         values: '1+8x59'
-      - series: 'release_pre_processing_duration_seconds_count{job="release", namespace="foo", source_cluster="cluster02"}'
+      - series: 'release_pre_processing_duration_seconds_count{job="release", namespace="foo", source_cluster="cluster01"}'
         values: '1+9x59'
     alert_rule_test:
       - eval_time: 1h
@@ -23,6 +23,7 @@ tests:
               severity: critical
               slo: "true"
               job: "release"
+              source_cluster: "cluster01"
             exp_annotations:
               summary: >-
                 90% of Releases must start processing under 10 seconds
@@ -39,9 +40,9 @@ tests:
         values: '1+8x59'
       - series: 'release_validation_duration_seconds_count{job="release", namespace="foo", source_cluster="cluster01"}'
         values: '1+9x59'
-      - series: 'release_validation_duration_seconds_bucket{le="5", job="release", namespace="foo", source_cluster="cluster02"}'
+      - series: 'release_validation_duration_seconds_bucket{le="5", job="release", namespace="foo", source_cluster="cluster01"}'
         values: '1+8x59'
-      - series: 'release_validation_duration_seconds_count{job="release", namespace="foo", source_cluster="cluster02"}'
+      - series: 'release_validation_duration_seconds_count{job="release", namespace="foo", source_cluster="cluster01"}'
         values: '1+9x59'
     alert_rule_test:
       - eval_time: 1h
@@ -51,6 +52,7 @@ tests:
               severity: critical
               slo: "true"
               job: "release"
+              source_cluster: "cluster01"
             exp_annotations:
               summary: >-
                 90% of Releases must be validated under 5 seconds

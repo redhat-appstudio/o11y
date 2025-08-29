@@ -12,17 +12,17 @@ spec:
     rules:
     # record rules for `ReleaseServicePreProcessingDurationSeconds`
     - record: rate_of_release_pre_processing_duration_seconds_shorter_than_10s_per_10m
-      expr: sum by (job) (rate(release_pre_processing_duration_seconds_bucket{le="10"}[10m]))
+      expr: sum by (job,source_cluster) (rate(release_pre_processing_duration_seconds_bucket{le="10"}[10m]))
 
     - record: rate_of_release_pre_processing_duration_seconds_counter_per_10m
-      expr: sum by (job) (rate(release_pre_processing_duration_seconds_count[10m]) > 0)
+      expr: sum by (job,source_cluster) (rate(release_pre_processing_duration_seconds_count[10m]) > 0)
 
     # record rules for `ReleaseServiceValidationDurationSeconds`
     - record: rate_of_release_validation_duration_seconds_shorter_than_5s_per_10m
-      expr: sum by (job) (rate(release_validation_duration_seconds_bucket{le="5"}[10m]))
+      expr: sum by (job,source_cluster) (rate(release_validation_duration_seconds_bucket{le="5"}[10m]))
 
     - record: rate_of_release_validation_duration_seconds_counter_per_10m
-      expr: sum by (job) (rate(release_validation_duration_seconds_count[10m]) > 0)
+      expr: sum by (job,source_cluster) (rate(release_validation_duration_seconds_count[10m]) > 0)
 
     - alert: ReleaseServiceValidationDurationSeconds
       expr: |
