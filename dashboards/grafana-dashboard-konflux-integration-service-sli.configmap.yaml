@@ -50,13 +50,13 @@ data:
             "type": "prometheus",
             "uid": "${Datasource}"
           },
-          "description": "Total number of snapshots processed by the operator",
+          "description": "Total number of snapshots processed by the operator over the selected time range for each cluster",
           "fieldConfig": {
             "defaults": {
               "color": {
                 "mode": "palette-classic"
               },
-                "custom": {
+              "custom": {
                 "axisBorderShow": true,
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
@@ -104,8 +104,7 @@ data:
                     "value": 80
                   }
                 ]
-              },
-              "unit": "percent"
+              }
             },
             "overrides": []
           },
@@ -144,7 +143,7 @@ data:
               "disableTextWrap": false,
               "editorMode": "code",
               "exemplar": false,
-              "expr": "rate(integration_svc_snapshot_attempt_total{source_cluster=~\"$cluster\"}[$__rate_interval])",
+              "expr": "sum by (source_cluster, reason) (increase(integration_svc_snapshot_attempt_total{source_cluster=~\"$cluster\"}[$__range]))",
               "fullMetaSearch": false,
               "includeNullMetadata": true,
               "instant": false,
@@ -217,8 +216,7 @@ data:
                     "value": 80
                   }
                 ]
-              },
-              "unit": "percent"
+              }
             },
             "overrides": []
           },
@@ -258,7 +256,7 @@ data:
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "sum by (source_cluster) (increase(integration_svc_integration_pipelinerun_total{source_cluster=~\"$cluster\"}[$__interval]))\n",
+              "expr": "sum by (source_cluster) (increase(integration_svc_integration_pipelinerun_total{source_cluster=~\"$cluster\"}[$__range]))\n",
               "instant": false,
               "legendFormat": "{{source_cluster}}",
               "range": true,
@@ -328,7 +326,7 @@ data:
                   }
                 ]
               },
-              "unit": "percent"
+              "unit": "s"
             },
             "overrides": []
           },
@@ -491,7 +489,7 @@ data:
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "histogram_quantile(0.95,\n  sum by(le, source_cluster, name) (\n    rate(workqueue_queue_duration_seconds_bucket{name=~\"snapshot|integrationtestscenario\", namespace=\"integration-service\", source_cluster=~\"$cluster\"}[$__rate_interval])\n  )\n)\n\n",
+              "expr": "histogram_quantile(0.95,\n  sum by(le, source_cluster, name) (\n    rate(workqueue_queue_duration_seconds_bucket{name=~\"snapshot|integrationtestscenario\", namespace=\"integration-service\", source_cluster=~\"$cluster\"}[$__rate_interval])\n  )\n)\n\n",
               "instant": false,
               "legendFormat": "{{source_cluster}} - {{name}}",
               "range": true,
@@ -561,7 +559,7 @@ data:
                   }
                 ]
               },
-              "unit": "short"
+              "unit": "s"
             },
             "overrides": []
           },
@@ -596,7 +594,7 @@ data:
           "targets": [
             {
               "datasource": {
-                  "type": "prometheus",
+                "type": "prometheus",
                 "uid": "${Datasource}"
               },
               "editorMode": "code",
@@ -671,7 +669,7 @@ data:
                   }
                 ]
               },
-              "unit": "short"
+              "unit": "s"
             },
             "overrides": []
           },
@@ -711,7 +709,7 @@ data:
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "histogram_quantile(0.95,\n  sum by(le, source_cluster) (\n    rate(integration_svc_snapshot_attempt_duration_seconds_bucket{source_cluster=~\"$cluster\"}[$__rate_interval])\n  )\n)",
+              "expr": "histogram_quantile(0.95,\n  sum by(le, source_cluster) (\n    rate(integration_svc_snapshot_attempt_duration_seconds_bucket{source_cluster=~\"$cluster\"}[$__rate_interval])\n  )\n)",
               "instant": false,
               "legendFormat": "{{source_cluster}}",
               "range": true,
@@ -763,7 +761,7 @@ data:
                 "stacking": {
                   "group": "A",
                   "mode": "none"
-      },
+                },
                 "thresholdsStyle": {
                   "mode": "off"
                 }
@@ -781,7 +779,7 @@ data:
                   }
                 ]
               },
-              "unit": "short"
+              "unit": "s"
             },
             "overrides": []
           },
@@ -795,7 +793,7 @@ data:
           "options": {
             "legend": {
               "calcs": [
-              "min",
+                "min",
                 "max",
                 "lastNotNull"
               ],
@@ -821,7 +819,7 @@ data:
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "histogram_quantile(0.95,\n  sum by(le, source_cluster) (\n    rate(integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_bucket{source_cluster=~\"$cluster\"}[$__rate_interval])\n  )\n)",
+              "expr": "histogram_quantile(0.95,\n  sum by(le, source_cluster) (\n    rate(integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_bucket{source_cluster=~\"$cluster\"}[$__rate_interval])\n  )\n)",
               "instant": false,
               "legendFormat": "{{source_cluster}}",
               "range": true,
@@ -891,7 +889,7 @@ data:
                   }
                 ]
               },
-              "unit": "short"
+              "unit": "s"
             },
             "overrides": []
           },
@@ -931,7 +929,7 @@ data:
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "histogram_quantile(0.95,\n  sum by(le, source_cluster) (\n    rate(integration_svc_release_latency_seconds_bucket{source_cluster=~\"$cluster\"}[$__rate_interval])\n  )\n)",
+              "expr": "histogram_quantile(0.95,\n  sum by(le, source_cluster) (\n    rate(integration_svc_release_latency_seconds_bucket{source_cluster=~\"$cluster\"}[$__rate_interval])\n  )\n)",
               "instant": false,
               "legendFormat": "__auto",
               "range": true,
@@ -1043,7 +1041,7 @@ data:
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "avg_over_time(redhat_appstudio_integrationservice_global_github_app_available[24h]) * 100",
+              "expr": "avg_over_time(redhat_appstudio_integrationservice_global_github_app_available{source_cluster=~\"$cluster\"}[24h]) * 100",
               "instant": false,
               "legendFormat": "{{source_cluster}}",
               "range": true,
@@ -1168,5 +1166,5 @@ data:
       "timezone": "browser",
       "title": "Konflux - Integration Service SLI's",
       "uid": "aewrovz4nh62os",
-      "version": 1
+      "version": 4
     }
