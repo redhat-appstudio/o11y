@@ -489,7 +489,7 @@ data:
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "histogram_quantile(0.95,\n  sum by(le, source_cluster, name) (\n    rate(workqueue_queue_duration_seconds_bucket{name=~\"snapshot|integrationtestscenario\", namespace=\"integration-service\", source_cluster=~\"$cluster\"}[$__rate_interval])\n  )\n)\n\n",
+              "expr": "histogram_quantile(0.95,sum by(le, source_cluster, name) (rate(workqueue_queue_duration_seconds_bucket{name=~\"snapshot|integrationtestscenario\", namespace=\"integration-service\", source_cluster=~\"$cluster\"}[$__rate_interval])))\n\n",
               "instant": false,
               "legendFormat": "{{source_cluster}} - {{name}}",
               "range": true,
@@ -709,7 +709,7 @@ data:
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "histogram_quantile(0.95,\n  sum by(le, source_cluster) (\n    rate(integration_svc_snapshot_attempt_duration_seconds_bucket{source_cluster=~\"$cluster\"}[$__rate_interval])\n  )\n)",
+              "expr": "histogram_quantile(0.95,sum by(le, source_cluster) (rate(integration_svc_snapshot_attempt_duration_seconds_bucket{source_cluster=~\"$cluster\"}[$__rate_interval])))",
               "instant": false,
               "legendFormat": "{{source_cluster}}",
               "range": true,
@@ -819,7 +819,7 @@ data:
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "histogram_quantile(0.95,\n  sum by(le, source_cluster) (\n    rate(integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_bucket{source_cluster=~\"$cluster\"}[$__rate_interval])\n  )\n)",
+              "expr": "histogram_quantile(0.95,sum by(le, source_cluster) (rate(integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_bucket{source_cluster=~\"$cluster\"}[$__rate_interval])))",
               "instant": false,
               "legendFormat": "{{source_cluster}}",
               "range": true,
@@ -834,7 +834,7 @@ data:
             "type": "prometheus",
             "uid": "${Datasource}"
           },
-          "description": "Length of time, in seconds, from end of testing to release created ",
+          "description": "Measures the time, in seconds, from the end of testing until a release is created. The different lines show the latency distribution. P50 - median experience\nP95 - target experience\nP99 - outliers",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -929,11 +929,37 @@ data:
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "histogram_quantile(0.95,\n  sum by(le, source_cluster) (\n    rate(integration_svc_release_latency_seconds_bucket{source_cluster=~\"$cluster\"}[$__rate_interval])\n  )\n)",
+              "expr": "histogram_quantile(0.95,sum by(le, source_cluster) (rate(integration_svc_release_latency_seconds_bucket{source_cluster=~\"$cluster\"}[$__rate_interval])))",
               "instant": false,
-              "legendFormat": "__auto",
+              "legendFormat": "{{source_cluster}} - 95th percentile",
               "range": true,
               "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${Datasource}"
+              },
+              "editorMode": "code",
+              "expr": "histogram_quantile(0.50,sum by(le, source_cluster) (rate(integration_svc_release_latency_seconds_bucket{source_cluster=~\"$cluster\"}[$__rate_interval])))",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "{{source_cluster}} - 50th percentile",
+              "range": true,
+              "refId": "B"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${Datasource}"
+              },
+              "editorMode": "code",
+              "expr": "histogram_quantile(0.99,sum by(le, source_cluster) (rate(integration_svc_release_latency_seconds_bucket{source_cluster=~\"$cluster\"}[$__rate_interval])))",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "{{source_cluster}} - 99th percentile",
+              "range": true,
+              "refId": "C"
             }
           ],
           "title": "Latency of release creation seconds",
@@ -1166,5 +1192,5 @@ data:
       "timezone": "browser",
       "title": "Konflux - Integration Service SLI's",
       "uid": "aewrovz4nh62os",
-      "version": 4
+      "version": 37
     }
