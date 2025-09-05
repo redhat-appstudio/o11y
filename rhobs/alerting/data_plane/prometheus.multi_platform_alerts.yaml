@@ -68,3 +68,37 @@ spec:
           The multi-platform controller platform health check "{{ $labels.check }}" has been failing for 5min in cluster {{ $labels.source_cluster }}
         alert_team_handle: <!subteam^S05Q1P4Q2TG>
         team: konflux-infra
+
+  - name: multi-platform-controller-metrics-health
+    interval: 30s
+    rules:
+    - alert: MultiPlatformControllerMetricsUnhealthy
+      expr: |
+        count by (source_cluster) (multi_platform_controller_running_tasks < 0 or multi_platform_controller_waiting_tasks < 0) > 0
+      for: 1m
+      labels:
+        severity: warning
+      annotations:
+        summary: >-
+          Multi-platform controller metrics are unhealthy in cluster {{ $labels.source_cluster }}
+        description: >-
+          The multi-platform controller Gauge metrics are showing negative values for the last 1 minute in cluster {{ $labels.source_cluster }}
+        alert_routing_key: infra
+        team: konflux-infra
+
+  - name: multi-platform-controller-provisioning-success-rate
+    interval: 1m
+    rules:
+    - alert: MultiPlatformControllerProvisioningSuccessRateTooLow
+      expr: |
+        (increase(multi_platform_controller_provisioning_successes[30m]) / (increase(multi_platform_controller_provisioning_successes[30m]) + increase(multi_platform_controller_provisioning_failures[30m]))) * 100 < 90
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: >-
+          Multi-platform controller provisioning success rate is too low in cluster {{ $labels.source_cluster }}
+        description: >-
+          The multi-platform controller provisioning success rate is less than 90% for the last 5 minutes in cluster {{ $labels.source_cluster }}
+        alert_routing_key: infra
+        team: konflux-infra
