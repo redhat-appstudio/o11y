@@ -1,30 +1,30 @@
 evaluation_interval: 1m
 
 rule_files:
-  - 'prometheus.latency_snapshot_to_static_integration_plr_creation_alerts.yaml'
+  - 'prometheus.integration_service_snapshot_created_to_pipelinerun_started_alerts.yaml'
 
 tests:
   - interval: 1m
     input_series:
       # Simulating data from Cluster 1 (crosses the 10% threshold)
       - series: 'integration_svc_snapshot_created_to_pipelinerun_started_seconds_bucket{le="5", source_cluster="cluster01"}'
-        values: '0+10x10'  # 10 requests per minute took less than 5s
+        values: '0+10x15'  # 10 requests per minute took less than 5s
       - series: 'integration_svc_snapshot_created_to_pipelinerun_started_seconds_bucket{le="+Inf", source_cluster="cluster01"}'
-        values: '0+100x10'  # 100 total occurrences per minute in cluster01
+        values: '0+100x15'  # 100 total occurrences per minute in cluster01
 
       # Simulating data from Cluster 2 (does not cross the 10% threshold)
       - series: 'integration_svc_snapshot_created_to_pipelinerun_started_seconds_bucket{le="5", source_cluster="cluster02"}'
-        values: '0+90x10'  # 90 requests per minute took less than 5s
+        values: '0+90x15'  # 90 requests per minute took less than 5s
       - series: 'integration_svc_snapshot_created_to_pipelinerun_started_seconds_bucket{le="+Inf", source_cluster="cluster02"}'
-        values: '0+100x10'  # 100 total occurrences per minute in cluster02
+        values: '0+100x15'  # 100 total occurrences per minute in cluster02
 
     alert_rule_test:
       - eval_time: 14m
-        alertname: LatencySnapshotToStaticIntegrationPLRCreation
+        alertname: IntegrationServiceSnapshotTimeToPLR
         exp_alerts:
           - exp_labels:
-              severity: high
-              slo: "false"
+              severity: critical
+              slo: "true"
               source_cluster: cluster01
             exp_annotations:
               summary: Latency from an application snapshot created to integration PLRs in static envs created
@@ -34,7 +34,7 @@ tests:
                 cluster01
               alert_team_handle: <!subteam^S05M4AG8CJH>
               team: integration
-              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/latency_snapshot_to_integration_test_static.md
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/sre/time_to_start_pipelinerun.md
 
   # Scenario where both clusters cross the 10% threshold
   # Alert triggered for both clusters
@@ -42,23 +42,23 @@ tests:
     input_series:
       # Simulating data from Cluster 1 (crosses the 10% threshold)
       - series: 'integration_svc_snapshot_created_to_pipelinerun_started_seconds_bucket{le="5", source_cluster="cluster01"}'
-        values: '0+5x10'  # 5 requests per minute took less than 5s
+        values: '0+5x15'  # 5 requests per minute took less than 5s
       - series: 'integration_svc_snapshot_created_to_pipelinerun_started_seconds_bucket{le="+Inf", source_cluster="cluster01"}'
-        values: '0+100x10'  # 100 total occurrences per minute in cluster01
+        values: '0+100x15'  # 100 total occurrences per minute in cluster01
 
       # Simulating data from Cluster 2 (also crosses the 10% threshold)
       - series: 'integration_svc_snapshot_created_to_pipelinerun_started_seconds_bucket{le="5", source_cluster="cluster02"}'
-        values: '0+5x10'  # 5 requests per minute took less than 5s
+        values: '0+5x15'  # 5 requests per minute took less than 5s
       - series: 'integration_svc_snapshot_created_to_pipelinerun_started_seconds_bucket{le="+Inf", source_cluster="cluster02"}'
-        values: '0+100x10'  # 100 total occurrences per minute in cluster02
+        values: '0+100x15'  # 100 total occurrences per minute in cluster02
 
     alert_rule_test:
       - eval_time: 14m
-        alertname: LatencySnapshotToStaticIntegrationPLRCreation
+        alertname: IntegrationServiceSnapshotTimeToPLR
         exp_alerts:
           - exp_labels:
-              severity: high
-              slo: "false"
+              severity: critical
+              slo: "true"
               source_cluster: cluster01
             exp_annotations:
               summary: Latency from an application snapshot created to integration PLRs in static envs created
@@ -68,10 +68,10 @@ tests:
                 cluster01
               alert_team_handle: <!subteam^S05M4AG8CJH>
               team: integration
-              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/latency_snapshot_to_integration_test_static.md
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/sre/time_to_start_pipelinerun.md
           - exp_labels:
-              severity: high
-              slo: "false"
+              severity: critical
+              slo: "true"
               source_cluster: cluster02
             exp_annotations:
               summary: Latency from an application snapshot created to integration PLRs in static envs created
@@ -81,7 +81,7 @@ tests:
                 cluster02
               alert_team_handle: <!subteam^S05M4AG8CJH>
               team: integration
-              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/latency_snapshot_to_integration_test_static.md
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/sre/time_to_start_pipelinerun.md
 
   # Scenario where neither cluster crosses the 10% threshold
   # Alert not triggered
@@ -89,17 +89,17 @@ tests:
     input_series:
       # Simulating data from Cluster 1 (does not cross the 10% threshold)
       - series: 'integration_svc_snapshot_created_to_pipelinerun_started_seconds_bucket{le="5", source_cluster="cluster01"}'
-        values: '0+95x10'  # 95 requests per minute took less than 5s
+        values: '0+95x15'  # 95 requests per minute took less than 5s
       - series: 'integration_svc_snapshot_created_to_pipelinerun_started_seconds_bucket{le="+Inf", source_cluster="cluster01"}'
-        values: '0+100x10'  # 100 total occurrences per minute in cluster01
+        values: '0+100x15'  # 100 total occurrences per minute in cluster01
 
       # Simulating data from Cluster 2 (does not cross the 10% threshold)
       - series: 'integration_svc_snapshot_created_to_pipelinerun_started_seconds_bucket{le="5", source_cluster="cluster02"}'
-        values: '0+95x10'  # 95 requests per minute took less than 5s
+        values: '0+95x15'  # 95 requests per minute took less than 5s
       - series: 'integration_svc_snapshot_created_to_pipelinerun_started_seconds_bucket{le="+Inf", source_cluster="cluster02"}'
-        values: '0+100x10'  # 100 total occurrences per minute in cluster02
+        values: '0+100x15'  # 100 total occurrences per minute in cluster02
 
     alert_rule_test:
       - eval_time: 14m
-        alertname: LatencySnapshotToStaticIntegrationPLRCreation
+        alertname: IntegrationServiceSnapshotTimeToPLR
         exp_alerts: []  # No alerts are expected in this scenario
