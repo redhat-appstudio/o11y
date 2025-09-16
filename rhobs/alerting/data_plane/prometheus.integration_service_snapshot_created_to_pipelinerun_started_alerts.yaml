@@ -1,15 +1,15 @@
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
-  name: rhtap-latency-snapshot-to-static-integration-plr-creation-alerting-rules
+  name: rhtap-integration-service-snapshot-created-to-pipelinerun-started
   labels:
     tenant: rhtap
 spec:
   groups:
-  - name: latency-snapshot-to-static-integration-plr-creation
+  - name: integration-service-snapshot-time-to-plr
     interval: 1m
     rules:
-    - alert: LatencySnapshotToStaticIntegrationPLRCreation
+    - alert: IntegrationServiceSnapshotTimeToPLR
       expr: |
         (
           (
@@ -21,8 +21,8 @@ spec:
         ) > 0.10
       for: 10m
       labels:
-        severity: high
-        slo: "false"
+        severity: critical
+        slo: "true"
       annotations:
         summary: >-
           Latency from an application snapshot created to integration PLRs in static envs created
@@ -32,4 +32,4 @@ spec:
           {{ $labels.source_cluster }}
         alert_team_handle: <!subteam^S05M4AG8CJH>
         team: integration
-        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/latency_snapshot_to_integration_test_static.md
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/sre/time_to_start_pipelinerun.md
