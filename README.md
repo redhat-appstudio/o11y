@@ -148,6 +148,20 @@ commit
 [reference](https://gitlab.cee.redhat.com/service/app-interface/-/blob/b03e4336a3223ec7b90dc9bc69707c9ee0ff9af6/data/services/stonesoup/cicd/saas-stonesoup-dashboards.yml#L37)
 in app-interface.
 
+When creating a dashboard config map resource, please use this snippet to start with:
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: <your-dashboard-name>.configmap
+  labels:
+    grafana_dashboard: "true"
+  annotations:
+    grafana-folder: /grafana-dashboard-definitions/RHTAP
+data:
+  <your-dashboard-name>.json: |-
+```
+
 Note: The dashboard UID must always be unique in each Grafana instance. Make sure to modify it by changing a few characters or deleting the test dashboard in staging instance. If the test dashboard is kept and the uid is not updated, glitches will occur insta grafana as it will juggle between the two dashboards with identical UIDs.
 
 ## Adding Metrics and Labels
