@@ -31,3 +31,82 @@ tests:
               alert_team_handle: "<!subteam^S05Q1P4Q2TG>"
               team: konflux-infra
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/api_server_error_rate_alert.md
+
+
+  # High CPU usage - firing
+  - name: Test KonfluxAPIServerHighCPUUsage
+    interval: 1m
+    input_series:
+      - series: 'process_cpu_seconds_total{job="apiserver",source_cluster="cluster01"}'
+        # Value that produces a rate of 500/min.
+        values: '0 500 1000 1500 2000 2500 3000 3500 4000 4500'
+      - series: 'node_cpu_seconds_total{mode="idle",source_cluster="cluster01"}'
+        # Value that produces a rate of 550/min. Ratio is ~91%, which is > 80%.
+        values: '0 550 1100 1650 2200 2750 3300 3850 4400 4950'
+
+    alert_rule_test:
+      - alertname: KonfluxAPIServerHighCPUUsage
+        eval_time: 10m
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              source_cluster: "cluster01"
+            exp_annotations:
+              summary: API Server CPU usage is above 80% in cluster01
+              description: >-
+                API Server process CPU consumption is above 80% for 5 minutes in cluster cluster01.
+              alert_team_handle: <!subteam^S05Q1P4Q2TG>
+              team: konflux-infra
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/apiserver_HighCPUUsage.md
+
+
+  # High CPU usage - NOT firing
+  - name: Test KonfluxAPIServerHighCPUUsage
+    interval: 1m
+    input_series:
+      - series: 'process_cpu_seconds_total{job="apiserver",source_cluster="cluster01"}'
+        values: '0 0 0 0 0 0 0 0 0 0'
+      - series: 'node_cpu_seconds_total{mode="idle",source_cluster="cluster01"}'
+        values: '0 1 2 3 4 5 6 7 8 9'
+    alert_rule_test:
+      - alertname: KonfluxAPIServerHighCPUUsage
+        eval_time: 10m
+        exp_alerts: []
+
+# High memory usage - firing
+  - name: Test KonfluxAPIServerHighMemoryUsageFiring
+    interval: 1m
+    input_series:
+      - series: 'process_resident_memory_bytes{job="apiserver",source_cluster="cluster01"}'
+        values: '60x60'
+      - series: 'node_memory_MemTotal_bytes{source_cluster="cluster01"}'
+        values: '70x60'
+    alert_rule_test:
+      - alertname: KonfluxAPIServerHighMemoryUsage
+        eval_time: 10m
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              source_cluster: "cluster01"
+            exp_annotations:
+              summary: API Server memory usage is above 80% in cluster01
+              description: >-
+                API Server process memory consumption is above 80% for 5 minutes in cluster cluster01.
+              alert_team_handle: <!subteam^S05Q1P4Q2TG>
+              team: konflux-infra
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/apiserver_HighMemoryUsage.md
+
+  # High memory usage - NOT firing
+  - name: Test KonfluxAPIServerHighMemoryUsage
+    interval: 1m
+    input_series:
+      - series: 'process_resident_memory_bytes{job="apiserver",source_cluster="cluster01"}'
+        values: '6e10x10'
+      - series: 'node_memory_MemTotal_bytes{source_cluster="cluster01"}'
+        values: '1e11x10'
+    alert_rule_test:
+      - alertname: KonfluxAPIServerHighMemoryUsage
+        eval_time: 10m
+        exp_alerts: []
