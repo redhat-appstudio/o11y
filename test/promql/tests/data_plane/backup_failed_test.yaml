@@ -9,8 +9,7 @@ tests:
       # No backup failures
       - series: velero_backup_failure_total{namespace="openshift-adp", schedule="backup-toolchain-member", source_cluster="cluster01"}
         values: '0x60'
-
-      # A backup failure at every interval for 1h
+      # A backup failure at every interval for 1
       - series: velero_backup_failure_total{namespace="openshift-adp", schedule="backup-tenants", source_cluster="cluster01"}
         values: '0+1x60'
 
@@ -26,5 +25,76 @@ tests:
             exp_annotations:
               summary: OADP experienced backup failures for schedule backup-tenants
               description: OADP had 60 backup failure(s) over the last hour for schedule backup-tenants.
-              alert_routing_key: openshift-adp
+              alert_routing_key: spreandinfra
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/backup/backup-failed.md
+
+  - interval: 1m
+    input_series:
+
+      # Timestamp should be significantly less than -86400 ( timestamp < 3600 - 90000 = -86400 ) to ensure the alert fires
+      - series: velero_backup_last_successful_timestamp{schedule="backup-tenants", source_cluster="cluster01"}
+        values: '-100000x60'
+
+    alert_rule_test:
+      - eval_time: 60m
+        alertname: BackupNotRunning
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              schedule: backup-tenants
+              source_cluster: cluster01
+            exp_annotations:
+              summary: OADP experienced issues with schedule backup not running backup-tenants in cluster01.
+              description: OADP schedule backups not running over the last 25 hours for schedule backup-tenants in cluster cluster01.
+              alert_routing_key: spreandinfra
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/backup/backup-failed.md
+
+  - interval: 1m
+    input_series:
+      # No partial failures for one schedule
+      - series: velero_backup_partial_failure_total{namespace="openshift-adp", schedule="backup-toolchain-member", source_cluster="cluster01"}
+        values: '0x60'
+      # Partial failures increasing over time for another schedule
+      - series: velero_backup_partial_failure_total{namespace="openshift-adp", schedule="backup-tenants", source_cluster="cluster01"}
+        values: '0+1x60'
+
+    alert_rule_test:
+      - eval_time: 60m
+        alertname: BackupPartialFailed
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: openshift-adp
+              source_cluster: cluster01
+              schedule: backup-tenants
+            exp_annotations:
+              summary: OADP experienced increase in partial failures for schedule backup backup-tenants in cluster01.
+              description: OADP experienced increase in partial failures for schedule backup over the last hour for schedule backup-tenants in cluster cluster01.
+              alert_routing_key: spreandinfra
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/backup/backup-failed.md
+
+  - interval: 1m
+    input_series:
+      # Long running backup duration buckets should trigger alert (>7200s)
+      - series: 'velero_backup_duration_seconds_bucket{schedule="backup-tenants", source_cluster="cluster01", le="3600"}'
+        values: '0 1 2 3 4 5'
+      - series: 'velero_backup_duration_seconds_bucket{schedule="backup-tenants", source_cluster="cluster01", le="7200"}'
+        values: '0 1 2 3 4 5'
+      - series: 'velero_backup_duration_seconds_bucket{schedule="backup-tenants", source_cluster="cluster01", le="10800"}'
+        values: '0 5 10 15 20 25'
+      - series: 'velero_backup_duration_seconds_bucket{schedule="backup-tenants", source_cluster="cluster01", le="+Inf"}'
+        values: '0 5 10 15 20 25'
+
+    alert_rule_test:
+      - eval_time: 12h
+        alertname: BackupLongRunning
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              schedule: backup-tenants
+              source_cluster: cluster01
+            exp_annotations:
+              summary: OADP experienced long running backups for schedule backup-tenants in cluster01.
+              description: OADP experienced long running backups over the last 12 hours for schedule backup-tenants in cluster cluster01.
+              alert_routing_key: spreandinfra
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/backup/backup-failed.md
