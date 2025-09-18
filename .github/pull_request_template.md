@@ -8,7 +8,7 @@
 
 <!-- Before you submit the PR for review, please go through this checklist. -->
 
-- [ ] **Jira Ticket:** The corresponding Jira ticket is linked in the description above, in the name of the PR and/or commit.
+- [ ] **Jira Ticket:** If a corresponding Jira ticket exists, it is linked in the description above, in the PR name, and/or in the commit message.
 - [ ] **Alert Tests:** New or modified alerts include tests to ensure they function correctly.
 - [ ] **SOP / Runbook:** Any required SOP has been created or updated as needed. If it has direct connection to the dashboard or alert - It should be included within the dashboard or alert's runbook label respectively. 
 - [ ] **Dashboards Addition:** New dashboards or significant changes to them should have a link to the [staging instance](https://grafana.stage.devshift.net/dashboards) for validation purposes.
