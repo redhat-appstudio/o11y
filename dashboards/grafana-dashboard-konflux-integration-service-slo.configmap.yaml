@@ -42,6 +42,18 @@ data:
           "tooltip": "",
           "type": "link",
           "url": "https://grafana.app-sre.devshift.net/d/aewrovz4nh62os/konflux-integration-service-sli-s?orgId=1"
+        },
+        {
+          "asDropdown": false,
+          "icon": "external link",
+          "includeVars": false,
+          "keepTime": false,
+          "tags": [],
+          "targetBlank": false,
+          "title": "Konflux Namespace Activity",
+          "tooltip": "",
+          "type": "link",
+          "url": "https://grafana.app-sre.devshift.net/d/eetkzyh60ix34e/konflux-namespace-activity?orgId=1&from=now-24h&to=now&timezone=UTC&var-datasource=P22466E8E7855F1E0&var-cluster=$__all&var-namespace=integration-service"
         }
       ],
       "panels": [
@@ -315,7 +327,7 @@ data:
             "type": "prometheus",
             "uid": "${Datasource}"
           },
-          "description": "Measure release creation latency from end of testing to release created ",
+          "description": "Measures the duration from when a build PipelineRun completes until the corresponding Snapshot CR is marked as 'in progress'.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -325,7 +337,7 @@ data:
                 "axisBorderShow": true,
                 "axisCenteredZero": false,
                 "axisColorMode": "text",
-                "axisLabel": "",
+                "axisLabel": "seconds",
                 "axisPlacement": "auto",
                 "barAlignment": 0,
                 "barWidthFactor": 0.6,
@@ -354,7 +366,7 @@ data:
                   "mode": "none"
                 },
                 "thresholdsStyle": {
-                  "mode": "off"
+                  "mode": "line+area"
                 }
               },
               "mappings": [],
@@ -362,11 +374,15 @@ data:
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "transparent"
+                  },
+                  {
+                    "color": "red",
+                    "value": 30
                   }
                 ]
               },
-              "unit": "s"
+              "unit": "short"
             },
             "overrides": []
           },
@@ -376,7 +392,7 @@ data:
             "x": 0,
             "y": 16
           },
-          "id": 5,
+          "id": 9,
           "options": {
             "legend": {
               "calcs": [
@@ -405,14 +421,14 @@ data:
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "histogram_quantile(0.90, sum by (le, source_cluster)(rate(integration_svc_release_latency_seconds_bucket{source_cluster=~\"$cluster\"}[$__rate_interval])))",
+              "expr": "histogram_quantile(0.90, sum by(le, source_cluster) (rate(integration_svc_response_seconds_bucket{source_cluster=~\"$cluster\"}[$__rate_interval])))",
               "instant": false,
               "legendFormat": "{{source_cluster}}",
               "range": true,
               "refId": "A"
             }
           ],
-          "title": "Latency of Release Creation",
+          "title": "#1 Latency - Percentile Service Response (in-progress change)",
           "type": "timeseries"
         },
         {
@@ -420,7 +436,7 @@ data:
             "type": "prometheus",
             "uid": "${Datasource}"
           },
-          "description": "90% of requests must take less than 10 sec. Measure release creation latency from end of testing to release created ",
+          "description": "Success rate of requests under 30 sec",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -490,7 +506,7 @@ data:
             "x": 12,
             "y": 16
           },
-          "id": 6,
+          "id": 10,
           "options": {
             "legend": {
               "calcs": [
@@ -519,14 +535,14 @@ data:
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "sum by (source_cluster) (rate(integration_svc_release_latency_seconds_bucket{le=\"10\", source_cluster=~\"$cluster\"}[$__rate_interval])) / sum by (source_cluster) (rate(integration_svc_release_latency_seconds_count{source_cluster=~\"$cluster\"}[$__rate_interval]))* 100",
+              "expr": "sum by (source_cluster) (rate(integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_bucket{le=\"30\", source_cluster=~\"$cluster\"}[$__rate_interval])) / sum by (source_cluster) (rate(integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_count{source_cluster=~\"$cluster\"}[$__rate_interval]))\n* 100",
               "instant": false,
               "legendFormat": "{{source_cluster}}",
               "range": true,
               "refId": "A"
             }
           ],
-          "title": "[Violations] #5 Latency of Release Creation",
+          "title": "[Violations] #1 Latency - Percentile Service Response (in-progress change)",
           "type": "timeseries"
         },
         {
@@ -747,6 +763,225 @@ data:
           ],
           "title": "[Violations] #2A Time to Start PipelineRun",
           "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${Datasource}"
+          },
+          "description": "Measure release creation latency from end of testing to release created ",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": true,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 50,
+                "gradientMode": "opacity",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineStyle": {
+                  "fill": "solid"
+                },
+                "lineWidth": 1,
+                "pointSize": 6,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": true,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 12,
+            "x": 0,
+            "y": 34
+          },
+          "id": 5,
+          "options": {
+            "legend": {
+              "calcs": [
+                "min",
+                "max",
+                "last"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true,
+              "sortBy": "Name",
+              "sortDesc": false
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${Datasource}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "histogram_quantile(0.90, sum by (le, source_cluster)(rate(integration_svc_release_latency_seconds_bucket{source_cluster=~\"$cluster\"}[$__rate_interval])))",
+              "instant": false,
+              "legendFormat": "{{source_cluster}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "#5 Latency of Release Creation",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${Datasource}"
+          },
+          "description": "90% of requests must take less than 10 sec. Measure release creation latency from end of testing to release created ",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "%",
+                "axisPlacement": "auto",
+                "axisSoftMax": 100,
+                "axisSoftMin": 0,
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "bars",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineStyle": {
+                  "fill": "solid"
+                },
+                "lineWidth": 1,
+                "pointSize": 6,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "never",
+                "spanNulls": true,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "line+area"
+                }
+              },
+              "fieldMinMax": false,
+              "mappings": [],
+              "max": 100,
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "semi-dark-red"
+                  },
+                  {
+                    "color": "transparent",
+                    "value": 90
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 9,
+            "w": 12,
+            "x": 12,
+            "y": 34
+          },
+          "id": 6,
+          "options": {
+            "legend": {
+              "calcs": [
+                "min",
+                "max",
+                "last"
+              ],
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true,
+              "sortBy": "Name",
+              "sortDesc": false
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "multi",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${Datasource}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "sum by (source_cluster) (rate(integration_svc_release_latency_seconds_bucket{le=\"10\", source_cluster=~\"$cluster\"}[$__rate_interval])) / sum by (source_cluster) (rate(integration_svc_release_latency_seconds_count{source_cluster=~\"$cluster\"}[$__rate_interval]))* 100",
+              "instant": false,
+              "legendFormat": "{{source_cluster}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "[Violations] #5 Latency of Release Creation",
+          "type": "timeseries"
         }
       ],
       "preload": false,
@@ -755,7 +990,7 @@ data:
       "tags": [
         "konflux",
         "integration-service",
-        "availability"
+        "SLO's"
       ],
       "templating": {
         "list": [
@@ -825,7 +1060,9 @@ data:
           },
           {
             "current": {
-              "text": "All",
+              "text": [
+                "All"
+              ],
               "value": [
                 "$__all"
               ]
@@ -859,7 +1096,7 @@ data:
       },
       "timepicker": {},
       "timezone": "browser",
-      "title": "Konflux - Integration Service",
+      "title": "Konflux - Integration Service SLO",
       "uid": "cerzhj80cyvi8c",
-      "version": 1
-      }
+      "version": 2
+    }
