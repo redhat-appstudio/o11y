@@ -79,3 +79,32 @@ tests:
       - eval_time: 5m
         alertname: MintMakerControllerDown
         exp_alerts: null
+
+  - interval: 1m
+    input_series:
+      # DUC created at test start time (timestamp 0), value stays constant
+      - series: 'mintmaker_dependency_update_check_creation_time{name="dependencyupdatecheck-old",namespace="mintmaker", source_cluster="c7"}'
+        values: '0+0x300'
+
+    alert_rule_test:
+      # Evaluate at 4.5 hours - should NOT fire yet (exactly at threshold)
+      - eval_time: 4h30m
+        alertname: MintMakerDependencyUpdateCheckStale
+        exp_alerts: []
+
+      # Evaluate at 4.5 hours + 5 minutes - should fire after 5m delay
+      - eval_time: 4h36m
+        alertname: MintMakerDependencyUpdateCheckStale
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              source_cluster: c7
+            exp_annotations:
+              summary: "MintMaker dependency update check creation is stale in cluster c7"
+              description: >
+                No new DependencyUpdateCheck resources have been created in the last 4.5 hours in cluster c7.
+                The last DUC was created more than 4.5 hours ago.
+              alert_team_handle: <!subteam^S078T8TMQP5>
+              team: mintmaker
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/mintmaker/faq.md
