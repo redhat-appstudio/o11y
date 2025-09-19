@@ -18,10 +18,30 @@ The different alerting rules in this repository are:
 SLO (Service Level Objective) alert rules are rules defined to monitor and alert 
 when a service or system is not meeting its specified service level objectives.
 
+Example of an SLO Alert:
+```yaml
+- alert: DescriptiveAlertName
+  expr: |
+    <expression for your alert>
+  for: 5m # How long should the expression eval to True in order for the Alert to fire.
+  labels:
+    severity: critical
+    slo: "true"
+  annotations:
+    summary: >-
+        <Short summary of the alert>
+    description: >-
+        <Description that can contain more context>
+    alert_team_handle: >-
+      <!subteam^XXXXXXXXXXX>
+    runbook_url: <sop-link>
+    team: <team>
+```
+
 #### Usage Guidelines:
 
 Apply the `slo` label to alerts directly associated with Service Level Objectives.
-These alerts typically indicate issues affecting the performance or reliability of the service.
+These alerts typically indicate issues affecting the performance or reliability of the service. SLO Alerts should have Runbooks (`runbook_url` annotation) included directly in the definition.
 
 #### Benefits of Using the `slo` Label:
 
@@ -47,6 +67,23 @@ alerts.
 Such alerting rules are intended to notify regarding issues requiring attention, but are
 not directly affecting Service Level Objectives defined by any service.
 
+Example of a non-SLO Alert:
+```yaml
+- alert: DescriptiveAlertName
+  expr: |
+    <Alert expression>
+  for: 5m # How long should the expression eval to True in order for the Alert to fire.
+  labels:
+    severity: warning
+  annotations:
+    summary: >-
+        <Short summary of the alert>
+    description: >-
+        <Description that can contain more context>
+    alert_routing_key: "{{ $labels.namespace }}"
+    team: <team>
+```
+
 #### Availability Metric Alerts
 
 These are non-SLO alerts defined to monitor and alert if the `konflux_up` metric is
@@ -62,7 +99,7 @@ where the team's handle is tagged in the alert message.
 
 Apply the `alert_team_handle` and `team` annotations to SLO alerts in order to get notified about them.
   
-#### How to Apply the `alert_team_handle` Annotation:
+#### How to Apply the `alert_team_handle` Annotation for SLO Alerts:
 
 Apply the `alert_team_handle` key to the annotations section of any alerting rule,
 with the relevant team's Slack group handle.
@@ -76,6 +113,16 @@ Make sure to also add the `team` annotation with the name of the relevant team f
 annotations:
   summary: "PipelineRunFinish to SnapshotInProgress time exceeded"
   alert_team_handle: <!subteam^S04S21ECL8K>
+  team: o11y
+```
+
+#### How to Apply the `alert_routing_key` Annotation for Misc Alersts:
+
+For miscellaneous alerts routing works a bit differently. To clearly distinguish them from SLO Alerts namespace/team names are used and are paired to `alert_routing_key` annotation key. Specific teams are tagged by the routing matrix in [app-interface](https://gitlab.cee.redhat.com/service/app-interface/-/blame/master/resources/rhobs/production/alertmanager-routes-mst.secret.yaml?ref_type=heads#L53). `team` annotation helps to distinguish ownership of the alert when namespace routing is used. Otherwise its not needed for routing purposes.
+
+```yaml
+annotations:
+  alert_routing_key: "{{ $labels.namespace }}"
   team: o11y
 ```
 
@@ -147,6 +194,20 @@ Deploying to [production](https://grafana.app-sre.devshift.net/) requires an upd
 commit
 [reference](https://gitlab.cee.redhat.com/service/app-interface/-/blob/b03e4336a3223ec7b90dc9bc69707c9ee0ff9af6/data/services/stonesoup/cicd/saas-stonesoup-dashboards.yml#L37)
 in app-interface.
+
+When creating a dashboard config map resource, please use this snippet to start with:
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: <your-dashboard-name>.configmap
+  labels:
+    grafana_dashboard: "true"
+  annotations:
+    grafana-folder: /grafana-dashboard-definitions/RHTAP
+data:
+  <your-dashboard-name>.json: |-
+```
 
 Note: The dashboard UID must always be unique in each Grafana instance. Make sure to modify it by changing a few characters or deleting the test dashboard in staging instance. If the test dashboard is kept and the uid is not updated, glitches will occur insta grafana as it will juggle between the two dashboards with identical UIDs.
 

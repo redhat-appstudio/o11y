@@ -109,8 +109,7 @@ Signed-off-by: Avi Biton <abiton@redhat.com>
 ```
 
 ### Pull Request Description
-The PR description (the first comment at the top of the PR) can usually be derived from
-the commit message body - especially if the PR consists of a single commit.
+The PR description should be filled into the template with checking all the points before submitting for a review. 
 
 On top of that, the PR description should include a bit of context, so that reviewers
 won't have to perform extensive research just to be able to provide relevant code
