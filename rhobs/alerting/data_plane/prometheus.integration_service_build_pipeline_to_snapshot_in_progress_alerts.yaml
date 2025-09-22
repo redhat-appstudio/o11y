@@ -1,0 +1,33 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-integration-service-build-pipeline-to-snapshot-in-progress
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: pipeline-to-snapshot-exceeded
+    interval: 1m
+    rules:
+    - alert: PipelineRunToSnapshotExceeded
+      expr: |
+        (
+          (
+          increase(integration_svc_response_seconds_bucket{le="+Inf"}[5m])
+          - ignoring(le)
+          increase(integration_svc_response_seconds_bucket{le="30"}[5m])
+         ) / ignoring(le)
+         increase(integration_svc_response_seconds_bucket{le="+Inf"}[5m])
+        ) > 0.10
+      for: 10m
+      labels:
+        severity: critical
+        slo: "true"
+      annotations:
+        summary: >-
+          PipelineRunFinish to SnapshotInProgress time exceeded
+        description: >
+          Time from build pipeline run finished to snapshot marked in progress has been over 30s for more than 10% of requests during the last 10 minutes on cluster {{ $labels.source_cluster }}
+        alert_team_handle: <!subteam^S041261DDEW>
+        team: integration
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/sre/latency_service_response.md

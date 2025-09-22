@@ -327,7 +327,7 @@ data:
             "type": "prometheus",
             "uid": "${Datasource}"
           },
-          "description": "Measures the duration from when a build PipelineRun completes until the corresponding Snapshot CR is marked as 'in progress'.",
+          "description": "Measures the duration from when a build PipelineRun completes. until the corresponding Snapshot CR is marked as 'in progress'. Spikes in the red zone are > 30 sec",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -436,7 +436,7 @@ data:
             "type": "prometheus",
             "uid": "${Datasource}"
           },
-          "description": "Success rate of requests under 30 sec",
+          "description": "90% of requests must take less than 30 sec. This panel displays the success rate. A violation occurs when the rate falls below the 90% threshold (below the red line)",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -535,7 +535,7 @@ data:
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "sum by (source_cluster) (rate(integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_bucket{le=\"30\", source_cluster=~\"$cluster\"}[$__rate_interval])) / sum by (source_cluster) (rate(integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_count{source_cluster=~\"$cluster\"}[$__rate_interval]))\n* 100",
+              "expr": "sum by (source_cluster) (rate(integration_svc_snapshot_created_to_pipelinerun_started_seconds_bucket{le=\"30\", source_cluster=~\"$cluster\"}[$__rate_interval])) / sum by (source_cluster) (rate(integration_svc_snapshot_created_to_pipelinerun_started_seconds_count{source_cluster=~\"$cluster\"}[$__rate_interval]))\n* 100",
               "instant": false,
               "legendFormat": "{{source_cluster}}",
               "range": true,
@@ -550,7 +550,7 @@ data:
             "type": "prometheus",
             "uid": "${Datasource}"
           },
-          "description": "Measure the time between ApplicationSnapshot creation to pipelineRun creation in a static env.",
+          "description": "Measure the time between ApplicationSnapshot creation to pipelineRun creation. Spikes in the red zone are > 5 sec",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -589,7 +589,7 @@ data:
                   "mode": "none"
                 },
                 "thresholdsStyle": {
-                  "mode": "off"
+                  "mode": "line+area"
                 }
               },
               "mappings": [],
@@ -597,7 +597,11 @@ data:
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "transparent"
+                  },
+                  {
+                    "color": "semi-dark-red",
+                    "value": 5
                   }
                 ]
               },
@@ -655,7 +659,7 @@ data:
             "type": "prometheus",
             "uid": "${Datasource}"
           },
-          "description": "90% of requests must take less than 5sec",
+          "description": "90% of requests must take less than 5sec. This panel displays the success rate. A violation occurs when the rate falls below the 90% threshold (below the red line)",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -754,7 +758,7 @@ data:
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "sum by (source_cluster) (rate(integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_bucket{le=\"5\", source_cluster=~\"$cluster\"}[$__rate_interval]))\n/sum by (source_cluster) (rate(integration_svc_snapshot_created_to_pipelinerun_with_static_env_started_seconds_count{source_cluster=~\"$cluster\"}[$__rate_interval]))\n* 100",
+              "expr": "sum by (source_cluster) (rate(integration_svc_snapshot_created_to_pipelinerun_started_seconds_bucket{le=\"5\", source_cluster=~\"$cluster\"}[$__rate_interval])) / sum by (source_cluster) (rate(integration_svc_snapshot_created_to_pipelinerun_started_seconds_count{source_cluster=~\"$cluster\"}[$__rate_interval])) * 100",
               "instant": false,
               "legendFormat": "{{source_cluster}}",
               "range": true,
@@ -769,7 +773,7 @@ data:
             "type": "prometheus",
             "uid": "${Datasource}"
           },
-          "description": "Measure release creation latency from end of testing to release created ",
+          "description": "Measure release creation latency from end of testing to release created. Spikes in the red zone are > 10 sec",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -808,7 +812,7 @@ data:
                   "mode": "none"
                 },
                 "thresholdsStyle": {
-                  "mode": "off"
+                  "mode": "line+area"
                 }
               },
               "mappings": [],
@@ -816,7 +820,11 @@ data:
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "transparent"
+                  },
+                  {
+                    "color": "semi-dark-red",
+                    "value": 10
                   }
                 ]
               },
@@ -874,7 +882,7 @@ data:
             "type": "prometheus",
             "uid": "${Datasource}"
           },
-          "description": "90% of requests must take less than 10 sec. Measure release creation latency from end of testing to release created ",
+          "description": "90% of requests must take less than 10 sec. This panel displays the success rate. A violation occurs when the rate falls below the 90% threshold (below the red line)",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -1060,9 +1068,7 @@ data:
           },
           {
             "current": {
-              "text": [
-                "All"
-              ],
+              "text": "All",
               "value": [
                 "$__all"
               ]
@@ -1098,5 +1104,5 @@ data:
       "timezone": "browser",
       "title": "Konflux - Integration Service SLO",
       "uid": "cerzhj80cyvi8c",
-      "version": 2
+      "version": 51
     }
