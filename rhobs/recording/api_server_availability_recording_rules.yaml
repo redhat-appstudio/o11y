@@ -44,13 +44,15 @@ spec:
           expr: |
             avg_over_time(
               (
-                sum by(source_cluster) (
-                  rate(apiserver_request_total{code=~"5.."}[1h])
-                ) /
-                sum by(source_cluster) (
-                  rate(apiserver_request_total{code!="0"}[1h])
-                )
-              ) * 100[30d:1h]
+                (
+                  sum by(source_cluster) (
+                    rate(apiserver_request_total{code=~"5.."}[1h])
+                  ) /
+                  sum by(source_cluster) (
+                    rate(apiserver_request_total{code!="0"}[1h])
+                  )
+                ) * 100
+              )[30d:1h]
             )
           labels:
             service: api-server
@@ -59,13 +61,15 @@ spec:
           expr: |
             stddev_over_time(
               (
-                sum by(source_cluster) (
-                  rate(apiserver_request_total{code=~"5.."}[1h])
-                ) /
-                sum by(source_cluster) (
-                  rate(apiserver_request_total{code!="0"}[1h])
-                )
-              ) * 100[30d:1h]
+                (
+                  sum by(source_cluster) (
+                    rate(apiserver_request_total{code=~"5.."}[1h])
+                  ) /
+                  sum by(source_cluster) (
+                    rate(apiserver_request_total{code!="0"}[1h])
+                  )
+                ) * 100
+              )[30d:1h]
             )
           labels:
             service: api-server
