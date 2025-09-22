@@ -28,8 +28,33 @@ data:
       "editable": true,
       "fiscalYearStartMonth": 0,
       "graphTooltip": 0,
-      "id": 1024971,
-      "links": [],
+      "id": 1198914,
+      "links": [
+        {
+          "asDropdown": false,
+          "icon": "external link",
+          "includeVars": false,
+          "keepTime": false,
+          "tags": [],
+          "targetBlank": false,
+          "title": "Namespaces Activity Dashboard",
+          "tooltip": "",
+          "type": "link",
+          "url": "https://grafana.stage.devshift.net/d/eetkzyh60ix34e/konflux-namespace-activity"
+        },
+        {
+          "asDropdown": false,
+          "icon": "external link",
+          "includeVars": false,
+          "keepTime": false,
+          "tags": [],
+          "targetBlank": false,
+          "title": "Cluster Capacity Dashboard",
+          "tooltip": "",
+          "type": "link",
+          "url": "https://grafana.app-sre.devshift.net/d/beiwi3m5185f69/cluster-capacity"
+        }
+      ],
       "panels": [
         {
           "collapsed": false,
@@ -291,7 +316,7 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "avg by (source_cluster) (rate(process_cpu_seconds_total{job=\"apiserver\", source_cluster=~\"$cluster\"}[5m]))",
+              "expr": "sum by (source_cluster) (rate(process_cpu_seconds_total{job=\"apiserver\", source_cluster=~\"$cluster\"}[5m]))",
               "instant": false,
               "legendFormat": "__auto",
               "range": true,
@@ -1496,5 +1521,5 @@ data:
       "timezone": "browser",
       "title": "Konflux API Server Activity",
       "uid": "bep80qv02u6tce",
-      "version": 58
+      "version": 2
     }
