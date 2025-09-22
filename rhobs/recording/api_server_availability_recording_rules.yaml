@@ -26,3 +26,50 @@ spec:
             <= bool 5
           labels:
             service: api-server
+
+        - record: api_server:error_rate_10m
+          expr: |
+            (
+              sum by(source_cluster) (
+                rate(apiserver_request_total{code=~"5.."}[10m])
+              ) /
+              sum by(source_cluster) (
+                rate(apiserver_request_total{code!="0"}[10m])
+              )
+            ) * 100
+          labels:
+            service: api-server
+
+        - record: api_server:error_rate_30d_avg
+          expr: |
+            avg_over_time(
+              (
+                (
+                  sum by(source_cluster) (
+                    rate(apiserver_request_total{code=~"5.."}[1h])
+                  ) /
+                  sum by(source_cluster) (
+                    rate(apiserver_request_total{code!="0"}[1h])
+                  )
+                ) * 100
+              )[30d:1h]
+            )
+          labels:
+            service: api-server
+
+        - record: api_server:error_rate_30d_stddev
+          expr: |
+            stddev_over_time(
+              (
+                (
+                  sum by(source_cluster) (
+                    rate(apiserver_request_total{code=~"5.."}[1h])
+                  ) /
+                  sum by(source_cluster) (
+                    rate(apiserver_request_total{code!="0"}[1h])
+                  )
+                ) * 100
+              )[30d:1h]
+            )
+          labels:
+            service: api-server

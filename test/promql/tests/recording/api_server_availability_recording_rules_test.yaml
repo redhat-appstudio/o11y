@@ -19,3 +19,48 @@ tests:
         exp_samples:
           - labels: '{__name__="konflux_up", service="api-server"}'
             value: 1
+
+  - name: Test api_server error_rate_10m at 5 percent
+    interval: 1m
+    input_series:
+      - series: 'apiserver_request_total{code="503", source_cluster="test-cluster"}'
+        values: '0+5x600'
+      - series: 'apiserver_request_total{code="200", source_cluster="test-cluster"}'
+        values: '0+95x600'
+
+    promql_expr_test:
+      - expr: api_server:error_rate_10m
+        eval_time: 10m
+        exp_samples:
+          - labels: '{__name__="api_server:error_rate_10m", service="api-server", source_cluster="test-cluster"}'
+            value: 5
+
+  - name: Test api_server error_rate_30d_avg with constant rate
+    interval: 1h
+    input_series:
+      - series: 'apiserver_request_total{code="503", source_cluster="test-cluster-avg"}'
+        values: '0+10x3600'
+      - series: 'apiserver_request_total{code="200", source_cluster="test-cluster-avg"}'
+        values: '0+90x3600'
+
+    promql_expr_test:
+      - expr: api_server:error_rate_30d_avg
+        eval_time: 1h
+        exp_samples:
+          - labels: '{__name__="api_server:error_rate_30d_avg", service="api-server", source_cluster="test-cluster-avg"}'
+            value: 10
+
+  - name: Test api_server error_rate_30d_stddev with constant rate
+    interval: 1h
+    input_series:
+      - series: 'apiserver_request_total{code="503", source_cluster="test-cluster-stddev"}'
+        values: '0+10x3600'
+      - series: 'apiserver_request_total{code="200", source_cluster="test-cluster-stddev"}'
+        values: '0+90x3600'
+
+    promql_expr_test:
+      - expr: api_server:error_rate_30d_stddev
+        eval_time: 1h
+        exp_samples:
+          - labels: '{__name__="api_server:error_rate_30d_stddev", service="api-server", source_cluster="test-cluster-stddev"}'
+            value: 0
