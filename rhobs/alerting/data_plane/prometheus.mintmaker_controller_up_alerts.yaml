@@ -54,3 +54,24 @@ spec:
         alert_team_handle: <!subteam^S078T8TMQP5>
         team: mintmaker
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/mintmaker/faq.md
+
+  - name: mintmaker-dependency-update-check-availability
+    interval: 1m
+    rules:
+    - alert: MintMakerDependencyUpdateCheckStale
+      # Alert if more than 4.5 hours have passed since last DUC creation
+      expr: |
+        (time() - max by (source_cluster) (mintmaker_dependency_update_check_creation_time{namespace="mintmaker"})) > 4.5 * 60 * 60
+      for: 5m
+      labels:
+        severity: warning
+        slo: "false"
+      annotations:
+        summary: >-
+          MintMaker dependency update check creation is stale in cluster {{ $labels.source_cluster }}
+        description: >
+          No new DependencyUpdateCheck resources have been created in the last 4.5 hours in cluster {{ $labels.source_cluster }}.
+          The last DUC was created more than 4.5 hours ago.
+        alert_team_handle: <!subteam^S078T8TMQP5>
+        team: mintmaker
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/mintmaker/faq.md
