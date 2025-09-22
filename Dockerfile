@@ -28,11 +28,12 @@ RUN cd exporters && \
         fi \
     done
 
-
-FROM registry.access.redhat.com/ubi9-micro@sha256:f5c5213d2969b7b11a6666fc4b849d56b48d9d7979b60a37bb853dff0255c14b
+FROM registry.access.redhat.com/ubi9-minimal@sha256:7c5495d5fad59aaee12abc3cbbd2b283818ee1e814b00dbc7f25bf2d14fa4f0c
 
 # Copy all compiled binaries from the builder stage to the final image.
 COPY --from=builder /tmp/built_exporters/* /bin/
+
+RUN microdnf install -y podman && microdnf clean all
 
 # Copy the entrypoint script and ensure it's executable.
 COPY exporter-build-scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
