@@ -145,3 +145,194 @@ tests:
     alert_rule_test:
       - eval_time: 10m
         alertname: InfraNodeHighMemory
+
+  # Node based Alerts
+  - interval: 1m
+    input_series:
+      # Node is running with 100% CPU usage, so it will be alerted.
+      - series: 'node_cpu_seconds_total{instance="instance1", mode="idle", source_cluster="cluster01"}'
+        values: '0.01+0x15'
+      - series: 'node_cpu_seconds_total{instance="instance2", mode="idle", source_cluster="cluster01"}'
+        values: '0.01+0x15'
+      - series: 'node_cpu_seconds_total{instance="instance3", mode="idle", source_cluster="cluster01"}'
+        values: '0.01+0x15'
+      - series: 'node_cpu_seconds_total{instance="instance4", mode="idle", source_cluster="cluster01"}'
+        values: '0.01+0x15'
+      - series: 'node_cpu_seconds_total{instance="instance5", mode="idle", source_cluster="cluster01"}'
+        values: '0.01+0x15'
+      - series: 'node_cpu_seconds_total{instance="instance6", mode="idle", source_cluster="cluster01"}'
+        values: '0.01+0x15'
+      - series: 'node_cpu_seconds_total{instance="instance7", mode="idle", source_cluster="cluster01"}'
+        values: '0.01+0x15'
+      - series: 'node_cpu_seconds_total{instance="instance8", mode="idle", source_cluster="cluster01"}'
+        values: '0.01+0x15'
+      - series: 'node_cpu_seconds_total{instance="instance9", mode="idle", source_cluster="cluster01"}'
+        values: '0.01+0x15'
+      - series: 'node_cpu_seconds_total{instance="instance10", mode="idle", source_cluster="cluster01"}'
+        values: '0.01+0x15'
+      - series: 'node_cpu_seconds_total{instance="instance11", mode="idle", source_cluster="cluster01"}'
+        values: '0.01+0x15'
+      - series: 'kube_node_role{node="instance1", role="worker"}'
+        values: '1+0x10'
+      - series: 'kube_node_role{node="instance2", role="worker"}'
+        values: '1+0x10'
+      - series: 'kube_node_role{node="instance3", role="worker"}'
+        values: '1+0x10'
+      - series: 'kube_node_role{node="instance4", role="worker"}'
+        values: '1+0x10'
+      - series: 'kube_node_role{node="instance5", role="worker"}'
+        values: '1+0x10'
+      - series: 'kube_node_role{node="instance6", role="worker"}'
+        values: '1+0x10'
+      - series: 'kube_node_role{node="instance7", role="worker"}'
+        values: '1+0x10'
+      - series: 'kube_node_role{node="instance8", role="worker"}'
+        values: '1+0x10'
+      - series: 'kube_node_role{node="instance9", role="worker"}'
+        values: '1+0x10'
+      - series: 'kube_node_role{node="instance10", role="worker"}'
+        values: '1+0x10'
+      - series: 'kube_node_role{node="instance11", role="worker"}'
+        values: '1+0x10'
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: WorkerNodeHighCPU
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              source_cluster: cluster01
+            exp_annotations:
+              summary: "Instances with high CPU in cluster01"
+              description: "More than 10 worker node instances in cluster cluster01 have had CPU usage above 95% for the last 10 minutes."
+              alert_routing_key: perfandspreandinfra
+
+  - interval: 1m
+    input_series:
+      # Node is running under 95% CPU usage, so it will not be alerted.
+      - series: 'node_cpu_seconds_total{instance="instance1", mode="idle", source_cluster="cluster01"}'
+        values: '0.75-0.1x10'
+      - series: 'node_cpu_seconds_total{instance="instance2", mode="idle", source_cluster="cluster01"}'
+        values: '0.85+0x10'
+      - series: 'node_cpu_seconds_total{instance="instance3", mode="idle", source_cluster="cluster01"}'
+        values: '0.85+0x10'
+      - series: 'node_cpu_seconds_total{instance="instance4", mode="idle", source_cluster="cluster01"}'
+        values: '0.85+0x10'
+      - series: 'node_cpu_seconds_total{instance="instance5", mode="idle", source_cluster="cluster01"}'
+        values: '0.85+0x10'
+      - series: 'node_cpu_seconds_total{instance="instance6", mode="idle", source_cluster="cluster01"}'
+        values: '0.85+0x10'
+      - series: 'kube_node_role{node="instance1", role="worker"}'
+        values: '1+0x10'
+      - series: 'kube_node_role{node="instance2", role="worker"}'
+        values: '1+0x10'
+      - series: 'kube_node_role{node="instance3", role="worker"}'
+        values: '1+0x10'
+      - series: 'kube_node_role{node="instance4", role="worker"}'
+        values: '1+0x10'
+      - series: 'kube_node_role{node="instance5", role="worker"}'
+        values: '1+0x10'
+      - series: 'kube_node_role{node="instance6", role="worker"}'
+        values: '1+0x10'
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: WorkerNodeHighCPU
+
+  - interval: 1m
+    input_series:
+      # Node is running with 98% memory usage, so it will be alerted.
+      - series: 'node_memory_MemTotal_bytes{instance="instance1", source_cluster="cluster01"}'
+        values: '100+0x9'
+      - series: 'node_memory_MemAvailable_bytes{instance="instance1", source_cluster="cluster01"}'
+        values: '2+0x9'
+      - series: 'node_memory_MemTotal_bytes{instance="instance2", source_cluster="cluster01"}'
+        values: '100+0x9'
+      - series: 'node_memory_MemAvailable_bytes{instance="instance2", source_cluster="cluster01"}'
+        values: '2+0x9'
+      - series: 'node_memory_MemTotal_bytes{instance="instance3", source_cluster="cluster01"}'
+        values: '100+0x9'
+      - series: 'node_memory_MemAvailable_bytes{instance="instance3", source_cluster="cluster01"}'
+        values: '2+0x9'
+      - series: 'node_memory_MemTotal_bytes{instance="instance4", source_cluster="cluster01"}'
+        values: '100+0x9'
+      - series: 'node_memory_MemAvailable_bytes{instance="instance4", source_cluster="cluster01"}'
+        values: '2+0x9'
+      - series: 'node_memory_MemTotal_bytes{instance="instance5", source_cluster="cluster01"}'
+        values: '100+0x9'
+      - series: 'node_memory_MemAvailable_bytes{instance="instance5", source_cluster="cluster01"}'
+        values: '2+0x9'
+      - series: 'node_memory_MemTotal_bytes{instance="instance6", source_cluster="cluster01"}'
+        values: '100+0x9'
+      - series: 'node_memory_MemAvailable_bytes{instance="instance6", source_cluster="cluster01"}'
+        values: '2+0x9'
+      - series: 'node_memory_MemTotal_bytes{instance="instance7", source_cluster="cluster01"}'
+        values: '100+0x9'
+      - series: 'node_memory_MemAvailable_bytes{instance="instance7", source_cluster="cluster01"}'
+        values: '2+0x9'
+      - series: 'node_memory_MemTotal_bytes{instance="instance8", source_cluster="cluster01"}'
+        values: '100+0x9'
+      - series: 'node_memory_MemAvailable_bytes{instance="instance8", source_cluster="cluster01"}'
+        values: '2+0x9'
+      - series: 'node_memory_MemTotal_bytes{instance="instance9", source_cluster="cluster01"}'
+        values: '100+0x9'
+      - series: 'node_memory_MemAvailable_bytes{instance="instance9", source_cluster="cluster01"}'
+        values: '2+0x9'
+      - series: 'node_memory_MemTotal_bytes{instance="instance10", source_cluster="cluster01"}'
+        values: '100+0x9'
+      - series: 'node_memory_MemAvailable_bytes{instance="instance10", source_cluster="cluster01"}'
+        values: '2+0x9'
+      - series: 'node_memory_MemTotal_bytes{instance="instance11", source_cluster="cluster01"}'
+        values: '100+0x9'
+      - series: 'node_memory_MemAvailable_bytes{instance="instance11", source_cluster="cluster01"}'
+        values: '2+0x9'
+      - series: 'kube_node_role{node="instance1", role="worker"}'
+        values: '1+0x10'
+      - series: 'kube_node_role{node="instance2", role="worker"}'
+        values: '1+0x10'
+      - series: 'kube_node_role{node="instance3", role="worker"}'
+        values: '1+0x10'
+      - series: 'kube_node_role{node="instance4", role="worker"}'
+        values: '1+0x10'
+      - series: 'kube_node_role{node="instance5", role="worker"}'
+        values: '1+0x10'
+      - series: 'kube_node_role{node="instance6", role="worker"}'
+        values: '1+0x10'
+      - series: 'kube_node_role{node="instance7", role="worker"}'
+        values: '1+0x10'
+      - series: 'kube_node_role{node="instance8", role="worker"}'
+        values: '1+0x10'
+      - series: 'kube_node_role{node="instance9", role="worker"}'
+        values: '1+0x10'
+      - series: 'kube_node_role{node="instance10", role="worker"}'
+        values: '1+0x10'
+      - series: 'kube_node_role{node="instance11", role="worker"}'
+        values: '1+0x10'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: WorkerNodeHighMemory
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              source_cluster: cluster01
+            exp_annotations:
+              summary: "Node High Memory Usage."
+              description: "More than 10 worker node instances in cluster cluster01 have had Memory usage above 90% for the last 10 minutes."
+              alert_routing_key: perfandspreandinfra
+
+  - interval: 1m
+    input_series:
+      # Node is running under 90% memory usage, so it will not be alerted.
+      - series: 'node_memory_MemTotal_bytes{instance="instance2", source_cluster="cluster01"}'
+        values: '100x9'
+      - series: 'node_memory_MemAvailable_bytes{instance="instance2", source_cluster="cluster01"}'
+        values: '98x9'
+      - series: 'kube_node_role{node="instance1", role="worker"}'
+        values: '1+0x10'
+      - series: 'kube_node_role{node="instance2", role="worker"}'
+        values: '1+0x10'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: WorkerNodeHighMemory

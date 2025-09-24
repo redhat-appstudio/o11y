@@ -70,3 +70,30 @@ spec:
             description: >-
               Infra Memory Usage is {{$value}}% on infra node {{ $labels.instance }} in cluster {{ $labels.source_cluster }}.
             alert_routing_key: perfandspreandinfra
+
+        # Node based Alerts
+        - alert: WorkerNodeHighCPU
+          expr: |
+            count by (source_cluster) ((100 * avg(1 - rate(node_cpu_seconds_total{mode="idle"}[5m])) by (instance, source_cluster) 
+            and on (instance) label_replace( kube_node_role{role="worker"}, "instance", "$1", "node", "(.+)" )) > 95) > 10
+          for: 10m
+          labels:
+            severity: high
+          annotations:
+            summary: "Instances with high CPU in {{ $labels.source_cluster }}"
+            description: "More than 10 worker node instances in cluster {{ $labels.source_cluster }} have had CPU usage above 95% for the last 10 minutes."
+            alert_routing_key: perfandspreandinfra
+
+        - alert: WorkerNodeHighMemory
+          expr: |
+            count by (source_cluster) ((avg by (source_cluster,instance) (100 * ((node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes))
+            and on (instance) label_replace( kube_node_role{role="worker"}, "instance", "$1", "node", "(.+)" )) > 90) > 10
+          for: 10m
+          labels:
+            severity: high
+          annotations:
+            summary: >-
+              Node High Memory Usage.
+            description: >-
+              More than 10 worker node instances in cluster {{ $labels.source_cluster }} have had Memory usage above 90% for the last 10 minutes.
+            alert_routing_key: perfandspreandinfra
