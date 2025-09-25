@@ -104,7 +104,7 @@ ENV BUILD_TIMESTAMP=${BUILD_TIMESTAMP}
 LABEL quay.expires-after="1m"
 
 # Example: touch a file with the timestamp
-RUN echo "${BUILD_TIMESTAMP}" > /timestamp.txt
+# RUN echo "${BUILD_TIMESTAMP}" > /timestamp.txt
 `
 
 	// PVC mountpoint expected e.g.: /mnt/data/
@@ -136,7 +136,7 @@ func ImagePushTest(metrics *Metrics, registryType string) {
 	if buildTimestamp == "" {
 		buildTimestamp = "now"
 	}
-	buildCmd := exec.Command("podman", "build", "-t", imageName, "--build-arg", "BUILD_TIMESTAMP="+buildTimestamp, "-f", os.Getenv("DOCKERFILE_PATH")+"Dockerfile", ".")
+	buildCmd := exec.Command("podman", "build", "-t", imageName, "--build-arg", "BUILD_TIMESTAMP="+buildTimestamp, "-f", os.Getenv("DOCKERFILE_PATH")+"Dockerfile", ".", "--no-cache")
 	buildOutput, buildErr := buildCmd.CombinedOutput()
 	if buildErr != nil {
 		log.Printf("Image build failed: %v, output: %s", buildErr, string(buildOutput))
