@@ -35,6 +35,15 @@ COPY --from=builder /tmp/built_exporters/* /bin/
 
 RUN microdnf install -y podman && microdnf clean all
 
+RUN groupadd podman && useradd -u 1000 podman -g podman; \
+usermod --add-subuids 100000-165535 --add-subgids 100000-165535 podman
+
+VOLUME /home/podman/.local/share/containers
+
+RUN chown podman:podman -R /home
+
+RUN podman system migrate
+
 # Copy the entrypoint script and ensure it's executable.
 COPY exporter-build-scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
@@ -47,6 +56,8 @@ LABEL io.k8s.description="Konflux Observability Exporters"
 LABEL io.k8s.display-name="o11y-exporters"
 LABEL io.openshift.tags="konflux"
 LABEL summary="Konflux Observability Exporters"
+
+USER podman
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
