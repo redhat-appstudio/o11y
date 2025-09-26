@@ -28,11 +28,21 @@ RUN cd exporters && \
         fi \
     done
 
-
-FROM registry.access.redhat.com/ubi9-micro@sha256:f5c5213d2969b7b11a6666fc4b849d56b48d9d7979b60a37bb853dff0255c14b
+FROM registry.access.redhat.com/ubi9-minimal@sha256:7c5495d5fad59aaee12abc3cbbd2b283818ee1e814b00dbc7f25bf2d14fa4f0c
 
 # Copy all compiled binaries from the builder stage to the final image.
 COPY --from=builder /tmp/built_exporters/* /bin/
+
+RUN microdnf install -y podman && microdnf clean all
+
+RUN groupadd podman && useradd -u 1000 podman -g podman; \
+usermod --add-subuids 100000-165535 --add-subgids 100000-165535 podman
+
+VOLUME /home/podman/.local/share/containers
+
+RUN chown podman:podman -R /home
+
+RUN podman system migrate
 
 # Copy the entrypoint script and ensure it's executable.
 COPY exporter-build-scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
@@ -46,6 +56,8 @@ LABEL io.k8s.description="Konflux Observability Exporters"
 LABEL io.k8s.display-name="o11y-exporters"
 LABEL io.openshift.tags="konflux"
 LABEL summary="Konflux Observability Exporters"
+
+USER podman
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
