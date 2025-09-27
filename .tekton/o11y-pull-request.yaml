@@ -9,7 +9,7 @@ metadata:
     pipelinesascode.tekton.dev/max-keep-runs: "3"
     pipelinesascode.tekton.dev/on-cel-expression: event == "pull_request" && target_branch == "main"
     pipelinesascode.tekton.dev/task: '[.tekton/kube-linter-oci-ta.yaml]'
-  creationTimestamp: null
+  creationTimestamp:
   labels:
     appstudio.openshift.io/application: o11y
     appstudio.openshift.io/component: o11y
@@ -123,6 +123,10 @@ spec:
       description: Enable dev-package-managers in prefetch task
       name: prefetch-dev-package-managers-enabled
       type: string
+    - name: buildah-format
+      default: docker
+      type: string
+      description: The format for the resulting image's mediaType. Valid values are oci or docker.
     results:
     - description: ""
       name: IMAGE_URL
@@ -173,7 +177,7 @@ spec:
         - name: name
           value: init
         - name: bundle
-          value: quay.io/konflux-ci/tekton-catalog/task-init:0.2@sha256:ec962d0be18f36ca7d331c99bf243800f569fc0a2ea6f8c8c3d3a574b71c44dc
+          value: quay.io/konflux-ci/tekton-catalog/task-init:0.2@sha256:abf231cfc5a68b56f68a8ac9bb26dca3c3e434c88dd9627c72bdec0b8c335c67
         - name: kind
           value: task
         resolver: bundles
@@ -243,7 +247,7 @@ spec:
         - description: The Trusted Artifact URI pointing to the artifact with the application source code.
           name: SOURCE_ARTIFACT
           type: string
-        spec: null
+        spec:
         stepTemplate:
           computeResources: {}
           volumeMounts:
@@ -278,7 +282,7 @@ spec:
         - description: The Trusted Artifact URI pointing to the artifact with the application source code.
           name: SOURCE_ARTIFACT
           type: string
-        spec: null
+        spec:
         stepTemplate:
           computeResources: {}
           volumeMounts:
@@ -321,7 +325,7 @@ spec:
         - description: The Trusted Artifact URI pointing to the artifact with the application source code.
           name: SOURCE_ARTIFACT
           type: string
-        spec: null
+        spec:
         stepTemplate:
           computeResources: {}
           securityContext:
@@ -358,7 +362,7 @@ spec:
         - description: The Trusted Artifact URI pointing to the artifact with the application source code.
           name: SOURCE_ARTIFACT
           type: string
-        spec: null
+        spec:
         stepTemplate:
           computeResources: {}
           volumeMounts:
@@ -399,6 +403,8 @@ spec:
         value: $(tasks.prefetch-dependencies.results.SOURCE_ARTIFACT)
       - name: CACHI2_ARTIFACT
         value: $(tasks.prefetch-dependencies.results.CACHI2_ARTIFACT)
+      - name: BUILDAH_FORMAT
+        value: $(params.buildah-format)
       runAfter:
       - prefetch-dependencies
       taskRef:
