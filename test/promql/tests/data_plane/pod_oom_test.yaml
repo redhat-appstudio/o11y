@@ -15,17 +15,15 @@ tests:
         alertname: PodOOMKilled
         exp_alerts:
           - exp_labels:
-              # severity: "high"  ## for testing
-              severity: "warning"
+              severity: critical
               source_cluster: "cluster01"
               namespace: "namespace"
               pod: "pod"
               reason: "OOMKilled"
+              slo: "true"
             exp_annotations:
-              # team: "o11y"  ## for testing
-              # slo: true  ## for testing
-              slo: "false"
               summary: "Pod pod ran out of memory - OOMKilled."
               description: "Pod pod in Namespace namespace was killed due to OOM."
-              alert_routing_key: "namespace"
+              alert_team_handle: >-
+                <!subteam^S07SW2EEW3D> <!subteam^S05Q1P4Q2TG>
               runbook_url: 'https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-OOMKilledAlert.md'
