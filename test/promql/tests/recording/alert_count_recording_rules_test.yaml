@@ -1,0 +1,19 @@
+evaluation_interval: 1m
+
+rule_files:
+  - alert_count_recording_rules.yaml
+
+tests:
+  - name: AlertCountFiringAlertsTest
+    interval: 1m
+    input_series:
+      - series: "ALERTS{alertname='TestAlert2', alertstate='firing', severity='critical'}"
+        values: "1 1 1 1 1"
+      - series: "ALERTS_FOR_STATE{alertname='TestAlert2', alertstate='firing', severity='critical'}"
+        values: "1 1 1 1 1"
+    promql_expr_test:
+      - expr: ALERTS_FOR_STATE_firing
+        eval_time: 5m
+        exp_samples:
+          - labels: ALERTS_FOR_STATE_firing{alertname='TestAlert2', alertstate='firing', severity='critical'}
+            value: 1

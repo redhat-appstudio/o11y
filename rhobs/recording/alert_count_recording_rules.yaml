@@ -1,0 +1,13 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-alert-count
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: alert_count
+      interval: 1m
+      rules:
+        - record: ALERTS_FOR_STATE_firing
+          expr: ALERTS_FOR_STATE and ignoring(alertstate) ALERTS{alertstate="firing"}
