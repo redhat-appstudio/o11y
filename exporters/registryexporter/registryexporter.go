@@ -81,8 +81,8 @@ func ImagePullTest(metrics *Metrics, registryType string) {
 		return
 	}
 	imageName += ":pull" // TODO: Add tag management
-	log.Print("Starting Image Pull Test...")
-	cmd := exec.Command("podman", "pull", imageName)
+	log.Print("Starting Image Pull Test with Buildah...")
+	cmd := exec.Command("buildah", "pull", imageName)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		log.Printf("Image pull failed: %v, output: %s", err, string(output))
@@ -131,12 +131,13 @@ func ImagePushTest(metrics *Metrics, registryType string) {
 	imageName += ":push" // TODO: Add tag management
 	log.Print("Starting Image Push Test...")
 
-	// Build image with podman
+	// Build image with buildah
 	buildTimestamp := os.Getenv("BUILD_TIMESTAMP")
 	if buildTimestamp == "" {
 		buildTimestamp = "now"
 	}
-	buildCmd := exec.Command("podman", "build", "-t", imageName, "--build-arg", "BUILD_TIMESTAMP="+buildTimestamp, "-f", os.Getenv("DOCKERFILE_PATH")+"Dockerfile", ".", "--no-cache")
+	dockerfilePath := os.Getenv("DOCKERFILE_PATH") + "Dockerfile"
+	buildCmd := exec.Command("buildah", "bud", "-t", imageName, "--build-arg", "BUILD_TIMESTAMP="+buildTimestamp, "-f", dockerfilePath, "--no-cache")
 	buildOutput, buildErr := buildCmd.CombinedOutput()
 	if buildErr != nil {
 		log.Printf("Image build failed: %v, output: %s", buildErr, string(buildOutput))
@@ -149,8 +150,8 @@ func ImagePushTest(metrics *Metrics, registryType string) {
 		log.Panicf("DOCKERCFG_PATH environment variable is not set")
 		return
 	}
-	// For push secret is mounted and used on the fly
-	pushCmd := exec.Command("podman", "push", "--authfile", authfilePath, imageName)
+	// For push, buildah uses --authfile for authentication
+	pushCmd := exec.Command("buildah", "push", "--authfile", authfilePath, imageName)
 	pushOutput, pushErr := pushCmd.CombinedOutput()
 	if pushErr != nil {
 		log.Printf("Image push failed: %v, output: %s", pushErr, string(pushOutput))

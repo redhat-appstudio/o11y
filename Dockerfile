@@ -28,21 +28,58 @@ RUN cd exporters && \
         fi \
     done
 
+# Prepare buildah settings
+FROM quay.io/konflux-ci/buildah-task:latest AS buildah-prepare
+
 FROM registry.access.redhat.com/ubi9-minimal@sha256:7c5495d5fad59aaee12abc3cbbd2b283818ee1e814b00dbc7f25bf2d14fa4f0c
 
 # Copy all compiled binaries from the builder stage to the final image.
 COPY --from=builder /tmp/built_exporters/* /bin/
+# ******************************************************************************
+# registry monitoring setup
 
-RUN microdnf install -y podman && microdnf clean all
+RUN rpm --setcaps shadow-utils && \
+    microdnf install -y buildah shadow-utils fuse-overlayfs && microdnf clean all
 
-RUN groupadd podman && useradd -u 1000 podman -g podman; \
-usermod --add-subuids 100000-165535 --add-subgids 100000-165535 podman
+COPY --from=buildah-prepare /etc/containers/ /etc/containers/
 
-VOLUME /home/podman/.local/share/containers
+RUN mkdir -p /var/lib/shared/overlay-images \
+             /var/lib/shared/overlay-layers \
+             /var/lib/shared/vfs-images \
+             /var/lib/shared/vfs-layers && \
+    touch /var/lib/shared/overlay-images/images.lock && \
+    touch /var/lib/shared/overlay-layers/layers.lock && \
+    touch /var/lib/shared/vfs-images/images.lock && \
+    touch /var/lib/shared/vfs-layers/layers.lock
 
-RUN chown podman:podman -R /home
+RUN useradd build && \
+    echo -e "root:1:4294967294\nbuild:1:999\nbuild:1001:4294967294" > /etc/subuid && \
+    echo -e "root:1:4294967294\nbuild:1:999\nbuild:1001:4294967294" > /etc/subgid && \
+    mkdir -p /home/build/.local/share/containers && \
+    mkdir -p /home/build/.config/containers && \
+    chown -R build:build /home/build && \
+    chown -R build:build /home
 
-RUN podman system migrate
+# RUN sed -e 's|^#mount_program|mount_program|g' \
+        # -e 's|^graphroot|#graphroot|g' \
+
+RUN sed -i -r -e 's,driver = ".*",driver = "vfs",g' /etc/containers/storage.conf
+
+RUN sed -e 's|^graphroot|#graphroot|g' \
+        -e 's|^runroot|#runroot|g' \
+        /etc/containers/storage.conf \
+        > /home/build/.config/containers/storage.conf && \
+        chown build:build /home/build/.config/containers/storage.conf
+
+VOLUME /var/lib/containers
+VOLUME /home/build/.local/share/containers
+
+# Set an environment variable to default to chroot isolation for RUN
+# instructions and "buildah run".
+ENV BUILDAH_ISOLATION=chroot
+
+# ******************************************************************************
+
 
 # Copy the entrypoint script and ensure it's executable.
 COPY exporter-build-scripts/entrypoint.sh /usr/local/bin/entrypoint.sh
@@ -57,7 +94,7 @@ LABEL io.k8s.display-name="o11y-exporters"
 LABEL io.openshift.tags="konflux"
 LABEL summary="Konflux Observability Exporters"
 
-USER podman
+USER build
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 
