@@ -10,16 +10,16 @@ tests:
   input_series:
     # Simulating data from Cluster 1
     - series: 'integration_svc_response_seconds_bucket{le="30", namespace="integration-service",  source_cluster="cluster01"}'
-      values: '0+10x15'  # 10 requests took less than 30s
+      values: '0+10x25'  # 10 requests took less than 30s
     - series: 'integration_svc_response_seconds_bucket{le="+Inf", namespace="integration-service", source_cluster="cluster01"}'
-      values: '0+100x15'  # 100 total occurrences in cluster1
+      values: '0+100x25'  # 100 total occurrences in cluster1
     # Simulating data from Cluster 2
     - series: 'integration_svc_response_seconds_bucket{le="30", namespace="integration-service", source_cluster="cluster02"}'
-      values: '0+95x15'  # 95 requests took less than 30s
+      values: '0+95x25'  # 95 requests took less than 30s
     - series: 'integration_svc_response_seconds_bucket{le="+Inf", namespace="integration-service", source_cluster="cluster02"}'
-      values: '0+100x15'  # 100 total occurrences in cluster2
+      values: '0+100x25'  # 100 total occurrences in cluster2
   alert_rule_test:
-    - eval_time: 15m
+    - eval_time: 25m
       alertname: PipelineRunToSnapshotExceeded
       exp_alerts:
         - exp_labels:
@@ -30,7 +30,7 @@ tests:
           exp_annotations:
             summary: PipelineRunFinish to SnapshotInProgress time exceeded
             description: >
-              Time from build pipeline run finished to snapshot marked in progress has been over 30s for more than 10% of requests during the last 10 minutes on cluster cluster01
+              Time from build pipeline run finished to snapshot marked in progress has been over 30s for more than 10% of requests during the last 20 minutes on cluster cluster01
             alert_team_handle: <!subteam^S05M4AG8CJH>
             team: integration
             runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/sre/latency_service_response.md
@@ -40,16 +40,16 @@ tests:
   input_series:
     # Simulating data from Cluster 01
     - series: 'integration_svc_response_seconds_bucket{le="30", namespace="integration-service", source_cluster="cluster01"}'
-      values: '0+10x15'  # 10 requests took less than 30s
+      values: '0+10x25'  # 10 requests took less than 30s
     - series: 'integration_svc_response_seconds_bucket{le="+Inf", namespace="integration-service", source_cluster="cluster01"}'
-      values: '0+100x15'  # 100 total occurrences in cluster1
+      values: '0+100x25'  # 100 total occurrences in cluster1
     # Simulating data from Cluster 2
     - series: 'integration_svc_response_seconds_bucket{le="30", namespace="integration-service", source_cluster="cluster02"}'
-      values: '0+10x15'  # 10 requests took less than 30s
+      values: '0+10x25'  # 10 requests took less than 30s
     - series: 'integration_svc_response_seconds_bucket{le="+Inf", namespace="integration-service", source_cluster="cluster02"}'
-      values: '0+100x15'  # 100 total occurrences in cluster2
+      values: '0+100x25'  # 100 total occurrences in cluster2
   alert_rule_test:
-    - eval_time: 15m
+    - eval_time: 25m
       alertname: PipelineRunToSnapshotExceeded
       exp_alerts:
         - exp_labels:
@@ -60,7 +60,7 @@ tests:
           exp_annotations:
             summary: PipelineRunFinish to SnapshotInProgress time exceeded
             description: >
-              Time from build pipeline run finished to snapshot marked in progress has been over 30s for more than 10% of requests during the last 10 minutes on cluster cluster01
+              Time from build pipeline run finished to snapshot marked in progress has been over 30s for more than 10% of requests during the last 20 minutes on cluster cluster01
             alert_team_handle: <!subteam^S05M4AG8CJH>
             team: integration
             runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/sre/latency_service_response.md
@@ -72,7 +72,7 @@ tests:
           exp_annotations:
             summary: PipelineRunFinish to SnapshotInProgress time exceeded
             description: >
-              Time from build pipeline run finished to snapshot marked in progress has been over 30s for more than 10% of requests during the last 10 minutes on cluster cluster02
+              Time from build pipeline run finished to snapshot marked in progress has been over 30s for more than 10% of requests during the last 20 minutes on cluster cluster02
             alert_team_handle: <!subteam^S05M4AG8CJH>
             team: integration
             runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/sre/latency_service_response.md
@@ -82,16 +82,16 @@ tests:
   input_series:
     # Simulating data from Cluster 1 for 9% above 30s
     - series: 'integration_svc_response_seconds_bucket{le="30", namespace="integration-service", source_cluster="cluster01"}'
-      values: '0+91x15'  # 91 requests took less than 30s
+      values: '0+91x25'  # 91 requests took less than 30s
     - series: 'integration_svc_response_seconds_bucket{le="+Inf", namespace="integration-service", source_cluster="cluster01"}'
-      values: '0+100x15'  # 100 total occurrences in cluster1
+      values: '0+100x25'  # 100 total occurrences in cluster1
 
     # Simulating data from Cluster 2 for 4% above 30s, alert should not trigger
     - series: 'integration_svc_response_seconds_bucket{le="30", namespace="integration-service", source_cluster="cluster02"}'
-      values: '0+96x15'  # 96 requests took less than 30s
+      values: '0+96x25'  # 96 requests took less than 30s
     - series: 'integration_svc_response_seconds_bucket{le="+Inf", namespace="integration-service", source_cluster="cluster02"}'
-      values: '0+100x15'  # 100 total occurrences in cluster2
+      values: '0+100x25'  # 100 total occurrences in cluster2
   alert_rule_test:
-    - eval_time: 15m
+    - eval_time: 25m
       alertname: PipelineRunToSnapshotExceeded
       exp_alerts: []  # No alerts are expected in this scenario
