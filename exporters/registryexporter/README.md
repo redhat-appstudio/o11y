@@ -1,0 +1,3 @@
+This will be documentation for registry monitoring exporter (monitoring for quay, images.paas, etc.), explanations of the modules, background information, and implementation details.
+
+Still subject to name changes...
