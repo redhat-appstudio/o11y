@@ -5,68 +5,73 @@ tests:
   - interval: 1m
     name: SupportOpsAvailabilityTest_FullyAvailable
     input_series:
-      - series: 'kube_deployment_status_replicas_available{deployment="chat-bot", namespace="konflux-user-support"}'
+      - series: 'kube_deployment_status_replicas_available{deployment="chat-bot", namespace="konflux-support-ops"}'
         values: '3 3 3 3 3'
-      - series: 'kube_deployment_spec_replicas{deployment="chat-bot", namespace="konflux-user-support"}'
+      - series: 'kube_deployment_spec_replicas{deployment="chat-bot", namespace="konflux-support-ops"}'
         values: '3 3 3 3 3'
     promql_expr_test:
       - expr: konflux_up
         eval_time: 5m
         exp_samples:
-          - labels: 'konflux_up{service="chat-bot", check="replicas-available", deployment="chat-bot", namespace="konflux-user-support"}'
+          - labels: 'konflux_up{service="chat-bot", check="replicas-available", deployment="chat-bot", namespace="konflux-support-ops"}'
             value: 1
+
   - interval: 1m
     name: SupportOpsAvailabilityTest_PartiallyAvailable
     input_series:
-      - series: 'kube_deployment_status_replicas_available{deployment="chat-bot", namespace="konflux-user-support"}'
+      - series: 'kube_deployment_status_replicas_available{deployment="chat-bot", namespace="konflux-support-ops"}'
         values: '2 2 2 2 2'
-      - series: 'kube_deployment_spec_replicas{deployment="chat-bot", namespace="konflux-user-support"}'
+      - series: 'kube_deployment_spec_replicas{deployment="chat-bot", namespace="konflux-support-ops"}'
         values: '3 3 3 3 3'
     promql_expr_test:
       - expr: konflux_up
         eval_time: 5m
         exp_samples:
-          - labels: 'konflux_up{service="chat-bot", check="replicas-available", deployment="chat-bot", namespace="konflux-user-support"}'
+          - labels: 'konflux_up{service="chat-bot", check="replicas-available", deployment="chat-bot", namespace="konflux-support-ops"}'
             value: 0
+
   - interval: 1m
     name: SupportOpsAvailabilityTest_Unavailable
     input_series:
-      - series: 'kube_deployment_status_replicas_available{deployment="chat-bot", namespace="konflux-user-support"}'
+      - series: 'kube_deployment_status_replicas_available{deployment="chat-bot", namespace="konflux-support-ops"}'
         values: '0 0 0 0 0'
-      - series: 'kube_deployment_spec_replicas{deployment="chat-bot", namespace="konflux-user-support"}'
+      - series: 'kube_deployment_spec_replicas{deployment="chat-bot", namespace="konflux-support-ops"}'
         values: '3 3 3 3 3'
     promql_expr_test:
       - expr: konflux_up
         eval_time: 5m
         exp_samples:
-          - labels: 'konflux_up{service="chat-bot", check="replicas-available", deployment="chat-bot", namespace="konflux-user-support"}'
+          - labels: 'konflux_up{service="chat-bot", check="replicas-available", deployment="chat-bot", namespace="konflux-support-ops"}'
             value: 0
+
   - interval: 1m
     name: SupportOpsAvailabilityTest_SingleReplicaAvailable
     input_series:
-      - series: 'kube_deployment_status_replicas_available{deployment="chat-bot", namespace="konflux-user-support"}'
+      - series: 'kube_deployment_status_replicas_available{deployment="chat-bot", namespace="konflux-support-ops"}'
         values: '1 1 1 1 1'
-      - series: 'kube_deployment_spec_replicas{deployment="chat-bot", namespace="konflux-user-support"}'
+      - series: 'kube_deployment_spec_replicas{deployment="chat-bot", namespace="konflux-support-ops"}'
         values: '1 1 1 1 1'
     promql_expr_test:
       - expr: konflux_up
         eval_time: 5m
         exp_samples:
-          - labels: 'konflux_up{service="chat-bot", check="replicas-available", deployment="chat-bot", namespace="konflux-user-support"}'
+          - labels: 'konflux_up{service="chat-bot", check="replicas-available", deployment="chat-bot", namespace="konflux-support-ops"}'
             value: 1
+
   - interval: 1m
     name: SupportOpsAvailabilityTest_ZeroSpecReplicas
     input_series:
-      - series: 'kube_deployment_status_replicas_available{deployment="chat-bot", namespace="konflux-user-support"}'
+      - series: 'kube_deployment_status_replicas_available{deployment="chat-bot", namespace="konflux-support-ops"}'
         values: '0 0 0 0 0'
-      - series: 'kube_deployment_spec_replicas{deployment="chat-bot", namespace="konflux-user-support"}'
+      - series: 'kube_deployment_spec_replicas{deployment="chat-bot", namespace="konflux-support-ops"}'
         values: '0 0 0 0 0'
     promql_expr_test:
       - expr: konflux_up
         eval_time: 5m
         exp_samples:
-          - labels: 'konflux_up{service="chat-bot", check="replicas-available", namespace="konflux-user-support", deployment="chat-bot"}'
+          - labels: 'konflux_up{service="chat-bot", check="replicas-available", namespace="konflux-support-ops", deployment="chat-bot"}'
             value: 0
+
   - interval: 1m
     name: SupportOpsAvailabilityTest_DifferentNamespace
     input_series:
@@ -78,12 +83,13 @@ tests:
       - expr: konflux_up
         eval_time: 5m
         exp_samples: []
+
   - interval: 1m
     name: SupportOpsAvailabilityTest_DifferentDeployment
     input_series:
-      - series: 'kube_deployment_status_replicas_available{deployment="other-deployment", namespace="konflux-user-support"}'
+      - series: 'kube_deployment_status_replicas_available{deployment="other-deployment", namespace="konflux-support-ops"}'
         values: '1 1 1 1 1'
-      - series: 'kube_deployment_spec_replicas{deployment="other-deployment", namespace="konflux-user-support"}'
+      - series: 'kube_deployment_spec_replicas{deployment="other-deployment", namespace="konflux-support-ops"}'
         values: '1 1 1 1 1'
     promql_expr_test:
       - expr: konflux_up
