@@ -6,7 +6,7 @@ metadata:
     tenant: rhtap
 spec:
   groups:
-    - name: support-ops-availability
+    - name: support_ops_availability
       interval: 1m
       rules:
         - record: konflux_up
@@ -16,9 +16,9 @@ spec:
                 label_replace(
                   floor(
                     kube_deployment_status_replicas_available{
-                      namespace="konflux-user-support",
+                      namespace="konflux-support-ops",
                       deployment="chat-bot"
-                    } / clamp_min(kube_deployment_spec_replicas{namespace="konflux-user-support", deployment="chat-bot"}, 1)
+                    } / clamp_min(kube_deployment_spec_replicas{namespace="konflux-support-ops", deployment="chat-bot"}, 1)
                   ), "check", "replicas-available", "",""
                 ), "service", "$1", "deployment","(.*)"
               ), 1

@@ -1,31 +1,54 @@
 evaluation_interval: 1m
 
 rule_files:
-  - prometheus.support_ops_availability_alerts.yaml
+  - 'prometheus.support_ops_availability_alerts.yaml'
 
 tests:
   - interval: 1m
     input_series:
-      - series: 'konflux_up{namespace="konflux-user-support", check="replicas-available", service="chat-bot", source_cluster="c1"}'
-        values: '0 0 0 0 0'
-      - series: 'konflux_up{namespace="konflux-user-support", check="replicas-available", service="chat-bot", source_cluster="c2"}'
-        values: '1 1 1 1 1'
+      - series: 'konflux_up{namespace="konflux-support-ops", check="replicas-available", service="chat-bot", source_cluster="c1"}'
+        values: '0 0 0 0 0 0 0 0 0 0 0'  # Down for 11 minutes
+      - series: 'konflux_up{namespace="konflux-support-ops", check="replicas-available", service="chat-bot", source_cluster="c2"}'
+        values: '1 1 1 1 1 1 1 1 1 1 1'  # Always up
 
     alert_rule_test:
-      - eval_time: 5m
-        alertname: UserSupportAutomationDown
+      - eval_time: 10m
+        alertname: SupportOpsDown
         exp_alerts:
           - exp_labels:
               severity: critical
               check: replicas-available
-              namespace: konflux-user-support
+              namespace: konflux-support-ops
               service: chat-bot
               slo: "true"
               source_cluster: c1
             exp_annotations:
-              summary: User Support Automation is down in cluster c1
+              summary: User support automation is down on cluster c1
               description: >
-                The User Support Automation (chat-bot) pod has been down for 5min in cluster c1
+                Some of the replicas of user support automation are down in namespace konflux-support-ops on cluster c1
               alert_team_handle: <!subteam^S068JNLG03A>
               team: support-ops
-              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/support-ops/user-support-automation.md
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/user-support/user_support_guide.md
+
+  - interval: 1m
+    input_series:
+      - series: 'kube_deployment_spec_replicas{namespace="konflux-support-ops", deployment="support-ops", source_cluster="c1"}'
+        values: '3 3 3 3 3 3'
+      - series: 'kube_deployment_status_replicas_available{namespace="konflux-support-ops", deployment="support-ops", source_cluster="c1"}'
+        values: '1 1 1 1 1 1'
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: SupportOpsDeploymentReplicasMismatch
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: konflux-support-ops
+              deployment: support-ops
+              source_cluster: c1
+            exp_annotations:
+              summary: Support Ops deployment konflux-support-ops/support-ops replicas mismatch
+              description: >-
+                The number of replicas defined in konflux-support-ops/support-ops on cluster c1 is different than the actual number of replicas
+              alert_routing_key: konflux-support-ops
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/user-support/user_support_guide.md
