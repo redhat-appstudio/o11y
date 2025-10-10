@@ -1,4 +1,3 @@
-// Package main implements a registry exporter for Prometheus metrics.
 package main
 
 import (
@@ -73,15 +72,20 @@ func InitMetrics(reg prometheus.Registerer) *Metrics {
 	return m
 }
 
-// Note: Temporary path to registry types for testing
-// Will be handled with deployement later
-var registryTypes = map[string]string{
-	"quay.io":                "quay.io/redhat-user-workloads/rh-ee-tbehal-tenant/test-component",
-	"images.paas.redhat.com": "images.paas.redhat.com/o11y/todo",
+func PrepareRegistryMap() map[string]string {
+	quayUrl := os.Getenv("QUAY_URL")
+
+	if quayUrl == "" {
+		log.Panicf("QUAY_URL environment variable is required")
+	}
+
+	return map[string]string{
+		"quay.io": quayUrl,
+	}
 }
 
-func PreparePullTest(registryType string) {
-	registryName := registryTypes[registryType]
+func PreparePullTest(registryMap map[string]string, registryType string) {
+	registryName := registryMap[registryType]
 	registryName += ":pull" // TODO: Add tag management
 
 	timeStamp := time.Now()
@@ -120,10 +124,10 @@ func PreparePullTest(registryType string) {
 	log.Printf("Pull preparation for registry type %s successful.", registryType)
 }
 
-func PullTest(metrics *Metrics, registryType string) {
+func PullTest(metrics *Metrics, registryMap map[string]string, registryType string) {
 	defer metrics.RegistryTotalPullCount.WithLabelValues(registryType).Inc()
 
-	registryName := registryTypes[registryType]
+	registryName := registryMap[registryType]
 	registryName += ":pull" // TODO: Add tag management
 
 	// Expects to download /mnt/storage/pull-artifact.txt
@@ -145,10 +149,10 @@ func PullTest(metrics *Metrics, registryType string) {
 	metrics.RegistryPullCount.WithLabelValues(registryType).Inc()
 }
 
-func PushTest(metrics *Metrics, registryType string) {
+func PushTest(metrics *Metrics, registryMap map[string]string, registryType string) {
 	defer metrics.RegistryTotalPushCount.WithLabelValues(registryType).Inc()
 
-	registryName := registryTypes[registryType]
+	registryName := registryMap[registryType]
 	registryName += ":push" // TODO: Add tag management
 
 	// Create a simple unique artifact to push
@@ -182,20 +186,15 @@ func PushTest(metrics *Metrics, registryType string) {
 	metrics.RegistryPushCount.WithLabelValues(registryType).Inc()
 }
 
-func ManifestTests(metrics *Metrics, registryType string) {
+func ManifestTests(metrics *Metrics, registryMap map[string]string, registryType string) {
 	// TODO: Implement manifest test
 }
 
 func main() {
 	log.SetOutput(os.Stderr)
 
-	registryType := "quay.io" // Hardcoded for now
-
 	reg := prometheus.NewRegistry()
 	metrics := InitMetrics(reg)
-
-	metrics.RegistryTestUp.WithLabelValues(registryType).Set(1)
-	defer metrics.RegistryTestUp.WithLabelValues(registryType).Set(0)
 
 	http.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 
@@ -207,7 +206,13 @@ func main() {
 		log.Println("curl http://localhost:9101/metrics")
 	}()
 
-	go PreparePullTest(registryType)
+	registryMap := PrepareRegistryMap()
+
+	for registryType := range registryMap {
+		metrics.RegistryTestUp.WithLabelValues(registryType).Set(1)
+		defer metrics.RegistryTestUp.WithLabelValues(registryType).Set(0)
+		go PreparePullTest(registryMap, registryType)
+	}
 
 	// Start a ticker to run tests at regular intervals
 	log.Printf("Starting periodic metrics fetch every %v.", scrapeInterval)
@@ -217,9 +222,11 @@ func main() {
 
 	for range ticker.C {
 		log.Println("Scheduled scrape, running tests...")
-		log.Printf("Processing test for registry type: %s", registryType)
-		go PullTest(metrics, registryType)
-		go PushTest(metrics, registryType)
-		// go ManifestTests(metrics, registryType)
+		for registryType := range registryMap {
+			log.Printf("Processing test for registry type: %s", registryType)
+			go PullTest(metrics, registryMap, registryType)
+			go PushTest(metrics, registryMap, registryType)
+			// go ManifestTests(metrics, registryMap, registryType)
+		}
 	}
 }
