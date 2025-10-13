@@ -14,7 +14,7 @@ spec:
         summary: OADP experienced backup failures for schedule {{ $labels.schedule }}
         description: OADP had {{ $value | humanize }} backup failure(s) over the last hour for schedule {{ $labels.schedule }}.
         alert_routing_key: spreandinfra
-        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/backup/backup-failed.md
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/disaster-recovery/cluster/oadp-alerts.md
       expr: increase(velero_backup_failure_total[1h]) > 0
       for: 5m
       labels:
@@ -25,7 +25,7 @@ spec:
         summary: OADP experienced issues with schedule backup not running {{ $labels.schedule }} in {{ $labels.source_cluster }}.
         description: OADP schedule backups not running over the last 25 hours for schedule {{ $labels.schedule }} in cluster {{ $labels.source_cluster }}.
         alert_routing_key: spreandinfra
-        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/backup/backup-failed.md
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/disaster-recovery/cluster/oadp-alerts.md
       expr: time() - velero_backup_last_successful_timestamp{schedule="backup-tenants"} > 3600*25
       for: 5m
       labels:
@@ -36,7 +36,7 @@ spec:
         summary: OADP experienced increase in partial failures for schedule backup {{ $labels.schedule }} in {{ $labels.source_cluster }}.
         description: OADP experienced increase in partial failures for schedule backup over the last hour for schedule {{ $labels.schedule }} in cluster {{ $labels.source_cluster }}.
         alert_routing_key: spreandinfra
-        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/backup/backup-failed.md
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/disaster-recovery/cluster/oadp-alerts.md
       expr: increase(velero_backup_partial_failure_total[1h]) > 0
       for: 5m
       labels:
@@ -47,7 +47,7 @@ spec:
         summary: OADP experienced long running backups for schedule {{ $labels.schedule }} in {{ $labels.source_cluster }}.
         description: OADP experienced long running backups over the last 12 hours for schedule {{ $labels.schedule }} in cluster {{ $labels.source_cluster }}.
         alert_routing_key: spreandinfra
-        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/backup/backup-failed.md
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/disaster-recovery/cluster/oadp-alerts.md
       expr: histogram_quantile(1.0, sum(increase(velero_backup_duration_seconds_bucket[12h])) by (le, schedule,source_cluster)) > 7200
       for: 5m
       labels:
