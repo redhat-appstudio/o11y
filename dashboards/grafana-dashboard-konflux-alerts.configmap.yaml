@@ -1,0 +1,794 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-alert.configmap
+  labels:
+    grafana_dashboard: "true"
+  annotations:
+    grafana-folder: /grafana-dashboard-definitions/RHTAP
+data:
+  alerts-dashboard.json: |-
+    {
+      "annotations": {
+        "list": [
+          {
+            "builtIn": 1,
+            "datasource": {
+              "type": "grafana",
+              "uid": "-- Grafana --"
+            },
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "type": "dashboard"
+          }
+        ]
+      },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 0,
+      "id": 1056873,
+      "links": [],
+      "panels": [
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          },
+          "id": 9,
+          "panels": [],
+          "title": "Alert Overview",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Maximum Alert Count by alert name. Selecte time range. ",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                }
+              },
+              "mappings": []
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 14,
+            "x": 0,
+            "y": 1
+          },
+          "id": 25,
+          "options": {
+            "legend": {
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true,
+              "values": [
+                "value"
+              ]
+            },
+            "pieType": "pie",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum(changes(alerts_for_state_firing{severity=~\"$severity\",alertname=~\"$alertname\",source_cluster=~\"$cluster\"}[$__range]) + 1 ) by (alertname,severity)",
+              "format": "time_series",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "{{alertname}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Max Alert Count",
+          "transformations": [
+            {
+              "id": "reduce",
+              "options": {
+                "includeTimeField": false,
+                "mode": "reduceFields",
+                "reducers": [
+                  "max"
+                ]
+              }
+            }
+          ],
+          "type": "piechart"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Max number of alerts by cluster",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "left",
+                "fillOpacity": 73,
+                "gradientMode": "scheme",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineWidth": 0,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "displayName": "Max Alert Count",
+              "fieldMinMax": false,
+              "mappings": [],
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "#EAB839",
+                    "value": 40
+                  },
+                  {
+                    "color": "red",
+                    "value": 50
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 10,
+            "x": 14,
+            "y": 1
+          },
+          "id": 22,
+          "options": {
+            "barRadius": 0,
+            "barWidth": 0.52,
+            "colorByField": "Max",
+            "fullHighlight": false,
+            "groupWidth": 0.7,
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "right",
+              "showLegend": true
+            },
+            "orientation": "horizontal",
+            "showValue": "auto",
+            "stacking": "none",
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            },
+            "xField": "Field",
+            "xTickLabelRotation": 0,
+            "xTickLabelSpacing": 300
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum(changes(alerts_for_state_firing{severity=~\"$severity\",alertname=~\"$alertname\",source_cluster=~\"$cluster\"}[$__range]) + 1) by(source_cluster)",
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Max Cluster Alert Count",
+          "transformations": [
+            {
+              "id": "reduce",
+              "options": {}
+            }
+          ],
+          "type": "barchart"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Heatmap of alert count by alertname",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "scaleDistribution": {
+                  "type": "linear"
+                }
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 9
+          },
+          "id": 8,
+          "options": {
+            "calculate": false,
+            "cellGap": 5,
+            "cellValues": {
+              "unit": "none"
+            },
+            "color": {
+              "exponent": 0.5,
+              "fill": "blue",
+              "min": 0,
+              "mode": "opacity",
+              "reverse": false,
+              "scale": "exponential",
+              "scheme": "Blues",
+              "steps": 128
+            },
+            "exemplars": {
+              "color": "rgba(255,0,255,0.7)"
+            },
+            "filterValues": {
+              "le": 1e-9
+            },
+            "legend": {
+              "show": true
+            },
+            "rowsFrame": {
+              "layout": "unknown"
+            },
+            "tooltip": {
+              "mode": "single",
+              "showColorScale": false,
+              "yHistogram": false
+            },
+            "yAxis": {
+              "axisPlacement": "left",
+              "reverse": false
+            }
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum(changes(alerts_for_state_firing{severity=~\"$severity\",alertname=~\"$alertname\",source_cluster=~\"$cluster\"}[$__range]) + 1) by(alertname)",
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Alert Heatmap",
+          "type": "heatmap"
+        },
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 19
+          },
+          "id": 30,
+          "panels": [],
+          "title": "Alert Duration",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Alerts with duration below 10 min by alertname and source cluster.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "fillOpacity": 80,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineWidth": 1,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "thresholdsStyle": {
+                  "mode": "dashed"
+                }
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "from": 0,
+                    "result": {
+                      "color": "orange",
+                      "index": 0
+                    },
+                    "to": 5
+                  },
+                  "type": "range"
+                },
+                {
+                  "options": {
+                    "from": 5,
+                    "result": {
+                      "color": "yellow",
+                      "index": 1
+                    },
+                    "to": 10
+                  },
+                  "type": "range"
+                },
+                {
+                  "options": {
+                    "from": 10,
+                    "result": {
+                      "color": "green",
+                      "index": 2
+                    },
+                    "to": 50
+                  },
+                  "type": "range"
+                }
+              ],
+              "max": 14,
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "orange",
+                    "value": 5
+                  },
+                  {
+                    "color": "green",
+                    "value": 10
+                  }
+                ]
+              },
+              "unit": "m"
+            },
+            "overrides": [
+              {
+                "__systemRef": "hideSeriesFrom",
+                "matcher": {
+                  "id": "byNames",
+                  "options": {
+                    "mode": "exclude",
+                    "names": [
+                      "[5 - 25]"
+                    ],
+                    "prefix": "All except:",
+                    "readOnly": true
+                  }
+                },
+                "properties": [
+                  {
+                    "id": "custom.hideFrom",
+                    "value": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": true
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 24,
+            "x": 0,
+            "y": 20
+          },
+          "id": 28,
+          "options": {
+            "barRadius": 0,
+            "barWidth": 0.32,
+            "fullHighlight": false,
+            "groupWidth": 0.7,
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "orientation": "horizontal",
+            "showValue": "auto",
+            "stacking": "none",
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            },
+            "xTickLabelRotation": 0,
+            "xTickLabelSpacing": 200
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "(timestamp(alerts_for_state_firing{severity=~\"$severity\",alertname=~\"$alertname\",source_cluster=~\"$cluster\"})) / 60",
+              "hide": false,
+              "legendFormat": "{{alertname}} {{source_cluster}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Short Duration Alerts",
+          "transformations": [
+            {
+              "id": "reduce",
+              "options": {
+                "includeTimeField": false,
+                "labelsToFields": false,
+                "mode": "seriesToRows",
+                "reducers": [
+                  "diff"
+                ]
+              }
+            },
+            {
+              "id": "filterByValue",
+              "options": {
+                "filters": [
+                  {
+                    "config": {
+                      "id": "isNotNull",
+                      "options": {}
+                    },
+                    "fieldName": "Difference"
+                  },
+                  {
+                    "config": {
+                      "id": "lowerOrEqual",
+                      "options": {
+                        "value": "10"
+                      }
+                    },
+                    "fieldName": "Difference"
+                  }
+                ],
+                "match": "all",
+                "type": "include"
+              }
+            },
+            {
+              "id": "limit",
+              "options": {
+                "limitField": "10"
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "fields": {},
+                "sort": [
+                  {
+                    "field": "Difference"
+                  }
+                ]
+              }
+            }
+          ],
+          "type": "barchart"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Firing Alert Duration ",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "axisPlacement": "auto",
+                "fillOpacity": 100,
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineWidth": 0,
+                "spanNulls": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue"
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 14,
+            "w": 24,
+            "x": 0,
+            "y": 27
+          },
+          "id": 29,
+          "options": {
+            "alignValue": "center",
+            "legend": {
+              "displayMode": "table",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "mergeValues": true,
+            "rowHeight": 0.9,
+            "showValue": "never",
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "alerts_for_state_firing{severity=~\"$severity\",alertname=~\"$alertname\",source_cluster=~\"$cluster\"}",
+              "legendFormat": "{{alertname}} {{source_cluster}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Alert Duration ",
+          "type": "state-timeline"
+        },
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 41
+          },
+          "id": 26,
+          "panels": [],
+          "title": "Alert List",
+          "type": "row"
+        },
+        {
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 13,
+            "w": 24,
+            "x": 0,
+            "y": 42
+          },
+          "id": 18,
+          "maxPerRow": 2,
+          "options": {
+            "alertInstanceLabelFilter": "{slo=\"true\"}",
+            "alertName": "",
+            "dashboardAlerts": false,
+            "datasource": "rhtap-observatorium-production",
+            "groupBy": [],
+            "groupMode": "default",
+            "maxItems": 20,
+            "showInactiveAlerts": false,
+            "sortOrder": 1,
+            "stateFilter": {
+              "error": true,
+              "firing": true,
+              "noData": false,
+              "normal": true,
+              "pending": true
+            },
+            "viewMode": "list"
+          },
+          "pluginVersion": "11.6.3",
+          "repeat": "datasource",
+          "repeatDirection": "v",
+          "title": "Critical Alert List  Production",
+          "type": "alertlist"
+        }
+      ],
+      "preload": false,
+      "schemaVersion": 41,
+      "tags": [],
+      "templating": {
+        "list": [
+          {
+            "current": {
+              "text": "rhtap-observatorium-production",
+              "value": "P22466E8E7855F1E0"
+            },
+            "includeAll": false,
+            "label": "datasource",
+            "name": "datasource",
+            "options": [],
+            "query": "prometheus",
+            "refresh": 1,
+            "regex": "/^rhtap/",
+            "type": "datasource"
+          },
+          {
+            "current": {
+              "text": "All",
+              "value": [
+                "$__all"
+              ]
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${datasource}"
+            },
+            "definition": "label_values(source_cluster)",
+            "includeAll": true,
+            "label": "Select Cluster",
+            "multi": true,
+            "name": "cluster",
+            "options": [],
+            "query": {
+              "qryType": 1,
+              "query": "label_values(source_cluster)",
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "refresh": 1,
+            "regex": "",
+            "type": "query"
+          },
+          {
+            "current": {
+              "text": [
+                "All"
+              ],
+              "value": [
+                "$__all"
+              ]
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${datasource}"
+            },
+            "definition": "label_values(ALERTS,alertname)",
+            "description": "Alert Name Filter",
+            "includeAll": true,
+            "label": "AlertName",
+            "multi": true,
+            "name": "alertname",
+            "options": [],
+            "query": {
+              "qryType": 1,
+              "query": "label_values(ALERTS,alertname)",
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "refresh": 1,
+            "regex": "",
+            "sort": 1,
+            "type": "query"
+          },
+          {
+            "current": {
+              "text": [
+                "critical"
+              ],
+              "value": [
+                "critical"
+              ]
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${datasource}"
+            },
+            "definition": "label_values(ALERTS,severity)",
+            "description": "Severity",
+            "includeAll": true,
+            "label": "Severity",
+            "multi": true,
+            "name": "severity",
+            "options": [],
+            "query": {
+              "qryType": 1,
+              "query": "label_values(ALERTS,severity)",
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "refresh": 1,
+            "regex": "",
+            "type": "query"
+          }
+        ]
+      },
+      "time": {
+        "from": "now-24h",
+        "to": "now"
+      },
+      "timepicker": {},
+      "timezone": "",
+      "title": "Konflux Alerts",
+      "uid": "abpr2yy9lt0183",
+      "version": 188
+    }
