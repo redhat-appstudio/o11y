@@ -31,37 +31,37 @@ func InitMetrics(reg prometheus.Registerer) *Metrics {
 		RegistryTestUp: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: "registry_test_up",
-				Help: "A simple gauge to indicate if the registryType registry is accessible (1 for up).",
+				Help: "A simple gauge to indicate if the tested_registry registry is accessible (1 for up).",
 			},
-			[]string{"registryType"},
+			[]string{"tested_registry"},
 		),
 		RegistryPullCount: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Name: "registry_successful_pull_count",
 				Help: "Total number of successful pulls from the registry.",
 			},
-			[]string{"registryType"},
+			[]string{"tested_registry"},
 		),
 		RegistryTotalPullCount: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Name: "registry_total_pull_count",
 				Help: "Total number of pulls from the registry.",
 			},
-			[]string{"registryType"},
+			[]string{"tested_registry"},
 		),
 		RegistryPushCount: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Name: "registry_successful_push_count",
 				Help: "Total number of successful pushes to the registry.",
 			},
-			[]string{"registryType"},
+			[]string{"tested_registry"},
 		),
 		RegistryTotalPushCount: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Name: "registry_total_push_count",
 				Help: "Total number of pushes to the registry.",
 			},
-			[]string{"registryType"},
+			[]string{"tested_registry"},
 		),
 	}
 	reg.MustRegister(m.RegistryTestUp)
