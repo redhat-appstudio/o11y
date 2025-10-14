@@ -11,6 +11,6 @@ spec:
       rules:
         - record: konflux_up
           expr: |
-            min without (job, instance, namespace, service, endpoint, pod) (
+            min by (namespace, service) (
               squid_up{namespace="proxy", service="squid"}
             )
