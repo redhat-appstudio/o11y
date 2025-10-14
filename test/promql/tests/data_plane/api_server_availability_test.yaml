@@ -18,7 +18,7 @@ tests:
     # This block tests the alert's state (PENDING/FIRING).
     alert_rule_test:
       # This checks for a FIRING alert. It must be checked AFTER the 'for' duration.
-      - eval_time: 7m # Check after the 'for: 5m' has elapsed.
+      - eval_time: 16m
         alertname: KonfluxAPIServerHighErrorRate
         exp_alerts:
           - exp_labels:
@@ -27,7 +27,7 @@ tests:
               source_cluster: "kflux-prd-es01"
             exp_annotations:
               summary: "API Server 5XX error count in cluster kflux-prd-es01"
-              description: "API Server is experiencing 5% of 5XX failures based on the total requests for 5min in cluster kflux-prd-es01"
+              description: "API Server is experiencing 10% of 5XX failures based on the total requests for 15min in cluster kflux-prd-es01"
               alert_team_handle: "<!subteam^S05Q1P4Q2TG>"
               team: konflux-infra
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/api_server_error_rate_alert.md

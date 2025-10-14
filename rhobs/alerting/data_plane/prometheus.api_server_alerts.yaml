@@ -19,15 +19,15 @@ spec:
           sum by(source_cluster) (
             code:apiserver_request_total:rate5m{code!="0"}
           )
-        ) * 100 > 5
-      for: 5m
+        ) * 100 > 10
+      for: 15m
       labels:
         severity: critical
         slo: "true"
       annotations:
         summary: >-
           API Server 5XX error count in cluster {{ $labels.source_cluster }}
-        description: "API Server is experiencing 5% of 5XX failures based on the total requests for 5min in cluster {{ $labels.source_cluster }}"
+        description: "API Server is experiencing 10% of 5XX failures based on the total requests for 15min in cluster {{ $labels.source_cluster }}"
         alert_team_handle: <!subteam^S05Q1P4Q2TG>
         team: konflux-infra
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/api_server_error_rate_alert.md
