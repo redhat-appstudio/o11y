@@ -89,14 +89,26 @@ spec:
         count(kube_pod_container_status_terminated_reason{reason="OOMKilled",namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-templates-e2e|konflux-ci|mintmaker)"}) by (source_cluster,namespace,container,pod) >= 1
       for: 5m
       labels:
-        # severity: "high"  ## for testing
-        severity: "warning"
+        severity: warning
         reason: "OOMKilled"
-      annotations:
-        # team: "o11y"  ## for testing
-        # slo: "true"  ## for testing
         slo: "false"
+      annotations:
         summary: "Pod {{ $labels.pod }} ran out of memory - OOMKilled."
         description: "Pod {{ $labels.pod }} in Namespace {{ $labels.namespace }} was killed due to OOM."
         alert_routing_key: "{{ $labels.namespace }}"
+        runbook_url: 'https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-OOMKilledAlert.md'
+
+    - alert: ControllerPodOOMKilled
+      expr: |
+        count(kube_pod_container_status_terminated_reason{reason="OOMKilled",namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-templates-e2e|konflux-ci|mintmaker)", pod=~".*controller.*|.*manager.*"}) by (source_cluster,namespace,container,pod) >= 1
+      for: 5m
+      labels:
+        severity: critical
+        reason: "OOMKilled"
+        slo: "true"
+      annotations:
+        summary: "Pod {{ $labels.pod }} ran out of memory - OOMKilled."
+        description: "Pod {{ $labels.pod }} in Namespace {{ $labels.namespace }} was killed due to OOM."
+        alert_team_handle: >- # testing
+          <!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>
         runbook_url: 'https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-OOMKilledAlert.md'

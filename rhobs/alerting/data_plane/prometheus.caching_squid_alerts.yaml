@@ -1,0 +1,28 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-caching-squid-availability-alerting-rules
+  labels:
+    tenant: rhtap
+
+spec:
+  groups:
+  - name: caching_squid_availability
+    interval: 1m
+    rules:
+    - alert: CachingSquidDown
+      expr: |
+        konflux_up{namespace="proxy", service="squid"} == 0
+      for: 5m
+      labels:
+        severity: critical
+        slo: "true"
+      annotations:
+        summary: >-
+          Caching Squid proxy is down
+        description: >-
+          Squid exporter cannot scrape the Squid proxy successfully in namespace proxy.
+          The proxy has been down for 5 minutes.
+        alert_team_handle: <!subteam^S07NDQV6A4D>
+        team: vanguard
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/vanguard/sre/caching-squid-down.md

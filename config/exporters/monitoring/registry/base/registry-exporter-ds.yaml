@@ -1,0 +1,140 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: appstudio-registry-exporter
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec: {}
+---
+apiVersion: appstudio.redhat.com/v1alpha1
+kind: ImageRepository
+metadata:
+  name: appstudio-registry-exporter
+  namespace: appstudio-registry-exporter
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: exporter-sa
+  namespace: appstudio-registry-exporter
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kube-rbac-proxy-registry
+rules:
+  - apiGroups: ["authentication.k8s.io"]
+    resources:
+      - tokenreviews
+    verbs: ["create"]
+  - apiGroups: ["authorization.k8s.io"]
+    resources:
+      - subjectaccessreviews
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: registry-exporter-role-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kube-rbac-proxy-registry
+subjects:
+  - kind: ServiceAccount
+    name: exporter-sa
+    namespace: appstudio-registry-exporter
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: registry-exporter-ds
+  namespace: appstudio-registry-exporter
+spec:
+  selector:
+    matchLabels:
+      app: registry-exporter
+  template:
+    metadata:
+      labels:
+        app: registry-exporter
+    spec:
+      serviceAccountName: exporter-sa
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: konflux-ci.dev/workload
+                    operator: In
+                    values:
+                      - konflux-tenants
+                      - konflux-services
+      tolerations:
+        - effect: NoSchedule
+          key: konflux-ci.dev/workload
+          operator: Equal
+          value: konflux-tenants
+
+      containers:
+        - name: exporters
+          image: exporter:latest
+          args: ["registryexporter"]
+
+          env:
+            - name: DOCKER_CONFIG
+              value: "/.docker/"
+            - name: QUAY_URL
+              value: quay.io/redhat-user-workloads/appstudio-registry-exporter/appstudio-registry-exporter
+
+          volumeMounts:
+            - name: quay-auth
+              mountPath: "/.docker/config.json"
+              subPath: .dockerconfigjson
+            - name: container-storage
+              mountPath: /mnt/storage
+
+          resources:
+            limits:
+              cpu: 100m
+              memory: 200Mi
+            requests:
+              cpu: 100m
+              memory: 200Mi
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+
+        - name: kube-rbac-proxy-registry
+          image: quay.io/brancz/kube-rbac-proxy:v0.14.0
+          args:
+            - "--secure-listen-address=0.0.0.0:8443"
+            - "--upstream=http://127.0.0.1:9101/"
+            - "--logtostderr=true"
+            - "--v=10"
+
+          ports:
+            - containerPort: 8443
+              name: https
+
+          resources:
+            limits:
+              cpu: 100m
+              memory: 200Mi
+            requests:
+              cpu: 100m
+              memory: 200Mi
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+
+      volumes:
+        - name: container-storage
+          emptyDir: {}
+        - name: quay-auth
+          secret:
+            secretName: appstudio-registry-exporter-image-push
