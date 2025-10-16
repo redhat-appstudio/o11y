@@ -35,3 +35,11 @@ spec:
                 ), "service", "$1", "deployment","(.*)"
               ), 1
             )
+        - record: nginx_otel_http_request_errors:rate5m
+          expr: sum(rate(nginx_otel_http_request_errors_total[5m])) by (job)
+
+        - record: nginx_otel_http_request_errors:rate24h_avg
+          expr: avg_over_time(nginx_otel_http_request_errors:rate5m[24h])
+
+        - record: nginx_otel_http_request_errors:rate24h_stddev
+          expr: stddev_over_time(nginx_otel_http_request_errors:rate5m[24h])
