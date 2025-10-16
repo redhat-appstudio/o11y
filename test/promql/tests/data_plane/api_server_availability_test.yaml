@@ -4,6 +4,55 @@ rule_files:
   - 'prometheus.api_server_alerts.yaml'
 
 tests:
+  # Test Increasing4xx5xxErrorRate alert - FIRING
+  - name: Test Increasing4xx5xxErrorRate Firing
+    interval: 1m
+    input_series:
+      # Current 10m error rate is elevated (15%)
+      - series: 'api_server:error_rate_10m{service="api-server", source_cluster="kflux-prd-es01"}'
+        values: '15+0x20'
+      # 30-day average is 10%
+      - series: 'api_server:error_rate_30d_avg{service="api-server", source_cluster="kflux-prd-es01"}'
+        values: '10+0x20'
+      # 30-day stddev is 1% (so threshold is 10 + 3*1 = 13%, and 15% > 13%)
+      - series: 'api_server:error_rate_30d_stddev{service="api-server", source_cluster="kflux-prd-es01"}'
+        values: '1+0x20'
+
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: Increasing4xx5xxErrorRate
+        exp_alerts:
+          - exp_labels:
+              severity: test
+              slo: "false"
+              service: "api-server"
+              source_cluster: "kflux-prd-es01"
+            exp_annotations:
+              summary: "API Server 4xx/5xx error rate in cluster kflux-prd-es01"
+              description: "API Server is experiencing more than 10% failures based on the 30d average and 3x standard deviation in cluster kflux-prd-es01"
+              alert_team_handle: "<!subteam^S05Q1P4Q2TG>"
+              team: konflux-infra
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/api_server_error_rate_alert.md
+
+  # Test Increasing4xx5xxErrorRate alert - NOT FIRING
+  - name: Test Increasing4xx5xxErrorRate Not Firing
+    interval: 1m
+    input_series:
+      # Current 10m error rate is 11% (within threshold)
+      - series: 'api_server:error_rate_10m{service="api-server", source_cluster="kflux-prd-es01"}'
+        values: '11+0x20'
+      # 30-day average is 10%
+      - series: 'api_server:error_rate_30d_avg{service="api-server", source_cluster="kflux-prd-es01"}'
+        values: '10+0x20'
+      # 30-day stddev is 1% (so threshold is 10 + 3*1 = 13%, and 11% < 13%)
+      - series: 'api_server:error_rate_30d_stddev{service="api-server", source_cluster="kflux-prd-es01"}'
+        values: '1+0x20'
+
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: Increasing4xx5xxErrorRate
+        exp_alerts: []
+
   # Start of a new test case. The interval and input series must be under this item.
   - name: Test KonfluxAPIServerHighErrorRate
     interval: 1m # Correct placement and spelling of interval
