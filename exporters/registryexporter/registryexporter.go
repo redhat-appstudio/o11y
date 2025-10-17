@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"math"
 	"net/http"
 	"os"
 	"os/exec"
@@ -12,14 +13,13 @@ import (
 )
 
 type Metrics struct {
-	RegistryTestUp         *prometheus.GaugeVec
 	RegistryPullCount      *prometheus.CounterVec
 	RegistryTotalPullCount *prometheus.CounterVec
 	RegistryPushCount      *prometheus.CounterVec
 	RegistryTotalPushCount *prometheus.CounterVec
 }
 
-// Max retries for the pull test initialisation
+// Max retries for operations
 const maxRetries = 5
 
 // Scrape interval == Time between each test execution
@@ -28,48 +28,61 @@ const scrapeInterval = 1 * time.Minute
 // InitMetrics initializes and registers Prometheus metrics.
 func InitMetrics(reg prometheus.Registerer) *Metrics {
 	m := &Metrics{
-		RegistryTestUp: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "registry_test_up",
-				Help: "A simple gauge to indicate if the tested_registry registry is accessible (1 for up).",
-			},
-			[]string{"tested_registry"},
-		),
 		RegistryPullCount: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
-				Name: "registry_successful_pull_count",
+				Name: "registry_exporter_successful_pull_count",
 				Help: "Total number of successful pulls from the registry.",
 			},
 			[]string{"tested_registry"},
 		),
 		RegistryTotalPullCount: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
-				Name: "registry_total_pull_count",
+				Name: "registry_exporter_total_pull_count",
 				Help: "Total number of pulls from the registry.",
 			},
 			[]string{"tested_registry"},
 		),
 		RegistryPushCount: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
-				Name: "registry_successful_push_count",
+				Name: "registry_exporter_successful_push_count",
 				Help: "Total number of successful pushes to the registry.",
 			},
 			[]string{"tested_registry"},
 		),
 		RegistryTotalPushCount: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
-				Name: "registry_total_push_count",
+				Name: "registry_exporter_total_push_count",
 				Help: "Total number of pushes to the registry.",
 			},
 			[]string{"tested_registry"},
 		),
 	}
-	reg.MustRegister(m.RegistryTestUp)
 	reg.MustRegister(m.RegistryPullCount)
 	reg.MustRegister(m.RegistryTotalPullCount)
 	reg.MustRegister(m.RegistryPushCount)
 	reg.MustRegister(m.RegistryTotalPushCount)
 	return m
+}
+
+func executeCmdWithRetry(args []string) (output []byte, err error) {
+	for attempt := range maxRetries {
+		// Hardcoded oras, usage of slice expansion due to exec.Command limitation.
+		cmd := exec.Command("oras", args...)
+		output, err = cmd.CombinedOutput()
+		if err == nil {
+			return output, nil
+		}
+
+		if attempt+1 < maxRetries {
+			backoff_duration := time.Duration(math.Pow(2, float64(attempt))) * time.Second
+
+			log.Printf("Command attempt %d failed: %v, output: %s. Retrying in %v...", attempt+1, err, string(output), backoff_duration)
+			time.Sleep(backoff_duration)
+		} else {
+			return output, err
+		}
+	}
+	return output, err
 }
 
 func PrepareRegistryMap() map[string]string {
@@ -86,38 +99,23 @@ func PrepareRegistryMap() map[string]string {
 
 func PreparePullTest(registryMap map[string]string, registryType string) {
 	registryName := registryMap[registryType]
-	registryName += ":pull" // TODO: Add tag management
+	registryName += ":pull"
+
+	artifactPath := "/mnt/storage/pull-artifact.txt"
 
 	timeStamp := time.Now()
 	artifactContent := []byte("Pull test artifact created at " + timeStamp.String())
-	err := os.WriteFile("/mnt/storage/pull-artifact.txt", artifactContent, 0644)
+	err := os.WriteFile(artifactPath, artifactContent, 0644)
 	if err != nil {
 		log.Panicf("Failed to create artifact: %v", err)
 		return
 	}
 
-	for attempt := range maxRetries {
-		cmd := exec.Command("oras", "push", registryName,
-			"--disable-path-validation", // Using /mnt/storage/ dir now, so disable absolute path validation
-			"/mnt/storage/pull-artifact.txt")
+	args := []string{"push", registryName, "--disable-path-validation"}
+	args = append(args, artifactPath)
 
-		outputPush, errPush := cmd.CombinedOutput()
-		if errPush == nil {
-			break
-		}
-
-		if attempt+1 < maxRetries {
-			log.Printf("Pull preparation attempt %d failed: %v, output: %s. Retrying...", attempt+1, errPush, string(outputPush))
-			time.Sleep(time.Second)
-		} else {
-			log.Panicf("Pull preparation failed after %d attempts: %v, output: %s", maxRetries, errPush, string(outputPush))
-		}
-	}
-
-	cmdRm := exec.Command("rm", "/mnt/storage/pull-artifact.txt")
-	outputRm, errRm := cmdRm.CombinedOutput()
-	if errRm != nil {
-		log.Panicf("Cleanup failed: %v, output: %s", errRm, string(outputRm))
+	if output, err := executeCmdWithRetry(args); err != nil {
+		log.Panicf("Pull preparation failed: %v, output: %s", err, string(output))
 		return
 	}
 
@@ -128,20 +126,13 @@ func PullTest(metrics *Metrics, registryMap map[string]string, registryType stri
 	defer metrics.RegistryTotalPullCount.WithLabelValues(registryType).Inc()
 
 	registryName := registryMap[registryType]
-	registryName += ":pull" // TODO: Add tag management
+	registryName += ":pull"
 
-	// Expects to download /mnt/storage/pull-artifact.txt
-	cmd := exec.Command("oras", "pull", registryName, "--output", "/mnt/storage")
-	outputPull, errPull := cmd.CombinedOutput()
-	if errPull != nil {
-		log.Printf("Pull test failed: %v, output: %s", errPull, string(outputPull))
-		return
-	}
+	artifactPath := "/mnt/storage/pull-artifact.txt"
 
-	cmdRm := exec.Command("rm", "/mnt/storage/pull-artifact.txt")
-	outputRm, errRm := cmdRm.CombinedOutput()
-	if errRm != nil {
-		log.Panicf("Cleanup failed: %v, output: %s", errRm, string(outputRm))
+	args := []string{"pull", registryName, "--output", artifactPath}
+	if output, err := executeCmdWithRetry(args); err != nil {
+		log.Printf("Pull test failed: %v, output: %s", err, string(output))
 		return
 	}
 	log.Printf("Pull test for registry type %s successful.", registryType)
@@ -153,32 +144,35 @@ func PushTest(metrics *Metrics, registryMap map[string]string, registryType stri
 	defer metrics.RegistryTotalPushCount.WithLabelValues(registryType).Inc()
 
 	registryName := registryMap[registryType]
-	registryName += ":push" // TODO: Add tag management
+	registryName += ":push-" + os.Getenv("HOSTNAME")
 
-	// Create a simple unique artifact to push
 	timeStamp := time.Now()
-	artifactContent := []byte("Push test artifact created at " + timeStamp.String())
-	err := os.WriteFile("/mnt/storage/push-artifact.txt", artifactContent, 0644)
-	if err != nil {
-		log.Panicf("Failed to create artifact: %v", err)
-		return
+
+	artifactPaths := []string{
+		"/mnt/storage/push-artifact-1.txt",
+		"/mnt/storage/push-artifact-2.txt",
+		"/mnt/storage/push-artifact-3.txt",
 	}
 
-	// Push the artifact to the registry
-	cmd := exec.Command("oras", "push", registryName,
-		"--annotation", "quay.expires-after=30s",
-		"--disable-path-validation", // Using /mnt/storage/ dir now, so disable absolute path validation
-		"/mnt/storage/push-artifact.txt")
-	outputPush, errPush := cmd.CombinedOutput()
-	if errPush != nil {
-		log.Printf("Push test failed: %v, output: %s", errPush, string(outputPush))
-		return
+	contents := []string{
+		"Push test artifact 1 created at " + timeStamp.String(),
+		"Push test artifact 2 created at " + timeStamp.String(),
+		"Push test artifact 3 created at " + timeStamp.String(),
 	}
 
-	cmdRm := exec.Command("rm", "/mnt/storage/push-artifact.txt")
-	outputRm, errRm := cmdRm.CombinedOutput()
-	if errRm != nil {
-		log.Panicf("Cleanup failed: %v, output: %s", errRm, string(outputRm))
+	for i, file := range artifactPaths {
+		err := os.WriteFile(file, []byte(contents[i]), 0644)
+		if err != nil {
+			log.Panicf("Failed to create artifact %d: %v", i+1, err)
+			return
+		}
+	}
+
+	args := []string{"push", registryName, "--annotation", "quay.expires-after=30s", "--disable-path-validation"}
+	args = append(args, artifactPaths...)
+
+	if output, err := executeCmdWithRetry(args); err != nil {
+		log.Printf("Push test failed: %v, output: %s", err, string(output))
 		return
 	}
 	log.Printf("Push test for registry type %s successful.", registryType)
@@ -209,8 +203,6 @@ func main() {
 	registryMap := PrepareRegistryMap()
 
 	for registryType := range registryMap {
-		metrics.RegistryTestUp.WithLabelValues(registryType).Set(1)
-		defer metrics.RegistryTestUp.WithLabelValues(registryType).Set(0)
 		go PreparePullTest(registryMap, registryType)
 	}
 
