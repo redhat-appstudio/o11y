@@ -39,18 +39,18 @@ tests:
     interval: 1m
     input_series:
       - series: 'apiserver_request_total{code="503", source_cluster="test-cluster-mixed"}'
-        values: '5+5x600'
+        values: '10+10x600'
       - series: 'apiserver_request_total{code="404", source_cluster="test-cluster-mixed"}'
-        values: '5+5x600'
+        values: '10+10x600'
       - series: 'apiserver_request_total{code="200", source_cluster="test-cluster-mixed"}'
-        values: '90+90x600'
+        values: '80+80x600'
 
     promql_expr_test:
       - expr: api_server:error_rate_10m
         eval_time: 10m
         exp_samples:
           - labels: '{__name__="api_server:error_rate_10m", service="api-server", source_cluster="test-cluster-mixed"}'
-            value: 10
+            value: 20
 
   - name: Test api_server error_rate_30d_avg with constant rate
     interval: 1h
