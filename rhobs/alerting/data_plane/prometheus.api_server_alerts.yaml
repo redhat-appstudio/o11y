@@ -13,6 +13,7 @@ spec:
     - alert: Increasing4xx5xxErrorRate
       expr: |
         api_server:error_rate_10m > (api_server:error_rate_30d_avg + (3 * api_server:error_rate_30d_stddev))
+      for: 5m
       labels:
         severity: test
         slo: "false"
@@ -23,7 +24,7 @@ spec:
         alert_team_handle: <!subteam^S05Q1P4Q2TG>
         team: konflux-infra
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/api_server_error_rate_alert.md
-      for: 5m
+
 
   - name: api_server_service_availability_alert
     - alert: KonfluxAPIServerHighErrorRate
