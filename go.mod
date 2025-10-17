@@ -72,5 +72,5 @@ require (
 	google.golang.org/protobuf v1.36.10 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/client-go v0.34.1
-	sigs.k8s.io/controller-runtime v0.22.1
+	sigs.k8s.io/controller-runtime v0.22.3
 )
