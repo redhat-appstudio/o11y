@@ -80,3 +80,124 @@ tests:
               alert_team_handle: <!subteam^S04HY632621>
               team: konflux-ui
               runbook_url: null
+
+  - interval: 1m
+    input_series:
+      - series: 'nginx_otel_http_request_errors_total{job="nginx-proxy", status="500", source_cluster="c7"}'
+        values: '0 10 20 30 40'
+      - series: 'nginx_otel_http_request_errors_total{job="nginx-dex", status="500", source_cluster="c8"}'
+        values: '0 1 2 3 4'
+      - series: 'nginx_otel_http_request_errors_total{job="nginx-proxy", status="500", source_cluster="c9"}'
+        values: '0 0 0 0 0'
+      - series: 'nginx_otel_http_request_errors_total{job="nginx-dex", status="500", source_cluster="c10"}'
+        values: '0 0 0 0 0'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: KonfluxUIHttpHigh5xxErrorRate
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: nginx-proxy
+              slo: "false"
+              source_cluster: c7
+              status: "500"
+            exp_annotations:
+              summary: Konflux UI HTTP endpoints are experiencing a high 5xx error rate in cluster c7
+              description: >
+                The Konflux UI HTTP endpoints have been experiencing a high 5xx error rate for 5min in cluster c7
+              alert_team_key: spre
+              team: spre
+              runbook_url: null
+
+  - interval: 1m
+    input_series:
+      # KonfluxUIHttpHighErrorRate: Small spike, should not fire
+      - series: 'nginx_otel_http_request_errors_total{job="nginx-proxy", status="400", source_cluster="c_general_small_spike_4xx"}'
+        values: '0 0 1 0 0 0 0'
+      - series: 'nginx_otel_http_request_errors_total{job="nginx-proxy", status="500", source_cluster="c_general_small_spike_5xx"}'
+        values: '0 0 1 0 0 0 0'
+      # KonfluxUIHttpHighErrorRate: Big and long spike, should fire
+      - series: 'nginx_otel_http_request_errors_total{job="nginx-proxy", status="400", source_cluster="c_general_big_long_spike_4xx"}'
+        values: '0 0 100 200 300 400 500 600 700'
+      - series: 'nginx_otel_http_request_errors_total{job="nginx-proxy", status="500", source_cluster="c_general_big_long_spike_5xx"}'
+        values: '0 0 100 200 300 400 500 600 700'
+      # KonfluxUIHttpHighErrorRate: Big but short spike, should not fire
+      - series: 'nginx_otel_http_request_errors_total{job="nginx-proxy", status="400", source_cluster="c_general_big_short_spike_4xx"}'
+        values: '0 0 100 0 0 0 0'
+      - series: 'nginx_otel_http_request_errors_total{job="nginx-proxy", status="500", source_cluster="c_general_big_short_spike_5xx"}'
+        values: '0 0 100 0 0 0 0'
+    alert_rule_test:
+      # Small spike, should not fire
+      - eval_time: 7m
+        alertname: KonfluxUIHttpHighErrorRate
+        exp_alerts: []
+      # Big and long spike, should fire
+      - eval_time: 7m
+        alertname: KonfluxUIHttpHighErrorRate
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: nginx-proxy
+              slo: "false"
+              source_cluster: c_general_big_long_spike_4xx
+            exp_annotations:
+              summary: Konflux UI HTTP endpoints are experiencing a high error rate in cluster c_general_big_long_spike_4xx
+              description: >
+                The Konflux UI HTTP endpoints have been experiencing a high error rate for 5min in cluster c_general_big_long_spike_4xx
+              alert_team_key: konflux-ui
+              team: konflux-ui
+              runbook_url: null
+          - exp_labels:
+              severity: warning
+              job: nginx-proxy
+              slo: "false"
+              source_cluster: c_general_big_long_spike_5xx
+            exp_annotations:
+              summary: Konflux UI HTTP endpoints are experiencing a high error rate in cluster c_general_big_long_spike_5xx
+              description: >
+                The Konflux UI HTTP endpoints have been experiencing a high error rate for 5min in cluster c_general_big_long_spike_5xx
+              alert_team_key: konflux-ui
+              team: konflux-ui
+              runbook_url: null
+      # Big but short spike, should not fire
+      - eval_time: 7m
+        alertname: KonfluxUIHttpHighErrorRate
+        exp_alerts: []
+
+  - interval: 1m
+    input_series:
+      # KonfluxUIHttpHigh5xxErrorRate: Small spike, should not fire
+      - series: 'nginx_otel_http_request_errors_total{job="nginx-proxy", status="503", source_cluster="c_5xx_small_spike"}'
+        values: '0 0 1 0 0 0 0'
+      # KonfluxUIHttpHigh5xxErrorRate: Big and long spike, should fire
+      - series: 'nginx_otel_http_request_errors_total{job="nginx-proxy", status="503", source_cluster="c_5xx_big_long_spike"}'
+        values: '0 0 100 200 300 400 500 600 700'
+      # KonfluxUIHttpHigh5xxErrorRate: Big but short spike, should not fire
+      - series: 'nginx_otel_http_request_errors_total{job="nginx-proxy", status="503", source_cluster="c_5xx_big_short_spike"}'
+        values: '0 0 100 0 0 0 0'
+    alert_rule_test:
+      # Small spike, should not fire
+      - eval_time: 7m
+        alertname: KonfluxUIHttpHigh5xxErrorRate
+        exp_alerts: []
+      # Big and long spike, should fire
+      - eval_time: 7m
+        alertname: KonfluxUIHttpHigh5xxErrorRate
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: nginx-proxy
+              slo: "false"
+              source_cluster: c_5xx_big_long_spike
+              status: "503"
+            exp_annotations:
+              summary: Konflux UI HTTP endpoints are experiencing a high 5xx error rate in cluster c_5xx_big_long_spike
+              description: >
+                The Konflux UI HTTP endpoints have been experiencing a high 5xx error rate for 5min in cluster c_5xx_big_long_spike
+              alert_team_key: spre
+              team: spre
+              runbook_url: null
+      # Big but short spike, should not fire
+      - eval_time: 7m
+        alertname: KonfluxUIHttpHigh5xxErrorRate
+        exp_alerts: []
