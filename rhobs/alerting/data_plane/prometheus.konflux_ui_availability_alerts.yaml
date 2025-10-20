@@ -77,20 +77,22 @@ spec:
     rules:
     - alert: KonfluxUIHttpHighErrorRate
       expr: |
-        sum by (job) (nginx_otel_http_request_errors:rate5m)
+        sum by (job, source_cluster) (nginx_otel_http_request_errors:rate5m)
         >
-        sum by (job) ((nginx_otel_http_request_errors:rate24h_avg)
-        +
-        3 * (nginx_otel_http_request_errors:rate24h_stddev))
+        sum by (job, source_cluster) (
+          (nginx_otel_http_request_errors:rate24h_avg)
+          +
+          3 * (nginx_otel_http_request_errors:rate24h_stddev)
+        )
       for: 5m
       labels:
         severity: warning
         slo: "false"
       annotations:
         summary: >-
-          Konflux UI HTTP endpoints are experiencing a high error rate in cluster
+          Konflux UI HTTP endpoints are experiencing a high error rate in cluster {{ $labels.source_cluster }}
         description: >
-          The Konflux UI HTTP endpoints have been experiencing a high error rate for 5min in cluster
+          The Konflux UI HTTP endpoints have been experiencing a high error rate for 5min in cluster {{ $labels.source_cluster }}
         alert_team_key: konflux-ui
         team: konflux-ui
         runbook_url: null
@@ -100,20 +102,22 @@ spec:
     rules:
     - alert: KonfluxUIHttpHigh5xxErrorRate
       expr: |
-        sum by (job) (nginx_otel_http_request_errors:rate5m{status=~"5.."})
+        sum by (job, source_cluster) (nginx_otel_http_request_errors:rate5m{status=~"5.."})
         >
-        sum by (job) ((nginx_otel_http_request_errors:rate24h_avg{status=~"5.."})
-        +
-        3 * (nginx_otel_http_request_errors:rate24h_stddev{status=~"5.."}))
+        sum by (job, source_cluster) (
+          (nginx_otel_http_request_errors:rate24h_avg{status=~"5.."})
+          +
+          3 * (nginx_otel_http_request_errors:rate24h_stddev{status=~"5.."})
+        )
       for: 5m
       labels:
         severity: warning
         slo: "false"
       annotations:
         summary: >-
-          Konflux UI HTTP endpoints are experiencing a high 5xx error rate in cluster
+          Konflux UI HTTP endpoints are experiencing a high 5xx error rate in cluster {{ $labels.source_cluster }}
         description: >
-          The Konflux UI HTTP endpoints have been experiencing a high 5xx error rate for 5min in cluster
+          The Konflux UI HTTP endpoints have been experiencing a high 5xx error rate for 5min in cluster {{ $labels.source_cluster }}
         alert_team_key: spre
         team: spre
         runbook_url: null
