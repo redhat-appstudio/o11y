@@ -10,33 +10,18 @@ tests:
   - interval: 1m
     input_series:
       - series: 'kube_deployment_spec_replicas{deployment="kyverno-admission-controller", namespace="konflux-kyverno", source_cluster="stone-stg-rh01"}'
-        values: '1 1 1 1 1 1'
+        values: '1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'
       - series: 'kube_deployment_status_replicas_ready{deployment="kyverno-admission-controller", namespace="konflux-kyverno", source_cluster="stone-stg-rh01"}'
-        values: '0 0 0 0 0 0'
+        values: '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0'
       - series: 'kube_deployment_spec_replicas{deployment="kyverno-background-controller", namespace="konflux-kyverno", source_cluster="stone-stg-rh01"}'
-        values: '1 1 1 1 1 1'
+        values: '1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'
       - series: 'kube_deployment_status_replicas_ready{deployment="kyverno-background-controller", namespace="konflux-kyverno", source_cluster="stone-stg-rh01"}'
-        values: '1 1 1 1 1 1'
+        values: '1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'
     alert_rule_test:
       - eval_time: 2m
         alertname: KyvernoDeploymentDown
         exp_alerts: []
-      - eval_time: 3m
-        alertname: KyvernoDeploymentDown
-        exp_alerts:
-          - exp_labels:
-              severity: critical
-              slo: "true"
-              deployment: kyverno-admission-controller
-              namespace: konflux-kyverno
-              source_cluster: stone-stg-rh01
-            exp_annotations:
-              summary: Kyverno has reported that not all the deployments pods are up and running for the last 3 minutes.
-              description: "The Kyverno Deployment 'kyverno-admission-controller' in namespace 'konflux-kyverno' on cluster 'stone-stg-rh01' is unhealthy."
-              team: konflux-infra
-              alert_team_handle: <!subteam^S05Q1P4Q2TG>
-              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/kyverno/sre/kyverno_admission_controller_sop.md
-      - eval_time: 4m
+      - eval_time: 18m
         alertname: KyvernoDeploymentDown
         exp_alerts:
           - exp_labels:
@@ -90,7 +75,7 @@ tests:
               description: "The Kyverno controller 'certmanager-controller' on cluster 'stone-stg-rh01' is experiencing a consistent rate of requeue errors."
               team: konflux-infra
               alert_team_handle: <!subteam^S05Q1P4Q2TG>
-              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/kyverno/README.md
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/kyverno/sre/kyverno_controller_requeue.md
       - eval_time: 5m
         alertname: KyvernoControllerRequeueErrors
         exp_alerts: []
@@ -137,7 +122,7 @@ tests:
               description: "Kyverno policy 'propagate-cost-management-labels' with rule 'autogen-propagate-existing-cost-center-from-namespace' is encountering internal errors during evaluation or rejecting resources on instance '10.128.10.157:8000' on cluster 'stone-stg-rh01'."
               team: konflux-infra
               alert_routing_key: infra
-              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/kyverno/README.md
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/kyverno/sre/kyverno_policy_failures_sop.md
       - eval_time: 6m
         alertname: KyvernoPolicyFailures
         exp_alerts: []
@@ -160,7 +145,7 @@ tests:
               description: "Kyverno policy 'propagate-cost-management-labels' with rule 'autogen-propagate-existing-cost-center-from-namespace' is encountering internal errors during evaluation or rejecting resources on instance '10.128.10.157:8000' on cluster 'stone-stg-rh01'."
               team: konflux-infra
               alert_routing_key: infra
-              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/kyverno/README.md
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/kyverno/sre/kyverno_policy_failures_sop.md
   # Scenario 2: Kyverno policies are failing or erroring out for less than 3 minutes, alert should NOT fire.
   - interval: 1m
     input_series:
