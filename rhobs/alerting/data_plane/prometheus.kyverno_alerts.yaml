@@ -13,7 +13,7 @@ spec:
       - alert: KyvernoDeploymentDown
         expr: |
           kube_deployment_spec_replicas{namespace="konflux-kyverno"} != kube_deployment_status_replicas_ready{namespace="konflux-kyverno"}
-        for: 3m
+        for: 15m
         labels:
           severity: critical
           slo: "true"
@@ -37,7 +37,7 @@ spec:
           alert_team_handle: <!subteam^S05Q1P4Q2TG>
           team: konflux-infra
           # kyverno/README.md currently in progress.
-          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/kyverno/README.md
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/kyverno/sre/kyverno_controller_requeue.md
       - alert: KyvernoPolicyFailures
         expr: |
           increase(kyverno_policy_results_total{rule_result=~"fail|error"}[1m]) > 10
@@ -51,4 +51,4 @@ spec:
           alert_routing_key: infra
           team: konflux-infra
           # kyverno/README.md currently in progress.
-          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/kyverno/README.md
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/kyverno/sre/kyverno_policy_failures_sop.md
