@@ -25,6 +25,8 @@ const maxRetries = 5
 // Scrape interval == Time between each test execution
 const scrapeInterval = 1 * time.Minute
 
+const pullTag = ":pull"
+
 // InitMetrics initializes and registers Prometheus metrics.
 func InitMetrics(reg prometheus.Registerer) *Metrics {
 	m := &Metrics{
@@ -66,7 +68,6 @@ func InitMetrics(reg prometheus.Registerer) *Metrics {
 
 func executeCmdWithRetry(args []string) (output []byte, err error) {
 	for attempt := range maxRetries {
-		// Hardcoded oras, usage of slice expansion due to exec.Command limitation.
 		cmd := exec.Command("oras", args...)
 		output, err = cmd.CombinedOutput()
 		if err == nil {
@@ -99,7 +100,7 @@ func PrepareRegistryMap() map[string]string {
 
 func PreparePullTest(registryMap map[string]string, registryType string) {
 	registryName := registryMap[registryType]
-	registryName += ":pull"
+	registryName += pullTag
 
 	artifactPath := "/mnt/storage/pull-artifact.txt"
 
@@ -111,8 +112,7 @@ func PreparePullTest(registryMap map[string]string, registryType string) {
 		return
 	}
 
-	args := []string{"push", registryName, "--disable-path-validation"}
-	args = append(args, artifactPath)
+	args := []string{"push", registryName, "--disable-path-validation", artifactPath}
 
 	if output, err := executeCmdWithRetry(args); err != nil {
 		log.Panicf("Pull preparation failed: %v, output: %s", err, string(output))
@@ -126,7 +126,7 @@ func PullTest(metrics *Metrics, registryMap map[string]string, registryType stri
 	defer metrics.RegistryTotalPullCount.WithLabelValues(registryType).Inc()
 
 	registryName := registryMap[registryType]
-	registryName += ":pull"
+	registryName += pullTag
 
 	artifactPath := "/mnt/storage/pull-artifact.txt"
 
