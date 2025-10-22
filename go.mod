@@ -66,7 +66,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/prometheus/common v0.67.1 // indirect
-	github.com/prometheus/procfs v0.17.0 // indirect
+	github.com/prometheus/procfs v0.18.0 // indirect
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/sys v0.37.0 // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
