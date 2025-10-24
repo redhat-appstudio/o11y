@@ -34,45 +34,45 @@ tests:
 
 
   # High CPU usage - firing
-  - name: Test KonfluxAPIServerHighCPUUsage
-    interval: 1m
-    input_series:
-      - series: 'process_cpu_seconds_total{job="apiserver",source_cluster="cluster01"}'
-        # Value that produces a rate of 500/min.
-        values: '0 500 1000 1500 2000 2500 3000 3500 4000 4500'
-      - series: 'node_cpu_seconds_total{mode="idle",source_cluster="cluster01"}'
-        # Value that produces a rate of 550/min. Ratio is ~91%, which is > 80%.
-        values: '0 550 1100 1650 2200 2750 3300 3850 4400 4950'
+  #- name: Test KonfluxAPIServerHighCPUUsage
+  #  interval: 1m
+  #  input_series:
+  #    - series: 'process_cpu_seconds_total{job="apiserver",source_cluster="cluster01"}'
+  #      # Value that produces a rate of 500/min.
+  #      values: '0 500 1000 1500 2000 2500 3000 3500 4000 4500'
+  #    - series: 'node_cpu_seconds_total{mode="idle",source_cluster="cluster01"}'
+  #      # Value that produces a rate of 550/min. Ratio is ~91%, which is > 80%.
+  #      values: '0 550 1100 1650 2200 2750 3300 3850 4400 4950'
 
-    alert_rule_test:
-      - alertname: KonfluxAPIServerHighCPUUsage
-        eval_time: 10m
-        exp_alerts:
-          - exp_labels:
-              severity: critical
-              slo: "true"
-              source_cluster: "cluster01"
-            exp_annotations:
-              summary: API Server CPU usage is above 80% in cluster01
-              description: >-
-                API Server process CPU consumption is above 80% for 5 minutes in cluster cluster01.
-              alert_team_handle: <!subteam^S05Q1P4Q2TG>
-              team: konflux-infra
-              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/apiserver_HighCPUUsage.md
+  # alert_rule_test:
+  #    - alertname: KonfluxAPIServerHighCPUUsage
+  #      eval_time: 10m
+  #      exp_alerts:
+  #        - exp_labels:
+  #            severity: critical
+  #            slo: "true"
+  #            source_cluster: "cluster01"
+  #          exp_annotations:
+  #            summary: API Server CPU usage is above 80% in cluster01
+  #            description: >-
+  #              API Server process CPU consumption is above 80% for 5 minutes in cluster cluster01.
+  #            alert_team_handle: <!subteam^S05Q1P4Q2TG>
+  #            team: konflux-infra
+  #            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/apiserver_HighCPUUsage.md
 
 
-  # High CPU usage - NOT firing
-  - name: Test KonfluxAPIServerHighCPUUsage
-    interval: 1m
-    input_series:
-      - series: 'process_cpu_seconds_total{job="apiserver",source_cluster="cluster01"}'
-        values: '0 0 0 0 0 0 0 0 0 0'
-      - series: 'node_cpu_seconds_total{mode="idle",source_cluster="cluster01"}'
-        values: '0 1 2 3 4 5 6 7 8 9'
-    alert_rule_test:
-      - alertname: KonfluxAPIServerHighCPUUsage
-        eval_time: 10m
-        exp_alerts: []
+  ## High CPU usage - NOT firing
+  #- name: Test KonfluxAPIServerHighCPUUsage
+  #  interval: 1m
+  #  input_series:
+  #    - series: 'process_cpu_seconds_total{job="apiserver",source_cluster="cluster01"}'
+  #      values: '0 0 0 0 0 0 0 0 0 0'
+  #    - series: 'node_cpu_seconds_total{mode="idle",source_cluster="cluster01"}'
+  #      values: '0 1 2 3 4 5 6 7 8 9'
+  #  alert_rule_test:
+  #    - alertname: KonfluxAPIServerHighCPUUsage
+  #      eval_time: 10m
+  #      exp_alerts: []
 
 # High memory usage - firing
   - name: Test KonfluxAPIServerHighMemoryUsageFiring
