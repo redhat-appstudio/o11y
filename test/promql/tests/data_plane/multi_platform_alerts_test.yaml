@@ -26,7 +26,7 @@ tests:
               summary: Multiplatform controller is down in cluster c1
               description: >
                 The multi-platform-controller pod has been down for 5min in cluster c1
-              alert_team_handle: <!subteam^S05Q1P4Q2TG>
+              alert_routing_key: infra
               team: konflux-infra
 
   - interval: 1m
@@ -51,7 +51,7 @@ tests:
               summary: Multiplatform OTP is down in cluster c3
               description: >
                 The multi-platform otp pod has been down for 5min in cluster c3
-              alert_team_handle: <!subteam^S05Q1P4Q2TG>
+              alert_routing_key: infra
               team: konflux-infra
 
   - interval: 1m
@@ -68,26 +68,26 @@ tests:
         alertname: MultiPlatformControllerPlatformUnhealthy
         exp_alerts:
           - exp_labels:
-              severity: critical
+              severity: high
               check: s390x
-              slo: "true"
+              slo: "false"
               source_cluster: c5
             exp_annotations:
               summary: Multi-platform controller platform s390x health check failed in cluster c5
               description: >
                 The multi-platform controller platform health check "s390x" has been failing for 5min in cluster c5
-              alert_team_handle: <!subteam^S05Q1P4Q2TG>
+              alert_routing_key: infra
               team: konflux-infra
           - exp_labels:
-              severity: critical
+              severity: high
               check: ppc64le
-              slo: "true"
+              slo: "false"
               source_cluster: c5
             exp_annotations:
               summary: Multi-platform controller platform ppc64le health check failed in cluster c5
               description: >
                 The multi-platform controller platform health check "ppc64le" has been failing for 5min in cluster c5
-              alert_team_handle: <!subteam^S05Q1P4Q2TG>
+              alert_routing_key: infra
               team: konflux-infra
   - interval: 30s
     input_series:

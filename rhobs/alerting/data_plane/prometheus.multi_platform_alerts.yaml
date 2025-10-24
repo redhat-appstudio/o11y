@@ -26,7 +26,7 @@ spec:
           Multiplatform controller is down in cluster {{ $labels.source_cluster }}
         description: >
           The multi-platform-controller pod has been down for 5min in cluster {{ $labels.source_cluster }}
-        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        alert_routing_key: infra
         team: konflux-infra
 
   - name: multi-platform-otp-availability
@@ -48,7 +48,7 @@ spec:
           Multiplatform OTP is down in cluster {{ $labels.source_cluster }}
         description: >
           The multi-platform otp pod has been down for 5min in cluster {{ $labels.source_cluster }}
-        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        alert_routing_key: infra
         team: konflux-infra
 
   - name: multi-platform-controller-platform-health
@@ -59,14 +59,14 @@ spec:
         multi_platform_controller_available == 0
       for: 5m
       labels:
-        severity: critical
-        slo: "true"
+        severity: high
+        slo: "false"
       annotations:
         summary: >-
           Multi-platform controller platform {{ $labels.check }} health check failed in cluster {{ $labels.source_cluster }}
         description: >
           The multi-platform controller platform health check "{{ $labels.check }}" has been failing for 5min in cluster {{ $labels.source_cluster }}
-        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        alert_routing_key: infra
         team: konflux-infra
 
   - name: multi-platform-controller-metrics-health
