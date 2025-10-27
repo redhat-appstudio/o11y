@@ -30,12 +30,13 @@ spec:
         - record: api_server:error_rate_10m
           expr: |
             (
-              sum by(source_cluster) (
+              sum by(tenant_id, source_cluster) (
                 rate(apiserver_request_total{code=~"5..|4.."}[10m])
               ) /
-              sum by(source_cluster) (
+              sum by(tenant_id, source_cluster) (
                 rate(apiserver_request_total{code!="0"}[10m])
               )
+              OR on(tenant_id, source_cluster) vector(0.000001)
             ) * 100
           labels:
             service: api-server
