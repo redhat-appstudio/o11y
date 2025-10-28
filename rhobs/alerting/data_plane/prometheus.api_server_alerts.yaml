@@ -10,6 +10,21 @@ spec:
   - name: api_server_service_konflux_up_alert
     interval: 1m
     rules:
+    - alert: Increasing4xx5xxErrorRate
+      expr: |
+        api_server:error_rate_10m > (api_server:error_rate_30d_avg + (2 * api_server:error_rate_30d_stddev))
+      for: 5m
+      labels:
+        severity: warning
+        slo: "false"
+      annotations:
+        summary: >-
+          API Server 4xx/5xx error rate in cluster {{ $labels.source_cluster }}
+        description: "API Server is experiencing more than 10% failures based on the 30d average and 2x standard deviation in cluster {{ $labels.source_cluster }}"
+        alert_routing_key: <@U03TYEVLM71>
+        team: o11y
+        runbook_url: null
+
     - alert: KonfluxAPIServerHighErrorRate
       expr: |
         (
@@ -19,36 +34,36 @@ spec:
           sum by(source_cluster) (
             code:apiserver_request_total:rate5m{code!="0"}
           )
-        ) * 100 > 5
-      for: 5m
+        ) * 100 > 10
+      for: 15m
       labels:
         severity: critical
         slo: "true"
       annotations:
         summary: >-
           API Server 5XX error count in cluster {{ $labels.source_cluster }}
-        description: "API Server is experiencing 5% of 5XX failures based on the total requests for 5min in cluster {{ $labels.source_cluster }}"
+        description: "API Server is experiencing 10% of 5XX failures based on the total requests for 15min in cluster {{ $labels.source_cluster }}"
         alert_team_handle: <!subteam^S05Q1P4Q2TG>
         team: konflux-infra
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/api_server_error_rate_alert.md
 
-  - name: api_cpu_usage
-    interval: 1m
-    rules:
-      - alert: KonfluxAPIServerHighCPUUsage
-        expr: |
-          sum by (source_cluster) (rate(process_cpu_seconds_total{job="apiserver"}[5m])) > 0.8 * count by (source_cluster) (node_cpu_seconds_total{mode="idle"})
-        for: 5m
-        labels:
-          severity: critical
-          slo: "true"
-        annotations:
-          summary: API Server CPU usage is above 80% in {{ $labels.source_cluster }}
-          description: >-
-            API Server process CPU consumption is above 80% for 5 minutes in cluster {{ $labels.source_cluster }}.
-          alert_team_handle: <!subteam^S05Q1P4Q2TG>
-          team: konflux-infra
-          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/apiserver_HighCPUUsage.md
+#  - name: api_cpu_usage
+#    interval: 1m
+#    rules:
+#      - alert: KonfluxAPIServerHighCPUUsage
+#        expr: |
+#          sum by (source_cluster) (rate(process_cpu_seconds_total{job="apiserver"}[5m])) > 0.8 * count by (source_cluster) (node_cpu_seconds_total{mode="idle"})
+#        for: 5m
+#        labels:
+#          severity: critical
+#          slo: "true"
+#        annotations:
+#          summary: API Server CPU usage is above 80% in {{ $labels.source_cluster }}
+#          description: >-
+#            API Server process CPU consumption is above 80% for 5 minutes in cluster {{ $labels.source_cluster }}.
+#          alert_team_handle: <!subteam^S05Q1P4Q2TG>
+#          team: konflux-infra
+#          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/apiserver_HighCPUUsage.md
 
   - name: api_memory_usage
     interval: 1m

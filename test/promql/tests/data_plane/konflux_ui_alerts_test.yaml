@@ -80,3 +80,171 @@ tests:
               alert_team_handle: <!subteam^S04HY632621>
               team: konflux-ui
               runbook_url: null
+
+  - interval: 1m
+    input_series:
+      # HTTP 5xx short spike on cluster c5 (No alert should be triggered)
+      - series: 'nginx_otel_http_request_errors:rate5m{job="nginx-proxy", status="500", source_cluster="c5"}'
+        values: '0x5 10x3 0x7'
+      - series: 'nginx_otel_http_request_errors:rate24h_avg{job="nginx-proxy", status="500", source_cluster="c5"}'
+        values: '1x15'
+      - series: 'nginx_otel_http_request_errors:rate24h_stddev{job="nginx-proxy", status="500", source_cluster="c5"}'
+        values: '1x15'
+      # HTTP 5xx long spike on cluster c7 (Alert should be triggered)
+      - series: 'nginx_otel_http_request_errors:rate5m{job="nginx-proxy", status="500", source_cluster="c7"}'
+        values: '0x5 10x10'
+      - series: 'nginx_otel_http_request_errors:rate24h_avg{job="nginx-proxy", status="500", source_cluster="c7"}'
+        values: '1x15'
+      - series: 'nginx_otel_http_request_errors:rate24h_stddev{job="nginx-proxy", status="500", source_cluster="c7"}'
+        values: '1x15'
+      # Normal operation on cluster c9 (No alert should be triggered)
+      - series: 'nginx_otel_http_request_errors:rate5m{job="nginx-proxy", status="500", source_cluster="c9"}'
+        values: '0x15'
+      - series: 'nginx_otel_http_request_errors:rate24h_avg{job="nginx-proxy", status="500", source_cluster="c9"}'
+        values: '1x15'
+      - series: 'nginx_otel_http_request_errors:rate24h_stddev{job="nginx-proxy", status="500", source_cluster="c9"}'
+        values: '1x15'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: KonfluxUIHttpHigh5xxErrorRate
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: nginx-proxy
+              slo: "false"
+              source_cluster: c7
+            exp_annotations:
+              summary: Konflux UI HTTP endpoints are experiencing a high 5xx error rate in cluster c7
+              description: >
+                The Konflux UI HTTP endpoints have been experiencing a high 5xx error rate for 5min in cluster c7
+              alert_routing_key: <!subteam^S06V06A36F5>
+              team: spre
+              runbook_url: null
+
+  - interval: 1m
+    input_series:
+      # KonfluxUIHttpHighErrorRate: Small spike, should not fire
+      - series: 'nginx_otel_http_request_errors:rate5m{job="nginx-proxy", status="400", source_cluster="c_general_small_spike_4xx"}'
+        values: '0x3 5x2 0x10'
+      - series: 'nginx_otel_http_request_errors:rate24h_avg{job="nginx-proxy", status="400", source_cluster="c_general_small_spike_4xx"}'
+        values: '1x15'
+      - series: 'nginx_otel_http_request_errors:rate24h_stddev{job="nginx-proxy", status="400", source_cluster="c_general_small_spike_4xx"}'
+        values: '1x15'
+      - series: 'nginx_otel_http_request_errors:rate5m{job="nginx-proxy", status="500", source_cluster="c_general_small_spike_5xx"}'
+        values: '0x3 5x2 0x10'
+      - series: 'nginx_otel_http_request_errors:rate24h_avg{job="nginx-proxy", status="500", source_cluster="c_general_small_spike_5xx"}'
+        values: '1x15'
+      - series: 'nginx_otel_http_request_errors:rate24h_stddev{job="nginx-proxy", status="500", source_cluster="c_general_small_spike_5xx"}'
+        values: '1x15'
+      # KonfluxUIHttpHighErrorRate: Big and long spike, should fire
+      - series: 'nginx_otel_http_request_errors:rate5m{job="nginx-proxy", status="400", source_cluster="c_general_big_long_spike_4xx"}'
+        values: '0x5 100+100x10'
+      - series: 'nginx_otel_http_request_errors:rate24h_avg{job="nginx-proxy", status="400", source_cluster="c_general_big_long_spike_4xx"}'
+        values: '1x15'
+      - series: 'nginx_otel_http_request_errors:rate24h_stddev{job="nginx-proxy", status="400", source_cluster="c_general_big_long_spike_4xx"}'
+        values: '1x15'
+      - series: 'nginx_otel_http_request_errors:rate5m{job="nginx-proxy", status="500", source_cluster="c_general_big_long_spike_5xx"}'
+        values: '0x5 100+100x10'
+      - series: 'nginx_otel_http_request_errors:rate24h_avg{job="nginx-proxy", status="500", source_cluster="c_general_big_long_spike_5xx"}'
+        values: '1x15'
+      - series: 'nginx_otel_http_request_errors:rate24h_stddev{job="nginx-proxy", status="500", source_cluster="c_general_big_long_spike_5xx"}'
+        values: '1x15'
+      # KonfluxUIHttpHighErrorRate: Big but short spike, should not fire
+      - series: 'nginx_otel_http_request_errors:rate5m{job="nginx-proxy", status="400", source_cluster="c_general_big_short_spike_4xx"}'
+        values: '0x3 500x2 0x10'
+      - series: 'nginx_otel_http_request_errors:rate24h_avg{job="nginx-proxy", status="400", source_cluster="c_general_big_short_spike_4xx"}'
+        values: '1x15'
+      - series: 'nginx_otel_http_request_errors:rate24h_stddev{job="nginx-proxy", status="400", source_cluster="c_general_big_short_spike_4xx"}'
+        values: '1x15'
+      - series: 'nginx_otel_http_request_errors:rate5m{job="nginx-proxy", status="500", source_cluster="c_general_big_short_spike_5xx"}'
+        values: '0x3 500x2 0x10'
+      - series: 'nginx_otel_http_request_errors:rate24h_avg{job="nginx-proxy", status="500", source_cluster="c_general_big_short_spike_5xx"}'
+        values: '1x15'
+      - series: 'nginx_otel_http_request_errors:rate24h_stddev{job="nginx-proxy", status="500", source_cluster="c_general_big_short_spike_5xx"}'
+        values: '1x15'
+    alert_rule_test:
+      # Small spike, should not fire
+      - eval_time: 5m
+        alertname: KonfluxUIHttpHighErrorRate
+        exp_alerts: []
+      # Big and long spike, should fire
+      - eval_time: 15m
+        alertname: KonfluxUIHttpHighErrorRate
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: nginx-proxy
+              slo: "false"
+              source_cluster: c_general_big_long_spike_4xx
+            exp_annotations:
+              summary: Konflux UI HTTP endpoints are experiencing a high error rate in cluster c_general_big_long_spike_4xx
+              description: >
+                The Konflux UI HTTP endpoints have been experiencing a high error rate for 5min in cluster c_general_big_long_spike_4xx
+              alert_routing_key: konflux-ui
+              team: konflux-ui
+              runbook_url: null
+          - exp_labels:
+              severity: warning
+              job: nginx-proxy
+              slo: "false"
+              source_cluster: c_general_big_long_spike_5xx
+            exp_annotations:
+              summary: Konflux UI HTTP endpoints are experiencing a high error rate in cluster c_general_big_long_spike_5xx
+              description: >
+                The Konflux UI HTTP endpoints have been experiencing a high error rate for 5min in cluster c_general_big_long_spike_5xx
+              alert_routing_key: konflux-ui
+              team: konflux-ui
+              runbook_url: null
+      # Big but short spike, should not fire
+      - eval_time: 7m
+        alertname: KonfluxUIHttpHighErrorRate
+        exp_alerts: []
+
+  - interval: 1m
+    input_series:
+      # KonfluxUIHttpHigh5xxErrorRate: Small spike, should not fire
+      - series: 'nginx_otel_http_request_errors:rate5m{job="nginx-proxy", status="503", source_cluster="c_5xx_small_spike"}'
+        values: '0x3 5x2 0x10'
+      - series: 'nginx_otel_http_request_errors:rate24h_avg{job="nginx-proxy", status="503", source_cluster="c_5xx_small_spike"}'
+        values: '1x15'
+      - series: 'nginx_otel_http_request_errors:rate24h_stddev{job="nginx-proxy", status="503", source_cluster="c_5xx_small_spike"}'
+        values: '1x15'
+      # KonfluxUIHttpHigh5xxErrorRate: Big and long spike, should fire
+      - series: 'nginx_otel_http_request_errors:rate5m{job="nginx-proxy", status="503", source_cluster="c_5xx_big_long_spike"}'
+        values: '0x5 100+100x10'
+      - series: 'nginx_otel_http_request_errors:rate24h_avg{job="nginx-proxy", status="503", source_cluster="c_5xx_big_long_spike"}'
+        values: '1x15'
+      - series: 'nginx_otel_http_request_errors:rate24h_stddev{job="nginx-proxy", status="503", source_cluster="c_5xx_big_long_spike"}'
+        values: '1x15'
+      # KonfluxUIHttpHigh5xxErrorRate: Big but short spike, should not fire
+      - series: 'nginx_otel_http_request_errors:rate5m{job="nginx-proxy", status="503", source_cluster="c_5xx_big_short_spike"}'
+        values: '0x3 500x2 0x10'
+      - series: 'nginx_otel_http_request_errors:rate24h_avg{job="nginx-proxy", status="503", source_cluster="c_5xx_big_short_spike"}'
+        values: '1x15'
+      - series: 'nginx_otel_http_request_errors:rate24h_stddev{job="nginx-proxy", status="503", source_cluster="c_5xx_big_short_spike"}'
+        values: '1x15'
+    alert_rule_test:
+      # Small spike, should not fire
+      - eval_time: 5m
+        alertname: KonfluxUIHttpHigh5xxErrorRate
+        exp_alerts: []
+      # Big and long spike, should fire
+      - eval_time: 15m
+        alertname: KonfluxUIHttpHigh5xxErrorRate
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              job: nginx-proxy
+              slo: "false"
+              source_cluster: c_5xx_big_long_spike
+            exp_annotations:
+              summary: Konflux UI HTTP endpoints are experiencing a high 5xx error rate in cluster c_5xx_big_long_spike
+              description: >
+                The Konflux UI HTTP endpoints have been experiencing a high 5xx error rate for 5min in cluster c_5xx_big_long_spike
+              alert_routing_key: <!subteam^S06V06A36F5>
+              team: spre
+              runbook_url: null
+      # Big but short spike, should not fire
+      - eval_time: 7m
+        alertname: KonfluxUIHttpHigh5xxErrorRate
+        exp_alerts: []

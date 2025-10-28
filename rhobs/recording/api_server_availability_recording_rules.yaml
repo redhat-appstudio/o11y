@@ -30,46 +30,25 @@ spec:
         - record: api_server:error_rate_10m
           expr: |
             (
-              sum by(source_cluster) (
-                rate(apiserver_request_total{code=~"5.."}[10m])
+              sum by(tenant_id, source_cluster) (
+                rate(apiserver_request_total{code=~"5..|4.."}[10m])
               ) /
-              sum by(source_cluster) (
+              sum by(tenant_id, source_cluster) (
                 rate(apiserver_request_total{code!="0"}[10m])
               )
+              OR on(tenant_id, source_cluster) vector(0.000001)
             ) * 100
           labels:
             service: api-server
 
         - record: api_server:error_rate_30d_avg
           expr: |
-            avg_over_time(
-              (
-                (
-                  sum by(source_cluster) (
-                    rate(apiserver_request_total{code=~"5.."}[1h])
-                  ) /
-                  sum by(source_cluster) (
-                    rate(apiserver_request_total{code!="0"}[1h])
-                  )
-                ) * 100
-              )[30d:1h]
-            )
+            avg_over_time(api_server:error_rate_10m[30d])
           labels:
             service: api-server
 
         - record: api_server:error_rate_30d_stddev
           expr: |
-            stddev_over_time(
-              (
-                (
-                  sum by(source_cluster) (
-                    rate(apiserver_request_total{code=~"5.."}[1h])
-                  ) /
-                  sum by(source_cluster) (
-                    rate(apiserver_request_total{code!="0"}[1h])
-                  )
-                ) * 100
-              )[30d:1h]
-            )
+            stddev_over_time(api_server:error_rate_10m[30d])
           labels:
             service: api-server

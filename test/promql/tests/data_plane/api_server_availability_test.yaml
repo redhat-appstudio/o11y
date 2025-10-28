@@ -4,6 +4,55 @@ rule_files:
   - 'prometheus.api_server_alerts.yaml'
 
 tests:
+  # Test Increasing4xx5xxErrorRate alert - FIRING
+  - name: Test Increasing4xx5xxErrorRate Firing
+    interval: 1m
+    input_series:
+      # Current 10m error rate is elevated (15%)
+      - series: 'api_server:error_rate_10m{service="api-server", source_cluster="kflux-prd-es01"}'
+        values: '15+0x20'
+      # 30-day average is 10%
+      - series: 'api_server:error_rate_30d_avg{service="api-server", source_cluster="kflux-prd-es01"}'
+        values: '10+0x20'
+      # 30-day stddev is 1% (so threshold is 10 + 2*1 = 12%, and 15% > 12%)
+      - series: 'api_server:error_rate_30d_stddev{service="api-server", source_cluster="kflux-prd-es01"}'
+        values: '1+0x20'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: Increasing4xx5xxErrorRate
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              service: "api-server"
+              source_cluster: "kflux-prd-es01"
+            exp_annotations:
+              summary: "API Server 4xx/5xx error rate in cluster kflux-prd-es01"
+              description: "API Server is experiencing more than 10% failures based on the 30d average and 2x standard deviation in cluster kflux-prd-es01"
+              alert_routing_key: <@U03TYEVLM71>
+              team: o11y
+              runbook_url: null
+
+  # Test Increasing4xx5xxErrorRate alert - NOT FIRING
+  - name: Test Increasing4xx5xxErrorRate Not Firing
+    interval: 1m
+    input_series:
+      # Current 10m error rate is 11% (within threshold)
+      - series: 'api_server:error_rate_10m{service="api-server", source_cluster="kflux-prd-es01"}'
+        values: '11+0x20'
+      # 30-day average is 10%
+      - series: 'api_server:error_rate_30d_avg{service="api-server", source_cluster="kflux-prd-es01"}'
+        values: '10+0x20'
+      # 30-day stddev is 1% (so threshold is 10 + 2*1 = 12%, and 11% < 12%)
+      - series: 'api_server:error_rate_30d_stddev{service="api-server", source_cluster="kflux-prd-es01"}'
+        values: '1+0x20'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: Increasing4xx5xxErrorRate
+        exp_alerts: []
+
   # Start of a new test case. The interval and input series must be under this item.
   - name: Test KonfluxAPIServerHighErrorRate
     interval: 1m # Correct placement and spelling of interval
@@ -18,7 +67,7 @@ tests:
     # This block tests the alert's state (PENDING/FIRING).
     alert_rule_test:
       # This checks for a FIRING alert. It must be checked AFTER the 'for' duration.
-      - eval_time: 7m # Check after the 'for: 5m' has elapsed.
+      - eval_time: 16m
         alertname: KonfluxAPIServerHighErrorRate
         exp_alerts:
           - exp_labels:
@@ -27,52 +76,52 @@ tests:
               source_cluster: "kflux-prd-es01"
             exp_annotations:
               summary: "API Server 5XX error count in cluster kflux-prd-es01"
-              description: "API Server is experiencing 5% of 5XX failures based on the total requests for 5min in cluster kflux-prd-es01"
+              description: "API Server is experiencing 10% of 5XX failures based on the total requests for 15min in cluster kflux-prd-es01"
               alert_team_handle: "<!subteam^S05Q1P4Q2TG>"
               team: konflux-infra
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/api_server_error_rate_alert.md
 
 
   # High CPU usage - firing
-  - name: Test KonfluxAPIServerHighCPUUsage
-    interval: 1m
-    input_series:
-      - series: 'process_cpu_seconds_total{job="apiserver",source_cluster="cluster01"}'
-        # Value that produces a rate of 500/min.
-        values: '0 500 1000 1500 2000 2500 3000 3500 4000 4500'
-      - series: 'node_cpu_seconds_total{mode="idle",source_cluster="cluster01"}'
-        # Value that produces a rate of 550/min. Ratio is ~91%, which is > 80%.
-        values: '0 550 1100 1650 2200 2750 3300 3850 4400 4950'
+  #- name: Test KonfluxAPIServerHighCPUUsage
+  #  interval: 1m
+  #  input_series:
+  #    - series: 'process_cpu_seconds_total{job="apiserver",source_cluster="cluster01"}'
+  #      # Value that produces a rate of 500/min.
+  #      values: '0 500 1000 1500 2000 2500 3000 3500 4000 4500'
+  #    - series: 'node_cpu_seconds_total{mode="idle",source_cluster="cluster01"}'
+  #      # Value that produces a rate of 550/min. Ratio is ~91%, which is > 80%.
+  #      values: '0 550 1100 1650 2200 2750 3300 3850 4400 4950'
 
-    alert_rule_test:
-      - alertname: KonfluxAPIServerHighCPUUsage
-        eval_time: 10m
-        exp_alerts:
-          - exp_labels:
-              severity: critical
-              slo: "true"
-              source_cluster: "cluster01"
-            exp_annotations:
-              summary: API Server CPU usage is above 80% in cluster01
-              description: >-
-                API Server process CPU consumption is above 80% for 5 minutes in cluster cluster01.
-              alert_team_handle: <!subteam^S05Q1P4Q2TG>
-              team: konflux-infra
-              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/apiserver_HighCPUUsage.md
+  # alert_rule_test:
+  #    - alertname: KonfluxAPIServerHighCPUUsage
+  #      eval_time: 10m
+  #      exp_alerts:
+  #        - exp_labels:
+  #            severity: critical
+  #            slo: "true"
+  #            source_cluster: "cluster01"
+  #          exp_annotations:
+  #            summary: API Server CPU usage is above 80% in cluster01
+  #            description: >-
+  #              API Server process CPU consumption is above 80% for 5 minutes in cluster cluster01.
+  #            alert_team_handle: <!subteam^S05Q1P4Q2TG>
+  #            team: konflux-infra
+  #            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/apiserver_HighCPUUsage.md
 
 
-  # High CPU usage - NOT firing
-  - name: Test KonfluxAPIServerHighCPUUsage
-    interval: 1m
-    input_series:
-      - series: 'process_cpu_seconds_total{job="apiserver",source_cluster="cluster01"}'
-        values: '0 0 0 0 0 0 0 0 0 0'
-      - series: 'node_cpu_seconds_total{mode="idle",source_cluster="cluster01"}'
-        values: '0 1 2 3 4 5 6 7 8 9'
-    alert_rule_test:
-      - alertname: KonfluxAPIServerHighCPUUsage
-        eval_time: 10m
-        exp_alerts: []
+  ## High CPU usage - NOT firing
+  #- name: Test KonfluxAPIServerHighCPUUsage
+  #  interval: 1m
+  #  input_series:
+  #    - series: 'process_cpu_seconds_total{job="apiserver",source_cluster="cluster01"}'
+  #      values: '0 0 0 0 0 0 0 0 0 0'
+  #    - series: 'node_cpu_seconds_total{mode="idle",source_cluster="cluster01"}'
+  #      values: '0 1 2 3 4 5 6 7 8 9'
+  #  alert_rule_test:
+  #    - alertname: KonfluxAPIServerHighCPUUsage
+  #      eval_time: 10m
+  #      exp_alerts: []
 
 # High memory usage - firing
   - name: Test KonfluxAPIServerHighMemoryUsageFiring
