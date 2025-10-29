@@ -8,15 +8,15 @@ tests:
   - name: Test Increasing4xx5xxErrorRate Firing
     interval: 1m
     input_series:
-      # Current 10m error rate is elevated (15%)
-      - series: 'api_server:error_rate_10m{service="api-server", source_cluster="kflux-prd-es01"}'
-        values: '15+0x20'
-      # 30-day average is 10%
-      - series: 'api_server:error_rate_30d_avg{service="api-server", source_cluster="kflux-prd-es01"}'
-        values: '10+0x20'
-      # 30-day stddev is 1% (so threshold is 10 + 2*1 = 12%, and 15% > 12%)
-      - series: 'api_server:error_rate_30d_stddev{service="api-server", source_cluster="kflux-prd-es01"}'
-        values: '1+0x20'
+      # Current 5m error rate is elevated (0.15 = 15%)
+      - series: 'api_server_error_rate_5m{service="api-server", source_cluster="kflux-prd-es01"}'
+        values: '0.15+0x20'
+      # 30-day average is 0.10 (10%)
+      - series: 'api_server_error_rate_30d_avg{service="api-server", source_cluster="kflux-prd-es01"}'
+        values: '0.10+0x20'
+      # 30-day stddev is 0.01 (1%) (so threshold is 0.10 + 2*0.01 = 0.12, and 0.15 > 0.12)
+      - series: 'api_server_error_rate_30d_stddev{service="api-server", source_cluster="kflux-prd-es01"}'
+        values: '0.01+0x20'
 
     alert_rule_test:
       - eval_time: 10m
@@ -38,15 +38,15 @@ tests:
   - name: Test Increasing4xx5xxErrorRate Not Firing
     interval: 1m
     input_series:
-      # Current 10m error rate is 11% (within threshold)
-      - series: 'api_server:error_rate_10m{service="api-server", source_cluster="kflux-prd-es01"}'
-        values: '11+0x20'
-      # 30-day average is 10%
-      - series: 'api_server:error_rate_30d_avg{service="api-server", source_cluster="kflux-prd-es01"}'
-        values: '10+0x20'
-      # 30-day stddev is 1% (so threshold is 10 + 2*1 = 12%, and 11% < 12%)
-      - series: 'api_server:error_rate_30d_stddev{service="api-server", source_cluster="kflux-prd-es01"}'
-        values: '1+0x20'
+      # Current 5m error rate is 0.11 (11%, within threshold)
+      - series: 'api_server_error_rate_5m{service="api-server", source_cluster="kflux-prd-es01"}'
+        values: '0.11+0x20'
+      # 30-day average is 0.10 (10%)
+      - series: 'api_server_error_rate_30d_avg{service="api-server", source_cluster="kflux-prd-es01"}'
+        values: '0.10+0x20'
+      # 30-day stddev is 0.01 (1%) (so threshold is 0.10 + 2*0.01 = 0.12, and 0.11 < 0.12)
+      - series: 'api_server_error_rate_30d_stddev{service="api-server", source_cluster="kflux-prd-es01"}'
+        values: '0.01+0x20'
 
     alert_rule_test:
       - eval_time: 10m
