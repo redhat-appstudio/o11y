@@ -27,28 +27,34 @@ spec:
           labels:
             service: api-server
 
-        - record: api_server:error_rate_10m
+        - record: api_server_error_rate_5m
           expr: |
-            (
-              sum by(tenant_id, source_cluster) (
-                rate(apiserver_request_total{code=~"5..|4.."}[10m])
-              ) /
-              sum by(tenant_id, source_cluster) (
-                rate(apiserver_request_total{code!="0"}[10m])
-              )
-              OR on(tenant_id, source_cluster) vector(0.000001)
-            ) * 100
+            label_replace(
+              (
+                sum by(source_cluster) (
+                    code:apiserver_request_total:rate5m{code=~"5..|4.."}
+                  ) /
+                  sum by(source_cluster) (
+                    code:apiserver_request_total:rate5m{code!="0"}
+                  )
+                  OR on(source_cluster) vector(0.000001)
+              ), "service", "api-server", "", ""
+            )
           labels:
             service: api-server
 
-        - record: api_server:error_rate_30d_avg
+        - record: api_server_error_rate_30d_avg
           expr: |
-            avg_over_time(api_server:error_rate_10m[30d])
+            label_replace(
+              avg_over_time(api_server_error_rate_5m[30d]), "service", "api-server", "", ""
+            )
           labels:
             service: api-server
 
-        - record: api_server:error_rate_30d_stddev
+        - record: api_server_error_rate_30d_stddev
           expr: |
-            stddev_over_time(api_server:error_rate_10m[30d])
+            label_replace(
+              stddev_over_time(api_server_error_rate_5m[30d]), "service", "api-server", "", ""
+            )
           labels:
             service: api-server
