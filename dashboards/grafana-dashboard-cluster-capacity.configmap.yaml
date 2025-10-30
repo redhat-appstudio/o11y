@@ -21,7 +21,7 @@ data:
       "editable": true,
       "fiscalYearStartMonth": 0,
       "graphTooltip": 0,
-      "id": 884398,
+      "id": 1092245,
       "links": [
         {
           "asDropdown": false,
@@ -1219,7 +1219,7 @@ data:
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "sum(rate(tekton_pipelines_controller_running_pipelineruns_count{source_cluster=~\"$cluster\"}[1h])) by (source_cluster)",
+              "expr": "sum(rate(tekton_pipelines_controller_running_pipelineruns{source_cluster=~\"$cluster\"}[1h])) by (source_cluster)",
               "hide": false,
               "instant": false,
               "legendFormat": "__auto",
@@ -1476,7 +1476,7 @@ data:
                 "h": 12,
                 "w": 24,
                 "x": 0,
-                "y": 75
+                "y": 292
               },
               "id": 117,
               "options": {
@@ -1510,22 +1510,9 @@ data:
                   "expr": "avg by (source_cluster,instance) (\n    100 * ((node_memory_MemTotal_bytes{source_cluster=~\"$cluster\"} - node_memory_MemAvailable_bytes{source_cluster=~\"$cluster\"}) / node_memory_MemTotal_bytes{source_cluster=~\"$cluster\"})\n  ) and on (instance) \nlabel_replace( kube_node_role{role=\"worker\"}, \"instance\", \"$1\", \"node\", \"(.+)\" )",
                   "instant": false,
                   "interval": "",
-                  "legendFormat": "{{source_cluster}} master node {{instance}}",
+                  "legendFormat": "{{source_cluster}} worker node {{instance}}",
                   "range": true,
                   "refId": "A"
-                },
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "${datasource}"
-                  },
-                  "editorMode": "code",
-                  "expr": "avg by (source_cluster,instance) (\n    100 * ((node_memory_MemTotal_bytes{source_cluster=~\"$cluster\"} - node_memory_MemAvailable_bytes{source_cluster=~\"$cluster\"}) / node_memory_MemTotal_bytes{source_cluster=~\"$cluster\"})\n  ) and on (instance) \nlabel_replace( kube_node_role{role=\"infra\"}, \"instance\", \"$1\", \"node\", \"(.+)\" )",
-                  "hide": false,
-                  "instant": false,
-                  "legendFormat": "{{source_cluster}} infra node {{instance}}",
-                  "range": true,
-                  "refId": "B"
                 }
               ],
               "title": "Cluster Worker Nodes  Memory Usage",
@@ -1748,7 +1735,7 @@ data:
                 "h": 14,
                 "w": 24,
                 "x": 0,
-                "y": 78
+                "y": 295
               },
               "id": 118,
               "options": {
@@ -1780,7 +1767,7 @@ data:
                   "expr": "100 * avg by (source_cluster,instance) (1 - rate(node_cpu_seconds_total{mode=\"idle\",source_cluster=~\"$cluster\"}[5m]) \nand on (instance) \nlabel_replace( kube_node_role{role=\"worker\"}, \"instance\", \"$1\", \"node\", \"(.+)\" ))",
                   "instant": false,
                   "interval": "",
-                  "legendFormat": "{{source_cluster}} master node {{instance}}",
+                  "legendFormat": "{{source_cluster}} worker node {{instance}}",
                   "range": true,
                   "refId": "A"
                 }
@@ -1900,7 +1887,7 @@ data:
                     "uid": "${datasource}"
                   },
                   "editorMode": "code",
-                  "expr": "sum(rate(tekton_pipelines_controller_running_pipelineruns_count{source_cluster=~\"$cluster\"}[1h])) by (source_cluster)",
+                  "expr": "sum(rate(tekton_pipelines_controller_running_pipelineruns{source_cluster=~\"$cluster\"}[1h])) by (source_cluster)",
                   "hide": false,
                   "instant": false,
                   "legendFormat": "__auto",
@@ -3440,134 +3427,6 @@ data:
           ],
           "title": "ETCD Graphs",
           "type": "row"
-        },
-        {
-          "collapsed": true,
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 66
-          },
-          "id": 60,
-          "panels": [
-            {
-              "description": "Node Production Alerts.",
-              "fieldConfig": {
-                "defaults": {},
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 10,
-                "w": 24,
-                "x": 0,
-                "y": 13526
-              },
-              "id": 65,
-              "options": {
-                "alertInstanceLabelFilter": "",
-                "alertName": "Node",
-                "dashboardAlerts": false,
-                "datasource": "rhtap-observatorium-production",
-                "groupBy": [
-                  "source_cluster"
-                ],
-                "groupMode": "custom",
-                "maxItems": 20,
-                "showInactiveAlerts": false,
-                "sortOrder": 5,
-                "stateFilter": {
-                  "error": true,
-                  "firing": true,
-                  "noData": false,
-                  "normal": true,
-                  "pending": true
-                },
-                "viewMode": "list"
-              },
-              "pluginVersion": "11.6.3",
-              "title": "Node Alert List Production",
-              "type": "alertlist"
-            },
-            {
-              "description": "ETCD Production Alerts.",
-              "fieldConfig": {
-                "defaults": {},
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 12,
-                "w": 24,
-                "x": 0,
-                "y": 13536
-              },
-              "id": 40,
-              "options": {
-                "alertInstanceLabelFilter": "",
-                "alertName": "Etcd",
-                "dashboardAlerts": false,
-                "datasource": "rhtap-observatorium-production",
-                "groupBy": [
-                  "source_cluster"
-                ],
-                "groupMode": "custom",
-                "maxItems": 20,
-                "showInactiveAlerts": false,
-                "sortOrder": 5,
-                "stateFilter": {
-                  "error": true,
-                  "firing": true,
-                  "noData": false,
-                  "normal": true,
-                  "pending": true
-                },
-                "viewMode": "list"
-              },
-              "pluginVersion": "11.6.3",
-              "title": "ETCD Alert List Production",
-              "type": "alertlist"
-            },
-            {
-              "description": "API Server Production Alerts.",
-              "fieldConfig": {
-                "defaults": {},
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 10,
-                "w": 24,
-                "x": 0,
-                "y": 13548
-              },
-              "id": 119,
-              "options": {
-                "alertInstanceLabelFilter": "",
-                "alertName": "KonfluxAPIServer",
-                "dashboardAlerts": false,
-                "datasource": "rhtap-observatorium-production",
-                "groupBy": [
-                  "source_cluster"
-                ],
-                "groupMode": "custom",
-                "maxItems": 20,
-                "showInactiveAlerts": false,
-                "sortOrder": 5,
-                "stateFilter": {
-                  "error": true,
-                  "firing": true,
-                  "noData": false,
-                  "normal": true,
-                  "pending": true
-                },
-                "viewMode": "list"
-              },
-              "pluginVersion": "11.6.3",
-              "title": "API Server Alert List Production",
-              "type": "alertlist"
-            }
-          ],
-          "title": "Alert List",
-          "type": "row"
         }
       ],
       "preload": false,
@@ -3620,14 +3479,14 @@ data:
         ]
       },
       "time": {
-        "from": "now-1h",
+        "from": "now-12h",
         "to": "now"
       },
       "timepicker": {},
       "timezone": "",
       "title": "Cluster Capacity",
-      "uid": "beiwi3m5185f69",
-      "version": 4
+      "uid": "beywi6mn18876x",
+      "version": 7
     }
 kind: ConfigMap
 metadata:
