@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -25,10 +26,11 @@ const maxRetries = 5
 // Scrape interval == Time between each test execution
 const scrapeInterval = 1 * time.Minute
 
+const pullArtifactPath = "/mnt/storage/pull-artifact.txt"
 const pullTag = ":pull"
 
 // InitMetrics initializes and registers Prometheus metrics.
-func InitMetrics(reg prometheus.Registerer) *Metrics {
+func InitMetrics(reg prometheus.Registerer, registryMap map[string]string) *Metrics {
 	m := &Metrics{
 		RegistryPullCount: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
@@ -63,6 +65,14 @@ func InitMetrics(reg prometheus.Registerer) *Metrics {
 	reg.MustRegister(m.RegistryTotalPullCount)
 	reg.MustRegister(m.RegistryPushCount)
 	reg.MustRegister(m.RegistryTotalPushCount)
+
+	for registryType := range registryMap {
+		m.RegistryPullCount.WithLabelValues(registryType).Add(0)
+		m.RegistryTotalPullCount.WithLabelValues(registryType).Add(0)
+		m.RegistryPushCount.WithLabelValues(registryType).Add(0)
+		m.RegistryTotalPushCount.WithLabelValues(registryType).Add(0)
+	}
+
 	return m
 }
 
@@ -98,28 +108,34 @@ func PrepareRegistryMap() map[string]string {
 	}
 }
 
-func PreparePullTest(registryMap map[string]string, registryType string) {
+func CreatePullTag(registryMap map[string]string, registryType string, skipCheckExisting bool) {
 	registryName := registryMap[registryType]
 	registryName += pullTag
 
-	artifactPath := "/mnt/storage/pull-artifact.txt"
+	var args []string
+	if !skipCheckExisting {
+		// Check if the tag already exists in the registry
+		args = []string{"pull", registryName, "--output", pullArtifactPath}
+		if _, err := executeCmdWithRetry(args); err == nil {
+			log.Printf("Pull tag %s for %s already exists, skipping creation.", pullTag, registryType)
+			return
+		}
+	}
 
 	timeStamp := time.Now()
 	artifactContent := []byte("Pull test artifact created at " + timeStamp.String())
-	err := os.WriteFile(artifactPath, artifactContent, 0644)
+	err := os.WriteFile(pullArtifactPath, artifactContent, 0644)
 	if err != nil {
 		log.Panicf("Failed to create artifact: %v", err)
-		return
 	}
 
-	args := []string{"push", registryName, "--disable-path-validation", artifactPath}
-
+	args = []string{"push", registryName, "--disable-path-validation", pullArtifactPath}
 	if output, err := executeCmdWithRetry(args); err != nil {
-		log.Panicf("Pull preparation failed: %v, output: %s", err, string(output))
+		log.Printf("Pull tag creation failed: %v, output: %s", err, string(output))
 		return
 	}
 
-	log.Printf("Pull preparation for registry type %s successful.", registryType)
+	log.Printf("Pull tag %s for %s created successfully.", pullTag, registryType)
 }
 
 func PullTest(metrics *Metrics, registryMap map[string]string, registryType string) {
@@ -128,12 +144,20 @@ func PullTest(metrics *Metrics, registryMap map[string]string, registryType stri
 	registryName := registryMap[registryType]
 	registryName += pullTag
 
-	artifactPath := "/mnt/storage/pull-artifact.txt"
-
-	args := []string{"pull", registryName, "--output", artifactPath}
+	args := []string{"pull", registryName, "--output", pullArtifactPath}
 	if output, err := executeCmdWithRetry(args); err != nil {
 		log.Printf("Pull test failed: %v, output: %s", err, string(output))
-		return
+		// Edge case that the pullTag does not exist anymore, registry error otherwise
+		if !strings.Contains(string(output), "not found") {
+			return
+		}
+		log.Printf("Pull tag %s for %s not found, creating it.", pullTag, registryType)
+		CreatePullTag(registryMap, registryType, true)
+		// Retry the pull operation after re-creating the tag
+		if output, err = executeCmdWithRetry(args); err != nil {
+			log.Printf("Pull test failed after re-creating tag: %v, output: %s", err, string(output))
+			return
+		}
 	}
 	log.Printf("Pull test for registry type %s successful.", registryType)
 
@@ -164,7 +188,6 @@ func PushTest(metrics *Metrics, registryMap map[string]string, registryType stri
 		err := os.WriteFile(file, []byte(contents[i]), 0644)
 		if err != nil {
 			log.Panicf("Failed to create artifact %d: %v", i+1, err)
-			return
 		}
 	}
 
@@ -187,8 +210,10 @@ func ManifestTests(metrics *Metrics, registryMap map[string]string, registryType
 func main() {
 	log.SetOutput(os.Stderr)
 
+	registryMap := PrepareRegistryMap()
+
 	reg := prometheus.NewRegistry()
-	metrics := InitMetrics(reg)
+	metrics := InitMetrics(reg, registryMap)
 
 	http.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 
@@ -200,10 +225,9 @@ func main() {
 		log.Println("curl http://localhost:9101/metrics")
 	}()
 
-	registryMap := PrepareRegistryMap()
-
 	for registryType := range registryMap {
-		go PreparePullTest(registryMap, registryType)
+		log.Printf("Preparing pull tag %s for registry type: %s", pullTag, registryType)
+		go CreatePullTag(registryMap, registryType, false)
 	}
 
 	// Start a ticker to run tests at regular intervals
