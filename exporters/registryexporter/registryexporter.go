@@ -108,15 +108,18 @@ func PrepareRegistryMap() map[string]string {
 	}
 }
 
-func CreatePullTag(registryMap map[string]string, registryType string) {
+func CreatePullTag(registryMap map[string]string, registryType string, skipCheckExisting bool) {
 	registryName := registryMap[registryType]
 	registryName += pullTag
 
-	// Check if the tag already exists in the registry
-	args := []string{"pull", registryName, "--output", pullArtifactPath}
-	if _, err := executeCmdWithRetry(args); err == nil {
-		log.Printf("Pull tag %s for %s already exists, skipping creation.", pullTag, registryType)
-		return
+	var args []string
+	if !skipCheckExisting {
+		// Check if the tag already exists in the registry
+		args = []string{"pull", registryName, "--output", pullArtifactPath}
+		if _, err := executeCmdWithRetry(args); err == nil {
+			log.Printf("Pull tag %s for %s already exists, skipping creation.", pullTag, registryType)
+			return
+		}
 	}
 
 	timeStamp := time.Now()
@@ -147,7 +150,7 @@ func PullTest(metrics *Metrics, registryMap map[string]string, registryType stri
 		// Edge case that the pullTag does not exist anymore, registry error otherwise
 		if strings.Contains(string(output), "not found") {
 			log.Printf("Pull tag %s for %s not found, creating it.", pullTag, registryType)
-			CreatePullTag(registryMap, registryType)
+			CreatePullTag(registryMap, registryType, true)
 		}
 		return
 	}
@@ -219,7 +222,7 @@ func main() {
 
 	for registryType := range registryMap {
 		log.Printf("Preparing pull tag %s for registry type: %s", pullTag, registryType)
-		go CreatePullTag(registryMap, registryType)
+		go CreatePullTag(registryMap, registryType, false)
 	}
 
 	// Start a ticker to run tests at regular intervals
