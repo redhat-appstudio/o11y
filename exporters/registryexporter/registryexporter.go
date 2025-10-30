@@ -148,11 +148,16 @@ func PullTest(metrics *Metrics, registryMap map[string]string, registryType stri
 	if output, err := executeCmdWithRetry(args); err != nil {
 		log.Printf("Pull test failed: %v, output: %s", err, string(output))
 		// Edge case that the pullTag does not exist anymore, registry error otherwise
-		if strings.Contains(string(output), "not found") {
-			log.Printf("Pull tag %s for %s not found, creating it.", pullTag, registryType)
-			CreatePullTag(registryMap, registryType, true)
+		if !strings.Contains(string(output), "not found") {
+			return
 		}
-		return
+		log.Printf("Pull tag %s for %s not found, creating it.", pullTag, registryType)
+		CreatePullTag(registryMap, registryType, true)
+		// Retry the pull operation after re-creating the tag
+		if output, err = executeCmdWithRetry(args); err != nil {
+			log.Printf("Pull test failed after re-creating tag: %v, output: %s", err, string(output))
+			return
+		}
 	}
 	log.Printf("Pull test for registry type %s successful.", registryType)
 
