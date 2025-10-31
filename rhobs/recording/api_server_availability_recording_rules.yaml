@@ -33,12 +33,12 @@ spec:
               (
                 sum by(source_cluster) (
                     code:apiserver_request_total:rate5m{code=~"5..|4.."}
-                  ) /
-                  sum by(source_cluster) (
-                    code:apiserver_request_total:rate5m{code!="0"}
-                  )
-                  OR on(source_cluster) vector(0.000001)
-              ), "service", "api-server", "", ""
+                ) /
+                sum by(source_cluster) (
+                  code:apiserver_request_total:rate5m{code!="0"}
+                )
+                OR on(source_cluster) vector(0.000001)
+              ) * 100, "service", "api-server", "", ""
             )
           labels:
             service: api-server
