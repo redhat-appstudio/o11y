@@ -14,12 +14,12 @@ tests:
       # 30-day average is 0.10 (10%)
       - series: 'api_server_error_rate_30d_avg{service="api-server", source_cluster="kflux-prd-es01"}'
         values: '0.10+0x20'
-      # 30-day stddev is 0.01 (1%) (so threshold is 0.10 + 2*0.01 = 0.12, and 0.15 > 0.12)
+      # 30-day stddev is 0.01 (1%) (so threshold is 0.10 + 3*0.01 = 0.13, and 0.15 > 0.13)
       - series: 'api_server_error_rate_30d_stddev{service="api-server", source_cluster="kflux-prd-es01"}'
         values: '0.01+0x20'
 
     alert_rule_test:
-      - eval_time: 10m
+      - eval_time: 5m
         alertname: Increasing4xx5xxErrorRate
         exp_alerts:
           - exp_labels:
@@ -29,7 +29,7 @@ tests:
               source_cluster: "kflux-prd-es01"
             exp_annotations:
               summary: "API Server 4xx/5xx error rate in cluster kflux-prd-es01"
-              description: "API Server is experiencing more than 10% failures based on the 30d average and 2x standard deviation in cluster kflux-prd-es01"
+              description: "API Server is experiencing more than 10% failures based on the 30d average and 3x standard deviation in cluster kflux-prd-es01"
               alert_routing_key: <@U03TYEVLM71>
               team: o11y
               runbook_url: null
@@ -44,12 +44,12 @@ tests:
       # 30-day average is 0.10 (10%)
       - series: 'api_server_error_rate_30d_avg{service="api-server", source_cluster="kflux-prd-es01"}'
         values: '0.10+0x20'
-      # 30-day stddev is 0.01 (1%) (so threshold is 0.10 + 2*0.01 = 0.12, and 0.11 < 0.12)
+      # 30-day stddev is 0.01 (1%) (so threshold is 0.10 + 3*0.01 = 0.13, and 0.11 < 0.13)
       - series: 'api_server_error_rate_30d_stddev{service="api-server", source_cluster="kflux-prd-es01"}'
         values: '0.01+0x20'
 
     alert_rule_test:
-      - eval_time: 10m
+      - eval_time: 5m
         alertname: Increasing4xx5xxErrorRate
         exp_alerts: []
 
