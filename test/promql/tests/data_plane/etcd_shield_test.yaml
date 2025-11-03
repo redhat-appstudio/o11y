@@ -15,13 +15,16 @@ tests:
         alertname: EtcdShield
         exp_alerts:
           - exp_labels:
-              severity: high
+              severity: critical
               source_cluster: cluster01
+              slo: 'true'
             exp_annotations:
               description: 'Etcd Shield Alert Triggered in cluster cluster01.'
               summary: Etcd Shield Alert Triggered
-              alert_routing_key: spreandinfra
-              slo: 'false'
+              alert_team_handle: >-
+                <!subteam^S07SW2EEW3D> <!subteam^S05Q1P4Q2TG>
+              team: konflux-infra
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/etcd.md
 
   - interval: 1m
     input_series:
