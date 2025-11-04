@@ -58,16 +58,16 @@ spec:
     rules:
     - alert: MultiPlatformControllerPlatformUnhealthy
       expr: |
-        multi_platform_controller_available == 0
+        (increase(multi_platform_controller_provisioning_successes[15m]) / (increase(multi_platform_controller_provisioning_successes[15m]) + increase(multi_platform_controller_provisioning_failures[15m]))) * 100 < 50
       for: 5m
       labels:
         severity: high
         slo: "false"
       annotations:
         summary: >-
-          Multi-platform controller platform {{ $labels.check }} health check failed in cluster {{ $labels.source_cluster }}
+          Multi-platform controller platform {{ $labels.platform }} health check failed in cluster {{ $labels.source_cluster }}
         description: >
-          The multi-platform controller platform health check "{{ $labels.check }}" has been failing for 5min in cluster {{ $labels.source_cluster }}
+          The multi-platform controller platform health check "{{ $labels.platform }}" has more than 50% provisioning failures for the last 15 minutes in cluster {{ $labels.source_cluster }}
         alert_routing_key: infra
         team: konflux-infra
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rules/alert-rule-MultiPlatformControllerPlatformUnhealthy.md?ref_type=heads
@@ -86,22 +86,5 @@ spec:
           Multi-platform controller metrics are unhealthy in cluster {{ $labels.source_cluster }}
         description: >-
           The multi-platform controller Gauge metrics are showing negative values for the last 1 minute in cluster {{ $labels.source_cluster }}
-        alert_routing_key: infra
-        team: konflux-infra
-
-  - name: multi-platform-controller-provisioning-success-rate
-    interval: 1m
-    rules:
-    - alert: MultiPlatformControllerProvisioningSuccessRateTooLow
-      expr: |
-        (increase(multi_platform_controller_provisioning_successes[30m]) / (increase(multi_platform_controller_provisioning_successes[30m]) + increase(multi_platform_controller_provisioning_failures[30m]))) * 100 < 90
-      for: 5m
-      labels:
-        severity: warning
-      annotations:
-        summary: >-
-          Multi-platform controller provisioning success rate is too low in cluster {{ $labels.source_cluster }}
-        description: >-
-          The multi-platform controller provisioning success rate is less than 90% for the last 5 minutes in cluster {{ $labels.source_cluster }}
         alert_routing_key: infra
         team: konflux-infra
