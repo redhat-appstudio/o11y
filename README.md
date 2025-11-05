@@ -223,7 +223,7 @@ the steps described for
 In order to be able to evaluate the overall availability of the Konflux ecosystem, we
 need to be able to establish the availability of each of its components.
 
-By leveraging the existing [Konflux monitoring stack](https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/monitoring/monitoring.md?ref_type=heads)
+By leveraging the existing [Konflux monitoring stack](https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/monitoring/monitoring-architecture.md?ref_type=heads)
 based on Prometheus, we create Prometheus exporters that generate metrics that are
 scraped by the User Workload Monitoring Prometheus instance and remote-written to RHOBS.
 
