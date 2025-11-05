@@ -29,32 +29,14 @@ spec:
 
         - record: api_server_error_rate_5m
           expr: |
-            label_replace(
-              (
-                sum by(source_cluster) (
-                    code:apiserver_request_total:rate5m{code=~"5..|4.."}
-                ) /
-                sum by(source_cluster) (
-                  code:apiserver_request_total:rate5m{code!="0"}
-                )
-                OR on(source_cluster) vector(0.000001)
-              ) * 100, "service", "api-server", "", ""
+            sum by(source_cluster) (
+              code:apiserver_request_total:rate5m{code=~"5..|4.."}
             )
-          labels:
-            service: api-server
 
         - record: api_server_error_rate_30d_avg
           expr: |
-            label_replace(
-              avg_over_time(api_server_error_rate_5m[30d]), "service", "api-server", "", ""
-            )
-          labels:
-            service: api-server
+            avg_over_time(api_server_error_rate_5m[30d])
 
         - record: api_server_error_rate_30d_stddev
           expr: |
-            label_replace(
-              stddev_over_time(api_server_error_rate_5m[30d]), "service", "api-server", "", ""
-            )
-          labels:
-            service: api-server
+            stddev_over_time(api_server_error_rate_5m[30d])
