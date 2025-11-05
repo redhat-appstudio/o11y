@@ -1,12 +1,18 @@
 package main
 
 import (
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
 	"log"
 	"math"
 	"net/http"
 	"os"
 	"os/exec"
+	"os/signal"
+	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -20,6 +26,24 @@ type Metrics struct {
 	RegistryTotalPushCount *prometheus.CounterVec
 }
 
+// Structures for registryMap
+type RegistryConfig struct {
+	URL         string
+	Credentials Credentials
+}
+type Credentials struct {
+	Username string
+	Password string
+}
+
+// Structures for loading docker config
+type DockerConfig struct {
+	Auths map[string]AuthConfig `json:"auths"`
+}
+type AuthConfig struct {
+	Auth string `json:"auth"`
+}
+
 // Max retries for operations
 const maxRetries = 5
 
@@ -30,7 +54,7 @@ const pullArtifactPath = "/mnt/storage/pull-artifact.txt"
 const pullTag = ":pull"
 
 // InitMetrics initializes and registers Prometheus metrics.
-func InitMetrics(reg prometheus.Registerer, registryMap map[string]string) *Metrics {
+func InitMetrics(reg prometheus.Registerer, registryMap map[string]RegistryConfig) *Metrics {
 	m := &Metrics{
 		RegistryPullCount: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
@@ -96,20 +120,82 @@ func executeCmdWithRetry(args []string) (output []byte, err error) {
 	return output, err
 }
 
-func PrepareRegistryMap() map[string]string {
-	quayUrl := os.Getenv("QUAY_URL")
+func loadDockerConfig() (DockerConfig, error) {
+	configPath := filepath.Join(os.Getenv("DOCKER_CONFIG"), "config.json")
 
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return DockerConfig{}, fmt.Errorf("failed to read Docker config file %s: %w", configPath, err)
+	}
+
+	var dockerConfig DockerConfig
+	if err := json.Unmarshal(data, &dockerConfig); err != nil {
+		return DockerConfig{}, fmt.Errorf("failed to unmarshal Docker config: %w", err)
+	}
+
+	return dockerConfig, nil
+}
+
+// extractCredentialsFromAuth decodes the base64 auth string and splits it into username and password
+func extractCredentialsForRegistry(auth string) (username, password string, err error) {
+	decoded, err := base64.StdEncoding.DecodeString(auth)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to decode base64 auth string: %w", err)
+	}
+
+	parts := strings.SplitN(string(decoded), ":", 2)
+	if len(parts) != 2 {
+		return "", "", fmt.Errorf("invalid auth format: expected username:password")
+	}
+
+	return parts[0], parts[1], nil
+}
+
+func extractCredentials(dockerConfig DockerConfig, registry string) (username, password string, err error) {
+	for key, authConfig := range dockerConfig.Auths {
+		if strings.Contains(key, registry) {
+			username, password, err := extractCredentialsForRegistry(authConfig.Auth)
+			if err != nil {
+				return "", "", fmt.Errorf("failed to extract credentials for %s: %w", key, err)
+			}
+			return username, password, nil
+		}
+	}
+
+	return "", "", fmt.Errorf("credentials not found in Docker config")
+}
+
+func PrepareRegistryMap() map[string]RegistryConfig {
+	quayUrl := os.Getenv("QUAY_URL")
 	if quayUrl == "" {
 		log.Panicf("QUAY_URL environment variable is required")
 	}
 
-	return map[string]string{
-		"quay.io": quayUrl,
+	dockerConfig, err := loadDockerConfig()
+	if err != nil {
+		log.Panicf("Failed to load Docker config: %v", err)
 	}
+
+	username, password, err := extractCredentials(dockerConfig, "quay.io") // hardcoded for quay.io only, could serve as template for more in future
+	if err != nil {
+		log.Panicf("Failed to extract credentials: %v", err)
+	}
+
+	registryMap := map[string]RegistryConfig{
+		"quay.io": {
+			URL: quayUrl,
+			Credentials: Credentials{
+				Username: username,
+				Password: password,
+			},
+		},
+	}
+
+	return registryMap
 }
 
-func CreatePullTag(registryMap map[string]string, registryType string, skipCheckExisting bool) {
-	registryName := registryMap[registryType]
+func CreatePullTag(registryMap map[string]RegistryConfig, registryType string, skipCheckExisting bool) {
+	registryName := registryMap[registryType].URL
 	registryName += pullTag
 
 	var args []string
@@ -138,10 +224,10 @@ func CreatePullTag(registryMap map[string]string, registryType string, skipCheck
 	log.Printf("Pull tag %s for %s created successfully.", pullTag, registryType)
 }
 
-func PullTest(metrics *Metrics, registryMap map[string]string, registryType string) {
+func PullTest(metrics *Metrics, registryMap map[string]RegistryConfig, registryType string) {
 	defer metrics.RegistryTotalPullCount.WithLabelValues(registryType).Inc()
 
-	registryName := registryMap[registryType]
+	registryName := registryMap[registryType].URL
 	registryName += pullTag
 
 	args := []string{"pull", registryName, "--output", pullArtifactPath}
@@ -164,10 +250,10 @@ func PullTest(metrics *Metrics, registryMap map[string]string, registryType stri
 	metrics.RegistryPullCount.WithLabelValues(registryType).Inc()
 }
 
-func PushTest(metrics *Metrics, registryMap map[string]string, registryType string) {
+func PushTest(metrics *Metrics, registryMap map[string]RegistryConfig, registryType string) {
 	defer metrics.RegistryTotalPushCount.WithLabelValues(registryType).Inc()
 
-	registryName := registryMap[registryType]
+	registryName := registryMap[registryType].URL
 	registryName += ":push-" + os.Getenv("HOSTNAME")
 
 	timeStamp := time.Now()
@@ -207,6 +293,17 @@ func ManifestTests(metrics *Metrics, registryMap map[string]string, registryType
 	// TODO: Implement manifest test
 }
 
+func AuthenticationTest(metrics *Metrics, registryMap map[string]RegistryConfig, registryType string) {
+	credentials := registryMap[registryType].Credentials
+
+	args := []string{"login", registryType, "--username", credentials.Username, "--password", credentials.Password, "--registry-config", "/mnt/storage/authtest-config.json"} // new path needed not to overwrite the original config.json
+	if output, err := executeCmdWithRetry(args); err != nil {
+		log.Printf("Authentication test failed: %v, output: %s", err, string(output))
+		return
+	}
+	log.Printf("Authentication test for registry type %s successful.", registryType)
+}
+
 func main() {
 	log.SetOutput(os.Stderr)
 
@@ -243,6 +340,7 @@ func main() {
 			go PullTest(metrics, registryMap, registryType)
 			go PushTest(metrics, registryMap, registryType)
 			// go ManifestTests(metrics, registryMap, registryType)
+			go AuthenticationTest(metrics, registryMap, registryType)
 		}
 	}
 }
