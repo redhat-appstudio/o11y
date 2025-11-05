@@ -52,6 +52,7 @@ const scrapeInterval = 1 * time.Minute
 
 const pullArtifactPath = "/mnt/storage/pull-artifact.txt"
 const pullTag = ":pull"
+const metadataTag = ":metadata"
 
 // InitMetrics initializes and registers Prometheus metrics.
 func InitMetrics(reg prometheus.Registerer, registryMap map[string]RegistryConfig) *Metrics {
@@ -289,8 +290,32 @@ func PushTest(metrics *Metrics, registryMap map[string]RegistryConfig, registryT
 	metrics.RegistryPushCount.WithLabelValues(registryType).Inc()
 }
 
-func ManifestTests(metrics *Metrics, registryMap map[string]string, registryType string) {
-	// TODO: Implement manifest test
+// Note: deleteArtifact is not directly possible with oras, but possible with override of existing tag with one that can have expiration annotation
+func deleteArtifact(registryMap map[string]RegistryConfig, registryType string, tag string) {
+	registryName := registryMap[registryType].URL
+	registryName += tag
+
+	args := []string{"push", registryName, "--annotation", "quay.expires-after=10s", "--disable-path-validation", "/mnt/storage/pull-artifact.txt"}
+	if output, err := executeCmdWithRetry(args); err != nil {
+		log.Printf("Artifact deletion failed: %v, output: %s", err, string(output))
+		return
+	}
+	log.Printf("Artifact %s deleted successfully.", tag)
+}
+
+func MetadataTest(metrics *Metrics, registryMap map[string]RegistryConfig, registryType string) {
+	registryName := registryMap[registryType].URL
+	sourceArtifact := registryName + pullTag
+
+	newTag := metadataTag + "-" + os.Getenv("HOSTNAME")
+
+	args := []string{"tag", sourceArtifact, strings.TrimPrefix(newTag, ":")}
+	if output, err := executeCmdWithRetry(args); err != nil {
+		log.Printf("Tag creation test failed: %v, output: %s", err, string(output))
+		return
+	}
+
+	log.Printf("Metadata test for registry type %s successful.", registryType)
 }
 
 func AuthenticationTest(metrics *Metrics, registryMap map[string]RegistryConfig, registryType string) {
@@ -327,6 +352,18 @@ func main() {
 		go CreatePullTag(registryMap, registryType, false)
 	}
 
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-c
+		log.Println("Received interrupt signal, deleting metadata tags and gracefully exiting...")
+		// Delete the metadata tag because tag function cannot insert expiration annotation
+		for registryType := range registryMap {
+			deleteArtifact(registryMap, registryType, metadataTag+"-"+os.Getenv("HOSTNAME"))
+		}
+		os.Exit(0)
+	}()
+
 	// Start a ticker to run tests at regular intervals
 	log.Printf("Starting periodic metrics fetch every %v.", scrapeInterval)
 
@@ -339,7 +376,7 @@ func main() {
 			log.Printf("Processing test for registry type: %s", registryType)
 			go PullTest(metrics, registryMap, registryType)
 			go PushTest(metrics, registryMap, registryType)
-			// go ManifestTests(metrics, registryMap, registryType)
+			go MetadataTest(metrics, registryMap, registryType)
 			go AuthenticationTest(metrics, registryMap, registryType)
 		}
 	}
