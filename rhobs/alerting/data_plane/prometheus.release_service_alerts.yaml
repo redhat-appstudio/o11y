@@ -67,17 +67,8 @@ spec:
     - alert: ReleaseServiceControllerManagerAvailability
       expr: |
         (
-          avg_over_time(
-            sum(kube_pod_container_status_ready{namespace="release-service", container="manager", source_cluster=~"stone-prd-rh01|stone-prod-p02"}) by (source_cluster)
-            [1h:]
-          )
-          /
-          max_over_time(
-            sum(kube_pod_container_status_ready{namespace="release-service", container="manager", source_cluster=~"stone-prd-rh01|stone-prod-p02"}) by (source_cluster)
-            [1h:]
-          )
-        )
-        < 0.99
+          rate(count(max_over_time(kube_pod_container_status_ready{namespace="release-service", container="manager"}[5m:])) by (source_cluster) [1h:] ) * 100
+        ) > 0.01
       for: 10m
       labels:
         severity: critical
