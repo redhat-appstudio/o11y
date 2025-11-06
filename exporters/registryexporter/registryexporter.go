@@ -20,10 +20,23 @@ import (
 )
 
 type Metrics struct {
-	RegistryPullCount      *prometheus.CounterVec
-	RegistryTotalPullCount *prometheus.CounterVec
-	RegistryPushCount      *prometheus.CounterVec
-	RegistryTotalPushCount *prometheus.CounterVec
+	RegistryPullSuccess    *prometheus.GaugeVec
+	RegistryPullErrorCount *prometheus.CounterVec
+	RegistryPullDuration   *prometheus.HistogramVec
+	RegistryPullImageSize  *prometheus.GaugeVec
+
+	RegistryPushSuccess    *prometheus.GaugeVec
+	RegistryPushErrorCount *prometheus.CounterVec
+	RegistryPushDuration   *prometheus.HistogramVec
+	RegistryPushImageSize  *prometheus.GaugeVec
+
+	RegistryMetadataSuccess    *prometheus.GaugeVec
+	RegistryMetadataErrorCount *prometheus.CounterVec
+	RegistryMetadataDuration   *prometheus.HistogramVec
+
+	RegistryAuthenticationSuccess    *prometheus.GaugeVec
+	RegistryAuthenticationErrorCount *prometheus.CounterVec
+	RegistryAuthenticationDuration   *prometheus.HistogramVec
 }
 
 // Structures for registryMap
@@ -57,48 +70,227 @@ const metadataTag = ":metadata"
 // InitMetrics initializes and registers Prometheus metrics.
 func InitMetrics(reg prometheus.Registerer, registryMap map[string]RegistryConfig) *Metrics {
 	m := &Metrics{
-		RegistryPullCount: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "registry_exporter_successful_pull_count",
-				Help: "Total number of successful pulls from the registry.",
+		// Pull metrics
+		RegistryPullSuccess: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Name: "registry_exporter_pull_success",
+				Help: "Gauge indicating if a pull from the registry was successful (1 if successful, 0 otherwise).",
 			},
 			[]string{"tested_registry"},
 		),
-		RegistryTotalPullCount: prometheus.NewCounterVec(
+		RegistryPullErrorCount: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
-				Name: "registry_exporter_total_pull_count",
-				Help: "Total number of pulls from the registry.",
+				Name: "registry_exporter_pull_error_count",
+				Help: "Total number of errors encountered during pulls from the registry.",
+			},
+			[]string{"tested_registry", "error"},
+		),
+		RegistryPullDuration: prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Name:    "registry_exporter_pull_duration_seconds",
+				Help:    "Histogram of durations for pulls from the registry in seconds.",
+				Buckets: []float64{1, 2, 5, 10},
 			},
 			[]string{"tested_registry"},
 		),
-		RegistryPushCount: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "registry_exporter_successful_push_count",
-				Help: "Total number of successful pushes to the registry.",
+		RegistryPullImageSize: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Name: "registry_exporter_pull_image_size_mbytes",
+				Help: "Gauge of image size for pulls from the registry in megabytes.",
 			},
 			[]string{"tested_registry"},
 		),
-		RegistryTotalPushCount: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "registry_exporter_total_push_count",
-				Help: "Total number of pushes to the registry.",
+		// Push metrics
+		RegistryPushSuccess: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Name: "registry_exporter_push_success",
+				Help: "Gauge indicating if a push to the registry was successful (1 if successful, 0 otherwise).",
 			},
 			[]string{"tested_registry"},
 		),
-	}
-	reg.MustRegister(m.RegistryPullCount)
-	reg.MustRegister(m.RegistryTotalPullCount)
-	reg.MustRegister(m.RegistryPushCount)
-	reg.MustRegister(m.RegistryTotalPushCount)
+		RegistryPushErrorCount: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "registry_exporter_push_error_count",
+				Help: "Total number of errors encountered during pushes to the registry.",
+			},
+			[]string{"tested_registry", "error"},
+		),
+		RegistryPushDuration: prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Name:    "registry_exporter_push_duration_seconds",
+				Help:    "Histogram of durations for pushes to the registry.",
+				Buckets: []float64{1, 2, 5, 10},
+			},
+			[]string{"tested_registry"},
+		),
+		RegistryPushImageSize: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Name: "registry_exporter_push_image_size_mbytes",
+				Help: "Gauge of image size for pushes to the registry in megabytes.",
+			},
+			[]string{"tested_registry"},
+		),
 
-	for registryType := range registryMap {
-		m.RegistryPullCount.WithLabelValues(registryType).Add(0)
-		m.RegistryTotalPullCount.WithLabelValues(registryType).Add(0)
-		m.RegistryPushCount.WithLabelValues(registryType).Add(0)
-		m.RegistryTotalPushCount.WithLabelValues(registryType).Add(0)
+		// Metadata metrics
+		RegistryMetadataSuccess: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Name: "registry_exporter_metadata_success",
+				Help: "Gauge indicating if a metadata test for the registry was successful (1 if successful, 0 otherwise).",
+			},
+			[]string{"tested_registry"},
+		),
+		RegistryMetadataErrorCount: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "registry_exporter_metadata_error_count",
+				Help: "Total number of errors encountered during metadata tests for the registry.",
+			},
+			[]string{"tested_registry", "error"},
+		),
+		RegistryMetadataDuration: prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Name:    "registry_exporter_metadata_duration_seconds",
+				Help:    "Histogram of durations for metadata tests for the registry in seconds.",
+				Buckets: []float64{0.5, 1, 2, 5},
+			},
+			[]string{"tested_registry"},
+		),
+
+		// Authentication metrics
+		RegistryAuthenticationSuccess: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Name: "registry_exporter_authentication_success",
+				Help: "Gauge indicating if an authentication test for the registry was successful (1 if successful, 0 otherwise).",
+			},
+			[]string{"tested_registry"},
+		),
+		RegistryAuthenticationErrorCount: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "registry_exporter_authentication_error_count",
+				Help: "Total number of errors encountered during authentication tests for the registry.",
+			},
+			[]string{"tested_registry", "error"},
+		),
+		RegistryAuthenticationDuration: prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Name:    "registry_exporter_authentication_duration_seconds",
+				Help:    "Histogram of durations for authentication tests for the registry in seconds.",
+				Buckets: []float64{0.5, 1, 2, 5},
+			},
+			[]string{"tested_registry"},
+		),
 	}
+	reg.MustRegister(m.RegistryPullSuccess)
+	reg.MustRegister(m.RegistryPullErrorCount)
+	reg.MustRegister(m.RegistryPullDuration)
+	reg.MustRegister(m.RegistryPullImageSize)
+	reg.MustRegister(m.RegistryPushSuccess)
+	reg.MustRegister(m.RegistryPushErrorCount)
+	reg.MustRegister(m.RegistryPushDuration)
+	reg.MustRegister(m.RegistryPushImageSize)
+	reg.MustRegister(m.RegistryMetadataSuccess)
+	reg.MustRegister(m.RegistryMetadataErrorCount)
+	reg.MustRegister(m.RegistryMetadataDuration)
+	reg.MustRegister(m.RegistryAuthenticationSuccess)
+	reg.MustRegister(m.RegistryAuthenticationErrorCount)
+	reg.MustRegister(m.RegistryAuthenticationDuration)
 
 	return m
+}
+
+// ExtractErrorReason extracts the reason for an error from the output of a command.
+// It is used to set the error type for the metrics.
+func ExtractErrorReason(output []byte) string {
+	outputStr := strings.ToLower(string(output))
+
+	// Probably malformed request
+	if strings.Contains(outputStr, "400") || strings.Contains(outputStr, "bad") {
+		return "INVALID_REQUEST"
+	}
+	// Issue with credentials
+	if strings.Contains(outputStr, "401") || strings.Contains(outputStr, "403") || strings.Contains(outputStr, "unauthorized") {
+		return "AUTHENTICATION"
+	}
+	// Tag deleted or not found
+	if strings.Contains(outputStr, "404") || strings.Contains(outputStr, "not found") {
+		return "NOT_FOUND"
+	}
+	// Network errors
+	if strings.Contains(outputStr, "no such host") {
+		return "NETWORK_ERROR"
+	}
+	// Server errors typically from other registry issues
+	if strings.Contains(outputStr, "500") || strings.Contains(outputStr, "502") || strings.Contains(outputStr, "503") || strings.Contains(outputStr, "504") {
+		return "SERVER_ERROR"
+	}
+	return "UNKNOWN"
+}
+
+// setSuccessState sets the success state for a test operation.
+func setSuccessState(metrics *Metrics, registryType string, testType string) {
+	switch testType {
+	case "pull":
+		metrics.RegistryPullSuccess.WithLabelValues(registryType).Set(1)
+	case "push":
+		metrics.RegistryPushSuccess.WithLabelValues(registryType).Set(1)
+	case "metadata":
+		metrics.RegistryMetadataSuccess.WithLabelValues(registryType).Set(1)
+	case "authentication":
+		metrics.RegistryAuthenticationSuccess.WithLabelValues(registryType).Set(1)
+	}
+}
+
+// setErrorState sets the error state for a test operation.
+func setErrorState(metrics *Metrics, registryType string, testType string, output []byte) {
+	errorType := ExtractErrorReason(output)
+
+	switch testType {
+	case "pull":
+		metrics.RegistryPullSuccess.WithLabelValues(registryType).Set(0)
+		metrics.RegistryPullErrorCount.WithLabelValues(registryType, errorType).Inc()
+	case "push":
+		metrics.RegistryPushSuccess.WithLabelValues(registryType).Set(0)
+		metrics.RegistryPushErrorCount.WithLabelValues(registryType, errorType).Inc()
+	case "metadata":
+		metrics.RegistryMetadataSuccess.WithLabelValues(registryType).Set(0)
+		metrics.RegistryMetadataErrorCount.WithLabelValues(registryType, errorType).Inc()
+	case "authentication":
+		metrics.RegistryAuthenticationSuccess.WithLabelValues(registryType).Set(0)
+		metrics.RegistryAuthenticationErrorCount.WithLabelValues(registryType, errorType).Inc()
+	}
+}
+
+// getFileSizeMB returns the size of a file in megabytes.
+func getFileSizeMB(filePath string) (float64, error) {
+	info, err := os.Stat(filePath)
+	if err != nil {
+		return 0, err
+	}
+	return float64(info.Size()) / float64(1024*1024), nil
+}
+
+// setImageSize sets the image size for a test operation.
+func setImageSize(metrics *Metrics, registryType string, testType string, sizeMB float64) {
+	switch testType {
+	case "pull":
+		metrics.RegistryPullImageSize.WithLabelValues(registryType).Set(sizeMB)
+	case "push":
+		metrics.RegistryPushImageSize.WithLabelValues(registryType).Set(sizeMB)
+	}
+}
+
+// recordDuration records the duration of a test operation in seconds.
+func recordDuration(metrics *Metrics, registryType string, testType string, duration time.Duration) {
+	durationSeconds := duration.Seconds()
+	switch testType {
+	case "pull":
+		metrics.RegistryPullDuration.WithLabelValues(registryType).Observe(durationSeconds)
+	case "push":
+		metrics.RegistryPushDuration.WithLabelValues(registryType).Observe(durationSeconds)
+	case "metadata":
+		metrics.RegistryMetadataDuration.WithLabelValues(registryType).Observe(durationSeconds)
+	case "authentication":
+		metrics.RegistryAuthenticationDuration.WithLabelValues(registryType).Observe(durationSeconds)
+	}
 }
 
 func executeCmdWithRetry(args []string) (output []byte, err error) {
@@ -226,16 +418,16 @@ func CreatePullTag(registryMap map[string]RegistryConfig, registryType string, s
 }
 
 func PullTest(metrics *Metrics, registryMap map[string]RegistryConfig, registryType string) {
-	defer metrics.RegistryTotalPullCount.WithLabelValues(registryType).Inc()
-
 	registryName := registryMap[registryType].URL
 	registryName += pullTag
 
 	args := []string{"pull", registryName, "--output", pullArtifactPath}
+	startTime := time.Now()
 	if output, err := executeCmdWithRetry(args); err != nil {
 		log.Printf("Pull test failed: %v, output: %s", err, string(output))
 		// Edge case that the pullTag does not exist anymore, registry error otherwise
 		if !strings.Contains(string(output), "not found") {
+			setErrorState(metrics, registryType, "pull", output)
 			return
 		}
 		log.Printf("Pull tag %s for %s not found, creating it.", pullTag, registryType)
@@ -243,17 +435,22 @@ func PullTest(metrics *Metrics, registryMap map[string]RegistryConfig, registryT
 		// Retry the pull operation after re-creating the tag
 		if output, err = executeCmdWithRetry(args); err != nil {
 			log.Printf("Pull test failed after re-creating tag: %v, output: %s", err, string(output))
+			setErrorState(metrics, registryType, "pull", output)
 			return
 		}
 	}
 	log.Printf("Pull test for registry type %s successful.", registryType)
 
-	metrics.RegistryPullCount.WithLabelValues(registryType).Inc()
+	recordDuration(metrics, registryType, "pull", time.Since(startTime))
+
+	if sizeMB, err := getFileSizeMB(pullArtifactPath); err == nil {
+		setImageSize(metrics, registryType, "pull", sizeMB)
+	}
+
+	setSuccessState(metrics, registryType, "pull")
 }
 
 func PushTest(metrics *Metrics, registryMap map[string]RegistryConfig, registryType string) {
-	defer metrics.RegistryTotalPushCount.WithLabelValues(registryType).Inc()
-
 	registryName := registryMap[registryType].URL
 	registryName += ":push-" + os.Getenv("HOSTNAME")
 
@@ -281,13 +478,25 @@ func PushTest(metrics *Metrics, registryMap map[string]RegistryConfig, registryT
 	args := []string{"push", registryName, "--annotation", "quay.expires-after=30s", "--disable-path-validation"}
 	args = append(args, artifactPaths...)
 
+	startTime := time.Now()
 	if output, err := executeCmdWithRetry(args); err != nil {
 		log.Printf("Push test failed: %v, output: %s", err, string(output))
+		setErrorState(metrics, registryType, "push", output)
 		return
 	}
 	log.Printf("Push test for registry type %s successful.", registryType)
 
-	metrics.RegistryPushCount.WithLabelValues(registryType).Inc()
+	sizeMB := 0.0
+	for _, file := range artifactPaths {
+		if fileSizeMB, err := getFileSizeMB(file); err == nil {
+			sizeMB += fileSizeMB
+		}
+	}
+	recordDuration(metrics, registryType, "push", time.Since(startTime))
+
+	setImageSize(metrics, registryType, "push", sizeMB)
+
+	setSuccessState(metrics, registryType, "push")
 }
 
 // Note: deleteArtifact is not directly possible with oras, but possible with override of existing tag with one that can have expiration annotation
@@ -310,23 +519,35 @@ func MetadataTest(metrics *Metrics, registryMap map[string]RegistryConfig, regis
 	newTag := metadataTag + "-" + os.Getenv("HOSTNAME")
 
 	args := []string{"tag", sourceArtifact, strings.TrimPrefix(newTag, ":")}
+
+	startTime := time.Now()
 	if output, err := executeCmdWithRetry(args); err != nil {
 		log.Printf("Tag creation test failed: %v, output: %s", err, string(output))
+		setErrorState(metrics, registryType, "metadata", output)
 		return
 	}
-
 	log.Printf("Metadata test for registry type %s successful.", registryType)
+
+	recordDuration(metrics, registryType, "metadata", time.Since(startTime))
+
+	setSuccessState(metrics, registryType, "metadata")
 }
 
 func AuthenticationTest(metrics *Metrics, registryMap map[string]RegistryConfig, registryType string) {
 	credentials := registryMap[registryType].Credentials
 
+	startTime := time.Now()
 	args := []string{"login", registryType, "--username", credentials.Username, "--password", credentials.Password, "--registry-config", "/mnt/storage/authtest-config.json"} // new path needed not to overwrite the original config.json
 	if output, err := executeCmdWithRetry(args); err != nil {
 		log.Printf("Authentication test failed: %v, output: %s", err, string(output))
+		setErrorState(metrics, registryType, "authentication", output)
 		return
 	}
 	log.Printf("Authentication test for registry type %s successful.", registryType)
+
+	recordDuration(metrics, registryType, "authentication", time.Since(startTime))
+
+	setSuccessState(metrics, registryType, "authentication")
 }
 
 func main() {
