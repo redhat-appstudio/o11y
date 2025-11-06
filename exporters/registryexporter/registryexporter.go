@@ -92,7 +92,7 @@ func InitMetrics(reg prometheus.Registerer, registryMap map[string]RegistryConfi
 			prometheus.HistogramOpts{
 				Name:    "registry_exporter_pull_duration_seconds",
 				Help:    "Histogram of durations for pulls from the registry in seconds.",
-				Buckets: []float64{1, 2, 5, 10},
+				Buckets: []float64{2, 3, 4, 5},
 			},
 			[]string{"tested_registry"},
 		),
@@ -122,7 +122,7 @@ func InitMetrics(reg prometheus.Registerer, registryMap map[string]RegistryConfi
 			prometheus.HistogramOpts{
 				Name:    "registry_exporter_push_duration_seconds",
 				Help:    "Histogram of durations for pushes to the registry.",
-				Buckets: []float64{1, 2, 5, 10},
+				Buckets: []float64{5, 6, 7, 8, 9, 10},
 			},
 			[]string{"tested_registry"},
 		),
@@ -153,7 +153,7 @@ func InitMetrics(reg prometheus.Registerer, registryMap map[string]RegistryConfi
 			prometheus.HistogramOpts{
 				Name:    "registry_exporter_metadata_duration_seconds",
 				Help:    "Histogram of durations for metadata tests for the registry in seconds.",
-				Buckets: []float64{0.5, 1, 2, 5},
+				Buckets: []float64{2, 3, 4, 5},
 			},
 			[]string{"tested_registry"},
 		),
@@ -177,7 +177,7 @@ func InitMetrics(reg prometheus.Registerer, registryMap map[string]RegistryConfi
 			prometheus.HistogramOpts{
 				Name:    "registry_exporter_authentication_duration_seconds",
 				Help:    "Histogram of durations for authentication tests for the registry in seconds.",
-				Buckets: []float64{0.5, 1, 2, 5},
+				Buckets: []float64{1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5},
 			},
 			[]string{"tested_registry"},
 		),
