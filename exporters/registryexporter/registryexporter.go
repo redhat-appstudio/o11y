@@ -67,6 +67,9 @@ const pullArtifactPath = "/mnt/storage/pull-artifact.txt"
 const pullTag = ":pull"
 const metadataTag = ":metadata"
 
+// Target file size in bytes (10MB)
+const targetFileSize = 10 * 1024 * 1024
+
 // InitMetrics initializes and registers Prometheus metrics.
 func InitMetrics(reg prometheus.Registerer, registryMap map[string]RegistryConfig) *Metrics {
 	m := &Metrics{
@@ -293,6 +296,41 @@ func recordDuration(metrics *Metrics, registryType string, testType string, dura
 	}
 }
 
+// createFileOfSize creates a file of the target size with a timestamp header for uniqueness.
+// It is used to create the pull and push test artifacts.
+// Note: Inspired by https://stackoverflow.com/questions/16797380/how-to-create-a-10mb-file-filled-with-000000-data-in-golang
+func createFileOfSize(filePath string, artifactType string) error {
+	file, err := os.Create(filePath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	timeStamp := time.Now()
+	header := fmt.Sprintf("%s test artifact created at %s\n", artifactType, timeStamp.String())
+	_, err = file.WriteString(header)
+	if err != nil {
+		return err
+	}
+
+	err = file.Truncate(targetFileSize)
+	if err != nil {
+		return err
+	}
+
+	// Writing a byte at the end to ensure the file is not sparse as in the thread.
+	_, err = file.Seek(targetFileSize-1, 0)
+	if err != nil {
+		return err
+	}
+	_, err = file.Write([]byte{0})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func executeCmdWithRetry(args []string) (output []byte, err error) {
 	for attempt := range maxRetries {
 		cmd := exec.Command("oras", args...)
@@ -401,9 +439,7 @@ func CreatePullTag(registryMap map[string]RegistryConfig, registryType string, s
 		}
 	}
 
-	timeStamp := time.Now()
-	artifactContent := []byte("Pull test artifact created at " + timeStamp.String())
-	err := os.WriteFile(pullArtifactPath, artifactContent, 0644)
+	err := createFileOfSize(pullArtifactPath, "Pull")
 	if err != nil {
 		log.Panicf("Failed to create artifact: %v", err)
 	}
@@ -454,22 +490,13 @@ func PushTest(metrics *Metrics, registryMap map[string]RegistryConfig, registryT
 	registryName := registryMap[registryType].URL
 	registryName += ":push-" + os.Getenv("HOSTNAME")
 
-	timeStamp := time.Now()
-
 	artifactPaths := []string{
 		"/mnt/storage/push-artifact-1.txt",
 		"/mnt/storage/push-artifact-2.txt",
-		"/mnt/storage/push-artifact-3.txt",
-	}
-
-	contents := []string{
-		"Push test artifact 1 created at " + timeStamp.String(),
-		"Push test artifact 2 created at " + timeStamp.String(),
-		"Push test artifact 3 created at " + timeStamp.String(),
 	}
 
 	for i, file := range artifactPaths {
-		err := os.WriteFile(file, []byte(contents[i]), 0644)
+		err := createFileOfSize(file, fmt.Sprintf("Push test artifact %d", i+1))
 		if err != nil {
 			log.Panicf("Failed to create artifact %d: %v", i+1, err)
 		}
