@@ -434,8 +434,16 @@ func CreatePullTag(registryMap map[string]RegistryConfig, registryType string, s
 		// Check if the tag already exists in the registry
 		args = []string{"pull", registryName, "--output", pullArtifactPath}
 		if _, err := executeCmdWithRetry(args); err == nil {
-			log.Printf("Pull tag %s for %s already exists, skipping creation.", pullTag, registryType)
-			return
+			// Check the size of the existing artifact
+			existingSizeMB, err := getFileSizeMB(pullArtifactPath)
+			if err == nil {
+				targetFileSizeMB := float64(targetFileSize) / float64(1024*1024)
+				if math.Abs(existingSizeMB-targetFileSizeMB) < 0.01 {
+					log.Printf("Pull tag %s for %s already exists with size %.2f MB, skipping creation.", pullTag, registryType, existingSizeMB)
+					return
+				}
+				log.Printf("Pull tag %s for %s already exists with size %.2f MB (!= %.2f MB), trying to push new version...", pullTag, registryType, existingSizeMB, targetFileSizeMB)
+			}
 		}
 	}
 
