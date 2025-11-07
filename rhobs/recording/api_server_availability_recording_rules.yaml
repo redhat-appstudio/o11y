@@ -26,17 +26,3 @@ spec:
             <= bool 5
           labels:
             service: api-server
-
-        - record: api_server_error_rate_5m
-          expr: |
-            sum by(source_cluster) (
-              code:apiserver_request_total:rate5m{code=~"5..|4.."}
-            )
-
-        - record: api_server_error_rate_30d_avg
-          expr: |
-            avg_over_time(api_server_error_rate_5m[30d])
-
-        - record: api_server_error_rate_30d_stddev
-          expr: |
-            stddev_over_time(api_server_error_rate_5m[30d])
