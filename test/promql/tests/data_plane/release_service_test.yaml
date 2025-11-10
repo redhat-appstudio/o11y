@@ -34,7 +34,7 @@ tests:
               team: release
 
   - name: ReleaseServiceAlertOnValidationSLOFailure
-    interval: 1m
+    interval: 10m
     input_series:
       - series: 'release_validation_duration_seconds_bucket{le="5", job="release", namespace="foo", source_cluster="cluster01"}'
         values: '1+8x59'
@@ -63,7 +63,7 @@ tests:
               team: release
 
   - name: ReleaseServiceControllerAvailabilityAlertOnBelowOf99SLOFailure
-    interval: 1m
+    interval: 10m
     input_series:
       - series: 'kube_pod_container_status_ready{namespace="release-service", container="manager", source_cluster="stone-prd-rh01"}'
         values: '1x59'
