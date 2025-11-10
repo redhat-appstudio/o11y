@@ -1,0 +1,835 @@
+iapiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-konflux-probes-infra
+  labels:
+    grafana_dashboard: "true"
+  annotations:
+    grafana-folder: /grafana-dashboard-definitions/RHTAP
+data:
+  konflux-probes-infra.json: |-
+    {
+      "annotations": {
+        "list": [
+          {
+            "builtIn": 1,
+            "datasource": {
+              "type": "grafana",
+              "uid": "-- Grafana --"
+            },
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "type": "dashboard"
+          }
+        ]
+      },
+      "description": "Blackbox Exporter Probes",
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 0,
+      "id": 1092282,
+      "links": [],
+      "panels": [
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          },
+          "id": 11,
+          "panels": [],
+          "title": "Probe Overview",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Number of selected probes per cluster by probe group",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "fixedColor": "blue",
+                "mode": "fixed"
+              },
+              "fieldMinMax": false,
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "transparent"
+                  },
+                  {
+                    "color": "blue",
+                    "value": 0
+                  }
+                ]
+              },
+              "unit": "string"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 13,
+            "w": 7,
+            "x": 0,
+            "y": 1
+          },
+          "id": 10,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "horizontal",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "value_and_name",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "count by (job,source_cluster) (probe_success{source_cluster=~\"$cluster\",target=~\"$target\",job=~\"$probe\"})",
+              "legendFormat": "{{job}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Probe Count",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "VPN Probe Status",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "axisPlacement": "auto",
+                "fillOpacity": 70,
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineWidth": 0,
+                "spanNulls": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red"
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 13,
+            "w": 17,
+            "x": 7,
+            "y": 1
+          },
+          "id": 4,
+          "options": {
+            "alignValue": "left",
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "mergeValues": true,
+            "rowHeight": 0.9,
+            "showValue": "auto",
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "probe_success{source_cluster=~\"$cluster\",job=~\".*-vpn\",target=~\"$target\"}",
+              "legendFormat": "{{target}} {{instance}} {{source_cluster}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "VPN Probe Status",
+          "type": "state-timeline"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Last status by group of probes",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "left",
+                "cellOptions": {
+                  "mode": "gradient",
+                  "type": "color-background"
+                },
+                "filterable": false,
+                "inspect": false
+              },
+              "fieldMinMax": false,
+              "mappings": [
+                {
+                  "options": {
+                    "1": {
+                      "color": "light-green",
+                      "index": 0,
+                      "text": "Up"
+                    }
+                  },
+                  "type": "value"
+                },
+                {
+                  "options": {
+                    "from": 0,
+                    "result": {
+                      "color": "red",
+                      "index": 1,
+                      "text": "Down"
+                    },
+                    "to": 1
+                  },
+                  "type": "range"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "transparent"
+                  },
+                  {
+                    "color": "red",
+                    "value": 0
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "string"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 13,
+            "w": 7,
+            "x": 0,
+            "y": 14
+          },
+          "id": 6,
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "enablePagination": false,
+              "fields": "",
+              "reducer": [
+                "sum"
+              ],
+              "show": false
+            },
+            "frameIndex": 2,
+            "showHeader": true
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum by (job,source_cluster) (probe_success{source_cluster=~\"$cluster\",target=~\"$target\",job=~\"$probe\"}) / count by (job,source_cluster) (probe_success{source_cluster=~\"$cluster\",target=~\"$target\",job=~\"$probe\"})",
+              "legendFormat": "{{source_cluster}} {{job}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Probe Group Status",
+          "transformations": [
+            {
+              "id": "reduce",
+              "options": {
+                "includeTimeField": false,
+                "labelsToFields": false,
+                "mode": "seriesToRows",
+                "reducers": [
+                  "last"
+                ]
+              }
+            }
+          ],
+          "type": "table"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Probe status to static hosts",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "axisPlacement": "auto",
+                "fillOpacity": 70,
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineWidth": 0,
+                "spanNulls": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red"
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 13,
+            "w": 17,
+            "x": 7,
+            "y": 14
+          },
+          "id": 2,
+          "options": {
+            "alignValue": "left",
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "mergeValues": true,
+            "rowHeight": 0.9,
+            "showValue": "auto",
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "probe_success{source_cluster=~\"$cluster\",target=~\"$target\",job=~\".*-static-host\"}",
+              "legendFormat": "{{target}} {{source_cluster}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Static Host  Status",
+          "type": "state-timeline"
+        },
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 27
+          },
+          "id": 12,
+          "panels": [],
+          "title": "Probe Duration",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Top 5 highest probe duration in seconds",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "fixedColor": "light-blue",
+                "mode": "thresholds"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "left",
+                "axisSoftMax": 4,
+                "fillOpacity": 74,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineWidth": 1,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "blue"
+                  },
+                  {
+                    "color": "red",
+                    "value": 5
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 13,
+            "w": 24,
+            "x": 0,
+            "y": 28
+          },
+          "id": 7,
+          "options": {
+            "barRadius": 0,
+            "barWidth": 0.86,
+            "fullHighlight": false,
+            "groupWidth": 0.7,
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "right",
+              "showLegend": false
+            },
+            "orientation": "horizontal",
+            "showValue": "always",
+            "stacking": "none",
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            },
+            "xField": "Field",
+            "xTickLabelRotation": 0,
+            "xTickLabelSpacing": 200
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sort_desc(topk(5, avg_over_time(probe_duration_seconds{source_cluster=~\"$cluster\",job=~\"$probe\",target=~\"$target\"}[10m])))",
+              "hide": false,
+              "legendFormat": " {{source_cluster}} {{target}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Highest Probe Duration",
+          "transformations": [
+            {
+              "id": "reduce",
+              "options": {
+                "labelsToFields": false,
+                "reducers": [
+                  "max"
+                ]
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "fields": {},
+                "sort": [
+                  {
+                    "desc": true,
+                    "field": "Max"
+                  }
+                ]
+              }
+            }
+          ],
+          "type": "barchart"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Probe total duration in seconds",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 24,
+            "x": 0,
+            "y": 41
+          },
+          "id": 3,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "probe_duration_seconds{source_cluster=~\"$cluster\",target=~\"$target\",job=~\"$probe\"}",
+              "legendFormat": " {{source_cluster}} {{target}} {{instance}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Probe Duration",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "ICMP Probe RTT phase Duration in seconds",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 24,
+            "x": 0,
+            "y": 48
+          },
+          "id": 9,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "probe_icmp_duration_seconds{source_cluster=~\"$cluster\",target=~\"$target\",job=~\"$probe\",phase=\"rtt\"}",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "{{job}} {{target}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Probe ICMP RTT Duration",
+          "type": "timeseries"
+        }
+      ],
+      "preload": false,
+      "schemaVersion": 41,
+      "tags": [],
+      "templating": {
+        "list": [
+          {
+            "current": {
+              "text": "rhtap-observatorium-stage",
+              "value": "PDCCF087A30F0737B"
+            },
+            "name": "datasource",
+            "options": [],
+            "query": "prometheus",
+            "refresh": 1,
+            "regex": "/^rhtap/",
+            "type": "datasource"
+          },
+          {
+            "current": {
+              "text": [
+                "stone-stg-rh01"
+              ],
+              "value": [
+                "stone-stg-rh01"
+              ]
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${datasource}"
+            },
+            "definition": "label_values(probe_success{job=~\"ibm-.*\"},source_cluster)",
+            "description": "Select cluster",
+            "includeAll": false,
+            "name": "cluster",
+            "options": [],
+            "query": {
+              "qryType": 1,
+              "query": "label_values(probe_success{job=~\"ibm-.*\"},source_cluster)",
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "refresh": 1,
+            "regex": "",
+            "type": "query"
+          },
+          {
+            "current": {
+              "text": "All",
+              "value": "$__all"
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${datasource}"
+            },
+            "definition": "label_values(probe_success{source_cluster=~\"$cluster\"},job)",
+            "description": "Select probe group",
+            "includeAll": true,
+            "label": "probe",
+            "multi": true,
+            "name": "probe",
+            "options": [],
+            "query": {
+              "qryType": 1,
+              "query": "label_values(probe_success{source_cluster=~\"$cluster\"},job)",
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "refresh": 1,
+            "regex": "/.*ibm.*/",
+            "type": "query"
+          },
+          {
+            "current": {
+              "text": [
+                "All"
+              ],
+              "value": [
+                "$__all"
+              ]
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${datasource}"
+            },
+            "definition": "label_values(probe_success{job=~\"$probe\"},target)",
+            "description": "Select resource",
+            "includeAll": true,
+            "multi": true,
+            "name": "target",
+            "options": [],
+            "query": {
+              "qryType": 1,
+              "query": "label_values(probe_success{job=~\"$probe\"},target)",
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "refresh": 1,
+            "regex": "",
+            "type": "query"
+          }
+        ]
+      },
+      "time": {
+        "from": "now-1h",
+        "to": "now"
+      },
+      "timepicker": {},
+      "timezone": "UTC",
+      "title": "Konflux Infra Probes",
+      "uid": "bf2bdj9lq9uncf",
+      "version": 59
+    }
