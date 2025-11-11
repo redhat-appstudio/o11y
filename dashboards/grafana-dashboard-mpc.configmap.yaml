@@ -200,14 +200,11 @@ data:
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
+                    "color": "red"
                   }
                 ]
-              }
+              },
+              "unit": "percent"
             },
             "overrides": []
           },
@@ -250,7 +247,7 @@ data:
                 "uid": "P22466E8E7855F1E0"
               },
               "editorMode": "code",
-              "expr": "count(multi_platform_controller_available{source_cluster=~\"$cluster\", check=~\"$platform\"} == 0) by (check)",
+              "expr": "(\n  sum by (platform) (increase(multi_platform_controller_provisioning_successes{source_cluster=~\"$cluster\", platform=~\"$platform\"}[15m]))\n/ \n(\n  sum by (platform) (increase(multi_platform_controller_provisioning_successes{source_cluster=~\"$cluster\", platform=~\"$platform\"}[15m]))\n  +\n  sum by (platform) (increase(multi_platform_controller_provisioning_failures{source_cluster=~\"$cluster\", platform=~\"$platform\"}[15m]))\n)\n) * 100 < 50",
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
