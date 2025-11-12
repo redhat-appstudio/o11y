@@ -35,7 +35,7 @@ RUN curl -LO "https://github.com/oras-project/oras/releases/download/v1.3.0/oras
     && mkdir -p /tmp/oras-install/ \
     && tar -zxf oras_1.3.0_linux_amd64.tar.gz -C /tmp/oras-install/
 
-FROM registry.access.redhat.com/ubi9-micro@sha256:11e2cc207dc895c0cce721e556e38b8ad5e6e29a983fd57fe9d4aebf0840a502
+FROM registry.access.redhat.com/ubi9-micro@sha256:e14a8cbcaa0c26b77140ac85d40a47b5e910a4068686b02ebcad72126e9b5f86
 
 # Copy all compiled binaries from the builder stage to the final image.
 COPY --from=builder /tmp/built_exporters/* /tmp/oras-install/oras /bin/
