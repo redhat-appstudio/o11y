@@ -1,0 +1,29 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.pipelineruns_increase.yaml
+
+tests:
+
+  - interval: 1m
+    input_series:
+
+      - series: 'pipelinerun_duration_scheduled_seconds_count{source_cluster="cluster01",namespace="webapp-tenant"}'
+        values: '1000+12x210'
+
+    alert_rule_test:
+      # Evaluate at 205m (180m for 3h window + 25m )
+      - eval_time: 205m
+        alertname: PipelineRunsIncrease
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              source_cluster: cluster01
+              namespace: webapp-tenant
+            exp_annotations:
+              summary: >-
+                Increase number of Tekton pipelineruns in one namespace.
+              description: >-
+                Increase number of Tekton pipelineruns in one namespace in cluster01.
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
