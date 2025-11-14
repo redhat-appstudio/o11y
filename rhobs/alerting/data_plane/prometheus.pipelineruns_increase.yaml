@@ -1,0 +1,25 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-pipelineruns-increase-alerting
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: pipelineruns_increase_alerts
+      interval: 30m
+      rules:
+
+      - alert: PipelineRunsIncrease
+        expr: |
+          sum by (source_cluster,namespace) (increase(pipelinerun_duration_scheduled_seconds_count{namespace=~".*-tenant"}[3h])) > 2000
+        for: 25m
+        labels:
+          severity: high
+        annotations:
+          summary: >-
+             Increase number of Tekton pipelineruns in one namespace.
+          description: >-
+             Increase number of Tekton pipelineruns in one namespace in {{ $labels.source_cluster }}.
+          alert_team_handle: <!subteam^S04PYECHCCU>
+          team: pipelines
