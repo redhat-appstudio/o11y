@@ -14,6 +14,10 @@ spec:
     - record: rate_of_release_pre_processing_duration_seconds_shorter_than_10s_per_10m
       expr: sum by (job,source_cluster) (rate(release_pre_processing_duration_seconds_bucket{le="10"}[10m]))
 
+    # preprocessing for more than 60 seconds
+    - record: rate_of_release_pre_processing_duration_seconds_shorter_than_60s_per_10m
+      expr: sum by (job,source_cluster) (rate(release_pre_processing_duration_seconds_bucket{le="60"}[10m]))
+
     - record: rate_of_release_pre_processing_duration_seconds_counter_per_10m
       expr: sum by (job,source_cluster) (rate(release_pre_processing_duration_seconds_count[10m]) > 0)
 
@@ -45,7 +49,7 @@ spec:
     - alert: ReleaseServicePreProcessingDurationSeconds
       expr: |
         (
-          rate_of_release_pre_processing_duration_seconds_shorter_than_10s_per_10m / rate_of_release_pre_processing_duration_seconds_counter_per_10m
+          rate_of_release_pre_processing_duration_seconds_shorter_than_60s_per_10m / rate_of_release_pre_processing_duration_seconds_counter_per_10m
         ) < 0.90
       for: 15m
       labels:
