@@ -1,0 +1,118 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-worker-node-usage-alerting-rules
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: worker_node_usage_alerts
+    interval: 1m
+    rules:
+    
+    # Static vs Dynamic Usage Analysis
+    - alert: WorkerNodeHighStaticUsage
+      expr: |
+        (
+          (node_memory_MemTotal_bytes - kube_node_status_allocatable{resource="memory"}) / 
+          node_memory_MemTotal_bytes
+        ) * 100 > 20
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: >-
+          Worker node {{ $labels.node }} has high static memory usage
+        description: >-
+          Worker node {{ $labels.node }} in cluster {{ $labels.source_cluster }} 
+          has {{ $value }}% static memory usage (system reserved).
+        alert_routing_key: perfandscale
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rule-WorkerNodeHighStaticUsage.md
+
+    - alert: WorkerNodeResourceAllocationInefficiency
+      expr: |
+        (
+          sum by (node, source_cluster) (kube_pod_container_resource_requests{resource="memory"}) / 
+          kube_node_status_allocatable{resource="memory"}
+        ) * 100 > 90
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: >-
+          Worker node {{ $labels.node }} has high resource allocation
+        description: >-
+          Worker node {{ $labels.node }} in cluster {{ $labels.source_cluster }} 
+          has {{ $value }}% of allocatable memory requested by pods.
+        alert_routing_key: perfandscale
+
+    - alert: WorkerNodeResourceWaste
+      expr: |
+        (
+          sum by (node, source_cluster) (
+            kube_pod_container_resource_requests{resource="memory"} - 
+            container_memory_usage_bytes{container!="POD",container!=""}
+          ) / 
+          sum by (node, source_cluster) (kube_pod_container_resource_requests{resource="memory"})
+        ) * 100 > 50
+      for: 30m
+      labels:
+        severity: warning
+      annotations:
+        summary: >-
+          Worker node {{ $labels.node }} has significant resource waste
+        description: >-
+          Worker node {{ $labels.node }} in cluster {{ $labels.source_cluster }} 
+          has {{ $value }}% memory waste (requests vs actual usage).
+        alert_routing_key: perfandscale
+
+    - alert: WorkerNodeDynamicUsageSpike
+      expr: |
+        (
+          (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / 
+          node_memory_MemTotal_bytes
+        ) * 100 > 85
+      for: 5m
+      labels:
+        severity: warning
+      annotations:
+        summary: >-
+          Worker node {{ $labels.instance }} has high dynamic memory usage
+        description: >-
+          Worker node {{ $labels.instance }} in cluster {{ $labels.source_cluster }} 
+          has {{ $value }}% dynamic memory usage.
+        alert_routing_key: perfandscale
+
+    - alert: WorkerNodeResourceFragmentation
+      expr: |
+        (
+          kube_node_status_allocatable{resource="memory"} - 
+          sum by (node, source_cluster) (kube_pod_container_resource_requests{resource="memory"})
+        ) < 1024 * 1024 * 1024  # Less than 1GB free
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: >-
+          Worker node {{ $labels.node }} has low available memory for new pods
+        description: >-
+          Worker node {{ $labels.node }} in cluster {{ $labels.source_cluster }} 
+          has less than 1GB allocatable memory remaining.
+        alert_routing_key: perfandscale
+
+    - alert: WorkerNodeStaticVsDynamicRatio
+      expr: |
+        (
+          (node_memory_MemTotal_bytes - kube_node_status_allocatable{resource="memory"}) / 
+          (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes)
+        ) > 0.3
+      for: 15m
+      labels:
+        severity: info
+      annotations:
+        summary: >-
+          Worker node {{ $labels.node }} has high static vs dynamic ratio
+        description: >-
+          Worker node {{ $labels.node }} in cluster {{ $labels.source_cluster }} 
+          has {{ $value }} ratio of static to dynamic memory usage.
+        alert_routing_key: perfandscale
