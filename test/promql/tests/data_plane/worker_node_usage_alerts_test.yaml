@@ -1,0 +1,49 @@
+rule_files:
+  - "prometheus.worker_node_usage_alerts.yaml"
+
+evaluation_interval: 1m
+
+tests:
+  - interval: 1m
+    description: "Worker node CPU utilization alert fires when utilization > 0.85 for 5m"
+    input_series:
+      - series: 'node:node_cpu_utilization:avg1m{instance="node-1"} 0.70 @0m 0.86 @1m 0.86 @2m 0.86 @3m 0.86 @4m 0.86 @5m'
+      - series: 'node:node_cpu_utilization:avg1m{instance="node-2"} 0.40 @0m 0.45 @6m'
+    exp_alerts:
+      - exp_labels:
+          alertname: "WorkerNodeHighCPUUsage"
+          instance: "node-1"
+          severity: "critical"
+        exp_alert_count: 1
+
+  - interval: 1m
+    description: "Worker node memory utilization alert fires when utilization > 0.90 for 10m"
+    input_series:
+      - series: 'node:node_memory_utilization:ratio{instance="node-1"} 0.85 @0m 0.92 @1m 0.92 @2m 0.92 @3m 0.92 @4m 0.92 @5m 0.92 @6m 0.92 @7m 0.92 @8m 0.92 @9m 0.92 @10m'
+      - series: 'node:node_memory_utilization:ratio{instance="node-2"} 0.60 @0m 0.65 @11m'
+    exp_alerts:
+      - exp_labels:
+          alertname: "WorkerNodeHighMemoryUsage"
+          instance: "node-1"
+          severity: "critical"
+        exp_alert_count: 1
+
+  - interval: 1m
+    description: "Worker node disk utilization alert fires when utilization > 0.95 for 15m"
+    input_series:
+      - series: 'node_filesystem_usage_ratio{instance="node-3",mountpoint="/"} 0.50 @0m 0.96 @1m 0.96 @2m 0.96 @3m 0.96 @4m 0.96 @5m 0.96 @6m 0.96 @7m 0.96 @8m 0.96 @9m 0.96 @10m 0.96 @11m 0.96 @12m 0.96 @13m 0.96 @14m 0.96 @15m'
+      - series: 'node_filesystem_usage_ratio{instance="node-4",mountpoint="/"} 0.20 @0m 0.25 @16m'
+    exp_alerts:
+      - exp_labels:
+          alertname: "WorkerNodeHighDiskUsage"
+          instance: "node-3"
+          severity: "critical"
+        exp_alert_count: 1
+
+  - interval: 1m
+    description: "No alerts when all metrics stay below thresholds"
+    input_series:
+      - series: 'node:node_cpu_utilization:avg1m{instance="node-1"} 0.40 @0m 0.50 @5m'
+      - series: 'node:node_memory_utilization:ratio{instance="node-1"} 0.50 @0m 0.55 @5m'
+      - series: 'node_filesystem_usage_ratio{instance="node-3",mountpoint="/"} 0.40 @0m 0.45 @5m'
+    exp_alerts: []
