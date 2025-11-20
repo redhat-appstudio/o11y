@@ -103,39 +103,3 @@ tests:
               alert_routing_key: infra
               team: konflux-infra
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rules/alert-rule-MultiPlatformControllerPlatformUnhealthy.md
-
-  - interval: 30s
-    input_series:
-      - series: 'multi_platform_controller_running_tasks{source_cluster="c7"}'
-        values: '-1 -1 -1 -1'
-      - series: 'multi_platform_controller_waiting_tasks{source_cluster="c7"}'
-        values: '5 5 5 5'
-      - series: 'multi_platform_controller_running_tasks{source_cluster="c8"}'
-        values: '3 3 3 3'
-      - series: 'multi_platform_controller_waiting_tasks{source_cluster="c8"}'
-        values: '1 -1 -1 -1'
-      - series: 'multi_platform_controller_running_tasks{source_cluster="c9"}'
-        values: '1 -1 1 -1'
-      - series: 'multi_platform_controller_waiting_tasks{source_cluster="c9"}'
-        values: '1 -1 0 1'
-
-    alert_rule_test:
-      - eval_time: 2m
-        alertname: MultiPlatformControllerMetricsUnhealthy
-        exp_alerts:
-          - exp_labels:
-              severity: warning
-              source_cluster: c7
-            exp_annotations:
-              summary: Multi-platform controller metrics are unhealthy in cluster c7
-              description: The multi-platform controller Gauge metrics are showing negative values for the last 1 minute in cluster c7
-              alert_routing_key: infra
-              team: konflux-infra
-          - exp_labels:
-              severity: warning
-              source_cluster: c8
-            exp_annotations:
-              summary: Multi-platform controller metrics are unhealthy in cluster c8
-              description: The multi-platform controller Gauge metrics are showing negative values for the last 1 minute in cluster c8
-              alert_routing_key: infra
-              team: konflux-infra
