@@ -138,4 +138,4 @@ The exporter can be run with the following commands:
 1. Build the exporter image locally by running:
     - `podman build . -t quay-exporter`
 1. Run the image locally
-    - `podman run -it -p 9101:9101 -e=DOCKER_CONFIG="/.docker/" -e=QUAY_URL=${QUAY_URL} -v ${PATH_TO_CONFIG}:/.docker/config.json -v ${PATH_TO_TEST_DIR}:/mnt/storage localhost/quay-exporter registryexporter`
+    - `podman run -it -p 9101:9101 -e=DOCKER_CONFIG="/.docker/" -e=QUAY_URL=${QUAY_URL} -e=NODE_NAME="test_node" -v ${PATH_TO_CONFIG}:/.docker/config.json -v ${PATH_TO_TEST_DIR}:/mnt/storage localhost/quay-exporter registryexporter`
