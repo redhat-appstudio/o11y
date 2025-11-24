@@ -28,6 +28,14 @@ const (
 	// Label filters for different test types
 	containerLabelFilter = "'nodejs-devfile-sample%%'"
 	rpmLabelFilter       = "'libecpg%%'"
+	// Additional WHERE conditions for container test types
+	containerSingleArchAdditionalConditions = `
+			AND (label_values->>'__parameters_options_PipelineRepoTemplatingSourceDir' IS NULL 
+				OR label_values->>'__parameters_options_PipelineRepoTemplatingSourceDir' = '' 
+				OR label_values->>'__parameters_options_PipelineRepoTemplatingSourceDir' = 'nodejs-devfile-sample-test/' 
+				OR label_values->>'__parameters_options_PipelineRepoTemplatingSourceDir' = 'nodejs-devfile-sample-SingleArch/')`
+	containerMultiArchAdditionalConditions = `
+			AND label_values->>'__parameters_options_PipelineRepoTemplatingSourceDir' = 'nodejs-devfile-sample-MultiArch/'`
 	// Query templates
 	rowCountQueryTemplate = `
 		SELECT COUNT(*)
@@ -36,7 +44,8 @@ const (
 			label_values->>'.metadata.env.MEMBER_CLUSTER' LIKE $1
 			AND horreum_testid = 372
 			-- This limits the results to e2e test results
-			AND label_values->>'.repo_type' LIKE %s;
+			AND label_values->>'.repo_type' LIKE %s
+			%s;
 	`
 	delayCheckQueryTemplate = `
 		SELECT
@@ -49,6 +58,7 @@ const (
 			AND horreum_testid = 372
 			-- This limits the results to e2e test results
 			AND label_values->>'.repo_type' LIKE %s
+			%s
 		ORDER BY
 			EXTRACT(epoch FROM start) DESC
 		LIMIT 1
@@ -63,6 +73,7 @@ const (
 			AND horreum_testid = 372
 			-- This limits the results to e2e test results
 			AND label_values->>'.repo_type' LIKE %s
+			%s
 		ORDER BY
 			EXTRACT(epoch FROM start) DESC
 		LIMIT $2;
@@ -98,8 +109,8 @@ var (
 
 	// Test type configurations
 	testTypes = map[string]TestType{
-		"container": {
-			Name: "container",
+		"container-single-arch": {
+			Name: "container-single-arch",
 			Clusters: []string{
 				// Private Clusters
 				"stone-stage-p01",
@@ -115,9 +126,22 @@ var (
 				// Fedora Clusters
 				"kfluxfedorap01",
 			},
-			RowCountQuery:   fmt.Sprintf(rowCountQueryTemplate, tableName, containerLabelFilter),
-			DelayCheckQuery: fmt.Sprintf(delayCheckQueryTemplate, tableName, containerLabelFilter),
-			DataQuery:       fmt.Sprintf(dataQueryTemplate, tableName, containerLabelFilter),
+			RowCountQuery:   fmt.Sprintf(rowCountQueryTemplate, tableName, containerLabelFilter, containerSingleArchAdditionalConditions),
+			DelayCheckQuery: fmt.Sprintf(delayCheckQueryTemplate, tableName, containerLabelFilter, containerSingleArchAdditionalConditions),
+			DataQuery:       fmt.Sprintf(dataQueryTemplate, tableName, containerLabelFilter, containerSingleArchAdditionalConditions),
+		},
+		"container-multi-arch": {
+			Name: "container-multi-arch",
+			Clusters: []string{
+				// Private Clusters
+				"stone-stage-p01",
+				// Public Clusters
+				"stone-stg-rh01",
+				// Fedora Clusters
+			},
+			RowCountQuery:   fmt.Sprintf(rowCountQueryTemplate, tableName, containerLabelFilter, containerMultiArchAdditionalConditions),
+			DelayCheckQuery: fmt.Sprintf(delayCheckQueryTemplate, tableName, containerLabelFilter, containerMultiArchAdditionalConditions),
+			DataQuery:       fmt.Sprintf(dataQueryTemplate, tableName, containerLabelFilter, containerMultiArchAdditionalConditions),
 		},
 		"rpm": {
 			Name: "rpm",
@@ -130,9 +154,9 @@ var (
 				// Fedora Clusters
 				"kfluxfedorap01",
 			},
-			RowCountQuery:   fmt.Sprintf(rowCountQueryTemplate, tableName, rpmLabelFilter),
-			DelayCheckQuery: fmt.Sprintf(delayCheckQueryTemplate, tableName, rpmLabelFilter),
-			DataQuery:       fmt.Sprintf(dataQueryTemplate, tableName, rpmLabelFilter),
+			RowCountQuery:   fmt.Sprintf(rowCountQueryTemplate, tableName, rpmLabelFilter, ""),
+			DelayCheckQuery: fmt.Sprintf(delayCheckQueryTemplate, tableName, rpmLabelFilter, ""),
+			DataQuery:       fmt.Sprintf(dataQueryTemplate, tableName, rpmLabelFilter, ""),
 		},
 	}
 )

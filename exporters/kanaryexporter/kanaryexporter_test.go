@@ -63,7 +63,7 @@ func TestIsKanaryAlive(t *testing.T) {
 
 func TestSetDataBaseErrorState(t *testing.T) {
 	cluster := "test-cluster"
-	testType := "container"
+	testType := "container-single-arch"
 
 	// Reset metrics before test
 	kanaryUpMetric.Reset()
@@ -87,7 +87,7 @@ func TestSetDataBaseErrorState(t *testing.T) {
 
 func TestSetNoTestResultsErrorState(t *testing.T) {
 	cluster := "test-cluster"
-	testType := "container"
+	testType := "container-single-arch"
 
 	// Reset metrics before test
 	kanaryUpMetric.Reset()
@@ -111,7 +111,7 @@ func TestSetNoTestResultsErrorState(t *testing.T) {
 
 func TestSetKanaryUpState(t *testing.T) {
 	cluster := "test-cluster"
-	testType := "container"
+	testType := "container-single-arch"
 
 	// Reset metrics before test
 	kanaryUpMetric.Reset()
@@ -135,7 +135,7 @@ func TestSetKanaryUpState(t *testing.T) {
 
 func TestSetKanaryDownState(t *testing.T) {
 	cluster := "test-cluster"
-	testType := "container"
+	testType := "container-single-arch"
 
 	// Reset metrics before test
 	kanaryUpMetric.Reset()
@@ -165,7 +165,7 @@ func TestGetTestErrorCounts(t *testing.T) {
 	defer db.Close()
 
 	cluster := "test-cluster"
-	dataQuery := testTypes["container"].DataQuery
+	dataQuery := testTypes["container-single-arch"].DataQuery
 	queryRegex := regexp.QuoteMeta(dataQuery)
 
 	testCases := []struct {
@@ -261,7 +261,7 @@ func TestCheckSufficientTests(t *testing.T) {
 	defer db.Close()
 
 	cluster := "test-cluster"
-	rowCountQuery := testTypes["container"].RowCountQuery
+	rowCountQuery := testTypes["container-single-arch"].RowCountQuery
 	rowCountQueryRegex := regexp.QuoteMeta(rowCountQuery)
 
 	testCases := []struct {
@@ -333,7 +333,7 @@ func TestCheckLatestTestIsRecent(t *testing.T) {
 	defer db.Close()
 
 	cluster := "test-cluster"
-	delayCheckQuery := testTypes["container"].DelayCheckQuery
+	delayCheckQuery := testTypes["container-single-arch"].DelayCheckQuery
 	delayCheckQueryRegex := regexp.QuoteMeta(delayCheckQuery)
 	epochNow := time.Now().Unix()
 	tolerance := int64(3600) // 1 hour
