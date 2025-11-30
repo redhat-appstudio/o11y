@@ -50,7 +50,7 @@ data:
             "type": "prometheus",
             "uid": "P22466E8E7855F1E0"
           },
-          "description": "",
+          "description": "the current phase of all the pods in the \"multi-platform-controller\" namespace in the chosen clusters",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -74,7 +74,7 @@ data:
             "x": 0,
             "y": 1
           },
-          "id": 34,
+          "id": 45,
           "options": {
             "displayMode": "lcd",
             "legend": {
@@ -121,11 +121,44 @@ data:
             "type": "prometheus",
             "uid": "P22466E8E7855F1E0"
           },
-          "description": "",
+          "description": "the number of MPC's controller pods that are not in the \"Running\" phase for each cluster (should be 0).",
           "fieldConfig": {
             "defaults": {
               "color": {
-                "mode": "thresholds"
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
               },
               "mappings": [],
               "thresholds": {
@@ -151,21 +184,17 @@ data:
           },
           "id": 29,
           "options": {
-            "colorMode": "value",
-            "graphMode": "area",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "percentChangeColorMode": "standard",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
             },
-            "showPercentChange": false,
-            "textMode": "auto",
-            "wideLayout": true
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
           },
           "pluginVersion": "11.6.3",
           "targets": [
@@ -175,14 +204,14 @@ data:
                 "uid": "P22466E8E7855F1E0"
               },
               "editorMode": "code",
-              "expr": "sum(kube_deployment_spec_replicas{namespace=\"multi-platform-controller\", source_cluster=~\"$cluster\"} != kube_deployment_status_replicas_ready{namespace=\"multi-platform-controller\", source_cluster=~\"$cluster\"})\nby (source_cluster)",
+              "expr": "sum(kube_pod_status_phase{namespace=\"multi-platform-controller\", pod=~\"multi-platform-controller.*\", source_cluster=~\"$cluster\"})\nby (source_cluster)\n-\nsum(kube_pod_status_phase{namespace=\"multi-platform-controller\", phase=\"Running\", pod=~\"multi-platform-controller.*\", source_cluster=~\"$cluster\"})\nby (source_cluster)",
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
             }
           ],
-          "title": "Count of Unhealthy Deployments By Cluster",
-          "type": "stat"
+          "title": "Non-Running Controller Pods Per Cluster",
+          "type": "timeseries"
         },
         {
           "datasource": {
@@ -261,7 +290,7 @@ data:
             "type": "prometheus",
             "uid": "P22466E8E7855F1E0"
           },
-          "description": "The number of pods that are not in the \"Running\" phase for each cluster (should be 0).",
+          "description": "the number of MPC's OTP pods that are not in the \"Running\" phase for each cluster (should be 0).",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -570,7 +599,7 @@ data:
             "type": "prometheus",
             "uid": "P22466E8E7855F1E0"
           },
-          "description": "average per-second rate of increase or decrease in the number of running tasks over a 5-minute period.",
+          "description": "average per-minute rate of increase or decrease in the number of running tasks over a 5-minute period.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -653,7 +682,7 @@ data:
                 "uid": "P22466E8E7855F1E0"
               },
               "editorMode": "code",
-              "expr": "sum by(platform) (deriv(multi_platform_controller_running_tasks{source_cluster=~\"$cluster\", platform=~\"$platform\"}[5m]))",
+              "expr": "sum by(platform) (deriv(multi_platform_controller_running_tasks{source_cluster=~\"$cluster\", platform=~\"$platform\"}[5m])) * 60",
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
@@ -667,7 +696,7 @@ data:
             "type": "prometheus",
             "uid": "P22466E8E7855F1E0"
           },
-          "description": "",
+          "description": "the net change in the total number of running tasks across all clusters, displayed by the platform over the last 5 minutes.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -777,7 +806,7 @@ data:
             "type": "prometheus",
             "uid": "P22466E8E7855F1E0"
           },
-          "description": "the number of tasks waiting for an executor to be available to run",
+          "description": "the number of tasks waiting for an host to be available to run",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -967,7 +996,7 @@ data:
             "type": "prometheus",
             "uid": "P22466E8E7855F1E0"
           },
-          "description": "",
+          "description": "the net change in the total number of waiting tasks across all clusters, displayed by the platform over the last 5 minutes.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -2328,13 +2357,13 @@ data:
                 "uid": "P22466E8E7855F1E0"
               },
               "editorMode": "code",
-              "expr": "(\n  sum by (platform) (\n    increase(multi_platform_controller_provisioning_successes{source_cluster=~\"$cluster\", platform=~\"$platform\"}[30m])\n  )\n/\n  (\n    sum by (platform) (\n      increase(multi_platform_controller_provisioning_successes{source_cluster=~\"$cluster\", platform=~\"$platform\"}[30m])\n    )\n    +\n    sum by (platform) (\n      increase(multi_platform_controller_provisioning_failures{source_cluster=~\"$cluster\", platform=~\"$platform\"}[30m])\n    )\n  )\n)\n* 100\n> 0",
+              "expr": "(\n  sum by (platform) (\n    increase(multi_platform_controller_provisioning_successes{source_cluster=~\"$cluster\", platform=~\"$platform\"}[15m])\n  )\n/\n  (\n    sum by (platform) (\n      increase(multi_platform_controller_provisioning_successes{source_cluster=~\"$cluster\", platform=~\"$platform\"}[15m])\n    )\n    +\n    sum by (platform) (\n      increase(multi_platform_controller_provisioning_failures{source_cluster=~\"$cluster\", platform=~\"$platform\"}[15m])\n    )\n  )\n)\n* 100\n> 0",
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
             }
           ],
-          "title": "Provisioning Successes Rate Per Platform (30m Window)",
+          "title": "Provisioning Successes Rate Per Platform (15m Window)",
           "type": "gauge"
         },
         {
