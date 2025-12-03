@@ -8,17 +8,26 @@ After the exporter is terminated, cleanup is executed to delete the _unique_ tag
 
 ## Metrics Exposed
 
-The exporter exposes the following Prometheus metrics for each test type (pull, push, metadata, authentication):
+The exporter exposes the following unified Prometheus metrics for all test types (pull, push, metadata, authentication):
 
 ### Names
-- `registry_exporter_*_success`: Gauge indicating if a last test was successful (1 if successful, 0 otherwise)
-- `registry_exporter_*_error_count`: Counter for total number of errors encountered during tests for corelation with failures
-- `registry_exporter_*_duration_seconds`: Histogram of durations of operations in seconds (bucket sizes depending on the test performed)
-- `registry_exporter_*_image_size_mb`: Gauge of artifact (image) size from the registry in megabytes for relevant tests
+- `registry_exporter_success`: Gauge indicating if a last test was successful (1 if successful, 0 otherwise)
+- `registry_exporter_error_count`: Counter for total number of errors encountered during tests for correlation with failures
+- `registry_exporter_duration_seconds`: Histogram of durations of operations in seconds
+- `registry_exporter_image_size_mbytes`: Gauge of artifact (image) size from the registry in megabytes (only for pull and push tests)
 
 ### Labels
 
-All metrics include a `tested_registry` label that identifies the registry type being tested. Error count metrics additionally include an `error` label with one of the following error types:
+All metrics include the following labels:
+- `tested_registry`: Identifies the registry type being tested (e.g., "quay.io")
+- `node`: The Kubernetes node name where the exporter is running
+- `test`: The test type being performed, one of:
+  - `pull`: Pull operation test
+  - `push`: Push operation test
+  - `metadata`: Metadata (tag) operation test
+  - `authentication`: Authentication operation test
+
+Error count metrics additionally include an `error` label with one of the following error types:
 - `INVALID_REQUEST`: Malformed request (400, bad request)
 - `AUTHENTICATION`: Authentication/authorization issues (401, 403, unauthorized)
 - `NOT_FOUND`: Tag not found (404, not found)
