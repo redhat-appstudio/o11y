@@ -20,23 +20,10 @@ import (
 )
 
 type Metrics struct {
-	RegistryPullSuccess    *prometheus.GaugeVec
-	RegistryPullErrorCount *prometheus.CounterVec
-	RegistryPullDuration   *prometheus.HistogramVec
-	RegistryPullImageSize  *prometheus.GaugeVec
-
-	RegistryPushSuccess    *prometheus.GaugeVec
-	RegistryPushErrorCount *prometheus.CounterVec
-	RegistryPushDuration   *prometheus.HistogramVec
-	RegistryPushImageSize  *prometheus.GaugeVec
-
-	RegistryMetadataSuccess    *prometheus.GaugeVec
-	RegistryMetadataErrorCount *prometheus.CounterVec
-	RegistryMetadataDuration   *prometheus.HistogramVec
-
-	RegistryAuthenticationSuccess    *prometheus.GaugeVec
-	RegistryAuthenticationErrorCount *prometheus.CounterVec
-	RegistryAuthenticationDuration   *prometheus.HistogramVec
+	RegistrySuccess    *prometheus.GaugeVec
+	RegistryErrorCount *prometheus.CounterVec
+	RegistryDuration   *prometheus.HistogramVec
+	RegistryImageSize  *prometheus.GaugeVec
 }
 
 // Structures for registryMap
@@ -74,129 +61,40 @@ const targetFileSize = 10 * 1024 * 1024
 // InitMetrics initializes and registers Prometheus metrics.
 func InitMetrics(reg prometheus.Registerer, registryMap map[string]RegistryConfig) *Metrics {
 	m := &Metrics{
-		// Pull metrics
-		RegistryPullSuccess: prometheus.NewGaugeVec(
+		RegistrySuccess: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
-				Name: "registry_exporter_pull_success",
-				Help: "Gauge indicating if a pull from the registry was successful (1 if successful, 0 otherwise).",
+				Name: "registry_exporter_success",
+				Help: "Gauge indicating if a test for the registry was successful (1 if successful, 0 otherwise).",
 			},
-			[]string{"tested_registry","node"},
+			[]string{"tested_registry", "node", "type"},
 		),
-		RegistryPullErrorCount: prometheus.NewCounterVec(
+		RegistryErrorCount: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
-				Name: "registry_exporter_pull_error_count",
-				Help: "Total number of errors encountered during pulls from the registry.",
+				Name: "registry_exporter_error_count",
+				Help: "Total number of errors encountered during tests for the registry.",
 			},
-			[]string{"tested_registry","node", "error"},
+			[]string{"tested_registry", "node", "type", "error"},
 		),
-		RegistryPullDuration: prometheus.NewHistogramVec(
+		RegistryDuration: prometheus.NewHistogramVec(
 			prometheus.HistogramOpts{
-				Name:    "registry_exporter_pull_duration_seconds",
-				Help:    "Histogram of durations for pulls from the registry in seconds.",
-				Buckets: []float64{2, 3, 4, 5},
+				Name:    "registry_exporter_duration_seconds",
+				Help:    "Histogram of durations for tests for the registry in seconds.",
+				Buckets: []float64{1, 1.5, 2, 4, 6, 8, 12, 16, 24, 32},
 			},
-			[]string{"tested_registry","node"},
+			[]string{"tested_registry", "node", "type"},
 		),
-		RegistryPullImageSize: prometheus.NewGaugeVec(
+		RegistryImageSize: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
-				Name: "registry_exporter_pull_image_size_mbytes",
-				Help: "Gauge of image size for pulls from the registry in megabytes.",
+				Name: "registry_exporter_image_size_mbytes",
+				Help: "Gauge of image size for tests for the registry in megabytes.",
 			},
-			[]string{"tested_registry","node"},
+			[]string{"tested_registry", "node", "type"},
 		),
-		// Push metrics
-		RegistryPushSuccess: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "registry_exporter_push_success",
-				Help: "Gauge indicating if a push to the registry was successful (1 if successful, 0 otherwise).",
-			},
-			[]string{"tested_registry","node"},
-		),
-		RegistryPushErrorCount: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "registry_exporter_push_error_count",
-				Help: "Total number of errors encountered during pushes to the registry.",
-			},
-			[]string{"tested_registry","node", "error"},
-		),
-		RegistryPushDuration: prometheus.NewHistogramVec(
-			prometheus.HistogramOpts{
-				Name:    "registry_exporter_push_duration_seconds",
-				Help:    "Histogram of durations for pushes to the registry.",
-				Buckets: []float64{5, 6, 7, 8, 9, 10},
-			},
-			[]string{"tested_registry","node"},
-		),
-		RegistryPushImageSize: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "registry_exporter_push_image_size_mbytes",
-				Help: "Gauge of image size for pushes to the registry in megabytes.",
-			},
-			[]string{"tested_registry","node"},
-		),
-
-		// Metadata metrics
-		RegistryMetadataSuccess: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "registry_exporter_metadata_success",
-				Help: "Gauge indicating if a metadata test for the registry was successful (1 if successful, 0 otherwise).",
-			},
-			[]string{"tested_registry","node"},
-		),
-		RegistryMetadataErrorCount: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "registry_exporter_metadata_error_count",
-				Help: "Total number of errors encountered during metadata tests for the registry.",
-			},
-			[]string{"tested_registry","node", "error"},
-		),
-		RegistryMetadataDuration: prometheus.NewHistogramVec(
-			prometheus.HistogramOpts{
-				Name:    "registry_exporter_metadata_duration_seconds",
-				Help:    "Histogram of durations for metadata tests for the registry in seconds.",
-				Buckets: []float64{2, 3, 4, 5},
-			},
-			[]string{"tested_registry","node"},
-		),
-
-		// Authentication metrics
-		RegistryAuthenticationSuccess: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "registry_exporter_authentication_success",
-				Help: "Gauge indicating if an authentication test for the registry was successful (1 if successful, 0 otherwise).",
-			},
-			[]string{"tested_registry","node"},
-		),
-		RegistryAuthenticationErrorCount: prometheus.NewCounterVec(
-			prometheus.CounterOpts{
-				Name: "registry_exporter_authentication_error_count",
-				Help: "Total number of errors encountered during authentication tests for the registry.",
-			},
-			[]string{"tested_registry","node", "error"},
-		),
-		RegistryAuthenticationDuration: prometheus.NewHistogramVec(
-			prometheus.HistogramOpts{
-				Name:    "registry_exporter_authentication_duration_seconds",
-				Help:    "Histogram of durations for authentication tests for the registry in seconds.",
-				Buckets: []float64{1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5},
-			},
-			[]string{"tested_registry","node"},
-		),
-	}
-	reg.MustRegister(m.RegistryPullSuccess)
-	reg.MustRegister(m.RegistryPullErrorCount)
-	reg.MustRegister(m.RegistryPullDuration)
-	reg.MustRegister(m.RegistryPullImageSize)
-	reg.MustRegister(m.RegistryPushSuccess)
-	reg.MustRegister(m.RegistryPushErrorCount)
-	reg.MustRegister(m.RegistryPushDuration)
-	reg.MustRegister(m.RegistryPushImageSize)
-	reg.MustRegister(m.RegistryMetadataSuccess)
-	reg.MustRegister(m.RegistryMetadataErrorCount)
-	reg.MustRegister(m.RegistryMetadataDuration)
-	reg.MustRegister(m.RegistryAuthenticationSuccess)
-	reg.MustRegister(m.RegistryAuthenticationErrorCount)
-	reg.MustRegister(m.RegistryAuthenticationDuration)
+		}
+	reg.MustRegister(m.RegistrySuccess)
+	reg.MustRegister(m.RegistryErrorCount)
+	reg.MustRegister(m.RegistryDuration)
+	reg.MustRegister(m.RegistryImageSize)
 
 	return m
 }
@@ -231,36 +129,14 @@ func ExtractErrorReason(output []byte) string {
 
 // setSuccessState sets the success state for a test operation.
 func setSuccessState(metrics *Metrics, registryType string, testType string) {
-	switch testType {
-	case "pull":
-		metrics.RegistryPullSuccess.WithLabelValues(registryType,k8sNodeName).Set(1)
-	case "push":
-		metrics.RegistryPushSuccess.WithLabelValues(registryType,k8sNodeName).Set(1)
-	case "metadata":
-		metrics.RegistryMetadataSuccess.WithLabelValues(registryType,k8sNodeName).Set(1)
-	case "authentication":
-		metrics.RegistryAuthenticationSuccess.WithLabelValues(registryType,k8sNodeName).Set(1)
-	}
+	metrics.RegistrySuccess.WithLabelValues(registryType, k8sNodeName, testType).Set(1)
 }
 
 // setErrorState sets the error state for a test operation.
 func setErrorState(metrics *Metrics, registryType string, testType string, output []byte) {
 	errorType := ExtractErrorReason(output)
-
-	switch testType {
-	case "pull":
-		metrics.RegistryPullSuccess.WithLabelValues(registryType,k8sNodeName).Set(0)
-		metrics.RegistryPullErrorCount.WithLabelValues(registryType, errorType).Inc()
-	case "push":
-		metrics.RegistryPushSuccess.WithLabelValues(registryType,k8sNodeName).Set(0)
-		metrics.RegistryPushErrorCount.WithLabelValues(registryType, errorType).Inc()
-	case "metadata":
-		metrics.RegistryMetadataSuccess.WithLabelValues(registryType,k8sNodeName).Set(0)
-		metrics.RegistryMetadataErrorCount.WithLabelValues(registryType, errorType).Inc()
-	case "authentication":
-		metrics.RegistryAuthenticationSuccess.WithLabelValues(registryType,k8sNodeName).Set(0)
-		metrics.RegistryAuthenticationErrorCount.WithLabelValues(registryType, errorType).Inc()
-	}
+	metrics.RegistrySuccess.WithLabelValues(registryType, k8sNodeName, testType).Set(0)
+	metrics.RegistryErrorCount.WithLabelValues(registryType, k8sNodeName, testType, errorType).Inc()
 }
 
 // getFileSizeMB returns the size of a file in megabytes.
@@ -274,27 +150,13 @@ func getFileSizeMB(filePath string) (float64, error) {
 
 // setImageSize sets the image size for a test operation.
 func setImageSize(metrics *Metrics, registryType string, testType string, sizeMB float64) {
-	switch testType {
-	case "pull":
-		metrics.RegistryPullImageSize.WithLabelValues(registryType,k8sNodeName).Set(sizeMB)
-	case "push":
-		metrics.RegistryPushImageSize.WithLabelValues(registryType,k8sNodeName).Set(sizeMB)
-	}
+	metrics.RegistryImageSize.WithLabelValues(registryType, k8sNodeName, testType).Set(sizeMB)
 }
 
 // recordDuration records the duration of a test operation in seconds.
 func recordDuration(metrics *Metrics, registryType string, testType string, duration time.Duration) {
 	durationSeconds := duration.Seconds()
-	switch testType {
-	case "pull":
-		metrics.RegistryPullDuration.WithLabelValues(registryType,k8sNodeName).Observe(durationSeconds)
-	case "push":
-		metrics.RegistryPushDuration.WithLabelValues(registryType,k8sNodeName).Observe(durationSeconds)
-	case "metadata":
-		metrics.RegistryMetadataDuration.WithLabelValues(registryType,k8sNodeName).Observe(durationSeconds)
-	case "authentication":
-		metrics.RegistryAuthenticationDuration.WithLabelValues(registryType,k8sNodeName).Observe(durationSeconds)
-	}
+	metrics.RegistryDuration.WithLabelValues(registryType, k8sNodeName, testType).Observe(durationSeconds)
 }
 
 // createFileOfSize creates a file of the target size with a timestamp header for uniqueness.
