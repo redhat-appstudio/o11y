@@ -61,7 +61,7 @@ type AuthConfig struct {
 const maxRetries = 5
 
 // Scrape interval == Time between each test execution
-const scrapeInterval = 1 * time.Minute
+const scrapeInterval = 5 * time.Minute
 
 const pullArtifactPath = "/mnt/storage/pull-artifact.txt"
 const pullTag = ":pull"
