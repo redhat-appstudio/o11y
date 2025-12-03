@@ -66,14 +66,14 @@ func InitMetrics(reg prometheus.Registerer, registryMap map[string]RegistryConfi
 				Name: "registry_exporter_success",
 				Help: "Gauge indicating if a test for the registry was successful (1 if successful, 0 otherwise).",
 			},
-			[]string{"tested_registry", "node", "test"},
+			[]string{"tested_registry", "node", "type"},
 		),
 		RegistryErrorCount: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Name: "registry_exporter_error_count",
 				Help: "Total number of errors encountered during tests for the registry.",
 			},
-			[]string{"tested_registry", "node", "test", "error"},
+			[]string{"tested_registry", "node", "type", "error"},
 		),
 		RegistryDuration: prometheus.NewHistogramVec(
 			prometheus.HistogramOpts{
@@ -81,14 +81,14 @@ func InitMetrics(reg prometheus.Registerer, registryMap map[string]RegistryConfi
 				Help:    "Histogram of durations for tests for the registry in seconds.",
 				Buckets: []float64{1, 1.5, 2, 4, 6, 8, 12, 16, 24, 32},
 			},
-			[]string{"tested_registry", "node", "test"},
+			[]string{"tested_registry", "node", "type"},
 		),
 		RegistryImageSize: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: "registry_exporter_image_size_mbytes",
 				Help: "Gauge of image size for tests for the registry in megabytes.",
 			},
-			[]string{"tested_registry", "node", "test"},
+			[]string{"tested_registry", "node", "type"},
 		),
 		}
 	reg.MustRegister(m.RegistrySuccess)

@@ -21,7 +21,7 @@ The exporter exposes the following unified Prometheus metrics for all test types
 All metrics include the following labels:
 - `tested_registry`: Identifies the registry type being tested (e.g., "quay.io")
 - `node`: The Kubernetes node name where the exporter is running
-- `test`: The test type being performed, one of:
+- `type`: The test type being performed, one of:
   - `pull`: Pull operation test
   - `push`: Push operation test
   - `metadata`: Metadata (tag) operation test
