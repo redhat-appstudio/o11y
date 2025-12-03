@@ -1,13 +1,13 @@
-iapiVersion: v1
+apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: grafana-dashboard-konflux-probes-infra.configmap
+  name: grafana-dashboard-konflux-infra-probes.configmap
   labels:
     grafana_dashboard: "true"
   annotations:
     grafana-folder: /grafana-dashboard-definitions/RHTAP
 data:
-  konflux-probes-infra.json: |-
+  grafana-dashboard-konflux-infra-probes.json: |-
     {
       "annotations": {
         "list": [
@@ -76,8 +76,8 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 13,
-            "w": 7,
+            "h": 7,
+            "w": 5,
             "x": 0,
             "y": 1
           },
@@ -115,85 +115,6 @@ data:
           ],
           "title": "Probe Count",
           "type": "stat"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "VPN Probe Status",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "custom": {
-                "axisPlacement": "auto",
-                "fillOpacity": 70,
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineWidth": 0,
-                "spanNulls": false
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "red"
-                  },
-                  {
-                    "color": "green",
-                    "value": 1
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 13,
-            "w": 17,
-            "x": 7,
-            "y": 1
-          },
-          "id": 4,
-          "options": {
-            "alignValue": "left",
-            "legend": {
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "mergeValues": true,
-            "rowHeight": 0.9,
-            "showValue": "auto",
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "probe_success{source_cluster=~\"$cluster\",job=~\".*-vpn\",target=~\"$target\"}",
-              "legendFormat": "{{target}} {{instance}} {{source_cluster}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "VPN Probe Status",
-          "type": "state-timeline"
         },
         {
           "datasource": {
@@ -261,10 +182,10 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 13,
-            "w": 7,
-            "x": 0,
-            "y": 14
+            "h": 7,
+            "w": 19,
+            "x": 5,
+            "y": 1
           },
           "id": 6,
           "options": {
@@ -316,6 +237,85 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "description": "VPN Probe Status",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "axisPlacement": "auto",
+                "fillOpacity": 70,
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineWidth": 0,
+                "spanNulls": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red"
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 14,
+            "w": 12,
+            "x": 0,
+            "y": 8
+          },
+          "id": 4,
+          "options": {
+            "alignValue": "left",
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "mergeValues": true,
+            "rowHeight": 0.9,
+            "showValue": "auto",
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "probe_success{source_cluster=~\"$cluster\",job=~\".*-vpn\",target=~\"$target\"}",
+              "legendFormat": "{{target}} {{instance}} {{source_cluster}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "VPN Probe Status",
+          "type": "state-timeline"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
           "description": "Probe status to static hosts",
           "fieldConfig": {
             "defaults": {
@@ -351,10 +351,10 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 13,
-            "w": 17,
-            "x": 7,
-            "y": 14
+            "h": 14,
+            "w": 12,
+            "x": 12,
+            "y": 8
           },
           "id": 2,
           "options": {
@@ -396,7 +396,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 27
+            "y": 22
           },
           "id": 12,
           "panels": [],
@@ -458,7 +458,7 @@ data:
             "h": 13,
             "w": 24,
             "x": 0,
-            "y": 28
+            "y": 23
           },
           "id": 7,
           "options": {
@@ -590,7 +590,7 @@ data:
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 41
+            "y": 36
           },
           "id": 3,
           "options": {
@@ -688,7 +688,7 @@ data:
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 48
+            "y": 43
           },
           "id": 9,
           "options": {
@@ -731,8 +731,8 @@ data:
         "list": [
           {
             "current": {
-              "text": "rhtap-observatorium-stage",
-              "value": "PDCCF087A30F0737B"
+              "text": "rhtap-observatorium-production",
+              "value": "P22466E8E7855F1E0"
             },
             "name": "datasource",
             "options": [],
@@ -743,12 +743,8 @@ data:
           },
           {
             "current": {
-              "text": [
-                "stone-stg-rh01"
-              ],
-              "value": [
-                "stone-stg-rh01"
-              ]
+              "text": "kflux-ocp-p01",
+              "value": "kflux-ocp-p01"
             },
             "datasource": {
               "type": "prometheus",
@@ -771,7 +767,9 @@ data:
           {
             "current": {
               "text": "All",
-              "value": "$__all"
+              "value": [
+                "$__all"
+              ]
             },
             "datasource": {
               "type": "prometheus",
@@ -824,12 +822,12 @@ data:
         ]
       },
       "time": {
-        "from": "now-1h",
+        "from": "now-24h",
         "to": "now"
       },
       "timepicker": {},
       "timezone": "UTC",
       "title": "Konflux Infra Probes",
-      "uid": "bf2bdj9lq9uncf",
-      "version": 59
+      "uid": "pl3hdj9lq8ugct",
+      "version": 60
     }
