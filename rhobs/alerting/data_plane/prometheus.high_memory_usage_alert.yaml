@@ -14,8 +14,6 @@ spec:
         100 * ( sum by (namespace,source_cluster) (namespace_container:container_memory_working_set_bytes) (.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-templates-e2e|konflux-ci|mintmaker)"}
         / sum by (namespace,source_cluster) (namespace_memory:kube_pod_container_resource_requests:sum) (.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-templates-e2e|konflux-ci|mintmaker)"}) * 100 > 90
 
-      expr: |
-        70 * (sum by (namespace,source_cluster,pod,tenant_id)(namespace_memory:kube_pod_container_resource_limits:sum))
       for: 5m
       labels:
         severity: warning
