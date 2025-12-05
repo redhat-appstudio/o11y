@@ -1,0 +1,67 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-probe-alerting
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: probe_alerts
+      interval: 1m
+      rules:
+
+      - alert: ProbeAlert
+        expr: |
+          avg_over_time(probe_success{job!~".*-vpn|.*static-host"}[10m]) < 0.8
+        for: 10m
+        labels:
+          severity: high
+        annotations:
+          summary: >-
+             Probe alert {{ $labels.job }}.
+          description: >-
+             Probe alert instance {{ $labels.instance }} with job {{ $labels.job }} and target {{ $labels.target }} for cluster {{ $labels.source_cluster }}.
+          alert_routing_key: spreandinfra
+          slo: "false"
+
+      - alert: S390xStaticHostProbeAlert
+        expr: |
+          sum by (job,source_cluster) (probe_success{job=~".*static-host",target=~"s390x.*"}) / count by (job,source_cluster) (probe_success{job=~".*static-host",target=~"s390x.*"}) < 0.8
+        for: 10m
+        labels:
+          severity: high
+        annotations:
+          summary: >-
+             Infra S390x Static Host Probe alert {{ $labels.job }}.
+          description: >-
+             Probe alert with job {{ $labels.job }} for cluster {{ $labels.source_cluster }}.
+          alert_routing_key: spreandinfra
+          slo: "false"
+
+      - alert: PPCStaticHostProbeAlert
+        expr: |
+          sum by (job,source_cluster) (probe_success{job=~".*static-host",target=~"ppc.*"}) / count by (job,source_cluster) (probe_success{job=~".*static-host",target=~"ppc.*"}) < 0.8
+        for: 10m
+        labels:
+          severity: high
+        annotations:
+          summary: >-
+             Infra PPC Static Host Probe alert {{ $labels.job }}.
+          description: >-
+             Probe alert with job {{ $labels.job }} for cluster {{ $labels.source_cluster }}.
+          alert_routing_key: spreandinfra
+          slo: "false"
+
+      - alert: VPNProbeAlert
+        expr: |
+          sum by (job,target,source_cluster) (probe_success{job=~".*vpn"}) / count by (job,target,source_cluster) (probe_success{job=~".*vpn"}) < 0.7
+        for: 10m
+        labels:
+          severity: high
+        annotations:
+          summary: >-
+             VPN Probe alert {{ $labels.job }}.
+          description: >-
+             Probe alert with job {{ $labels.job }} and target {{ $labels.target }} for cluster {{ $labels.source_cluster }}.
+          alert_routing_key: spreandinfra
+          slo: "false"
