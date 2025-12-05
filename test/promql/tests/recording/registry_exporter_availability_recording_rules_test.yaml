@@ -1,0 +1,132 @@
+evaluation_interval: 2m
+
+rule_files:
+  - registry_exporter_availability_recording_rules.yaml
+
+tests:
+  - interval: 2m
+    name: RegistryExporterAllSuccessfulTest
+    input_series:
+      # All tests successful for quay.io on cluster1
+      - series: "registry_exporter_success{tested_registry='quay.io', node='node1', type='pull', source_cluster='cluster1'}"
+        values: "1+0x4"
+      - series: "registry_exporter_success{tested_registry='quay.io', node='node1', type='push', source_cluster='cluster1'}"
+        values: "1+0x4"
+      - series: "registry_exporter_success{tested_registry='quay.io', node='node1', type='metadata', source_cluster='cluster1'}"
+        values: "1+0x4"
+      - series: "registry_exporter_success{tested_registry='quay.io', node='node1', type='authentication', source_cluster='cluster1'}"
+        values: "1+0x4"
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 10m
+        exp_samples:
+          - labels: konflux_up{source_cluster='cluster1', check='quay.io'}
+            value: 1
+
+  - interval: 2m
+    name: RegistryExporterAllFailedTest
+    input_series:
+      # All tests failed for quay.io on cluster1
+      - series: "registry_exporter_success{tested_registry='quay.io', node='node1', type='pull', source_cluster='cluster1'}"
+        values: "0+0x4"
+      - series: "registry_exporter_success{tested_registry='quay.io', node='node1', type='push', source_cluster='cluster1'}"
+        values: "0+0x4"
+      - series: "registry_exporter_success{tested_registry='quay.io', node='node1', type='metadata', source_cluster='cluster1'}"
+        values: "0+0x4"
+      - series: "registry_exporter_success{tested_registry='quay.io', node='node1', type='authentication', source_cluster='cluster1'}"
+        values: "0+0x4"
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 10m
+        exp_samples:
+          - labels: konflux_up{source_cluster='cluster1', check='quay.io'}
+            value: 0
+
+  - interval: 2m
+    name: RegistryExporterMixedSuccessTest
+    input_series:
+      # Some tests successful, some failed - max should be 1
+      - series: "registry_exporter_success{tested_registry='quay.io', node='node1', type='pull', source_cluster='cluster1'}"
+        values: "1+0x4"
+      - series: "registry_exporter_success{tested_registry='quay.io', node='node1', type='push', source_cluster='cluster1'}"
+        values: "0+0x4"
+      - series: "registry_exporter_success{tested_registry='quay.io', node='node1', type='metadata', source_cluster='cluster1'}"
+        values: "0+0x4"
+      - series: "registry_exporter_success{tested_registry='quay.io', node='node1', type='authentication', source_cluster='cluster1'}"
+        values: "0+0x4"
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 10m
+        exp_samples:
+          - labels: konflux_up{source_cluster='cluster1', check='quay.io'}
+            value: 1
+
+  - interval: 2m
+    name: RegistryExporterMultipleRegistriesTest
+    input_series:
+      # quay.io successful
+      - series: "registry_exporter_success{tested_registry='quay.io', node='node1', type='pull', source_cluster='cluster1'}"
+        values: "1+0x4"
+      # docker.io failed
+      - series: "registry_exporter_success{tested_registry='docker.io', node='node1', type='pull', source_cluster='cluster1'}"
+        values: "0+0x4"
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 10m
+        exp_samples:
+          - labels: konflux_up{source_cluster='cluster1', check='quay.io'}
+            value: 1
+          - labels: konflux_up{source_cluster='cluster1', check='docker.io'}
+            value: 0
+
+  - interval: 2m
+    name: RegistryExporterMultipleClustersTest
+    input_series:
+      # cluster1 - quay.io successful
+      - series: "registry_exporter_success{tested_registry='quay.io', node='node1', type='pull', source_cluster='cluster1'}"
+        values: "1+0x4"
+      # cluster2 - quay.io failed
+      - series: "registry_exporter_success{tested_registry='quay.io', node='node1', type='pull', source_cluster='cluster2'}"
+        values: "0+0x4"
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 10m
+        exp_samples:
+          - labels: konflux_up{source_cluster='cluster1', check='quay.io'}
+            value: 1
+          - labels: konflux_up{source_cluster='cluster2', check='quay.io'}
+            value: 0
+
+  - interval: 2m
+    name: RegistryExporterMultipleNodesTest
+    input_series:
+      # Multiple nodes, same cluster and registry - should aggregate correctly
+      - series: "registry_exporter_success{tested_registry='quay.io', node='node1', type='pull', source_cluster='cluster1'}"
+        values: "1+0x4"
+      - series: "registry_exporter_success{tested_registry='quay.io', node='node2', type='pull', source_cluster='cluster1'}"
+        values: "0+0x4"
+      - series: "registry_exporter_success{tested_registry='quay.io', node='node3', type='push', source_cluster='cluster1'}"
+        values: "1+0x4"
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 10m
+        exp_samples:
+          # Max across all nodes should be 1
+          - labels: konflux_up{source_cluster='cluster1', check='quay.io'}
+            value: 1
+
+  - interval: 2m
+    name: RegistryExporterFluctuatingTest
+    input_series:
+      # Tests that fluctuate between success and failure
+      - series: "registry_exporter_success{tested_registry='quay.io', node='node1', type='pull', source_cluster='cluster1'}"
+        values: "1 0 1 0 1"
+      - series: "registry_exporter_success{tested_registry='quay.io', node='node1', type='push', source_cluster='cluster1'}"
+        values: "0 1 0 1 0"
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 10m
+        exp_samples:
+          # Should be 1 at each point since max is always >= 1
+          - labels: konflux_up{source_cluster='cluster1', check='quay.io'}
+            value: 1
