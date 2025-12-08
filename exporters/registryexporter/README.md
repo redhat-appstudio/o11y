@@ -28,6 +28,7 @@ All metrics include the following labels:
   - `authentication`: Authentication operation test
 
 Error count metrics additionally include an `error` label with one of the following error types:
+- `TIMEOUT`: Commands that didn't finish within the `commandTimeout` window.
 - `INVALID_REQUEST`: Malformed request (400, bad request)
 - `AUTHENTICATION`: Authentication/authorization issues (401, 403, unauthorized)
 - `NOT_FOUND`: Tag not found (404, not found)
@@ -37,13 +38,15 @@ Error count metrics additionally include an `error` label with one of the follow
 
 ### Configuration
 
-- **Scrape Interval**: `1 * time.Minute` (configurable via `scrapeInterval` constant)
+- **Scrape Interval**: `5 * time.Minute` (configurable via `scrapeInterval` constant)
 - **Max Retries**: `5` attempts per operation with exponential backoff (configurable via `maxRetries` constant)
+- **Timeout**: `35 * time.Seconds` How much time before the executed command would timeout (configurable via `commandTimeout`)
 - **Metrics Endpoint**: `:9101/metrics`
 - **Artifact Size**: `10MB` per artifact (configurable via `targetFileSize` constant)
 - **Required Environment Variables**:
   - `QUAY_URL`: The registry URL to test against
   - `DOCKER_CONFIG`: Path to directory containing `config.json` with registry credentials
+  - `NODE_NAME`: Name of the node to distinguish alerts in the cluster
 
 ## Test Operations
 
