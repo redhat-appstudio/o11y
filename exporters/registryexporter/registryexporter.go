@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -44,8 +45,9 @@ type AuthConfig struct {
 	Auth string `json:"auth"`
 }
 
-// Max retries for operations
+// Max retries and timeouts for operations
 const maxRetries = 5
+const commandTimeout = 35 * time.Second
 
 // Scrape interval == Time between each test execution
 const scrapeInterval = 5 * time.Minute
@@ -53,6 +55,7 @@ const scrapeInterval = 5 * time.Minute
 const pullArtifactPath = "/mnt/storage/pull-artifact.txt"
 const pullTag = ":pull"
 const metadataTag = ":metadata"
+
 var k8sNodeName = os.Getenv("NODE_NAME")
 
 // Target file size in bytes (10MB)
@@ -90,7 +93,7 @@ func InitMetrics(reg prometheus.Registerer, registryMap map[string]RegistryConfi
 			},
 			[]string{"tested_registry", "node", "type"},
 		),
-		}
+	}
 	reg.MustRegister(m.RegistrySuccess)
 	reg.MustRegister(m.RegistryErrorCount)
 	reg.MustRegister(m.RegistryDuration)
@@ -101,9 +104,14 @@ func InitMetrics(reg prometheus.Registerer, registryMap map[string]RegistryConfi
 
 // ExtractErrorReason extracts the reason for an error from the output of a command.
 // It is used to set the error type for the metrics.
-func ExtractErrorReason(output []byte) string {
+func ExtractErrorReason(output []byte, errorMessage string) string {
 	outputStr := strings.ToLower(string(output))
+	errorMessageStr := strings.ToLower(errorMessage)
 
+	// Timeout errors
+	if strings.Contains(errorMessageStr, "signal: killed") {
+		return "TIMEOUT"
+	}
 	// Probably malformed request
 	if strings.Contains(outputStr, "400") || strings.Contains(outputStr, "bad") {
 		return "INVALID_REQUEST"
@@ -133,8 +141,8 @@ func setSuccessState(metrics *Metrics, registryType string, testType string) {
 }
 
 // setErrorState sets the error state for a test operation.
-func setErrorState(metrics *Metrics, registryType string, testType string, output []byte) {
-	errorType := ExtractErrorReason(output)
+func setErrorState(metrics *Metrics, registryType string, testType string, output []byte, errorMessage string) {
+	errorType := ExtractErrorReason(output, errorMessage)
 	metrics.RegistrySuccess.WithLabelValues(registryType, k8sNodeName, testType).Set(0)
 	metrics.RegistryErrorCount.WithLabelValues(registryType, k8sNodeName, testType, errorType).Inc()
 }
@@ -196,8 +204,12 @@ func createFileOfSize(filePath string, artifactType string) error {
 
 func executeCmdWithRetry(args []string) (output []byte, err error) {
 	for attempt := range maxRetries {
-		cmd := exec.Command("oras", args...)
+		ctx, cancel := context.WithTimeout(context.Background(), commandTimeout)
+
+		cmd := exec.CommandContext(ctx, "oras", args...)
 		output, err = cmd.CombinedOutput()
+		cancel()
+
 		if err == nil {
 			return output, nil
 		}
@@ -205,7 +217,7 @@ func executeCmdWithRetry(args []string) (output []byte, err error) {
 		if attempt+1 < maxRetries {
 			backoff_duration := time.Duration(math.Pow(2, float64(attempt))) * time.Second
 
-			log.Printf("Command attempt %d failed: %v, output: %s. Retrying in %v...", attempt+1, err, string(output), backoff_duration)
+			log.Printf("Command attempt %d failed: %v, output: %s Retrying in %v...", attempt+1, err, string(output), backoff_duration)
 			time.Sleep(backoff_duration)
 		} else {
 			return output, err
@@ -334,7 +346,7 @@ func PullTest(metrics *Metrics, registryMap map[string]RegistryConfig, registryT
 		log.Printf("Pull test failed: %v, output: %s", err, string(output))
 		// Edge case that the pullTag does not exist anymore, registry error otherwise
 		if !strings.Contains(string(output), "not found") {
-			setErrorState(metrics, registryType, "pull", output)
+			setErrorState(metrics, registryType, "pull", output, err.Error())
 			return
 		}
 		log.Printf("Pull tag %s for %s not found, creating it.", pullTag, registryType)
@@ -342,7 +354,7 @@ func PullTest(metrics *Metrics, registryMap map[string]RegistryConfig, registryT
 		// Retry the pull operation after re-creating the tag
 		if output, err = executeCmdWithRetry(args); err != nil {
 			log.Printf("Pull test failed after re-creating tag: %v, output: %s", err, string(output))
-			setErrorState(metrics, registryType, "pull", output)
+			setErrorState(metrics, registryType, "pull", output, err.Error())
 			return
 		}
 	}
@@ -379,7 +391,7 @@ func PushTest(metrics *Metrics, registryMap map[string]RegistryConfig, registryT
 	startTime := time.Now()
 	if output, err := executeCmdWithRetry(args); err != nil {
 		log.Printf("Push test failed: %v, output: %s", err, string(output))
-		setErrorState(metrics, registryType, "push", output)
+		setErrorState(metrics, registryType, "push", output, err.Error())
 		return
 	}
 	log.Printf("Push test for registry type %s successful.", registryType)
@@ -421,7 +433,7 @@ func MetadataTest(metrics *Metrics, registryMap map[string]RegistryConfig, regis
 	startTime := time.Now()
 	if output, err := executeCmdWithRetry(args); err != nil {
 		log.Printf("Tag creation test failed: %v, output: %s", err, string(output))
-		setErrorState(metrics, registryType, "metadata", output)
+		setErrorState(metrics, registryType, "metadata", output, err.Error())
 		return
 	}
 	log.Printf("Metadata test for registry type %s successful.", registryType)
@@ -438,7 +450,7 @@ func AuthenticationTest(metrics *Metrics, registryMap map[string]RegistryConfig,
 	args := []string{"login", registryType, "--username", credentials.Username, "--password", credentials.Password, "--registry-config", "/mnt/storage/authtest-config.json"} // new path needed not to overwrite the original config.json
 	if output, err := executeCmdWithRetry(args); err != nil {
 		log.Printf("Authentication test failed: %v, output: %s", err, string(output))
-		setErrorState(metrics, registryType, "authentication", output)
+		setErrorState(metrics, registryType, "authentication", output, err.Error())
 		return
 	}
 	log.Printf("Authentication test for registry type %s successful.", registryType)
