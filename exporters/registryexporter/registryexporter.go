@@ -217,7 +217,8 @@ func executeCmdWithRetry(args []string) (output []byte, err error) {
 		if attempt+1 < maxRetries {
 			backoff_duration := time.Duration(math.Pow(2, float64(attempt))) * time.Second
 
-			log.Printf("Command attempt %d failed: %v, output: %s Retrying in %v...", attempt+1, err, string(output), backoff_duration)
+			log.Printf("Command attempt %d failed: %v, output: %s", attempt+1, err, string(output))
+			log.Printf("Retrying in %v...", backoff_duration)
 			time.Sleep(backoff_duration)
 		} else {
 			return output, err
@@ -461,7 +462,11 @@ func AuthenticationTest(metrics *Metrics, registryMap map[string]RegistryConfig,
 }
 
 func main() {
+	// Setting up logging prefix so the logs are easier to identify
+	var ScrapeID int = 0
+	log.SetPrefix(fmt.Sprintf("[ScrapeID:%d] ", ScrapeID))
 	log.SetOutput(os.Stderr)
+
 	if k8sNodeName == "" {
 		log.Fatalf("FATAL: Missing NODE_NAME environment variable. Metrics must always have node label.")
 	}
@@ -504,6 +509,9 @@ func main() {
 	defer ticker.Stop()
 
 	for range ticker.C {
+		ScrapeID++
+		log.SetPrefix(fmt.Sprintf("[ScrapeID:%d] ", ScrapeID))
+
 		log.Println("Scheduled scrape, running tests...")
 		for registryType := range registryMap {
 			log.Printf("Processing test for registry type: %s", registryType)
