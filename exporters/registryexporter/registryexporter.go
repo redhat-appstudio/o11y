@@ -217,7 +217,7 @@ func executeCmdWithRetry(args []string) (output []byte, err error) {
 		if attempt+1 < maxRetries {
 			backoff_duration := time.Duration(math.Pow(2, float64(attempt))) * time.Second
 
-			log.Printf("Command attempt %d failed: %v, output: %s", attempt+1, err, string(output))
+			log.Printf("Command %s attempt %d failed: %v, output: %s", args[0], attempt+1, err, string(output))
 			log.Printf("Retrying in %v...", backoff_duration)
 			time.Sleep(backoff_duration)
 		} else {
