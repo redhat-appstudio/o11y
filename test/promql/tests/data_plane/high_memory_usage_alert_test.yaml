@@ -6,10 +6,11 @@ rule_files:
 tests:
   - interval: 1m
     input_series:
-      - series: "kube_pod_container_resource_limits{tenant_id='tenant', pod='pod', namespace='namespace', container='container', source_cluster='cluster01'}"
-        values: '1x60'
-      - series: "kube_pod_container_resource_limits{tenant_id='tenant', pod='pod', namespace='namespace', container='container', source_cluster='cluster01'}"
-        values: "1x60"
+      - series: 'namespace_container:container_memory_working_set_bytes{namespace="namespace", source_cluster="cluster01"}'
+        values: '80x10'  # 80 units
+      - series: 'namespace_memory:kube_pod_container_resource_requests:sum{namespace="namespace", source_cluster="cluster01"}'
+        values: '100x10'  # 100 units
+
 
     alert_rule_test:
       - eval_time: 5m
@@ -17,13 +18,10 @@ tests:
         exp_alerts:
           - exp_labels:
               namespace: "namespace"
-              pod: "pod"
-              severity: "warning"
-              tenant_id: "tenant"
-              container: "container"
               source_cluster: "cluster01"
+              severity: "warning"
             exp_annotations:
-              description: "Pod pod for namespace namespace on cluster cluster01 has high memory usage"
+              description: "Pods in namespace namespace on cluster cluster01 has high memory usage (80%)"
               alert_routing_key: "namespace"
-              summary: "Pod pod has high memory usage"
+              summary: "Namespace namespace has high memory usage"
               runbook_url: 'https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-HighMemoryAlertUsage.md'
