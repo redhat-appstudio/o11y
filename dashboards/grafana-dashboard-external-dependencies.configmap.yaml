@@ -1,0 +1,888 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-external-dependencies
+  labels:
+    grafana_dashboard: "true"
+  annotations:
+    grafana-folder: /grafana-dashboard-definitions/RHTAP
+data:
+  external-dependencies-dashboard.json: |-
+    {
+      "annotations": {
+        "list": [
+          {
+            "builtIn": 1,
+            "datasource": {
+              "type": "grafana",
+              "uid": "-- Grafana --"
+            },
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "type": "dashboard"
+          }
+        ]
+      },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 0,
+      "id": 1092301,
+      "links": [
+        {
+          "asDropdown": false,
+          "icon": "external link",
+          "includeVars": false,
+          "keepTime": false,
+          "tags": [],
+          "targetBlank": false,
+          "title": "Repository",
+          "tooltip": "",
+          "type": "link",
+          "url": "https://gitlab.cee.redhat.com/sp-resilience-team/custom-status-page"
+        },
+        {
+          "asDropdown": false,
+          "icon": "external link",
+          "includeVars": false,
+          "keepTime": false,
+          "tags": [],
+          "targetBlank": false,
+          "title": "Static Page",
+          "tooltip": "",
+          "type": "link",
+          "url": "https://custom-status-page-abd5ce.pages.redhat.com/"
+        }
+      ],
+      "panels": [
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          },
+          "id": 5,
+          "panels": [],
+          "title": "External Dependencies - Current Status",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "infinity-any-url"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "color-background"
+                },
+                "inspect": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Services with issues"
+                },
+                "properties": [
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "red"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Maintenance Mode"
+                },
+                "properties": [
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "blue"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 24,
+            "x": 0,
+            "y": 1
+          },
+          "id": 3,
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "fields": "",
+              "reducer": [
+                "sum"
+              ],
+              "show": false
+            },
+            "showHeader": true,
+            "sortBy": []
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "columns": [],
+              "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "infinity-any-url"
+              },
+              "filters": [],
+              "format": "as-is",
+              "global_query_id": "",
+              "parser": "backend",
+              "refId": "A",
+              "root_selector": "$",
+              "source": "url",
+              "type": "json",
+              "url": "https://gitlab.cee.redhat.com/api/v4/projects/161251/jobs/artifacts/main/raw/public/monitoring/overall_counts.json?job=pages",
+              "url_options": {
+                "data": "",
+                "headers": [
+                  {
+                    "key": "PRIVATE-TOKEN",
+                    "value": "-qQFiRUNMoe6ncfNOMsDrW86MQp1Om1tZAk.01.0z1d4rr3r"
+                  }
+                ],
+                "method": "GET"
+              }
+            }
+          ],
+          "title": "Overall Status",
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "counts": true,
+                  "generated_at": true,
+                  "overall_category": true,
+                  "time": true,
+                  "worst_indicator": true
+                },
+                "includeByName": {},
+                "indexByName": {
+                  "counts": 4,
+                  "failure": 3,
+                  "generated_at": 5,
+                  "maintenance": 1,
+                  "operational": 2,
+                  "overall_category": 6,
+                  "total_services": 0,
+                  "worst_indicator": 7
+                },
+                "renameByName": {
+                  "counts": "",
+                  "critical": "Critical Issues",
+                  "failure": "Services with issues",
+                  "maintenance": "Maintenance Mode",
+                  "major": "Major Issues",
+                  "minor": "Minor Issues",
+                  "none": "Operational",
+                  "operational": "Services 100% Operative",
+                  "time": "",
+                  "unknown": "Unreachable"
+                }
+              }
+            }
+          ],
+          "type": "table"
+        },
+        {
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "infinity-any-url"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "shades"
+              },
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "inspect": false
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "Failure": {
+                      "color": "red",
+                      "index": 2
+                    },
+                    "Maintenance": {
+                      "color": "blue",
+                      "index": 1
+                    },
+                    "Operational": {
+                      "color": "green",
+                      "index": 0
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": " "
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "image"
+                    }
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 31
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Status"
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-background"
+                    }
+                  },
+                  {
+                    "id": "color"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Page"
+                },
+                "properties": []
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 19,
+            "w": 12,
+            "x": 0,
+            "y": 5
+          },
+          "id": 1,
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "fields": "",
+              "reducer": [
+                "sum"
+              ],
+              "show": false
+            },
+            "showHeader": true,
+            "sortBy": []
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "columns": [],
+              "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "infinity-any-url"
+              },
+              "filters": [],
+              "format": "as-is",
+              "global_query_id": "",
+              "parser": "backend",
+              "refId": "A",
+              "root_selector": "$",
+              "source": "url",
+              "type": "json",
+              "url": "https://gitlab.cee.redhat.com/api/v4/projects/161251/jobs/artifacts/main/raw/public/monitoring/current_status.json?job=pages",
+              "url_options": {
+                "data": "",
+                "headers": [
+                  {
+                    "key": "PRIVATE-TOKEN",
+                    "value": "-qQFiRUNMoe6ncfNOMsDrW86MQp1Om1tZAk.01.0z1d4rr3r"
+                  }
+                ],
+                "method": "GET"
+              }
+            }
+          ],
+          "title": "External Services",
+          "transformations": [
+            {
+              "id": "filterByValue",
+              "options": {
+                "filters": [
+                  {
+                    "config": {
+                      "id": "notEqual",
+                      "options": {
+                        "value": "rh"
+                      }
+                    },
+                    "fieldName": "group"
+                  }
+                ],
+                "match": "any",
+                "type": "include"
+              }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "components": true,
+                  "description": true,
+                  "error": true,
+                  "group": true,
+                  "incidents": true,
+                  "indicator": true,
+                  "logo": false,
+                  "time": true,
+                  "ts": true
+                },
+                "includeByName": {},
+                "indexByName": {
+                  "category": 7,
+                  "description": 4,
+                  "error": 5,
+                  "group": 6,
+                  "indicator": 3,
+                  "logo": 0,
+                  "service": 1,
+                  "time": 8,
+                  "ts": 9,
+                  "url": 2
+                },
+                "renameByName": {
+                  "category": "Status",
+                  "indicator": "Status",
+                  "logo": " ",
+                  "name": "Service",
+                  "url": "Page"
+                }
+              }
+            }
+          ],
+          "type": "table"
+        },
+        {
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "infinity-any-url"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "inspect": false
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "Failure": {
+                      "color": "red",
+                      "index": 1
+                    },
+                    "Maintenance": {
+                      "color": "blue",
+                      "index": 2
+                    },
+                    "Operational": {
+                      "color": "green",
+                      "index": 0
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": " "
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "image"
+                    }
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 45
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Status"
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-background"
+                    }
+                  },
+                  {
+                    "id": "color"
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 19,
+            "w": 12,
+            "x": 12,
+            "y": 5
+          },
+          "id": 2,
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "fields": "",
+              "reducer": [
+                "sum"
+              ],
+              "show": false
+            },
+            "showHeader": true,
+            "sortBy": []
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "columns": [],
+              "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "infinity-any-url"
+              },
+              "filters": [],
+              "format": "as-is",
+              "global_query_id": "",
+              "parser": "backend",
+              "refId": "A",
+              "root_selector": "$",
+              "source": "url",
+              "type": "json",
+              "url": "https://gitlab.cee.redhat.com/api/v4/projects/161251/jobs/artifacts/main/raw/public/monitoring/current_status.json?job=pages",
+              "url_options": {
+                "data": "",
+                "headers": [
+                  {
+                    "key": "PRIVATE-TOKEN",
+                    "value": "-qQFiRUNMoe6ncfNOMsDrW86MQp1Om1tZAk.01.0z1d4rr3r"
+                  }
+                ],
+                "method": "GET"
+              }
+            }
+          ],
+          "title": "Red Hat Internal Services",
+          "transformations": [
+            {
+              "id": "filterByValue",
+              "options": {
+                "filters": [
+                  {
+                    "config": {
+                      "id": "equal",
+                      "options": {
+                        "value": "rh"
+                      }
+                    },
+                    "fieldName": "group"
+                  }
+                ],
+                "match": "any",
+                "type": "include"
+              }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "category": false,
+                  "components": true,
+                  "description": true,
+                  "error": true,
+                  "group": true,
+                  "incidents": true,
+                  "indicator": true,
+                  "logo": false,
+                  "service": false,
+                  "time": true,
+                  "ts": true
+                },
+                "includeByName": {},
+                "indexByName": {
+                  "category": 8,
+                  "description": 5,
+                  "error": 6,
+                  "group": 7,
+                  "indicator": 4,
+                  "logo": 0,
+                  "service": 2,
+                  "time": 1,
+                  "ts": 9,
+                  "url": 3
+                },
+                "renameByName": {
+                  "category": "Status",
+                  "error": "",
+                  "indicator": "Status",
+                  "logo": " ",
+                  "name": "Service",
+                  "time": "Time",
+                  "url": "Page"
+                }
+              }
+            }
+          ],
+          "type": "table"
+        },
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 24
+          },
+          "id": 6,
+          "panels": [],
+          "title": "External Dependencies - Availability",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "yesoreyeram-infinity-datasource",
+            "uid": "gitlab-cee"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "inspect": false
+              },
+              "decimals": 3,
+              "mappings": [
+                {
+                  "options": {
+                    "100.0": {
+                      "color": "green",
+                      "index": 0,
+                      "text": "100 %"
+                    }
+                  },
+                  "type": "value"
+                },
+                {
+                  "options": {
+                    "from": 90,
+                    "result": {
+                      "color": "orange",
+                      "index": 1
+                    },
+                    "to": 99.9999999
+                  },
+                  "type": "range"
+                },
+                {
+                  "options": {
+                    "from": 0,
+                    "result": {
+                      "color": "red",
+                      "index": 2
+                    },
+                    "to": 89.999999
+                  },
+                  "type": "range"
+                }
+              ],
+              "noValue": "f",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Successful Test Results "
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 190
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Maintenance Test Results "
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 206
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Service Operational (All Components)"
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-background"
+                    }
+                  },
+                  {
+                    "id": "unit",
+                    "value": "%"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Results with Failures"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 178
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Successful Results "
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 197
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 27,
+            "w": 24,
+            "x": 0,
+            "y": 25
+          },
+          "id": 4,
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "fields": "",
+              "reducer": [
+                "sum"
+              ],
+              "show": false
+            },
+            "showHeader": true,
+            "sortBy": []
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "alias": "Random Walk",
+              "columns": [],
+              "dataOverrides": [
+                {
+                  "operator": ">=",
+                  "override": "null",
+                  "values": [
+                    "${__value.index}",
+                    "10"
+                  ]
+                }
+              ],
+              "datasource": {
+                "type": "yesoreyeram-infinity-datasource",
+                "uid": "gitlab-cee"
+              },
+              "filters": [],
+              "format": "table",
+              "global_query_id": "",
+              "parser": "backend",
+              "refId": "A",
+              "root_selector": "",
+              "source": "url",
+              "type": "csv",
+              "url": "https://gitlab.cee.redhat.com/api/v4/projects/161251/jobs/artifacts/main/raw/public/monitoring/availability_last24h.csv?job=pages&latest=true&ts=${unixEpochMs}",
+              "url_options": {
+                "data": "",
+                "headers": [
+                  {
+                    "key": "PRIVATE-TOKEN",
+                    "value": "-qQFiRUNMoe6ncfNOMsDrW86MQp1Om1tZAk.01.0z1d4rr3r"
+                  }
+                ],
+                "method": "GET"
+              }
+            }
+          ],
+          "title": "Availability last 24 hours",
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "samples": true
+                },
+                "includeByName": {},
+                "indexByName": {
+                  "failure_samples": 3,
+                  "maintenance_samples": 4,
+                  "operational_samples": 5,
+                  "sample_based_availability_percent": 6,
+                  "samples": 7,
+                  "service": 0,
+                  "window_end": 2,
+                  "window_start": 1
+                },
+                "renameByName": {
+                  "failure_samples": "Results with Failures",
+                  "maintenance_samples": "Results with Maintenance Mode",
+                  "operational_samples": "Successful Results ",
+                  "sample_based_availability_percent": "Service Operational (All Components)",
+                  "service": "Service",
+                  "window_end": "To",
+                  "window_start": "From"
+                }
+              }
+            }
+          ],
+          "type": "table"
+        }
+      ],
+      "preload": false,
+      "schemaVersion": 41,
+      "tags": [],
+      "templating": {
+        "list": []
+      },
+      "time": {
+        "from": "now-5m",
+        "to": "now"
+      },
+      "timepicker": {
+        "hidden": true,
+        "refresh_intervals": [
+          "5m"
+        ]
+      },
+      "timezone": "UTC",
+      "title": "Konflux - External Dependencies",
+      "uid": "b4hvkrftyalexf",
+      "version": 36
+    }
