@@ -12,7 +12,10 @@ spec:
 
       - alert: ProbeAlert
         expr: |
-          avg_over_time(probe_success{job!~".*-vpn|.*static-host"}[10m]) < 0.8
+          konflux_up{
+          check="probe",
+          service!~".*-vpn|.*static-host"
+          } != 1
         for: 15m
         labels:
           severity: high
@@ -26,7 +29,10 @@ spec:
 
       - alert: S390xStaticHostProbeAlert
         expr: |
-          sum by (job,source_cluster) (probe_success{job=~".*static-host",target=~"s390x.*"}) / count by (job,source_cluster) (probe_success{job=~".*static-host",target=~"s390x.*"}) < 0.8
+          konflux_up{
+          check="probe-s390x",
+          service=~".*s390x-static-host"
+          } != 1
         for: 15m
         labels:
           severity: high
@@ -40,7 +46,10 @@ spec:
 
       - alert: PPCStaticHostProbeAlert
         expr: |
-          sum by (job,source_cluster) (probe_success{job=~".*static-host",target=~"ppc.*"}) / count by (job,source_cluster) (probe_success{job=~".*static-host",target=~"ppc.*"}) < 0.8
+          konflux_up{
+          check="probe-ppc",
+          service=~".*ppc-static-host"
+          } != 1
         for: 15m
         labels:
           severity: high
@@ -54,7 +63,10 @@ spec:
 
       - alert: VPNProbeAlert
         expr: |
-          sum by (job,target,source_cluster) (probe_success{job=~".*vpn"}) / count by (job,target,source_cluster) (probe_success{job=~".*vpn"}) < 0.7
+          konflux_up{
+          check="probe-vpn",
+          service=~".*vpn"
+          } != 1
         for: 15m
         labels:
           severity: high
