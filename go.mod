@@ -70,7 +70,7 @@ require (
 	github.com/prometheus/procfs v0.19.2 // indirect
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/sys v0.39.0 // indirect
-	google.golang.org/protobuf v1.36.10 // indirect
+	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/client-go v0.34.3
 	sigs.k8s.io/controller-runtime v0.22.4
