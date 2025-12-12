@@ -1,0 +1,63 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-probes-availability
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: probes_availability
+      interval: 10m
+      rules:
+        - record: konflux_up
+          expr: |
+            clamp_max(
+              label_replace(
+                label_replace(
+                    avg_over_time(probe_success{job!~".*-vpn|.*static-host"}[10m]) >= bool 0.8
+                  , "check", "probe", "",""
+                ), "service", "$1", "job", "(.*)"
+              ), 1
+            )
+
+    - name: probes_s390x_availability
+      interval: 10m
+      rules:
+        - record: konflux_up
+          expr: |
+            clamp_max(
+              label_replace(
+                label_replace(
+                    sum by (job,source_cluster) (probe_success{job=~".*static-host",target=~"s390x.*"}) / count by (job,source_cluster) (probe_success{job=~".*static-host",target=~"s390x.*"}) >= bool 0.8
+                  , "check", "probe-s390x", "",""
+                ), "service", "$1", "job", "(.*)"
+              ), 1
+            )
+
+    - name: probes_ppc_availability
+      interval: 10m
+      rules:
+        - record: konflux_up
+          expr: |
+            clamp_max(
+              label_replace(
+                label_replace(
+                    sum by (job,source_cluster) (probe_success{job=~".*static-host",target=~"ppc.*"}) / count by (job,source_cluster) (probe_success{job=~".*static-host",target=~"ppc.*"}) >= bool 0.8
+                  , "check", "probe-ppc", "",""
+                ), "service", "$1", "job", "(.*)"
+              ), 1
+            )
+
+    - name: probes_vpn_availability
+      interval: 10m
+      rules:
+        - record: konflux_up
+          expr: |
+            clamp_max(
+              label_replace(
+                label_replace(
+                    sum by (job,target,source_cluster) (probe_success{job=~".*vpn"}) / count by (job,target,source_cluster) (probe_success{job=~".*vpn"}) >= bool 0.7
+                  , "check", "probe-vpn", "",""
+                ), "service", "$1", "job", "(.*)"
+              ), 1
+            )
