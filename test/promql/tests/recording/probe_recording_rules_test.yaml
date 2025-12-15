@@ -1,0 +1,74 @@
+evaluation_interval: 1m
+
+rule_files:
+  - probes_recording_rules.yaml
+
+tests:
+  - name: ProbesAvailabilityTest
+    interval: 1m
+    input_series:
+      - series: probe_success{job="web-server",instance="instance01",target="target01",source_cluster="cluster01"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 10m
+        exp_samples:
+          - labels: 'konflux_up{check="probe", instance="instance01", job="web-server", service="web-server", source_cluster="cluster01", target="target01"}'
+            value: 1
+
+  - name: ProbesAvailabilityTestFailure
+    interval: 1m
+    input_series:
+      - series: probe_success{job="web-server",instance="instance01",target="target01",source_cluster="cluster01"}
+        values: 0 0 0 0 0 0 0 0 0 0
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 10m
+        exp_samples:
+          - labels: 'konflux_up{check="probe", instance="instance01", job="web-server", service="web-server", source_cluster="cluster01", target="target01"}'
+            value: 0
+
+  - name: ProbesS390xAvailabilityTest
+
+    interval: 1m
+    input_series:
+      - series: probe_success{job="s390x-static-host",instance="instance01",target="s390x-host01",source_cluster="cluster01"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+      - series: probe_success{job="s390x-static-host",instance="instance02",target="s390x-host02",source_cluster="cluster01"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 10m
+        exp_samples:
+          - labels: 'konflux_up{check="probe-s390x", job="s390x-static-host", service="s390x-static-host", source_cluster="cluster01"}'
+            value: 1
+
+  - name: ProbesPPCAvailabilityTest
+
+    interval: 1m
+    input_series:
+      - series: probe_success{job="ppc-static-host",instance="instance04",target="ppc-host01",source_cluster="cluster01"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+      - series: probe_success{job="ppc-static-host",instance="instance05",target="ppc-host02",source_cluster="cluster01"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 10m
+        exp_samples:
+          - labels: 'konflux_up{check="probe-ppc", job="ppc-static-host", service="ppc-static-host", source_cluster="cluster01"}'
+            value: 1
+
+  - name: ProbesVPNAvailabilityTest
+
+    interval: 1m
+    input_series:
+      - series: probe_success{job="test-vpn",instance="instance07",target="vpn01",source_cluster="cluster01"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+      - series: probe_success{job="test-vpn",instance="instance08",target="vpn01",source_cluster="cluster01"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 10m
+        exp_samples:
+          - labels: 'konflux_up{check="probe-vpn", target="vpn01", job="test-vpn", service="test-vpn", source_cluster="cluster01"}'
+            value: 1
