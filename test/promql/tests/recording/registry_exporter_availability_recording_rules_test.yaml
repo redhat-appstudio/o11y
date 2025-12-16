@@ -20,7 +20,7 @@ tests:
       - expr: konflux_up
         eval_time: 10m
         exp_samples:
-          - labels: konflux_up{source_cluster='cluster1', check='quay.io'}
+          - labels: konflux_up{source_cluster='cluster1', check='quay.io', service='registry-exporter'}
             value: 1
 
   - interval: 2m
@@ -39,7 +39,7 @@ tests:
       - expr: konflux_up
         eval_time: 10m
         exp_samples:
-          - labels: konflux_up{source_cluster='cluster1', check='quay.io'}
+          - labels: konflux_up{source_cluster='cluster1', check='quay.io', service='registry-exporter'}
             value: 0
 
   - interval: 2m
@@ -58,7 +58,7 @@ tests:
       - expr: konflux_up
         eval_time: 10m
         exp_samples:
-          - labels: konflux_up{source_cluster='cluster1', check='quay.io'}
+          - labels: konflux_up{source_cluster='cluster1', check='quay.io', service='registry-exporter'}
             value: 1
 
   - interval: 2m
@@ -74,9 +74,9 @@ tests:
       - expr: konflux_up
         eval_time: 10m
         exp_samples:
-          - labels: konflux_up{source_cluster='cluster1', check='quay.io'}
+          - labels: konflux_up{source_cluster='cluster1', check='quay.io', service='registry-exporter'}
             value: 1
-          - labels: konflux_up{source_cluster='cluster1', check='docker.io'}
+          - labels: konflux_up{source_cluster='cluster1', check='docker.io', service='registry-exporter'}
             value: 0
 
   - interval: 2m
@@ -92,9 +92,9 @@ tests:
       - expr: konflux_up
         eval_time: 10m
         exp_samples:
-          - labels: konflux_up{source_cluster='cluster1', check='quay.io'}
+          - labels: konflux_up{source_cluster='cluster1', check='quay.io', service='registry-exporter'}
             value: 1
-          - labels: konflux_up{source_cluster='cluster2', check='quay.io'}
+          - labels: konflux_up{source_cluster='cluster2', check='quay.io', service='registry-exporter'}
             value: 0
 
   - interval: 2m
@@ -112,7 +112,7 @@ tests:
         eval_time: 10m
         exp_samples:
           # Max across all nodes should be 1
-          - labels: konflux_up{source_cluster='cluster1', check='quay.io'}
+          - labels: konflux_up{source_cluster='cluster1', check='quay.io', service='registry-exporter'}
             value: 1
 
   - interval: 2m
@@ -128,5 +128,5 @@ tests:
         eval_time: 10m
         exp_samples:
           # Should be 1 at each point since max is always >= 1
-          - labels: konflux_up{source_cluster='cluster1', check='quay.io'}
+          - labels: konflux_up{source_cluster='cluster1', check='quay.io', service='registry-exporter'}
             value: 1
