@@ -207,6 +207,8 @@ func executeCmdWithRetry(args []string) (output []byte, err error) {
 		ctx, cancel := context.WithTimeout(context.Background(), commandTimeout)
 
 		cmd := exec.CommandContext(ctx, "oras", args...)
+
+		log.Printf("Command %s is running...", args[0])
 		output, err = cmd.CombinedOutput()
 		cancel()
 
