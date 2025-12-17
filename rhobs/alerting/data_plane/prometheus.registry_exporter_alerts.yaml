@@ -25,3 +25,29 @@ spec:
         alert_team_handle: '<!subteam^S07SW2EEW3D>'
         team: o11y
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rules/alert-rule-RegistryExporter.md
+
+# Notify o11y team when there are issues with individual nodes, but cluster-level check is still passing.
+  - name: registry-exporter-node-availability
+    interval: 1m
+    rules:
+    - alert: RegistryExporterNodeFailure
+      expr: |
+        min by(source_cluster, tested_registry, node) (registry_exporter_success) == 0
+        and on(source_cluster, tested_registry)
+          label_replace(
+            konflux_up{service="registry-exporter"} == 1,
+            "tested_registry", "$1", "check", "(.*)"
+          )
+      for: 30m
+      labels:
+        severity: warning
+        slo: "false"
+      annotations:
+        summary: >-
+          Registry exporter running tests on node {{ $labels.node }} for registry {{ $labels.tested_registry }} in cluster {{ $labels.source_cluster }} is failing.
+        description: >-
+          Registry exporter running tests on node {{ $labels.node }} for registry {{ $labels.tested_registry }} in cluster {{ $labels.source_cluster }} is failing.
+          At least one test type (pull, push, metadata, or authentication) has been failing for 30 minutes.
+          The cluster-level check for this registry is still passing, indicating this is a node-specific issue.
+        alert_routing_key: o11y
+        team: o11y
