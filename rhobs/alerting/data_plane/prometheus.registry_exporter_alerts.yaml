@@ -38,7 +38,7 @@ spec:
             konflux_up{service="registry-exporter"} == 1,
             "tested_registry", "$1", "check", "(.*)"
           )
-      for: 30m
+      for: 20m
       labels:
         severity: warning
         slo: "false"
@@ -47,7 +47,7 @@ spec:
           Registry exporter running tests on node {{ $labels.node }} for registry {{ $labels.tested_registry }} in cluster {{ $labels.source_cluster }} is failing.
         description: >-
           Registry exporter running tests on node {{ $labels.node }} for registry {{ $labels.tested_registry }} in cluster {{ $labels.source_cluster }} is failing.
-          At least one test type (pull, push, metadata, or authentication) has been failing for 30 minutes.
+          At least one test type (pull, push, metadata, or authentication) has been failing for 20 minutes.
           The cluster-level check for this registry is still passing, indicating this is a node-specific issue.
         alert_routing_key: o11y
         team: o11y
