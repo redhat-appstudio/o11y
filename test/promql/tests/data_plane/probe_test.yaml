@@ -91,3 +91,25 @@ tests:
               summary: VPN Probe alert vpn.
               alert_routing_key: spreandinfra
               slo: 'false'
+
+  - interval: 1m
+    input_series:
+      - series: konflux_up{job="pwvs",check="probe-pwvs",service="pwvs",target="net01",source_cluster="cluster01"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+
+    alert_rule_test:
+      - eval_time: 35m
+        alertname: PWVSProbeAlert
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              source_cluster: cluster01
+              target: net01
+              job: pwvs
+              check: probe-pwvs
+              service: pwvs
+            exp_annotations:
+              description: 'Probe alert with job pwvs and target net01 for cluster cluster01.'
+              summary: PWVS Probe alert pwvs.
+              alert_routing_key: spreandinfra
+              slo: 'false'
