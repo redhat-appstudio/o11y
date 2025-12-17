@@ -140,20 +140,20 @@ tests:
   - interval: 1m
     input_series:
       - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: '1x31'
+        values: '1x21'
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="pull", source_cluster="c1"}'
-        values: '0x31'
+        values: '0x21'
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c1"}'
-        values: '0x31'
+        values: '0x21'
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="metadata", source_cluster="c1"}'
-        values: '0x31'
+        values: '0x21'
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="authentication", source_cluster="c1"}'
-        values: '0x31'
+        values: '0x21'
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="pull", source_cluster="c1"}'
-        values: '1x31'
+        values: '1x21'
 
     alert_rule_test:
-      - eval_time: 30m
+      - eval_time: 20m
         alertname: RegistryExporterNodeFailure
         exp_alerts:
           - exp_labels:
@@ -167,7 +167,7 @@ tests:
                 Registry exporter running tests on node node1 for registry quay.io in cluster c1 is failing.
               description: >-
                 Registry exporter running tests on node node1 for registry quay.io in cluster c1 is failing.
-                At least one test type (pull, push, metadata, or authentication) has been failing for 30 minutes.
+                At least one test type (pull, push, metadata, or authentication) has been failing for 20 minutes.
                 The cluster-level check for this registry is still passing, indicating this is a node-specific issue.
               alert_routing_key: o11y
               team: o11y
@@ -176,14 +176,14 @@ tests:
   - interval: 1m
     input_series:
       - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: '0x31'
+        values: '0x21'
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="pull", source_cluster="c1"}'
-        values: '0x31'
+        values: '0x21'
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c1"}'
-        values: '0x31'
+        values: '0x21'
 
     alert_rule_test:
-      - eval_time: 30m
+      - eval_time: 20m
         alertname: RegistryExporterNodeFailure
         exp_alerts: []
 
@@ -191,16 +191,16 @@ tests:
   - interval: 1m
     input_series:
       - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: '1x31'
+        values: '1x21'
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="pull", source_cluster="c1"}'
-        values: '0x31'
+        values: '0x21'
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="pull", source_cluster="c1"}'
-        values: '0x31'
+        values: '0x21'
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node3", type="pull", source_cluster="c1"}'
-        values: '1x31'
+        values: '1x21'
 
     alert_rule_test:
-      - eval_time: 30m
+      - eval_time: 20m
         alertname: RegistryExporterNodeFailure
         exp_alerts:
           - exp_labels:
@@ -214,7 +214,7 @@ tests:
                 Registry exporter running tests on node node1 for registry quay.io in cluster c1 is failing.
               description: >-
                 Registry exporter running tests on node node1 for registry quay.io in cluster c1 is failing.
-                At least one test type (pull, push, metadata, or authentication) has been failing for 30 minutes.
+                At least one test type (pull, push, metadata, or authentication) has been failing for 20 minutes.
                 The cluster-level check for this registry is still passing, indicating this is a node-specific issue.
               alert_routing_key: o11y
               team: o11y
@@ -229,23 +229,23 @@ tests:
                 Registry exporter running tests on node node2 for registry quay.io in cluster c1 is failing.
               description: >-
                 Registry exporter running tests on node node2 for registry quay.io in cluster c1 is failing.
-                At least one test type (pull, push, metadata, or authentication) has been failing for 30 minutes.
+                At least one test type (pull, push, metadata, or authentication) has been failing for 20 minutes.
                 The cluster-level check for this registry is still passing, indicating this is a node-specific issue.
               alert_routing_key: o11y
               team: o11y
 
-  # Node recovers before 30 minutes (should NOT alert)
+  # Node recovers before 20 minutes (should NOT alert)
   - interval: 1m
     input_series:
       - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: '1x31'
+        values: '1x21'
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="pull", source_cluster="c1"}'
-        values: '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1'
+        values: '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1'
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c1"}'
-        values: '1x31'
+        values: '1x21'
 
     alert_rule_test:
-      - eval_time: 30m
+      - eval_time: 20m
         alertname: RegistryExporterNodeFailure
         exp_alerts: []
 
@@ -253,18 +253,18 @@ tests:
   - interval: 1m
     input_series:
       - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: '1x31'
+        values: '1x21'
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="pull", source_cluster="c1"}'
-        values: '0x31'
+        values: '0x21'
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c1"}'
-        values: '1x31'
+        values: '1x21'
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="metadata", source_cluster="c1"}'
-        values: '1x31'
+        values: '1x21'
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="authentication", source_cluster="c1"}'
-        values: '1x31'
+        values: '1x21'
 
     alert_rule_test:
-      - eval_time: 30m
+      - eval_time: 20m
         alertname: RegistryExporterNodeFailure
         exp_alerts:
           - exp_labels:
@@ -278,7 +278,7 @@ tests:
                 Registry exporter running tests on node node1 for registry quay.io in cluster c1 is failing.
               description: >-
                 Registry exporter running tests on node node1 for registry quay.io in cluster c1 is failing.
-                At least one test type (pull, push, metadata, or authentication) has been failing for 30 minutes.
+                At least one test type (pull, push, metadata, or authentication) has been failing for 20 minutes.
                 The cluster-level check for this registry is still passing, indicating this is a node-specific issue.
               alert_routing_key: o11y
               team: o11y
