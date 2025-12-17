@@ -77,3 +77,20 @@ spec:
              Probe alert with job {{ $labels.job }} and target {{ $labels.target }} for cluster {{ $labels.source_cluster }}.
           alert_routing_key: spreandinfra
           slo: "false"
+
+      - alert: PWVSProbeAlert
+        expr: |
+          konflux_up{
+          check="probe-pwvs",
+          service=~".*pwvs"
+          } != 1
+        for: 15m
+        labels:
+          severity: high
+        annotations:
+          summary: >-
+             PWVS Probe alert {{ $labels.job }}.
+          description: >-
+             Probe alert with job {{ $labels.job }} and target {{ $labels.target }} for cluster {{ $labels.source_cluster }}.
+          alert_routing_key: spreandinfra
+          slo: "false"
