@@ -1,0 +1,136 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.registry_exporter_alerts.yaml
+
+tests:
+  # Registry exporter down for quay.io registry
+  - interval: 1m
+    input_series:
+      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
+        values: '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0'
+      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c2"}'
+        values: '1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: RegistryExporterDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              check: quay.io
+              service: registry-exporter
+              slo: "true"
+              source_cluster: c1
+            exp_annotations:
+              summary: >-
+                Registry exporter check failed for registry quay.io in cluster c1
+              description: >-
+                The registry exporter has failed to successfully test registry quay.io in cluster c1.
+                All registry test operations (pull, push, metadata, authentication) have been failing for 15 minutes.
+              alert_team_handle: <!subteam^S07SW2EEW3D>
+              team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rules/alert-rule-RegistryExporter.md
+
+  # Registry exporter down for multiple registries in same cluster
+  - interval: 1m
+    input_series:
+      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
+        values: '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0'
+      - series: 'konflux_up{service="registry-exporter", check="registry.example.com", source_cluster="c1"}'
+        values: '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0'
+      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c2"}'
+        values: '1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: RegistryExporterDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              check: quay.io
+              service: registry-exporter
+              slo: "true"
+              source_cluster: c1
+            exp_annotations:
+              summary: >-
+                Registry exporter check failed for registry quay.io in cluster c1
+              description: >-
+                The registry exporter has failed to successfully test registry quay.io in cluster c1.
+                All registry test operations (pull, push, metadata, authentication) have been failing for 15 minutes.
+              alert_team_handle: <!subteam^S07SW2EEW3D>
+              team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rules/alert-rule-RegistryExporter.md
+          - exp_labels:
+              severity: critical
+              check: registry.example.com
+              service: registry-exporter
+              slo: "true"
+              source_cluster: c1
+            exp_annotations:
+              summary: >-
+                Registry exporter check failed for registry registry.example.com in cluster c1
+              description: >-
+                The registry exporter has failed to successfully test registry registry.example.com in cluster c1.
+                All registry test operations (pull, push, metadata, authentication) have been failing for 15 minutes.
+              alert_team_handle: <!subteam^S07SW2EEW3D>
+              team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rules/alert-rule-RegistryExporter.md
+
+  # Registry exporter recovers before alert fires (should not alert)
+  - interval: 1m
+    input_series:
+      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
+        values: '0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1'
+      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c2"}'
+        values: '1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: RegistryExporterDown
+        exp_alerts: []
+
+  # Registry exporter down for different registries in different clusters
+  - interval: 1m
+    input_series:
+      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
+        values: '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0'
+      - series: 'konflux_up{service="registry-exporter", check="registry.example.com", source_cluster="c2"}'
+        values: '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0'
+      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c2"}'
+        values: '1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: RegistryExporterDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              check: quay.io
+              service: registry-exporter
+              slo: "true"
+              source_cluster: c1
+            exp_annotations:
+              summary: >-
+                Registry exporter check failed for registry quay.io in cluster c1
+              description: >-
+                The registry exporter has failed to successfully test registry quay.io in cluster c1.
+                All registry test operations (pull, push, metadata, authentication) have been failing for 15 minutes.
+              alert_team_handle: <!subteam^S07SW2EEW3D>
+              team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rules/alert-rule-RegistryExporter.md
+          - exp_labels:
+              severity: critical
+              check: registry.example.com
+              service: registry-exporter
+              slo: "true"
+              source_cluster: c2
+            exp_annotations:
+              summary: >-
+                Registry exporter check failed for registry registry.example.com in cluster c2
+              description: >-
+                The registry exporter has failed to successfully test registry registry.example.com in cluster c2.
+                All registry test operations (pull, push, metadata, authentication) have been failing for 15 minutes.
+              alert_team_handle: <!subteam^S07SW2EEW3D>
+              team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rules/alert-rule-RegistryExporter.md
