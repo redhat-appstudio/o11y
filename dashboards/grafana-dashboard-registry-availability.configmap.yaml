@@ -417,11 +417,13 @@ data:
                     "mode": "thresholds"
                   },
                   "custom": {
-                    "align": "auto",
+                    "align": "left",
                     "cellOptions": {
                       "type": "auto"
                     },
-                    "inspect": false
+                    "filterable": false,
+                    "inspect": false,
+                    "width": 100
                   },
                   "mappings": [],
                   "noValue": "No active errors",
@@ -469,13 +471,42 @@ data:
                     "uid": "${data_source}"
                   },
                   "editorMode": "code",
-                  "expr": "registry_exporter_error{source_cluster=~\"${source_cluster}\",node=~\"${node}\",type=~\"${test_type}\"}",
+                  "exemplar": false,
+                  "expr": "registry_exporter_error_count{source_cluster=~\"${source_cluster}\",node=~\"${node}\",type=~\"${test_type}\"}",
+                  "format": "table",
+                  "instant": true,
                   "legendFormat": "__auto",
-                  "range": true,
+                  "range": false,
                   "refId": "A"
                 }
               ],
-              "title": "Errors breakdown",
+              "title": "Errors breakdown ${test_type}",
+              "transformations": [
+                {
+                  "id": "organize",
+                  "options": {
+                    "excludeByName": {
+                      "Time": true,
+                      "__name__": true,
+                      "container": true,
+                      "instance": true,
+                      "job": true,
+                      "namespace": true,
+                      "pod": true,
+                      "receive": true,
+                      "source_cluster": true,
+                      "source_environment": true,
+                      "tenant_id": true,
+                      "type": true
+                    },
+                    "includeByName": {},
+                    "indexByName": {},
+                    "renameByName": {
+                      "tested_registry": "registry"
+                    }
+                  }
+                }
+              ],
               "type": "table"
             }
           ],
@@ -1129,5 +1160,5 @@ data:
       "timezone": "UTC",
       "title": "Registry monitoring dashboard",
       "uid": "df4lph91r2anna",
-      "version": 2
+      "version": 3
     }
