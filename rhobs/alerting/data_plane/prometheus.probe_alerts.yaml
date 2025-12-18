@@ -14,18 +14,19 @@ spec:
         expr: |
           konflux_up{
           check="probe",
-          service!~".*-vpn|.*static-host"
+          service!~".*-vpn|.*static-host|.*pwvs"
           } != 1
         for: 15m
         labels:
-          severity: high
+          severity: critical
         annotations:
           summary: >-
              Probe alert {{ $labels.job }}.
           description: >-
              Probe alert instance {{ $labels.instance }} with job {{ $labels.job }} and target {{ $labels.target }} for cluster {{ $labels.source_cluster }}.
-          alert_routing_key: spreandinfra
-          slo: "false"
+          alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/blackbox/probe-alerts.md
+          slo: "true"
 
       - alert: S390xStaticHostProbeAlert
         expr: |
@@ -35,14 +36,15 @@ spec:
           } != 1
         for: 15m
         labels:
-          severity: high
+          severity: critical
         annotations:
           summary: >-
              Infra S390x Static Host Probe alert {{ $labels.job }}.
           description: >-
              Probe alert with job {{ $labels.job }} for cluster {{ $labels.source_cluster }}.
-          alert_routing_key: spreandinfra
-          slo: "false"
+          alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/static_host_probe_alerts.md
+          slo: "true"
 
       - alert: PPCStaticHostProbeAlert
         expr: |
@@ -52,14 +54,15 @@ spec:
           } != 1
         for: 15m
         labels:
-          severity: high
+          severity: critical
         annotations:
           summary: >-
              Infra PPC Static Host Probe alert {{ $labels.job }}.
           description: >-
              Probe alert with job {{ $labels.job }} for cluster {{ $labels.source_cluster }}.
-          alert_routing_key: spreandinfra
-          slo: "false"
+          alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/static_host_probe_alerts.md
+          slo: "true"
 
       - alert: VPNProbeAlert
         expr: |
@@ -69,14 +72,15 @@ spec:
           } != 1
         for: 15m
         labels:
-          severity: high
+          severity: critical
         annotations:
           summary: >-
              VPN Probe alert {{ $labels.job }}.
           description: >-
              Probe alert with job {{ $labels.job }} and target {{ $labels.target }} for cluster {{ $labels.source_cluster }}.
-          alert_routing_key: spreandinfra
-          slo: "false"
+          alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/vpn_probe_alerts.md
+          slo: "true"
 
       - alert: PWVSProbeAlert
         expr: |
@@ -86,11 +90,12 @@ spec:
           } != 1
         for: 15m
         labels:
-          severity: high
+          severity: critical
         annotations:
           summary: >-
              PWVS Probe alert {{ $labels.job }}.
           description: >-
              Probe alert with job {{ $labels.job }} and target {{ $labels.target }} for cluster {{ $labels.source_cluster }}.
-          alert_routing_key: spreandinfra
-          slo: "false"
+          alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/vpn_probe_alerts.md
+          slo: "true"
