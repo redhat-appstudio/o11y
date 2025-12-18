@@ -117,15 +117,15 @@ data:
                 "properties": [
                   {
                     "id": "custom.width",
-                    "value": 283
+                    "value": 269
                   }
                 ]
               }
             ]
           },
           "gridPos": {
-            "h": 13,
-            "w": 5,
+            "h": 10,
+            "w": 10,
             "x": 0,
             "y": 1
           },
@@ -153,7 +153,7 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum by (job,source_cluster) (probe_success{source_cluster=~\"$cluster\",target=~\"$target\",job=~\"$probe\"}) / count by (job,source_cluster) (probe_success{source_cluster=~\"$cluster\",target=~\"$target\",job=~\"$probe\"})",
+              "expr": "sum by (job) (probe_success{source_cluster=~\"$cluster\",target=~\"$target\",job=~\"$probe\"}) / count by (job) (probe_success{source_cluster=~\"$cluster\",target=~\"$target\",job=~\"$probe\"})",
               "legendFormat": "{{job}} {{target}} {{source_cluster}}",
               "range": true,
               "refId": "A"
@@ -235,9 +235,9 @@ data:
             ]
           },
           "gridPos": {
-            "h": 13,
-            "w": 5,
-            "x": 5,
+            "h": 10,
+            "w": 7,
+            "x": 10,
             "y": 1
           },
           "id": 17,
@@ -280,127 +280,6 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "description": "Top 3 highest average probes duration in seconds over 5 minutes",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "fixedColor": "light-blue",
-                "mode": "thresholds"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "axisSoftMax": 2,
-                "fillOpacity": 80,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "lineWidth": 1,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "light-blue"
-                  },
-                  {
-                    "color": "red",
-                    "value": 5
-                  }
-                ]
-              },
-              "unit": "s"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 13,
-            "w": 11,
-            "x": 10,
-            "y": 1
-          },
-          "id": 7,
-          "options": {
-            "barRadius": 0,
-            "barWidth": 0.86,
-            "fullHighlight": false,
-            "groupWidth": 0.7,
-            "legend": {
-              "calcs": [],
-              "displayMode": "list",
-              "placement": "right",
-              "showLegend": false
-            },
-            "orientation": "horizontal",
-            "showValue": "auto",
-            "stacking": "none",
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "single",
-              "sort": "none"
-            },
-            "xField": "Field",
-            "xTickLabelRotation": 0,
-            "xTickLabelSpacing": 100
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "sort_desc(topk(3, avg_over_time(probe_duration_seconds{source_cluster=~\"$cluster\",target=~\"$target\",job=~\"$probe\"}[5m])))",
-              "legendFormat": " {{source_cluster}} {{job}} {{target}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Highest Probe Duration",
-          "transformations": [
-            {
-              "id": "reduce",
-              "options": {
-                "labelsToFields": false,
-                "reducers": [
-                  "max"
-                ]
-              }
-            },
-            {
-              "id": "sortBy",
-              "options": {
-                "fields": {},
-                "sort": [
-                  {
-                    "desc": true,
-                    "field": "Max"
-                  }
-                ]
-              }
-            }
-          ],
-          "type": "barchart"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
           "description": "Number of selected probes per cluster",
           "fieldConfig": {
             "defaults": {
@@ -423,9 +302,9 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 13,
-            "w": 3,
-            "x": 21,
+            "h": 10,
+            "w": 7,
+            "x": 17,
             "y": 1
           },
           "id": 10,
@@ -511,10 +390,10 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 11,
+            "h": 9,
             "w": 24,
             "x": 0,
-            "y": 14
+            "y": 11
           },
           "id": 5,
           "options": {
@@ -551,12 +430,133 @@ data:
           "type": "state-timeline"
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Top 3 highest of average probe duration in seconds over 5 minutes",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "fixedColor": "light-blue",
+                "mode": "thresholds"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "axisSoftMax": 2,
+                "fillOpacity": 80,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineWidth": 1,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "light-blue"
+                  },
+                  {
+                    "color": "red",
+                    "value": 5
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 20
+          },
+          "id": 7,
+          "options": {
+            "barRadius": 0,
+            "barWidth": 0.86,
+            "fullHighlight": false,
+            "groupWidth": 0.7,
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "right",
+              "showLegend": false
+            },
+            "orientation": "horizontal",
+            "showValue": "auto",
+            "stacking": "none",
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            },
+            "xField": "Field",
+            "xTickLabelRotation": 0,
+            "xTickLabelSpacing": 100
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sort_desc(topk(3, avg_over_time(probe_duration_seconds{source_cluster=~\"$cluster\",target=~\"$target\",job=~\"$probe\"}[5m])))",
+              "legendFormat": " {{source_cluster}} {{job}} {{target}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Highest Probe Duration",
+          "transformations": [
+            {
+              "id": "reduce",
+              "options": {
+                "labelsToFields": false,
+                "reducers": [
+                  "max"
+                ]
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "fields": {},
+                "sort": [
+                  {
+                    "desc": true,
+                    "field": "Max"
+                  }
+                ]
+              }
+            }
+          ],
+          "type": "barchart"
+        },
+        {
           "collapsed": false,
           "gridPos": {
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 25
+            "y": 30
           },
           "id": 15,
           "panels": [],
@@ -625,10 +625,10 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 7,
+            "h": 6,
             "w": 24,
             "x": 0,
-            "y": 26
+            "y": 31
           },
           "id": 3,
           "options": {
@@ -723,10 +723,10 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 7,
+            "h": 6,
             "w": 24,
             "x": 0,
-            "y": 33
+            "y": 37
           },
           "id": 13,
           "options": {
@@ -821,10 +821,10 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 7,
+            "h": 6,
             "w": 24,
             "x": 0,
-            "y": 40
+            "y": 43
           },
           "id": 8,
           "options": {
@@ -882,10 +882,10 @@ data:
           {
             "current": {
               "text": [
-                "kflux-rhel-p01"
+                "kflux-ocp-p01"
               ],
               "value": [
-                "kflux-rhel-p01"
+                "kflux-ocp-p01"
               ]
             },
             "datasource": {
@@ -937,7 +937,9 @@ data:
           {
             "current": {
               "text": "All",
-              "value": "$__all"
+              "value": [
+                "$__all"
+              ]
             },
             "datasource": {
               "type": "prometheus",
@@ -961,12 +963,12 @@ data:
         ]
       },
       "time": {
-        "from": "now-1h",
+        "from": "now-6h",
         "to": "now"
       },
       "timepicker": {},
       "timezone": "UTC",
       "title": "Konflux Probes",
       "uid": "er4ndj1yq8upcf",
-      "version": 160
+      "version": 164
     }
