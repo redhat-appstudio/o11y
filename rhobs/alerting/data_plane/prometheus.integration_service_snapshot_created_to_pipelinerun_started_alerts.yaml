@@ -19,7 +19,7 @@ spec:
           ) / ignoring(le)
           increase(integration_svc_snapshot_created_to_pipelinerun_started_seconds_bucket{le="+Inf"}[5m])
         ) > 0.10
-      for: 10m
+      for: 15m
       labels:
         severity: critical
         slo: "true"
@@ -28,7 +28,7 @@ spec:
           Latency from an application snapshot created to integration PLRs created
         description: >
           Time from Snapshot created to integration PLRs created has been over
-          5s for more than 10% of requests during the last 10 minutes on cluster {{ $labels.source_cluster }}
+          5s for more than 10% of requests during the last 15 minutes on cluster {{ $labels.source_cluster }}
         alert_team_handle: <!subteam^S05M4AG8CJH>
         team: integration
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/sre/time_to_start_pipelinerun.md
