@@ -37,22 +37,8 @@ tests:
 
   - interval: 1m
     input_series:
-      - series: konflux_up{job="web-server",instance="instance01",target="target01",source_cluster="cluster01",check="probe",service="web-server"}
-        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-      - series: konflux_up{job="web-server",instance="instance01",target="target01",source_cluster="cluster02",check="probe",service="web-server"}
-        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-      - series: konflux_up{job="web-server",instance="instance01",target="target01",source_cluster="cluster03",check="probe",service="web-server"}
-        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-      - series: konflux_up{job="web-server",instance="instance01",target="target01",source_cluster="cluster04",check="probe",service="web-server"}
-        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-      - series: konflux_up{job="web-server",instance="instance01",target="target01",source_cluster="cluster05",check="probe",service="web-server"}
-        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-      - series: konflux_up{job="web-server",instance="instance01",target="target01",source_cluster="cluster06",check="probe",service="web-server"}
-        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-      - series: konflux_up{job="web-server",instance="instance01",target="target01",source_cluster="cluster07",check="probe",service="web-server"}
-        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-      - series: konflux_up{job="web-server",instance="instance01",target="target01",source_cluster="cluster08",check="probe",service="web-server"}
-        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+      - series: multicluster_probe_down{instance="instance01",check="probe-multicluster",service="web-server"}
+        values: 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
     alert_rule_test:
       - eval_time: 29m
         alertname: MultiClusterProbeAlert
@@ -61,6 +47,8 @@ tests:
               severity: critical
               instance: instance01
               slo: "true"
+              check: probe-multicluster
+              service: web-server
             exp_annotations:
               description: 'Probes are down on instance instance01 for more than 80% of all clusters over the last 15 minutes.'
               summary: Probe alert instance01 in multiple clusters.
