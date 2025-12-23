@@ -20,15 +20,15 @@ spec:
               ), 1
             )
 
-    - name: multicluster_probe_down_ratio
+    - name: multicluster_probe_up_ratio
       interval: 10m
       rules:
-        - record: multicluster_probe_down
+        - record: multicluster_probe_up
           expr: |
             clamp_max(
               label_replace(
                 label_replace(
-                    count by(instance,service,job) (konflux_up{check="probe", service!~".*-vpn|.*static-host|.*pwvs"} != 1) / count by(instance,service,job) (konflux_up{check="probe", service!~".*-vpn|.*static-host|.*pwvs"}) >= bool 0.8
+                    sum by(instance,service,job) (konflux_up{check="probe", service!~".*-vpn|.*static-host|.*pwvs"}) / count by(instance,service,job) (konflux_up{check="probe", service!~".*-vpn|.*static-host|.*pwvs"}) >= bool 0.8
                   , "check", "probe-multicluster", "",""
                 ), "service", "$1", "job", "(.*)"
               ), 1
