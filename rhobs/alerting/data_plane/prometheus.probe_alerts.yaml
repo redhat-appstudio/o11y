@@ -14,7 +14,7 @@ spec:
         expr: |
           konflux_up{check="probe", service!~".*-vpn|.*static-host|.*pwvs"} != 1
           and on(instance)
-          (count by(instance) (konflux_up{check="probe", service!~".*-vpn|.*static-host|.*pwvs"} != 1) /count by(instance) (konflux_up{check="probe", service!~".*-vpn|.*static-host|.*pwvs"}) < 0.8)
+          (multicluster_probe_up == 1)
         for: 15m
         labels:
           severity: critical
@@ -29,10 +29,10 @@ spec:
 
       - alert: MultiClusterProbeAlert
         expr: |
-          multicluster_probe_down{
+          multicluster_probe_up{
           check="probe-multicluster",
           service!~".*-vpn|.*static-host|.*pwvs"
-          } == 1
+          } != 1
         for: 15m
         labels:
           severity: critical
