@@ -9,6 +9,12 @@ tests:
     input_series:
       - series: konflux_up{job="web-server",instance="instance01",target="target01",source_cluster="cluster01",check="probe",service="web-server"}
         values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+      - series: konflux_up{job="web-server",instance="instance01",target="target01",source_cluster="cluster02",check="probe",service="web-server"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+      - series: konflux_up{job="web-server",instance="instance01",target="target01",source_cluster="cluster03",check="probe",service="web-server"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+      - series: konflux_up{job="web-server",instance="instance01",target="target01",source_cluster="cluster04",check="probe",service="web-server"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
 
     alert_rule_test:
       - eval_time: 29m
@@ -22,12 +28,33 @@ tests:
               source_cluster: cluster01
               check: probe
               service: web-server
+              slo: "true"
             exp_annotations:
-              description: 'Probe alert instance instance01 with job web-server and target target01 for cluster cluster01.'
+              description: 'Probe is down on instance instance01 for job web-server and target target01 on cluster cluster01. Probe failures represent less than 80% of total instance01 probes across all monitored clusters over the last 15 minutes.'
               summary: Probe alert web-server.
               alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/blackbox/probe-alerts.md
-              slo: 'true'
+
+  - interval: 1m
+    input_series:
+      - series: multicluster_probe_down{instance="instance01",check="probe-multicluster",service="web-server"}
+        values: 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+    alert_rule_test:
+      - eval_time: 29m
+        alertname: MultiClusterProbeAlert
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              instance: instance01
+              slo: "true"
+              check: probe-multicluster
+              service: web-server
+            exp_annotations:
+              description: 'Probes are down on instance instance01 for more than 80% of all clusters over the last 15 minutes.'
+              summary: Probe alert instance01 in multiple clusters.
+              alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/blackbox/probe-alerts.md
+
 
   - interval: 1m
     input_series:
@@ -44,12 +71,13 @@ tests:
               job: s390x-static-host
               check: probe-s390x
               service: s390x-static-host
+              slo: 'true'
             exp_annotations:
-              description: 'Probe alert with job s390x-static-host for cluster cluster01.'
+              description: 'Probe alert for job s390x-static-host on cluster cluster01.'
               summary: Infra S390x Static Host Probe alert s390x-static-host.
               alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/static_host_probe_alerts.md
-              slo: 'true'
+
 
   - interval: 1m
     input_series:
@@ -66,12 +94,13 @@ tests:
               job: ppc-static-host
               check: probe-ppc
               service: ppc-static-host
+              slo: 'true'
             exp_annotations:
-              description: 'Probe alert with job ppc-static-host for cluster cluster01.'
+              description: 'Probe alert for job ppc-static-host on cluster cluster01.'
               summary: Infra PPC Static Host Probe alert ppc-static-host.
               alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/static_host_probe_alerts.md
-              slo: 'true'
+
 
   - interval: 1m
     input_series:
@@ -89,12 +118,13 @@ tests:
               job: vpn
               check: probe-vpn
               service: vpn
+              slo: 'true'
             exp_annotations:
-              description: 'Probe alert with job vpn and target vpn01 for cluster cluster01.'
+              description: 'Probe alert for job vpn and target vpn01 on cluster cluster01.'
               summary: VPN Probe alert vpn.
               alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/vpn_probe_alerts.md
-              slo: 'true'
+
 
   - interval: 1m
     input_series:
@@ -112,9 +142,9 @@ tests:
               job: pwvs
               check: probe-pwvs
               service: pwvs
+              slo: 'true'
             exp_annotations:
-              description: 'Probe alert with job pwvs and target net01 for cluster cluster01.'
+              description: 'Probe alert for job pwvs and target net01 on cluster cluster01.'
               summary: PWVS Probe alert pwvs.
               alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/vpn_probe_alerts.md
-              slo: 'true'
