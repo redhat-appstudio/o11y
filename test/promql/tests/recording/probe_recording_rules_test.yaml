@@ -1,0 +1,141 @@
+evaluation_interval: 1m
+
+rule_files:
+  - probes_recording_rules.yaml
+
+tests:
+  - name: ProbesAvailabilityTest
+    interval: 1m
+    input_series:
+      - series: probe_success{job="web-server",instance="instance01",target="target01",source_cluster="cluster01"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 0 0 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 10m
+        exp_samples:
+          - labels: 'konflux_up{check="probe", instance="instance01", job="web-server", service="web-server", source_cluster="cluster01", target="target01"}'
+            value: 1
+
+  - name: ProbesAvailabilityTestFailure
+    interval: 1m
+    input_series:
+      - series: probe_success{job="web-server",instance="instance01",target="target01",source_cluster="cluster01"}
+        values: 0 0 0 0 0 0 0 0 0 0
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 10m
+        exp_samples:
+          - labels: 'konflux_up{check="probe", instance="instance01", job="web-server", service="web-server", source_cluster="cluster01", target="target01"}'
+            value: 0
+
+  - name: ProbesMulticlusterProbeDownTest
+    interval: 1m
+    input_series:
+      - series: konflux_up{job="web-server",service="web-server",instance="instance01",target="target01",source_cluster="cluster01",check="probe"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+      - series: konflux_up{job="web-server",service="web-server",instance="instance01",target="target01",source_cluster="cluster02",check="probe"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+      - series: konflux_up{job="web-server",service="web-server",instance="instance01",target="target01",source_cluster="cluster03",check="probe"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+      - series: konflux_up{job="web-server",service="web-server",instance="instance01",target="target01",source_cluster="cluster04",check="probe"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+      - series: konflux_up{job="web-server",service="web-server",instance="instance01",target="target01",source_cluster="cluster05",check="probe"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+      - series: konflux_up{job="web-server",service="web-server",instance="instance01",target="target01",source_cluster="cluster06",check="probe"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+      - series: konflux_up{job="web-server",service="web-server",instance="instance01",target="target01",source_cluster="cluster07",check="probe"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+      - series: konflux_up{job="web-server",service="web-server",instance="instance01",target="target01",source_cluster="cluster08",check="probe"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+    promql_expr_test:
+      - expr: multicluster_probe_up
+        eval_time: 29m
+        exp_samples:
+          - labels: 'multicluster_probe_up{check="probe-multicluster", instance="instance01", job="web-server", service="web-server"}'
+            value: 0
+
+  - name: ProbesMulticlusterProbeUpTest
+    interval: 1m
+    input_series:
+      - series: konflux_up{job="web-server",service="web-server",instance="instance01",target="target01",source_cluster="cluster01",check="probe"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+      - series: konflux_up{job="web-server",service="web-server",instance="instance01",target="target01",source_cluster="cluster02",check="probe"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+      - series: konflux_up{job="web-server",service="web-server",instance="instance01",target="target01",source_cluster="cluster03",check="probe"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+      - series: konflux_up{job="web-server",service="web-server",instance="instance01",target="target01",source_cluster="cluster04",check="probe"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+      - series: konflux_up{job="web-server",service="web-server",instance="instance01",target="target01",source_cluster="cluster05",check="probe"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+      - series: konflux_up{job="web-server",service="web-server",instance="instance01",target="target01",source_cluster="cluster06",check="probe"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+      - series: konflux_up{job="web-server",service="web-server",instance="instance01",target="target01",source_cluster="cluster07",check="probe"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+      - series: konflux_up{job="web-server",service="web-server",instance="instance01",target="target01",source_cluster="cluster08",check="probe"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
+    promql_expr_test:
+      - expr: multicluster_probe_up
+        eval_time: 29m
+        exp_samples:
+          - labels: 'multicluster_probe_up{check="probe-multicluster", instance="instance01", job="web-server", service="web-server"}'
+            value: 1
+
+  - name: ProbesS390xAvailabilityTest
+
+    interval: 1m
+    input_series:
+      - series: probe_success{job="s390x-static-host",instance="instance01",target="s390x-host01",source_cluster="cluster01"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+      - series: probe_success{job="s390x-static-host",instance="instance02",target="s390x-host02",source_cluster="cluster01"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 10m
+        exp_samples:
+          - labels: 'konflux_up{check="probe-s390x", job="s390x-static-host", service="s390x-static-host", source_cluster="cluster01"}'
+            value: 1
+
+  - name: ProbesPPCAvailabilityTest
+
+    interval: 1m
+    input_series:
+      - series: probe_success{job="ppc-static-host",instance="instance04",target="ppc-host01",source_cluster="cluster01"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+      - series: probe_success{job="ppc-static-host",instance="instance05",target="ppc-host02",source_cluster="cluster01"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 10m
+        exp_samples:
+          - labels: 'konflux_up{check="probe-ppc", job="ppc-static-host", service="ppc-static-host", source_cluster="cluster01"}'
+            value: 1
+
+  - name: ProbesVPNAvailabilityTest
+
+    interval: 1m
+    input_series:
+      - series: probe_success{job="test-vpn",instance="instance07",target="vpn01",source_cluster="cluster01"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+      - series: probe_success{job="test-vpn",instance="instance08",target="vpn01",source_cluster="cluster01"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 10m
+        exp_samples:
+          - labels: 'konflux_up{check="probe-vpn", target="vpn01", job="test-vpn", service="test-vpn", source_cluster="cluster01"}'
+            value: 1
+
+  - name: ProbesPWVSAvailabilityTest
+
+    interval: 1m
+    input_series:
+      - series: probe_success{job="probe-pwvs",instance="instance09",target="net01",source_cluster="cluster01"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+      - series: probe_success{job="probe-pwvs",instance="instance10",target="net01",source_cluster="cluster01"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 10m
+        exp_samples:
+          - labels: 'konflux_up{check="probe-pwvs", target="net01", job="probe-pwvs", service="probe-pwvs", source_cluster="cluster01"}'
+            value: 1

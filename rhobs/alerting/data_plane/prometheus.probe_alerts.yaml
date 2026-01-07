@@ -1,0 +1,122 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-probe-alerting
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: probe_alerts
+      interval: 1m
+      rules:
+
+      - alert: ProbeAlert
+        expr: |
+          konflux_up{check="probe", service!~".*-vpn|.*static-host|.*pwvs"} != 1
+          and on(instance)
+          (multicluster_probe_up == 1)
+        for: 15m
+        labels:
+          severity: critical
+          slo: "true"
+        annotations:
+          summary: >-
+             Probe alert {{ $labels.job }}.
+          description: >-
+             Probe is down on instance {{ $labels.instance }} for job {{ $labels.job }} and target {{ $labels.target }} on cluster {{ $labels.source_cluster }}. Probe failures represent less than 80% of total {{ $labels.instance }} probes across all monitored clusters over the last 15 minutes.
+          alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/blackbox/probe-alerts.md
+
+      - alert: MultiClusterProbeAlert
+        expr: |
+          multicluster_probe_up{
+          check="probe-multicluster",
+          service!~".*-vpn|.*static-host|.*pwvs"
+          } != 1
+        for: 15m
+        labels:
+          severity: critical
+          slo: "true"
+        annotations:
+          summary: >-
+             Probe alert {{ $labels.instance }} in multiple clusters.
+          description: >-
+             Probes are down on instance {{ $labels.instance }} for more than 80% of all clusters over the last 15 minutes.
+          alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/blackbox/probe-alerts.md
+
+
+      - alert: S390xStaticHostProbeAlert
+        expr: |
+          konflux_up{
+          check="probe-s390x",
+          service=~".*-static-host"
+          } != 1
+        for: 15m
+        labels:
+          severity: critical
+          slo: "true"
+        annotations:
+          summary: >-
+             Infra S390x Static Host Probe alert {{ $labels.job }}.
+          description: >-
+             Probe alert for job {{ $labels.job }} on cluster {{ $labels.source_cluster }}.
+          alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/static_host_probe_alerts.md
+
+
+      - alert: PPCStaticHostProbeAlert
+        expr: |
+          konflux_up{
+          check="probe-ppc",
+          service=~".*-static-host"
+          } != 1
+        for: 15m
+        labels:
+          severity: critical
+          slo: "true"
+        annotations:
+          summary: >-
+             Infra PPC Static Host Probe alert {{ $labels.job }}.
+          description: >-
+             Probe alert for job {{ $labels.job }} on cluster {{ $labels.source_cluster }}.
+          alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/static_host_probe_alerts.md
+
+
+      - alert: VPNProbeAlert
+        expr: |
+          konflux_up{
+          check="probe-vpn",
+          service=~".*vpn"
+          } != 1
+        for: 15m
+        labels:
+          severity: critical
+          slo: "true"
+        annotations:
+          summary: >-
+             VPN Probe alert {{ $labels.job }}.
+          description: >-
+             Probe alert for job {{ $labels.job }} and target {{ $labels.target }} on cluster {{ $labels.source_cluster }}.
+          alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/vpn_probe_alerts.md
+
+
+      - alert: PWVSProbeAlert
+        expr: |
+          konflux_up{
+          check="probe-pwvs",
+          service=~".*pwvs"
+          } != 1
+        for: 15m
+        labels:
+          severity: critical
+          slo: "true"
+        annotations:
+          summary: >-
+             PWVS Probe alert {{ $labels.job }}.
+          description: >-
+             Probe alert for job {{ $labels.job }} and target {{ $labels.target }} on cluster {{ $labels.source_cluster }}.
+          alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/vpn_probe_alerts.md

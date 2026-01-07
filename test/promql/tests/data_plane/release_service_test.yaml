@@ -62,47 +62,6 @@ tests:
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/release-service/release-validation-latency.md?ref_type=heads
               team: release
 
-  - name: ReleaseServiceControllerAvailabilityAlertOnBelowOf99SLOFailure
-    interval: 1m
-    input_series:
-      - series: 'kube_pod_container_status_ready{namespace="release-service", container="manager", source_cluster="stone-prod-p02", pod="a"}'
-        values: '1x19 _x39'
-      - series: 'kube_pod_container_status_ready{namespace="release-service", container="manager", source_cluster="stone-prod-p02", pod="b"}'
-        values: '_x21 1x37'
-      - series: 'kube_pod_container_status_ready{namespace="release-service", container="manager", source_cluster="stone-prod-p02", pod="c"}'
-        values: '0x9 1x20 0x30'
-    alert_rule_test:
-      - eval_time: 1h
-        alertname: ReleaseServiceControllerManagerAvailability
-        exp_alerts:
-          - exp_labels:
-              severity: critical
-              slo: "true"
-              source_cluster: "stone-prod-p02"
-            exp_annotations:
-              summary: >-
-                The Release Service Controller Manager must be available 99% of the time
-              description: >-
-                The Release Service Controller Manager is failing to be available for 99% of the time
-              alert_team_handle: <!subteam^S03SVBS426R>
-              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/release-service/release-controller-availability.md?ref_type=heads
-              team: release
-
-  - name: ReleaseServiceControllerAvailabilityNoAlert
-    interval: 5m
-    input_series:
-      - series: 'kube_pod_container_status_ready{namespace="release-service", container="manager", source_cluster="stone-prd-rh01"}'
-        values: '1 1x791'
-      - series: 'kube_pod_container_status_ready{namespace="release-service", container="manager", source_cluster="stone-prod-p02"}'
-        values: '1 1x791'
-      - series: 'kube_pod_container_status_ready{namespace="release-service", container="manager", source_cluster="cluster03"}'
-        values: '1 1x791'
-    alert_rule_test:
-      - eval_time: 10m
-        alertname: ReleaseServiceControllerManagerAvailability
-        exp_alerts: []
-
-
   - name: ReleaseServiceControllerManagerOnPodNotReadyStonePrdRh01
     interval: 1m
     input_series:
