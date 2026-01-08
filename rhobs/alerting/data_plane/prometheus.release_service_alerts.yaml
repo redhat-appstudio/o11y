@@ -64,24 +64,6 @@ spec:
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/release-service/release-processing-latency.md?ref_type=heads
         team: release
 
-    - alert: ReleaseServiceControllerManagerAvailability
-      expr: |
-        (
-          rate(count(max_over_time(kube_pod_container_status_ready{namespace="release-service", container="manager"}[5m:])) by (source_cluster) [1h:] ) * 100
-        ) > 0.01
-      for: 15m
-      labels:
-        severity: critical
-        slo: "true"
-      annotations:
-        summary: >-
-          The Release Service Controller Manager must be available 99% of the time
-        description: >-
-          The Release Service Controller Manager is failing to be available for 99% of the time
-        alert_team_handle: <!subteam^S03SVBS426R>
-        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/release-service/release-controller-availability.md?ref_type=heads
-        team: release
-
     - alert: ReleaseServiceControllerManagerPodNotReady
       expr: |
         sum by (source_cluster, namespace) (kube_pod_container_status_ready{container="manager",namespace="release-service",source_cluster=~"stone-prd-rh01|stone-prod-p02"}) == 0
