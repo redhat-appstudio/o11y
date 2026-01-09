@@ -18,3 +18,16 @@ spec:
                 floor(sum(release_service_check_gauge) without(check) / count(release_service_check_gauge) without(check)),
               "check", "release", "", ""),
             "Name", "release_service_check_gauge", "", "")
+        - record: konflux_up
+          expr: |
+            clamp_max(
+              label_replace(
+                label_replace(
+                  floor(
+                    kube_deployment_status_replicas_available{
+                      namespace="release-service", deployment="release-service-controller-manager"
+                    } / kube_deployment_spec_replicas
+                  ), "check", "replicas-available", "",""
+                ), "service", "$1", "deployment","(.*)"
+              ), 1
+            )

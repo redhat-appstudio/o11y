@@ -119,3 +119,28 @@ tests:
       - eval_time: 1h
         alertname: ReleaseServiceControllerManagerPodNotReady
         exp_alerts: []
+
+  - name: ReleaseServiceControllerManagerDown
+    interval: 1m
+    input_series:
+      - series: 'konflux_up{namespace="release-service", check="replicas-available", service="release-service-controller-manager", deployment="release-service-controller-manager", source_cluster="c1"}'
+        values: '0+0x20'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: ReleaseServiceControllerManagerDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              namespace: release-service
+              check: replicas-available
+              service: release-service-controller-manager
+              deployment: release-service-controller-manager
+              slo: "true"
+              source_cluster: c1
+            exp_annotations:
+              summary: Release Service Controller Manager pod is down in cluster c1
+              description: >
+                Release Service Controller Manager pod has been down for 10 minutes in cluster c1
+              alert_routing_key: "release-service"
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/release-service/release-controller-availability.md?ref_type=heads
+              team: release
