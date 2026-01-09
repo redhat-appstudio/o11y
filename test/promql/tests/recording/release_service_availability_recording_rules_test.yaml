@@ -57,3 +57,18 @@ tests:
             value: 0
           - labels: konflux_up{Name='release_service_check_gauge', service='release-service-availability-monitor-service3', check='release'}
             value: 0
+
+  - name: ReleaseServiceControllerManagerDownTest
+    interval: 1m
+    input_series:
+      - series: "kube_deployment_status_replicas_available{namespace='release-service', deployment='release-service-controller-manager'}"
+        values: "0 0 0 0 0"
+      - series: "kube_deployment_spec_replicas{namespace='release-service', deployment='release-service-controller-manager'}"
+        values: "1 1 1 1 1"
+
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples:
+          - labels: konflux_up{service='release-service-controller-manager', check='replicas-available', namespace='release-service', deployment='release-service-controller-manager'}
+            value: 0
