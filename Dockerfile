@@ -7,9 +7,6 @@ WORKDIR /opt/app-root/src
 
 COPY go.mod go.sum ./
 
-# Download Go module dependencies.
-RUN go mod download
-
 # Copy the 'exporters' source directory, preserving its subdirectory structure.
 # This structure is crucial for the automated build loop below.
 COPY --chown=default:root exporters ./exporters
@@ -30,15 +27,16 @@ RUN cd exporters && \
         fi \
     done
 
-# Download oras binary for registry exporter
-RUN curl -LO "https://github.com/oras-project/oras/releases/download/v1.3.0/oras_1.3.0_linux_amd64.tar.gz" \
-    && mkdir -p /tmp/oras-install/ \
-    && tar -zxf oras_1.3.0_linux_amd64.tar.gz -C /tmp/oras-install/
+# Oras binary from konflux image
+FROM quay.io/konflux-ci/oras:latest@sha256:4542f5a2a046ca36653749a8985e46744a5d2d36ee10ca14409be718ce15129e as oras
 
 FROM registry.access.redhat.com/ubi9-micro@sha256:e14a8cbcaa0c26b77140ac85d40a47b5e910a4068686b02ebcad72126e9b5f86
 
+# Copy oras binary from the oras image to the final image.
+COPY --from=oras /bin/oras /bin/oras
+
 # Copy all compiled binaries from the builder stage to the final image.
-COPY --from=builder /tmp/built_exporters/* /tmp/oras-install/oras /bin/
+COPY --from=builder /tmp/built_exporters/* /bin/
 
 # Copy the CA certificates
 COPY --from=builder /etc/pki/ca-trust/extracted/ /etc/pki/ca-trust/extracted/
