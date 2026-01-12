@@ -49,7 +49,7 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "description": "Maximum Alert Count by alert name. Selecte time range. ",
+          "description": "Maximum Alert Count by alert name for a selected time range. ",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -67,8 +67,8 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 8,
-            "w": 14,
+            "h": 16,
+            "w": 13,
             "x": 0,
             "y": 1
           },
@@ -111,6 +111,19 @@ data:
               "legendFormat": "{{alertname}}",
               "range": true,
               "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum(changes(alerts_for_state_firing{severity=~\"$severity\",check=~\"probe-multicluster\",alertname=~\"$alertname\"}[$__range]) + 1 ) by (job,alertname,severity)",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "{{alertname}} {{job}}",
+              "range": true,
+              "refId": "B"
             }
           ],
           "title": "Max Alert Count",
@@ -133,7 +146,7 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "description": "Max number of alerts by cluster",
+          "description": "Max number of  alerts by cluster or dependency",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -184,9 +197,9 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 8,
-            "w": 10,
-            "x": 14,
+            "h": 16,
+            "w": 11,
+            "x": 13,
             "y": 1
           },
           "id": 22,
@@ -222,13 +235,27 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum(changes(alerts_for_state_firing{severity=~\"$severity\",alertname=~\"$alertname\",source_cluster=~\"$cluster\"}[$__range]) + 1) by(source_cluster)",
-              "legendFormat": "__auto",
+              "expr": "sum(changes(alerts_for_state_firing{severity=~\"$severity\",check=~\"probe-multicluster\",alertname=~\"$alertname\"}[$__range]) + 1) by(job) or sum(changes(alerts_for_state_firing{severity=~\"$severity\",alertname=~\"$alertname\",source_cluster=~\"$cluster\"}[$__range]) + 1) by(source_cluster)",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "{{source_cluster}} {{job}}",
+              "range": true,
+              "refId": "B"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "",
+              "hide": false,
+              "legendFormat": "{{source_cluster}} ",
               "range": true,
               "refId": "A"
             }
           ],
-          "title": "Max Cluster Alert Count",
+          "title": "Alert Count by Cluster and Dependency",
           "transformations": [
             {
               "id": "reduce",
@@ -242,7 +269,7 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "description": "Heatmap of alert count by alertname",
+          "description": "Heatmap of alert count by alert name",
           "fieldConfig": {
             "defaults": {
               "custom": {
@@ -262,7 +289,7 @@ data:
             "h": 10,
             "w": 24,
             "x": 0,
-            "y": 9
+            "y": 17
           },
           "id": 8,
           "options": {
@@ -311,10 +338,12 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum(changes(alerts_for_state_firing{severity=~\"$severity\",alertname=~\"$alertname\",source_cluster=~\"$cluster\"}[$__range]) + 1) by(alertname)",
-              "legendFormat": "__auto",
+              "expr": "sum(changes(alerts_for_state_firing{severity=~\"$severity\",alertname=~\"$alertname\",check=\"probe-multicluster\"}[$__range]) + 1) by(alertname,job) or sum(changes(alerts_for_state_firing{severity=~\"$severity\",alertname=~\"$alertname\",source_cluster=~\"$cluster\"}[$__range]) + 1) by(alertname)",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "{{alertname}} {{job}}",
               "range": true,
-              "refId": "A"
+              "refId": "B"
             }
           ],
           "title": "Alert Heatmap",
@@ -326,7 +355,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 19
+            "y": 27
           },
           "id": 30,
           "panels": [],
@@ -338,7 +367,7 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "description": "Alerts with duration below 10 min by alertname and source cluster.",
+          "description": "Alerts with  duration below 10 min by alertname and source cluster.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -451,7 +480,7 @@ data:
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 20
+            "y": 28
           },
           "id": 28,
           "options": {
@@ -484,11 +513,24 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "(timestamp(alerts_for_state_firing{severity=~\"$severity\",alertname=~\"$alertname\",source_cluster=~\"$cluster\"})) / 60",
+              "expr": "(timestamp(alerts_for_state_firing{severity=~\"$severity\",alertname=~\"$alertname\",source_cluster=~\"$cluster\"})) / 60 or (timestamp(alerts_for_state_firing{severity=~\"$severity\",alertname=~\"$alertname\",check=\"probe-multicluster\"})) / 60",
               "hide": false,
               "legendFormat": "{{alertname}} {{source_cluster}}",
               "range": true,
               "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "{{alertname}} {{job}}",
+              "range": true,
+              "refId": "B"
             }
           ],
           "title": "Short Duration Alerts",
@@ -588,7 +630,7 @@ data:
             "h": 14,
             "w": 24,
             "x": 0,
-            "y": 27
+            "y": 35
           },
           "id": 29,
           "options": {
@@ -619,6 +661,19 @@ data:
               "legendFormat": "{{alertname}} {{source_cluster}}",
               "range": true,
               "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "alerts_for_state_firing{severity=~\"$severity\",alertname=~\"$alertname\",check=\"probe-multicluster\"}",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "{{alertname}} {{job}}",
+              "range": true,
+              "refId": "B"
             }
           ],
           "title": "Alert Duration ",
@@ -630,7 +685,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 41
+            "y": 49
           },
           "id": 26,
           "panels": [],
@@ -646,7 +701,7 @@ data:
             "h": 13,
             "w": 24,
             "x": 0,
-            "y": 42
+            "y": 50
           },
           "id": 18,
           "maxPerRow": 2,
@@ -697,7 +752,9 @@ data:
           },
           {
             "current": {
-              "text": "All",
+              "text": [
+                "All"
+              ],
               "value": [
                 "$__all"
               ]
@@ -707,6 +764,7 @@ data:
               "uid": "${datasource}"
             },
             "definition": "label_values(source_cluster)",
+            "description": "Cluster",
             "includeAll": true,
             "label": "Select Cluster",
             "multi": true,
@@ -734,6 +792,35 @@ data:
               "type": "prometheus",
               "uid": "${datasource}"
             },
+            "definition": "label_values(ALERTS,severity)",
+            "description": "Severity",
+            "includeAll": true,
+            "label": "Severity",
+            "multi": true,
+            "name": "severity",
+            "options": [],
+            "query": {
+              "qryType": 1,
+              "query": "label_values(ALERTS,severity)",
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "refresh": 1,
+            "regex": "",
+            "type": "query"
+          },
+          {
+            "current": {
+              "text": [
+                "All"
+              ],
+              "value": [
+                "$__all"
+              ]
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "P22466E8E7855F1E0"
+            },
             "definition": "label_values(ALERTS,alertname)",
             "description": "Alert Name Filter",
             "includeAll": true,
@@ -750,35 +837,6 @@ data:
             "regex": "",
             "sort": 1,
             "type": "query"
-          },
-          {
-            "current": {
-              "text": [
-                "critical"
-              ],
-              "value": [
-                "critical"
-              ]
-            },
-            "datasource": {
-              "type": "prometheus",
-              "uid": "${datasource}"
-            },
-            "definition": "label_values(ALERTS,severity)",
-            "description": "Severity",
-            "includeAll": true,
-            "label": "Severity",
-            "multi": true,
-            "name": "severity",
-            "options": [],
-            "query": {
-              "qryType": 1,
-              "query": "label_values(ALERTS,severity)",
-              "refId": "PrometheusVariableQueryEditor-VariableQuery"
-            },
-            "refresh": 1,
-            "regex": "",
-            "type": "query"
           }
         ]
       },
@@ -790,5 +848,5 @@ data:
       "timezone": "",
       "title": "Konflux Alerts",
       "uid": "abpr2yy9lt0183",
-      "version": 188
+      "version": 201
     }
