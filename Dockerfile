@@ -28,7 +28,7 @@ RUN cd exporters && \
     done
 
 # Oras binary from konflux image
-FROM quay.io/konflux-ci/oras:latest@sha256:4542f5a2a046ca36653749a8985e46744a5d2d36ee10ca14409be718ce15129e as oras
+FROM quay.io/konflux-ci/oras:latest@sha256:721da6e6f0e7a60d5d1fe7c32edba5471da21bed1bd8a7c999aed9a3a9b1e940 as oras
 
 FROM registry.access.redhat.com/ubi9-micro@sha256:e9765516d74cafded50d8ef593331eeca2ef6eababdda118e5297898d99b7433
 
