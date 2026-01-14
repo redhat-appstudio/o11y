@@ -94,7 +94,7 @@ data:
           },
           "id": 16,
           "panels": [],
-          "title": "Kanary signals",
+          "title": "Signals overview",
           "type": "row"
         },
         {
@@ -164,7 +164,7 @@ data:
                       {
                         "targetBlank": true,
                         "title": "Kanary signal dashboard",
-                        "url": "https://grafana.app-sre.devshift.net/d/eeoimpx3yutq9f/kanary-signal-dashboard?var-kanary_clusters=${cluster}&var-kanary_type=container"
+                        "url": "https://grafana.app-sre.devshift.net/d/eeoimpx3yutq9f/kanary-signal-dashboard?var-kanary_clusters=${cluster}&var-kanary_type=container-single-arch"
                       }
                     ]
                   }
@@ -173,8 +173,8 @@ data:
             ]
           },
           "gridPos": {
-            "h": 6,
-            "w": 12,
+            "h": 5,
+            "w": 5,
             "x": 0,
             "y": 4
           },
@@ -205,14 +205,132 @@ data:
                 "uid": "P22466E8E7855F1E0"
               },
               "editorMode": "code",
-              "expr": "sum(kanary_error{tested_cluster=\"${cluster}\",type=\"container\"} == bool 1) + sum(kanary_up{tested_cluster=\"${cluster}\", type=\"container\"} == bool 0)",
+              "expr": "sum(kanary_error{tested_cluster=\"${cluster}\",type=\"container-single-arch\"} == bool 1) + sum(kanary_up{tested_cluster=\"${cluster}\", type=\"container-single-arch\"} == bool 0)",
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
             }
           ],
           "timeFrom": "10m",
-          "title": "Container builds status",
+          "title": "Container Single Arch builds",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "P22466E8E7855F1E0"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "#0c6700",
+                      "index": 0,
+                      "text": "GOOD"
+                    }
+                  },
+                  "type": "value"
+                },
+                {
+                  "options": {
+                    "from": 1,
+                    "result": {
+                      "color": "#b5061a",
+                      "index": 1,
+                      "text": "BAD"
+                    },
+                    "to": 2
+                  },
+                  "type": "range"
+                },
+                {
+                  "options": {
+                    "match": "null",
+                    "result": {
+                      "color": "#808080",
+                      "index": 2,
+                      "text": "N/A"
+                    }
+                  },
+                  "type": "special"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value"
+                },
+                "properties": [
+                  {
+                    "id": "links",
+                    "value": [
+                      {
+                        "targetBlank": true,
+                        "title": "Kanary signal dashboard",
+                        "url": "https://grafana.app-sre.devshift.net/d/eeoimpx3yutq9f/kanary-signal-dashboard?var-kanary_clusters=${cluster}&var-kanary_type=container-multi-arch"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 4,
+            "x": 5,
+            "y": 4
+          },
+          "hideTimeOverride": true,
+          "id": 24,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "P22466E8E7855F1E0"
+              },
+              "editorMode": "code",
+              "expr": "sum(kanary_error{tested_cluster=\"${cluster}\",type=\"container-multi-arch\"} == bool 1) + sum(kanary_up{tested_cluster=\"${cluster}\", type=\"container-multi-arch\"} == bool 0)",
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "timeFrom": "10m",
+          "title": "Container Multi Arch builds",
           "type": "stat"
         },
         {
@@ -291,9 +409,9 @@ data:
             ]
           },
           "gridPos": {
-            "h": 6,
-            "w": 12,
-            "x": 12,
+            "h": 5,
+            "w": 4,
+            "x": 9,
             "y": 4
           },
           "hideTimeOverride": true,
@@ -330,8 +448,273 @@ data:
             }
           ],
           "timeFrom": "10m",
-          "title": "RPM builds status",
+          "title": "RPM builds",
           "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "P22466E8E7855F1E0"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "#b5061a",
+                      "index": 1,
+                      "text": "BAD"
+                    }
+                  },
+                  "type": "value"
+                },
+                {
+                  "options": {
+                    "from": 1,
+                    "result": {
+                      "color": "#0c6700",
+                      "index": 0,
+                      "text": "GOOD"
+                    },
+                    "to": 2
+                  },
+                  "type": "range"
+                },
+                {
+                  "options": {
+                    "match": "null",
+                    "result": {
+                      "color": "#808080",
+                      "index": 2,
+                      "text": "N/A"
+                    }
+                  },
+                  "type": "special"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Value"
+                },
+                "properties": [
+                  {
+                    "id": "links",
+                    "value": [
+                      {
+                        "targetBlank": true,
+                        "title": "Kanary signal dashboard",
+                        "url": "https://grafana.app-sre.devshift.net/d/df4lph91r2anna/registry-monitoring-dashboard?orgId=1&from=now-3h&to=now&timezone=UTC&var-data_source=P22466E8E7855F1E0&var-source_cluster=${cluster}&var-node=$__all&var-test_type=$__all&var-image_registry=quay.io"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 4,
+            "x": 13,
+            "y": 4
+          },
+          "hideTimeOverride": true,
+          "id": 27,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "P22466E8E7855F1E0"
+              },
+              "editorMode": "code",
+              "expr": "konflux_up{check=\"quay.io\", source_cluster=\"${cluster}\"}",
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "timeFrom": "10m",
+          "title": "Quay registry exporter",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "P22466E8E7855F1E0"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "left",
+                "cellOptions": {
+                  "mode": "basic",
+                  "type": "color-background"
+                },
+                "inspect": false
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "1": {
+                      "color": "#0c6700",
+                      "index": 0,
+                      "text": "GOOD"
+                    }
+                  },
+                  "type": "value"
+                },
+                {
+                  "options": {
+                    "from": 0,
+                    "result": {
+                      "color": "#b5061a",
+                      "index": 1,
+                      "text": "BAD"
+                    },
+                    "to": 1
+                  },
+                  "type": "range"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "transparent"
+                  },
+                  {
+                    "color": "red",
+                    "value": 0
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Field"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 180
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byType",
+                  "options": "string"
+                },
+                "properties": [
+                  {
+                    "id": "links",
+                    "value": [
+                      {
+                        "targetBlank": true,
+                        "title": "Probe dashboard",
+                        "url": "https://grafana.app-sre.devshift.net/d/er4ndj1yq8upcf/konflux-probes?orgId=1&from=now-6h&to=now&timezone=UTC&var-datasource=P22466E8E7855F1E0&var-cluster=${cluster}&var-probe=$__all&var-target=$__all"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 6,
+            "x": 17,
+            "y": 4
+          },
+          "hideTimeOverride": true,
+          "id": 29,
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "enablePagination": false,
+              "fields": "",
+              "reducer": [
+                "sum"
+              ],
+              "show": false
+            },
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": false,
+                "displayName": "Last"
+              }
+            ]
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "P22466E8E7855F1E0"
+              },
+              "editorMode": "code",
+              "expr": "sum by (job) (probe_success{source_cluster=~\"$cluster\"}) / count by (job) (probe_success{source_cluster=~\"$cluster\"})",
+              "legendFormat": "{{job}} {{target}} {{source_cluster}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "timeFrom": "10m",
+          "title": "Probe Group Status",
+          "transformations": [
+            {
+              "id": "reduce",
+              "options": {
+                "reducers": [
+                  "last"
+                ]
+              }
+            }
+          ],
+          "type": "table"
         },
         {
           "collapsed": false,
@@ -339,7 +722,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 10
+            "y": 9
           },
           "id": 17,
           "panels": [],
@@ -425,7 +808,7 @@ data:
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 11
+            "y": 10
           },
           "id": 21,
           "options": {
@@ -609,7 +992,7 @@ data:
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 11
+            "y": 10
           },
           "id": 13,
           "options": {
@@ -634,7 +1017,7 @@ data:
               "editorMode": "code",
               "format": "table",
               "rawQuery": true,
-              "rawSql": "SELECT\n i.incident_id,\n i.created_at,\n i.resolved_at,\n i.status,\n i.summary\nFROM\n incidents AS i\nJOIN\n incident_products AS ip ON ip.incident_id = i.id\nWHERE\n i.created_at <= $__timeTo() AND\n (\n   i.resolved_at >= $__timeFrom()\n   OR\n   (i.status != 'paused' AND i.resolved_at IS NULL)\n ) AND\n ip.product_id = 'ebfd6fef-1922-4bcb-a2f9-b33f586955ed'\nORDER BY\n i.created_at DESC;",
+              "rawSql": "SELECT\n i.incident_id,\n i.created_at,\n i.resolved_at,\n i.status,\n i.summary\nFROM\n incidents AS i\nJOIN\n incident_products AS ip ON ip.incident_id = i.id\nWHERE\n i.created_at <= $__timeTo() AND\n (\n   i.resolved_at >= $__timeFrom()\n   OR\n   (i.status = 'ongoing' AND i.resolved_at IS NULL)\n ) AND\n ip.product_id = 'ebfd6fef-1922-4bcb-a2f9-b33f586955ed'\nORDER BY\n i.created_at DESC;",
               "refId": "A",
               "sql": {
                 "columns": [
@@ -664,7 +1047,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 17
+            "y": 16
           },
           "id": 18,
           "panels": [],
@@ -750,7 +1133,7 @@ data:
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 18
+            "y": 17
           },
           "hideTimeOverride": true,
           "id": 23,
@@ -799,7 +1182,7 @@ data:
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 18
+            "y": 17
           },
           "id": 11,
           "options": {
@@ -867,5 +1250,5 @@ data:
       "timezone": "UTC",
       "title": "Konflux Status Page",
       "uid": "aes1ns0htwni8a",
-      "version": 4
+      "version": 5
     }
