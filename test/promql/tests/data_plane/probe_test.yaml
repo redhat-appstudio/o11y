@@ -56,6 +56,25 @@ tests:
               alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/exporters/blackbox/probe-alerts.md
 
+  - interval: 1m
+    input_series:
+      - series: multicluster_probe_up{instance="instance01",check="probe-multicluster",service="quay"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+    alert_rule_test:
+      - eval_time: 39m
+        alertname: MultiClusterQuayProbeAlert
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              instance: instance01
+              slo: "true"
+              check: probe-multicluster
+              service: quay
+            exp_annotations:
+              description: 'Quay Probes are down on instance instance01 for more than 80% of all clusters over the last 15 minutes.'
+              summary: Quay Probe alert instance01 in multiple clusters.
+              alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG> <!subteam^S01B3J0AEEL>'
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/exporters/blackbox/probe-alerts.md
 
   - interval: 1m
     input_series:
