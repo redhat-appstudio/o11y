@@ -31,7 +31,7 @@ spec:
         expr: |
           multicluster_probe_up{
           check="probe-multicluster",
-          service!~".*-vpn|.*static-host|.*pwvs"
+          service!~".*-vpn|.*static-host|.*pwvs|quay"
           } != 1
         for: 25m
         labels:
@@ -45,6 +45,23 @@ spec:
           alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
           runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/exporters/blackbox/probe-alerts.md
 
+      - alert: MultiClusterQuayProbeAlert
+        expr: |
+          multicluster_probe_up{
+          check="probe-multicluster",
+          service="quay"
+          } != 1
+        for: 25m
+        labels:
+          severity: critical
+          slo: "true"
+        annotations:
+          summary: >-
+             Quay Probe alert {{ $labels.instance }} in multiple clusters.
+          description: >-
+             Quay Probes are down on instance {{ $labels.instance }} for more than 80% of all clusters over the last 15 minutes.
+          alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG> <!subteam^S01B3J0AEEL>'
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/exporters/blackbox/probe-alerts.md
 
       - alert: S390xStaticHostProbeAlert
         expr: |
