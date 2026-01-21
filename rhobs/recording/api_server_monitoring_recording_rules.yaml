@@ -1,0 +1,21 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-api-server-monitoring
+  labels:
+    tenant: rhtap
+
+spec:
+  groups:
+    - name: api_server_service_monitoring
+      interval: 5m
+      rules:
+        - record: resource_apiserver_storage_objects_avg_30d
+          expr: |
+            sum by (resource, source_cluster) (avg_over_time(apiserver_storage_objects[30d]))
+        - record: resource_apiserver_storage_objects_avg_12h
+          expr: |
+            sum by (resource, source_cluster) (avg_over_time(apiserver_storage_objects[12h]))
+        - record: resource_apiserver_storage_objects_std_30d
+          expr: |
+            sum by (resource, source_cluster) (stddev_over_time(apiserver_storage_objects[30d]))
