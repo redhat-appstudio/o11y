@@ -62,20 +62,6 @@ spec:
               ), 1
             )
 
-    - name: probes_vpn_availability
-      interval: 10m
-      rules:
-        - record: konflux_up
-          expr: |
-            clamp_max(
-              label_replace(
-                label_replace(
-                    sum by (job,target,source_cluster) (probe_success{job=~".*vpn"}) / count by (job,target,source_cluster) (probe_success{job=~".*vpn"}) >= bool 0.7
-                  , "check", "probe-vpn", "",""
-                ), "service", "$1", "job", "(.*)"
-              ), 1
-            )
-
     - name: probes_pwvs_availability
       interval: 10m
       rules:
