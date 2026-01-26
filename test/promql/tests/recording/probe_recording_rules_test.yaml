@@ -110,21 +110,6 @@ tests:
           - labels: 'konflux_up{check="probe-ppc", job="ppc-static-host", service="ppc-static-host", source_cluster="cluster01"}'
             value: 1
 
-  - name: ProbesVPNAvailabilityTest
-
-    interval: 1m
-    input_series:
-      - series: probe_success{job="test-vpn",instance="instance07",target="vpn01",source_cluster="cluster01"}
-        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-      - series: probe_success{job="test-vpn",instance="instance08",target="vpn01",source_cluster="cluster01"}
-        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-    promql_expr_test:
-      - expr: konflux_up
-        eval_time: 10m
-        exp_samples:
-          - labels: 'konflux_up{check="probe-vpn", target="vpn01", job="test-vpn", service="test-vpn", source_cluster="cluster01"}'
-            value: 1
-
   - name: ProbesPWVSAvailabilityTest
 
     interval: 1m

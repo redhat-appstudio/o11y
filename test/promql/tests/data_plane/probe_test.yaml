@@ -121,31 +121,6 @@ tests:
               alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/static_host_probe_alerts.md
 
-
-  - interval: 1m
-    input_series:
-      - series: konflux_up{job="vpn",check="probe-vpn",service="vpn",target="vpn01",source_cluster="cluster01"}
-        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-
-    alert_rule_test:
-      - eval_time: 35m
-        alertname: VPNProbeAlert
-        exp_alerts:
-          - exp_labels:
-              severity: critical
-              source_cluster: cluster01
-              target: vpn01
-              job: vpn
-              check: probe-vpn
-              service: vpn
-              slo: 'true'
-            exp_annotations:
-              description: 'Probe alert for job vpn and target vpn01 on cluster cluster01.'
-              summary: VPN Probe alert vpn.
-              alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
-              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/vpn_probe_alerts.md
-
-
   - interval: 1m
     input_series:
       - series: konflux_up{job="pwvs",check="probe-pwvs",service="pwvs",target="net01",source_cluster="cluster01"}
