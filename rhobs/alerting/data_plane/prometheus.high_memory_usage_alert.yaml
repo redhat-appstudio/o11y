@@ -11,17 +11,12 @@ spec:
     rules:
     - alert: HighMemoryUsageAlert
       expr: |
-        avg_over_time(
-          (
-            (kube_pod_container_resource_requests{container!="",namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-templates-e2e|konflux-ci|mintmaker)"}
-            / kube_pod_container_resource_limits{container!="",namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-templates-e2e|konflux-ci|mintmaker)"}) * 100
-          )[10m:1m]
-        ) > 95
+        100* ( sum by (namespace,source_cluster) (namespace_container:container_memory_working_set_bytes{namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-templates-e2e|konflux-ci|mintmaker)"}) / sum by (namespace,source_cluster) (namespace_memory:kube_pod_container_resource_limits:sum{namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-templates-e2e|konflux-ci|mintmaker)"})) > 90
       for: 10m
       labels:
         severity: warning
       annotations:
-        summary: "Pod {{ $labels.pod }} has high memory usage"
-        description: "Pod {{ $labels.pod }} for namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} has high memory usage"
+        summary: "Namespace {{ $labels.namespace }} has high memory usage"
+        description: "Namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} has high memory usage"
         alert_routing_key: '{{ $labels.namespace }}'
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-HighMemoryAlertUsage.md
