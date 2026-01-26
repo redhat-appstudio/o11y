@@ -6,13 +6,13 @@ rule_files:
 tests:
   - interval: 1m
     input_series:
+      - series: "kube_pod_container_resource_requests{tenant_id='tenant', pod='pod', namespace='namespace', container='container', source_cluster='cluster01'}"
+        values: '96x15'
       - series: "kube_pod_container_resource_limits{tenant_id='tenant', pod='pod', namespace='namespace', container='container', source_cluster='cluster01'}"
-        values: '1x60'
-      - series: "kube_pod_container_resource_limits{tenant_id='tenant', pod='pod', namespace='namespace', container='container', source_cluster='cluster01'}"
-        values: "1x60"
+        values: "100x15"
 
     alert_rule_test:
-      - eval_time: 5m
+      - eval_time: 15m
         alertname: HighMemoryUsageAlert
         exp_alerts:
           - exp_labels:
