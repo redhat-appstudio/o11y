@@ -1,0 +1,87 @@
+---
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.konflux_kite_alerts.yaml
+
+tests:
+# KonfluxKiteDown - replica count = 0 on one cluster
+- interval: 1m
+  input_series:
+    - series: 'konflux_up{namespace="konflux-kite", check="replicas-available", service="konflux-kite", source_cluster="c1"}'
+      values: '0 0 0 0 0'
+    - series: 'konflux_up{namespace="konflux-kite", check="replicas-available", service="konflux-kite", source_cluster="c2"}'
+      values: '1 1 1 1 1'
+
+  alert_rule_test:
+    - eval_time: 5m
+      alertname: KonfluxKiteDown
+      exp_alerts:
+        - exp_labels:
+            severity: critical
+            check: replicas-available
+            namespace: konflux-kite
+            service: konflux-kite
+            slo: "true"
+            source_cluster: c1
+          exp_annotations:
+            summary: >-
+              konflux-kite is down in cluster c1
+            description: >
+              The konflux-kite pod has been down for 5min in cluster c1
+            team: konflux-ui
+            alert_team_handle: <!subteam^S04HY632621>
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/kite/sre/kite-down.md
+
+# KonfluxKiteDown - all clusters up - no alert
+- interval: 1m
+  input_series:
+    - series: 'konflux_up{namespace="konflux-kite", check="replicas-available", service="konflux-kite", source_cluster="c1"}'
+      values: '1 1 1 1 1'
+    - series: 'konflux_up{namespace="konflux-kite", check="replicas-available", service="konflux-kite", source_cluster="c2"}'
+      values: '1 1 1 1 1'
+
+  alert_rule_test:
+    - eval_time: 5m
+      alertname: KonfluxKiteDown
+      exp_alerts: []
+
+# KonfluxKiteEndpointDown - endpoint has no addresses on one cluster
+- interval: 1m
+  input_series:
+    - series: 'kube_endpoint_address{namespace="konflux-kite", endpoint="konflux-kite", source_cluster="c1"}'
+      values: '0 0 0 0 0'
+    - series: 'kube_endpoint_address{namespace="konflux-kite", endpoint="konflux-kite", source_cluster="c2"}'
+      values: '1 1 1 1 1'
+
+  alert_rule_test:
+    - eval_time: 5m
+      alertname: KonfluxKiteEndpointDown
+      exp_alerts:
+        - exp_labels:
+            severity: critical
+            namespace: konflux-kite
+            endpoint: konflux-kite
+            slo: "true"
+            source_cluster: c1
+          exp_annotations:
+            summary: >-
+              Konflux Kite endpoint is down in cluster c1
+            description: >
+              There were no Konflux Kite pods behind the endopint for 5min in cluster c1
+            team: konflux-ui
+            alert_team_handle: <!subteam^S04HY632621>
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/kite/sre/endpoint-unavailable.md
+
+# KonfluxKiteEndpointDown - all endpoints have addresses - no alert
+- interval: 1m
+  input_series:
+    - series: 'kube_endpoint_address{namespace="konflux-kite", endpoint="konflux-kite", source_cluster="c1"}'
+      values: '2 2 2 2 2'
+    - series: 'kube_endpoint_address{namespace="konflux-kite", endpoint="konflux-kite", source_cluster="c2"}'
+      values: '1 1 1 1 1'
+
+  alert_rule_test:
+    - eval_time: 5m
+      alertname: KonfluxKiteEndpointDown
+      exp_alerts: []
