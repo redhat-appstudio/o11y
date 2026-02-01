@@ -63,7 +63,7 @@ spec:
         team: konflux-infra
 
     - alert: KueueHighAdmissionWaitTime
-      expr: histogram_quantile(0.99, sum(increase(kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue"}[10m])) by (le, source_cluster)) > 1800
+      expr: histogram_quantile(0.99, sum(increase(kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class!="konflux-dependency-update"}[10m])) by (le, source_cluster)) > 1800
       for: 5m
       labels:
         severity: high
