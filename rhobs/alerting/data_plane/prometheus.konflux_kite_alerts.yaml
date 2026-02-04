@@ -36,7 +36,7 @@ spec:
     rules:
     - alert: KonfluxKiteEndpointDown
       expr: |
-        sum without (cluster) (last_over_time(kube_endpoint_address{namespace="konflux-kite", endpoint="konflux-kite"}[5m])) == 0
+        sum without (cluster) (last_over_time(kube_endpoint_address{namespace="konflux-kite"}[5m])) == 0
       for: 5m
       labels:
         severity: critical
