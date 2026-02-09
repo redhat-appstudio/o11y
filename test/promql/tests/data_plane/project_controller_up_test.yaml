@@ -1,15 +1,15 @@
 evaluation_interval: 1m
 
 rule_files:
-  - 'prometheus.project_controller_up_alerts.yaml'
+  - "prometheus.project_controller_up_alerts.yaml"
 
 tests:
   - interval: 1m
     input_series:
       - series: 'konflux_up{namespace="project-controller", check="replicas-available", service="project-controller-controller-manager", source_cluster="c1"}'
-        values: '0x15'
+        values: "0x15"
       - series: 'konflux_up{namespace="project-controller", check="replicas-available", service="project-controller-controller-manager", source_cluster="c2"}'
-        values: '1x15'
+        values: "1x15"
 
     alert_rule_test:
       - eval_time: 12m
@@ -22,6 +22,7 @@ tests:
               service: project-controller-controller-manager
               slo: "true"
               source_cluster: c1
+              component: project-controller
             exp_annotations:
               summary: Project controller is down on cluster c1
               description: >

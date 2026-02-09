@@ -8,9 +8,9 @@ tests:
   - interval: 1m
     input_series:
       - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0'
+        values: "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
       - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c2"}'
-        values: '1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'
+        values: "1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1"
 
     alert_rule_test:
       - eval_time: 15m
@@ -22,6 +22,7 @@ tests:
               service: registry-exporter
               slo: "true"
               source_cluster: c1
+              component: registry-exporter
             exp_annotations:
               summary: >-
                 Registry exporter check failed for registry quay.io in cluster c1
@@ -36,11 +37,11 @@ tests:
   - interval: 1m
     input_series:
       - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0'
+        values: "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
       - series: 'konflux_up{service="registry-exporter", check="registry.example.com", source_cluster="c1"}'
-        values: '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0'
+        values: "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
       - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c2"}'
-        values: '1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'
+        values: "1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1"
 
     alert_rule_test:
       - eval_time: 15m
@@ -52,6 +53,7 @@ tests:
               service: registry-exporter
               slo: "true"
               source_cluster: c1
+              component: registry-exporter
             exp_annotations:
               summary: >-
                 Registry exporter check failed for registry quay.io in cluster c1
@@ -67,6 +69,7 @@ tests:
               service: registry-exporter
               slo: "true"
               source_cluster: c1
+              component: registry-exporter
             exp_annotations:
               summary: >-
                 Registry exporter check failed for registry registry.example.com in cluster c1
@@ -81,9 +84,9 @@ tests:
   - interval: 1m
     input_series:
       - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: '0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1'
+        values: "0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1"
       - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c2"}'
-        values: '1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'
+        values: "1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1"
 
     alert_rule_test:
       - eval_time: 15m
@@ -94,11 +97,11 @@ tests:
   - interval: 1m
     input_series:
       - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0'
+        values: "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
       - series: 'konflux_up{service="registry-exporter", check="registry.example.com", source_cluster="c2"}'
-        values: '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0'
+        values: "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
       - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c2"}'
-        values: '1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'
+        values: "1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1"
 
     alert_rule_test:
       - eval_time: 15m
@@ -110,6 +113,7 @@ tests:
               service: registry-exporter
               slo: "true"
               source_cluster: c1
+              component: registry-exporter
             exp_annotations:
               summary: >-
                 Registry exporter check failed for registry quay.io in cluster c1
@@ -125,6 +129,7 @@ tests:
               service: registry-exporter
               slo: "true"
               source_cluster: c2
+              component: registry-exporter
             exp_annotations:
               summary: >-
                 Registry exporter check failed for registry registry.example.com in cluster c2
@@ -140,17 +145,17 @@ tests:
   - interval: 1m
     input_series:
       - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: '1x21'
+        values: "1x21"
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="pull", source_cluster="c1"}'
-        values: '0x21'
+        values: "0x21"
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c1"}'
-        values: '0x21'
+        values: "0x21"
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="metadata", source_cluster="c1"}'
-        values: '0x21'
+        values: "0x21"
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="authentication", source_cluster="c1"}'
-        values: '0x21'
+        values: "0x21"
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="pull", source_cluster="c1"}'
-        values: '1x21'
+        values: "1x21"
 
     alert_rule_test:
       - eval_time: 20m
@@ -162,6 +167,7 @@ tests:
               node: node1
               source_cluster: c1
               slo: "false"
+              component: registry-exporter
             exp_annotations:
               summary: >-
                 Registry exporter running tests on node node1 for registry quay.io in cluster c1 is failing.
@@ -176,11 +182,11 @@ tests:
   - interval: 1m
     input_series:
       - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: '0x21'
+        values: "0x21"
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="pull", source_cluster="c1"}'
-        values: '0x21'
+        values: "0x21"
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c1"}'
-        values: '0x21'
+        values: "0x21"
 
     alert_rule_test:
       - eval_time: 20m
@@ -191,13 +197,13 @@ tests:
   - interval: 1m
     input_series:
       - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: '1x21'
+        values: "1x21"
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="pull", source_cluster="c1"}'
-        values: '0x21'
+        values: "0x21"
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="pull", source_cluster="c1"}'
-        values: '0x21'
+        values: "0x21"
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node3", type="pull", source_cluster="c1"}'
-        values: '1x21'
+        values: "1x21"
 
     alert_rule_test:
       - eval_time: 20m
@@ -209,6 +215,7 @@ tests:
               node: node1
               source_cluster: c1
               slo: "false"
+              component: registry-exporter
             exp_annotations:
               summary: >-
                 Registry exporter running tests on node node1 for registry quay.io in cluster c1 is failing.
@@ -224,6 +231,7 @@ tests:
               node: node2
               source_cluster: c1
               slo: "false"
+              component: registry-exporter
             exp_annotations:
               summary: >-
                 Registry exporter running tests on node node2 for registry quay.io in cluster c1 is failing.
@@ -238,11 +246,11 @@ tests:
   - interval: 1m
     input_series:
       - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: '1x21'
+        values: "1x21"
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="pull", source_cluster="c1"}'
-        values: '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1'
+        values: "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1"
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c1"}'
-        values: '1x21'
+        values: "1x21"
 
     alert_rule_test:
       - eval_time: 20m
@@ -253,15 +261,15 @@ tests:
   - interval: 1m
     input_series:
       - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: '1x21'
+        values: "1x21"
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="pull", source_cluster="c1"}'
-        values: '0x21'
+        values: "0x21"
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c1"}'
-        values: '1x21'
+        values: "1x21"
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="metadata", source_cluster="c1"}'
-        values: '1x21'
+        values: "1x21"
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="authentication", source_cluster="c1"}'
-        values: '1x21'
+        values: "1x21"
 
     alert_rule_test:
       - eval_time: 20m
@@ -273,6 +281,7 @@ tests:
               node: node1
               source_cluster: c1
               slo: "false"
+              component: registry-exporter
             exp_annotations:
               summary: >-
                 Registry exporter running tests on node node1 for registry quay.io in cluster c1 is failing.

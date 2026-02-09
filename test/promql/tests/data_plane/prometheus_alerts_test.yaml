@@ -1,15 +1,15 @@
 evaluation_interval: 1m
 
 rule_files:
-  - 'prometheus.prometheus_alerts.yaml'
+  - "prometheus.prometheus_alerts.yaml"
 
 tests:
   - interval: 1m
     input_series:
       - series: 'konflux_up{service="prometheus", check="prometheus_ready_federation", namespace="appstudio-monitoring", source_cluster="c1"}'
-        values: '0 0 0 0 0'
+        values: "0 0 0 0 0"
       - series: 'konflux_up{service="prometheus", check="prometheus_ready_federation", namespace="appstudio-monitoring", source_cluster="c2"}'
-        values: '1 1 1 1 1'
+        values: "1 1 1 1 1"
 
     alert_rule_test:
       - eval_time: 5m
@@ -22,6 +22,7 @@ tests:
               service: prometheus
               slo: "true"
               source_cluster: c1
+              component: prometheus
             exp_annotations:
               summary: Prometheus Federate Instance is down in cluster c1
               description: >-
@@ -34,9 +35,9 @@ tests:
   - interval: 1m
     input_series:
       - series: 'konflux_up{service="prometheus", check="prometheus_ready_openshift_monitoring", namespace="openshift-monitoring", source_cluster="c1"}'
-        values: '0 0 0 0 0'
+        values: "0 0 0 0 0"
       - series: 'konflux_up{service="prometheus", check="prometheus_ready_openshift_monitoring", namespace="openshift-monitoring", source_cluster="c2"}'
-        values: '1 1 1 1 1'
+        values: "1 1 1 1 1"
 
     alert_rule_test:
       - eval_time: 5m
@@ -49,14 +50,14 @@ tests:
               service: prometheus
               slo: "true"
               source_cluster: c1
+              component: prometheus
             exp_annotations:
               summary: Prometheus Instance in Openshift Monitoring is down in cluster c1
               description: >-
-                  Prometheus Openshift Monitoring instance on cluster c1 has declared 'prometheus_ready' = 0. Namespace 'openshift-monitoring'.
-              alert_team_handle: '<!subteam^S07SW2EEW3D> <!subteam^S05Q1P4Q2TG>'
+                Prometheus Openshift Monitoring instance on cluster c1 has declared 'prometheus_ready' = 0. Namespace 'openshift-monitoring'.
+              alert_team_handle: "<!subteam^S07SW2EEW3D> <!subteam^S05Q1P4Q2TG>"
               team: o11y
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-prometheus.md
-
 
   - interval: 1m
     input_series:
@@ -76,6 +77,7 @@ tests:
               service: prometheus
               slo: "true"
               source_cluster: c1
+              component: prometheus
             exp_annotations:
               summary: Prometheus User Workload Instance is down in cluster c1
               description: >-
