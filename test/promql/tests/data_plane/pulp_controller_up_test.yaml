@@ -1,0 +1,34 @@
+---
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.pulp_access_controller_alerts.yaml
+
+tests:
+# replica count = 0
+- interval: 1m
+  input_series:
+    - series: 'konflux_up{namespace="pulp-access-controller", check="replicas-available", service="pulp-access-operator", source_cluster="c1"}'
+      values: '0 0 0 0 0'
+    - series: 'konflux_up{namespace="pulp-access-controller", check="replicas-available", service="pulp-access-operator", source_cluster="c2"}'
+      values: '1 1 1 1 1'
+
+  alert_rule_test:
+    - eval_time: 5m
+      alertname: PulpAccessControllerDown
+      exp_alerts:
+        - exp_labels:
+            severity: critical
+            check: replicas-available
+            namespace: pulp-access-controller
+            service: pulp-access-operator
+            slo: "true"
+            source_cluster: c1
+          exp_annotations:
+            summary: >-
+              pulp-access-controller is down in cluster c1
+            description: >
+              The pulp-access-controller pod has been down for 5min in cluster c1
+            team: pulp-services
+            alert_team_handle: <!subteam^S05S85QSF1R>
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pulp-access-controller/pulp-access-controller-availability.md
