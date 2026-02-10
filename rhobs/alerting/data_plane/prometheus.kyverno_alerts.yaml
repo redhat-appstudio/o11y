@@ -17,6 +17,7 @@ spec:
         labels:
           severity: critical
           slo: "true"
+          component: kyverno
         annotations:
           summary: Kyverno has reported that not all the deployments pods are up and running for the last 3 minutes.
           description: "The Kyverno Deployment '{{ $labels.deployment }}' in namespace '{{ $labels.namespace }}' on cluster '{{ $labels.source_cluster }}' is unhealthy."
@@ -31,6 +32,7 @@ spec:
         labels:
           severity: critical
           slo: "true"
+          component: kyverno
         annotations:
           summary: Kyverno internal controllers are encountering errors causing items to be re-queued.
           description: "The Kyverno controller '{{ $labels.controller_name }}' on cluster '{{ $labels.source_cluster }}' is experiencing a consistent rate of requeue errors."
@@ -45,6 +47,7 @@ spec:
         labels:
           severity: warning
           slo: "false"
+          component: kyverno
         annotations:
           summary: Kyverno policies are failing or erroring out more often than usual.
           description: "Kyverno policy '{{ $labels.policy_name }}' with rule '{{ $labels.rule_name }}' is encountering internal errors during evaluation or rejecting resources on instance '{{ $labels.instance }}' on cluster '{{ $labels.source_cluster }}'."
