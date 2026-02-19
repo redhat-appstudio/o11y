@@ -28,7 +28,7 @@ data:
       "editable": true,
       "fiscalYearStartMonth": 0,
       "graphTooltip": 0,
-      "id": 1198914,
+      "id": 1101084,
       "links": [
         {
           "asDropdown": false,
@@ -64,9 +64,9 @@ data:
             "x": 0,
             "y": 0
           },
-          "id": 17,
+          "id": 35,
           "panels": [],
-          "title": "Availability",
+          "title": "General Information",
           "type": "row"
         },
         {
@@ -93,8 +93,8 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 6,
-            "w": 8,
+            "h": 3,
+            "w": 6,
             "x": 0,
             "y": 1
           },
@@ -130,8 +130,232 @@ data:
               "refId": "A"
             }
           ],
-          "title": "Konflux Up Availability Signal",
+          "title": "Availability Signal",
           "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "API server CPU as % of total cluster cores.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "%"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 6,
+            "x": 6,
+            "y": 1
+          },
+          "id": 3,
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "(sum by (source_cluster) (rate(process_cpu_seconds_total{job=\"apiserver\", source_cluster=~\"$cluster\"}[5m])) / sum by (source_cluster)(count without(cpu)(node_cpu_seconds_total{source_cluster=~\"$cluster\", mode=\"idle\"}))) * 100",
+              "instant": false,
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "% CPU Usage ",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "API server resident memory as % of node total memory (by cluster).",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "%"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 6,
+            "x": 12,
+            "y": 1
+          },
+          "id": 2,
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "(\n  sum(process_resident_memory_bytes{job=\"apiserver\", source_cluster=~\"$cluster\"}) by (source_cluster)\n/\n  sum(node_memory_MemTotal_bytes{source_cluster=~\"$cluster\"}) by (source_cluster)\n) * 100",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "__auto",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "% Memory Usage ",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 3,
+            "w": 6,
+            "x": 18,
+            "y": 1
+          },
+          "id": 28,
+          "options": {
+            "colorMode": "background",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "histogram_quantile(0.99, sum without (verb) (verb:apiserver_request_duration_seconds_bucket:rate5m{source_cluster=~\"$cluster\"}\n))",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "Overall Latency",
+              "range": true,
+              "refId": "D"
+            }
+          ],
+          "title": "API Server latency",
+          "type": "stat"
+        },
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 4
+          },
+          "id": 17,
+          "panels": [],
+          "title": "Availability",
+          "type": "row"
         },
         {
           "datasource": {
@@ -157,7 +381,7 @@ data:
                   "tooltip": false,
                   "viz": false
                 },
-                "lineWidth": 0,
+                "lineWidth": 1,
                 "scaleDistribution": {
                   "type": "linear"
                 },
@@ -198,10 +422,10 @@ data:
             ]
           },
           "gridPos": {
-            "h": 6,
-            "w": 16,
-            "x": 8,
-            "y": 1
+            "h": 7,
+            "w": 24,
+            "x": 0,
+            "y": 5
           },
           "id": 10,
           "options": {
@@ -216,7 +440,7 @@ data:
               "showLegend": false
             },
             "orientation": "auto",
-            "showValue": "never",
+            "showValue": "auto",
             "stacking": "normal",
             "tooltip": {
               "hideZeros": false,
@@ -245,92 +469,11 @@ data:
           "type": "barchart"
         },
         {
-          "collapsed": false,
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 7
-          },
-          "id": 18,
-          "panels": [],
-          "title": "CPU & Memory Usage",
-          "type": "row"
-        },
-        {
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
-                  }
-                ]
-              },
-              "unit": "%"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 6,
-            "w": 8,
-            "x": 0,
-            "y": 8
-          },
-          "id": 3,
-          "options": {
-            "colorMode": "background",
-            "graphMode": "area",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "percentChangeColorMode": "standard",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showPercentChange": false,
-            "textMode": "auto",
-            "wideLayout": true
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "sum by (source_cluster) (rate(process_cpu_seconds_total{job=\"apiserver\", source_cluster=~\"$cluster\"}[5m]))",
-              "instant": false,
-              "legendFormat": "__auto",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "CPU Usage by Cluster - API Server Job",
-          "type": "stat"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
+          "description": "Percentage of requests returning 4XX (client errors, e.g. 429 throttling).",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -345,7 +488,224 @@ data:
                 "barAlignment": 0,
                 "barWidthFactor": 0.6,
                 "drawStyle": "line",
-                "fillOpacity": 1,
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "max": 100,
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 10
+                  },
+                  {
+                    "color": "red",
+                    "value": 25
+                  }
+                ]
+              },
+              "unit": "percent"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 12,
+            "x": 0,
+            "y": 12
+          },
+          "id": 39,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum by (source_cluster) (code:apiserver_request_total:rate5m{code=~\"4..\", source_cluster=~\"$cluster\"}) / sum by (source_cluster) (code:apiserver_request_total:rate5m{code!=\"0\", source_cluster=~\"$cluster\"}) * 100",
+              "legendFormat": "{{source_cluster}} - 4XX %",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "4XX Error Rate (%)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Percentage of requests returning 5XX. Alert threshold is 10% over 15m.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 21,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "max": 100,
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 5
+                  }
+                ]
+              },
+              "unit": "percent"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 12,
+            "x": 12,
+            "y": 12
+          },
+          "id": 30,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum by (source_cluster) (code:apiserver_request_total:rate5m{code=~\"5..\", source_cluster=~\"$cluster\"}) / sum by (source_cluster) (code:apiserver_request_total:rate5m{code!=\"0\", source_cluster=~\"$cluster\"}) * 100",
+              "legendFormat": "{{source_cluster}} - 5XX %",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "5XX Error Rate (%)",
+          "type": "timeseries"
+        },
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 18
+          },
+          "id": 18,
+          "panels": [],
+          "title": "CPU & Memory Usage",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "API server CPU as % of total cluster cores.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 10,
                 "gradientMode": "none",
                 "hideFrom": {
                   "legend": false,
@@ -375,10 +735,6 @@ data:
                 "steps": [
                   {
                     "color": "green"
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
                   }
                 ]
               },
@@ -388,11 +744,114 @@ data:
           },
           "gridPos": {
             "h": 6,
-            "w": 16,
-            "x": 8,
-            "y": 8
+            "w": 12,
+            "x": 0,
+            "y": 19
           },
           "id": 15,
+          "options": {
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "right",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "(sum by (source_cluster) (rate(process_cpu_seconds_total{job=\"apiserver\", source_cluster=~\"$cluster\"}[5m])) / sum by (source_cluster)(count without(cpu)(node_cpu_seconds_total{source_cluster=~\"$cluster\", mode=\"idle\"}))) * 100",
+              "instant": false,
+              "legendFormat": "{{source_cluster}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "CPU Usage   - API Server Job",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "CPU cores used per API server instance (not % of node).",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisGridShow": true,
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineStyle": {
+                  "fill": "solid"
+                },
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 12,
+            "x": 12,
+            "y": 19
+          },
+          "id": 33,
           "options": {
             "legend": {
               "calcs": [],
@@ -432,18 +891,48 @@ data:
           "fieldConfig": {
             "defaults": {
               "color": {
-                "mode": "thresholds"
+                "mode": "palette-classic"
               },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 8,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "normal"
+                },
+                "thresholdsStyle": {
+                  "mode": "dashed"
+                }
+              },
+              "fieldMinMax": false,
               "mappings": [],
               "thresholds": {
-                "mode": "absolute",
+                "mode": "percentage",
                 "steps": [
                   {
                     "color": "green"
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
                   }
                 ]
               },
@@ -453,27 +942,23 @@ data:
           },
           "gridPos": {
             "h": 6,
-            "w": 8,
+            "w": 12,
             "x": 0,
-            "y": 14
+            "y": 25
           },
-          "id": 2,
+          "id": 34,
           "options": {
-            "colorMode": "background",
-            "graphMode": "area",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "percentChangeColorMode": "standard",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
+            "legend": {
+              "calcs": [],
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true
             },
-            "showPercentChange": false,
-            "textMode": "auto",
-            "wideLayout": true
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
           },
           "pluginVersion": "11.6.3",
           "targets": [
@@ -486,13 +971,13 @@ data:
               "expr": "(\n  sum(process_resident_memory_bytes{job=\"apiserver\", source_cluster=~\"$cluster\"}) by (source_cluster)\n/\n  sum(node_memory_MemTotal_bytes{source_cluster=~\"$cluster\"}) by (source_cluster)\n) * 100",
               "hide": false,
               "instant": false,
-              "legendFormat": "__auto",
+              "legendFormat": "{{source_cluster}}",
               "range": true,
               "refId": "A"
             }
           ],
-          "title": "Memory Usage by Cluster - API Server Job",
-          "type": "stat"
+          "title": "Memory Usage  (API Server Job)",
+          "type": "timeseries"
         },
         {
           "datasource": {
@@ -513,7 +998,7 @@ data:
                 "barAlignment": 0,
                 "barWidthFactor": 0.6,
                 "drawStyle": "line",
-                "fillOpacity": 1,
+                "fillOpacity": 8,
                 "gradientMode": "none",
                 "hideFrom": {
                   "legend": false,
@@ -556,9 +1041,9 @@ data:
           },
           "gridPos": {
             "h": 6,
-            "w": 16,
-            "x": 8,
-            "y": 14
+            "w": 12,
+            "x": 12,
+            "y": 25
           },
           "id": 16,
           "options": {
@@ -599,7 +1084,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 20
+            "y": 31
           },
           "id": 27,
           "panels": [],
@@ -611,6 +1096,7 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "description": "P99 request duration across all verbs.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -634,10 +1120,10 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 4,
-            "w": 13,
+            "h": 6,
+            "w": 12,
             "x": 0,
-            "y": 21
+            "y": 32
           },
           "id": 26,
           "options": {
@@ -665,13 +1151,13 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "histogram_quantile(\n    0.95,\n    sum by (le, verb) (\n      rate(verb:apiserver_request_duration_seconds_bucket:rate5m{source_cluster=~\"$cluster\"}[5m])\n    )\n  )",
+              "expr": "histogram_quantile(\n    0.99,\n    sum by (le, verb) (\n      rate(verb:apiserver_request_duration_seconds_bucket:rate5m{source_cluster=~\"$cluster\"}[5m])\n    )\n  )",
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
             }
           ],
-          "title": "P95 Latency by Verb",
+          "title": "P99 Latency by Verb",
           "type": "stat"
         },
         {
@@ -679,10 +1165,44 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "description": "Median API server request duration across all verbs.",
           "fieldConfig": {
             "defaults": {
               "color": {
-                "mode": "thresholds"
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
               },
               "mappings": [],
               "thresholds": {
@@ -690,10 +1210,6 @@ data:
                 "steps": [
                   {
                     "color": "green"
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
                   }
                 ]
               },
@@ -702,28 +1218,24 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 4,
-            "w": 11,
-            "x": 13,
-            "y": 21
+            "h": 6,
+            "w": 12,
+            "x": 12,
+            "y": 32
           },
-          "id": 28,
+          "id": 31,
           "options": {
-            "colorMode": "background",
-            "graphMode": "area",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "percentChangeColorMode": "standard",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
             },
-            "showPercentChange": false,
-            "textMode": "auto",
-            "wideLayout": true
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
           },
           "pluginVersion": "11.6.3",
           "targets": [
@@ -733,29 +1245,14 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "avg by (le) (histogram_quantile(0.95, verb:apiserver_request_duration_seconds_bucket:rate5m{source_cluster=~\"$cluster\"}\n))",
-              "hide": false,
-              "instant": false,
-              "legendFormat": "P95 Latency",
+              "expr": "histogram_quantile(0.99, sum without (verb) (verb:apiserver_request_duration_seconds_bucket:rate5m{source_cluster=~\"$cluster\"}))",
+              "legendFormat": "{{source_cluster}} - P50",
               "range": true,
-              "refId": "B"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "histogram_quantile(0.99, sum without (verb) (verb:apiserver_request_duration_seconds_bucket:rate5m{source_cluster=~\"$cluster\"}\n))",
-              "hide": false,
-              "instant": false,
-              "legendFormat": "Overall Latency",
-              "range": true,
-              "refId": "D"
+              "refId": "A"
             }
           ],
-          "title": "API Server latency",
-          "type": "stat"
+          "title": "P50 Request Latency (overall)",
+          "type": "timeseries"
         },
         {
           "collapsed": false,
@@ -763,7 +1260,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 25
+            "y": 38
           },
           "id": 19,
           "panels": [],
@@ -837,7 +1334,7 @@ data:
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 26
+            "y": 39
           },
           "id": 14,
           "options": {
@@ -886,6 +1383,276 @@ data:
                 "mode": "palette-classic"
               },
               "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 1,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineStyle": {
+                  "fill": "solid"
+                },
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 24,
+            "x": 0,
+            "y": 46
+          },
+          "id": 1,
+          "options": {
+            "legend": {
+              "calcs": [
+                "mean",
+                "sum"
+              ],
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true,
+              "sortBy": "Total",
+              "sortDesc": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "avg_over_time(resource_verb:apiserver_request_total:rate5m{source_cluster=~\"$cluster\"}[5m])",
+              "instant": false,
+              "legendFormat": "{{source_cluster}} {{resource}} {{verb}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "API Server - Request Rate by Resource and Verb",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 1,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 24,
+            "x": 0,
+            "y": 53
+          },
+          "id": 12,
+          "options": {
+            "legend": {
+              "calcs": [
+                "mean",
+                "sum"
+              ],
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true,
+              "sortBy": "Name",
+              "sortDesc": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "code:apiserver_request_total:rate5m{source_cluster=~\"$cluster\"}",
+              "instant": false,
+              "legendFormat": "{{source_cluster}} : {{code}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Request rate by HTTP status (over time)",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 0,
+            "y": 60
+          },
+          "id": 22,
+          "options": {
+            "displayMode": "lcd",
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": false
+            },
+            "maxVizHeight": 300,
+            "minVizHeight": 16,
+            "minVizWidth": 8,
+            "namePlacement": "auto",
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showUnfilled": true,
+            "sizing": "auto",
+            "valueMode": "color"
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "count by (verb) (avg_over_time(resource_verb:apiserver_request_total:rate5m{source_cluster=~\"$cluster\"}[$__range]))",
+              "instant": false,
+              "legendFormat": " {{verb}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Verb count by Cluster",
+          "type": "bargauge"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
                 "hideFrom": {
                   "legend": false,
                   "tooltip": false,
@@ -898,10 +1665,10 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 8,
-            "w": 8,
-            "x": 0,
-            "y": 33
+            "h": 7,
+            "w": 12,
+            "x": 12,
+            "y": 60
           },
           "id": 21,
           "options": {
@@ -1037,276 +1804,6 @@ data:
                 "steps": [
                   {
                     "color": "green"
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 16,
-            "x": 8,
-            "y": 33
-          },
-          "id": 12,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "sum"
-              ],
-              "displayMode": "table",
-              "placement": "right",
-              "showLegend": true,
-              "sortBy": "Total",
-              "sortDesc": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "code:apiserver_request_total:rate5m{source_cluster=~\"$cluster\"}",
-              "instant": false,
-              "legendFormat": "{{source_cluster}} : {{code}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "API Server Request Rate by Status",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 8,
-            "x": 0,
-            "y": 41
-          },
-          "id": 22,
-          "options": {
-            "displayMode": "lcd",
-            "legend": {
-              "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": false
-            },
-            "maxVizHeight": 300,
-            "minVizHeight": 16,
-            "minVizWidth": 8,
-            "namePlacement": "auto",
-            "orientation": "horizontal",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showUnfilled": true,
-            "sizing": "auto",
-            "valueMode": "color"
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "count by (verb) (avg_over_time(resource_verb:apiserver_request_total:rate5m{source_cluster=~\"$cluster\"}[$__range]))",
-              "instant": false,
-              "legendFormat": " {{verb}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Verb count by Cluster",
-          "type": "bargauge"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 1,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineStyle": {
-                  "fill": "solid"
-                },
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "auto",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 16,
-            "x": 8,
-            "y": 41
-          },
-          "id": 1,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "sum"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true,
-              "sortBy": "Total",
-              "sortDesc": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "single",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "avg_over_time(resource_verb:apiserver_request_total:rate5m{source_cluster=~\"$cluster\"}[5m])",
-              "instant": false,
-              "legendFormat": "{{source_cluster}} {{resource}} {{verb}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "API Server - Request Rate by Resource and Verb",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 1,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "auto",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
                   },
                   {
                     "color": "red",
@@ -1318,10 +1815,10 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 7,
-            "w": 13,
+            "h": 6,
+            "w": 12,
             "x": 0,
-            "y": 49
+            "y": 67
           },
           "id": 23,
           "options": {
@@ -1427,10 +1924,10 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 7,
-            "w": 11,
-            "x": 13,
-            "y": 49
+            "h": 6,
+            "w": 12,
+            "x": 12,
+            "y": 67
           },
           "id": 24,
           "options": {
@@ -1462,6 +1959,216 @@ data:
           ],
           "title": "Rate TLS handshake error",
           "type": "timeseries"
+        },
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 73
+          },
+          "id": 36,
+          "panels": [],
+          "title": "Storage, Admission & Client Errors",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Number of objects in API server storage per resource type.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 24,
+            "x": 0,
+            "y": 74
+          },
+          "id": 37,
+          "options": {
+            "legend": {
+              "calcs": [
+                "mean",
+                "lastNotNull"
+              ],
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true,
+              "sortBy": "Mean",
+              "sortDesc": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "apiserver_storage_objects{source_cluster=~\"$cluster\"}",
+              "legendFormat": "{{source_cluster}} - {{resource}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "API Server Storage Objects",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Request rate to admission webhooks (mutating/validating).",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  }
+                ]
+              },
+              "unit": "reqps"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 24,
+            "x": 0,
+            "y": 81
+          },
+          "id": 38,
+          "options": {
+            "legend": {
+              "calcs": [
+                "mean",
+                "sum"
+              ],
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true,
+              "sortBy": "Total",
+              "sortDesc": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum by (name, source_cluster) (rate(apiserver_admission_webhook_request_total{source_cluster=~\"$cluster\"}[5m]))",
+              "legendFormat": "{{source_cluster}} - {{name}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Admission Webhook Request Rate",
+          "type": "timeseries"
         }
       ],
       "preload": false,
@@ -1486,11 +2193,11 @@ data:
           {
             "current": {
               "text": [
-                "kflux-osp-p01"
+                "All"
               ],
               "value": [
-                "kflux-osp-p01"
-              ]
+                "$__all"
+          ]
             },
             "datasource": {
               "type": "prometheus",
@@ -1520,6 +2227,6 @@ data:
       "timepicker": {},
       "timezone": "browser",
       "title": "Konflux API Server Activity",
-      "uid": "bep80qv02u6tce",
-      "version": 2
+      "uid": "bep80qv02u6tces",
+      "version": 14
     }
