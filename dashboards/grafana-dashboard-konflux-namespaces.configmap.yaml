@@ -28,8 +28,33 @@ data:
       "editable": true,
       "fiscalYearStartMonth": 0,
       "graphTooltip": 0,
-      "id": 1026359,
-      "links": [],
+      "id": 1101087,
+      "links": [
+        {
+          "asDropdown": false,
+          "icon": "external link",
+          "includeVars": false,
+          "keepTime": true,
+          "tags": [],
+          "targetBlank": false,
+          "title": "API Server Activity",
+          "tooltip": "",
+          "type": "link",
+          "url": "https://grafana.stage.devshift.net/d/0qvbeu6tp802ce/rugomez-api-server-activity"
+        },
+        {
+          "asDropdown": false,
+          "icon": "external link",
+          "includeVars": false,
+          "keepTime": true,
+          "tags": [],
+          "targetBlank": false,
+          "title": "Cluster Capacity Dashboard",
+          "tooltip": "",
+          "type": "link",
+          "url": "https://grafana.app-sre.devshift.net/d/beiwi3m5185f69/cluster-capacity"
+        }
+      ],
       "panels": [
         {
           "collapsed": false,
@@ -49,6 +74,7 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "description": "Percentage of time konflux_up was 1 (OK) for selected namespaces over the time range.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -151,6 +177,7 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "description": "Ratio of desired to available replicas across deployments in the namespace. OK when 1, NOT OK when &lt; 1 or &gt; 1.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -227,7 +254,7 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum by (namespace) (kube_deployment_spec_replicas{source_cluster=~\"$cluster\", namespace=~\"$namespace\"}) / sum by (namespace) (kube_deployment_status_replicas_available{source_cluster=~\"$cluster\", namespace=~\"$namespace\"})\n\n",
+              "expr": "sum by (namespace) (kube_deployment_spec_replicas{source_cluster=~\"$cluster\", namespace=~\"$namespace\"}) / sum by (namespace) (kube_deployment_status_replicas_available{source_cluster=~\"$cluster\", namespace=~\"$namespace\"})",
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
@@ -241,6 +268,7 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "description": "Container restarts in the last 24 hours by container. High or rising restarts may indicate crashes or OOM.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -321,6 +349,7 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "description": "Pod count by phase (Running, Pending, Failed, Unknown) in the selected namespaces.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -445,6 +474,461 @@ data:
             "x": 0,
             "y": 9
           },
+          "id": 40,
+          "panels": [],
+          "title": "Namespace workload",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Unique pod count per namespace (from kube_pod_container_info).",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 12,
+            "x": 0,
+            "y": 10
+          },
+          "id": 41,
+          "options": {
+            "legend": {
+              "calcs": [
+                "mean",
+                "lastNotNull"
+              ],
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "count by (namespace) (count by (namespace, pod) (kube_pod_container_info{source_cluster=~\"$cluster\", namespace=~\"$namespace\"}))",
+              "legendFormat": "{{namespace}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Pod count by namespace",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Desired vs available replicas over time. Gap indicates deployments not fully ready.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 12,
+            "x": 12,
+            "y": 10
+          },
+          "id": 42,
+          "options": {
+            "legend": {
+              "calcs": [
+                "mean",
+                "lastNotNull"
+              ],
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum by (namespace) (kube_deployment_spec_replicas{source_cluster=~\"$cluster\", namespace=~\"$namespace\"})",
+              "legendFormat": "{{namespace}} - desired",
+              "range": true,
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum by (namespace) (kube_deployment_status_replicas_available{source_cluster=~\"$cluster\", namespace=~\"$namespace\"})",
+              "hide": false,
+              "legendFormat": "{{namespace}} - available",
+              "range": true,
+              "refId": "B"
+            }
+          ],
+          "title": "Deployment replicas: desired vs available",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Pod count by phase (Running, Pending, Failed, Unknown) over time. Helps spot scheduling or failure trends.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 20,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "normal"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Failed"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "red",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Pending"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "orange",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Unknown"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "fixedColor": "#927d0a",
+                      "mode": "fixed"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 12,
+            "x": 0,
+            "y": 15
+          },
+          "id": 43,
+          "options": {
+            "legend": {
+              "calcs": [
+                "mean",
+                "lastNotNull"
+              ],
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum by (namespace, phase) (kube_pod_status_phase{source_cluster=~\"$cluster\", namespace=~\"$namespace\"})",
+              "legendFormat": "{{namespace}} - {{phase}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Pod status by phase over time",
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Container restart rate per namespace. Spikes may indicate OOM, crashes, or node pressure.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 12,
+            "x": 12,
+            "y": 15
+          },
+          "id": 44,
+          "options": {
+            "legend": {
+              "calcs": [
+                "mean",
+                "sum"
+              ],
+              "displayMode": "table",
+              "placement": "right",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum by (namespace) (rate(kube_pod_container_status_restarts_total{source_cluster=~\"$cluster\", namespace=~\"$namespace\"}[5m]))",
+              "legendFormat": "{{namespace}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Container restart rate by namespace",
+          "type": "timeseries"
+        },
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 20
+          },
           "id": 22,
           "panels": [],
           "title": "CPU / Memory",
@@ -455,6 +939,7 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "description": "Namespace CPU usage as fraction of CPU limits requested by pods in the namespace.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -482,7 +967,7 @@ data:
             "h": 6,
             "w": 3,
             "x": 0,
-            "y": 10
+            "y": 21
           },
           "id": 25,
           "options": {
@@ -524,6 +1009,7 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "description": "Namespace CPU as % of total cluster cores (selected clusters).",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -547,7 +1033,7 @@ data:
             "h": 6,
             "w": 5,
             "x": 3,
-            "y": 10
+            "y": 21
           },
           "id": 21,
           "options": {
@@ -575,7 +1061,7 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "(sum(namespace:container_cpu_usage:sum{source_cluster=~\"$cluster\", namespace=~\"$namespace\"}) / sum(rate(node_cpu_seconds_total{mode=\"idle\"}[5m]))) * 100",
+              "expr": "(sum(namespace:container_cpu_usage:sum{source_cluster=~\"$cluster\", namespace=~\"$namespace\"}) / sum(count without(cpu)(node_cpu_seconds_total{source_cluster=~\"$cluster\", mode=\"idle\"}))) * 100",
               "legendFormat": "{{source_cluster}}: {{namespace}}",
               "range": true,
               "refId": "A"
@@ -648,7 +1134,7 @@ data:
             "h": 6,
             "w": 16,
             "x": 8,
-            "y": 10
+            "y": 21
           },
           "id": 11,
           "options": {
@@ -672,7 +1158,7 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "namespace:container_cpu_usage:sum{source_cluster=~\"$cluster\" ,namespace=~\"$namespace\"}",
+              "expr": "namespace:container_cpu_usage:sum{source_cluster=~\"$cluster\", namespace=~\"$namespace\"}",
               "legendFormat": "{{source_cluster}}: {{namespace}}",
               "range": true,
               "refId": "A"
@@ -686,6 +1172,7 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "description": "Namespace memory working set as fraction of memory limits requested by pods.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -713,7 +1200,7 @@ data:
             "h": 6,
             "w": 3,
             "x": 0,
-            "y": 16
+            "y": 27
           },
           "id": 28,
           "options": {
@@ -755,6 +1242,7 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "description": "Namespace memory as % of node total memory in selected cluster(s).",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -782,7 +1270,7 @@ data:
             "h": 6,
             "w": 5,
             "x": 3,
-            "y": 16
+            "y": 27
           },
           "id": 29,
           "options": {
@@ -810,7 +1298,7 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "(sum(namespace:container_memory_usage_bytes:sum{source_cluster=~\"$cluster\" ,namespace=~\"$namespace\"}) / sum(node_memory_MemTotal_bytes)) * 100 ",
+              "expr": "(sum(namespace:container_memory_usage_bytes:sum{source_cluster=~\"$cluster\", namespace=~\"$namespace\"}) / sum(node_memory_MemTotal_bytes{source_cluster=~\"$cluster\"})) * 100",
               "legendFormat": "__auto",
               "range": true,
               "refId": "A"
@@ -884,7 +1372,7 @@ data:
             "h": 6,
             "w": 16,
             "x": 8,
-            "y": 16
+            "y": 27
           },
           "id": 10,
           "options": {
@@ -908,7 +1396,7 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "namespace:container_memory_usage_bytes:sum{source_cluster=~\"$cluster\" ,namespace=~\"$namespace\"}",
+              "expr": "namespace:container_memory_usage_bytes:sum{source_cluster=~\"$cluster\", namespace=~\"$namespace\"}",
               "legendFormat": "{{source_cluster}}: {{namespace}}",
               "range": true,
               "refId": "A"
@@ -923,7 +1411,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 22
+            "y": 33
           },
           "id": 2,
           "panels": [],
@@ -995,7 +1483,7 @@ data:
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 23
+            "y": 34
           },
           "id": 15,
           "options": {
@@ -1104,7 +1592,7 @@ data:
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 23
+            "y": 34
           },
           "id": 23,
           "options": {
@@ -1139,7 +1627,7 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(container_network_transmit_packets_total{namespace=~\"$namespace\", container!=\"\"}[$__rate_interval])) by (namespace)",
+              "expr": "sum(rate(container_network_transmit_packets_total{source_cluster=~\"$cluster\", namespace=~\"$namespace\", container!=\"\"}[$__rate_interval])) by (namespace)",
               "hide": false,
               "instant": false,
               "legendFormat": "Outbound Packets  : {{namespace}}",
@@ -1215,7 +1703,7 @@ data:
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 30
+            "y": 41
           },
           "id": 17,
           "options": {
@@ -1241,9 +1729,9 @@ data:
               "editorMode": "code",
               "exemplar": false,
               "expr": "sum(rate(container_fs_reads_bytes_total{source_cluster=~\"$cluster\", namespace=~\"$namespace\"}[$__rate_interval])) by (namespace)",
-              "instant": true,
+              "instant": false,
               "legendFormat": "Reads:  {{namespace}}",
-              "range": false,
+              "range": true,
               "refId": "A"
             },
             {
@@ -1260,11 +1748,12 @@ data:
               "refId": "B"
             }
           ],
-          "title": "Disk Reads/Writes  Per Second Per Second",
+          "title": "Disk Reads/Writes Per Second",
           "type": "timeseries"
         }
       ],
       "preload": false,
+      "refresh": "30s",
       "schemaVersion": 41,
       "tags": [],
       "templating": {
@@ -1295,7 +1784,7 @@ data:
               "type": "prometheus",
               "uid": "${datasource}"
             },
-            "definition": "label_values(source_cluster)",
+            "definition": "label_values(konflux_up, source_cluster)",
             "description": "Select Cluster",
             "hide": 1,
             "includeAll": true,
@@ -1305,7 +1794,7 @@ data:
             "options": [],
             "query": {
               "qryType": 1,
-              "query": "label_values(source_cluster)",
+              "query": "label_values(konflux_up, source_cluster)",
               "refId": "PrometheusVariableQueryEditor-VariableQuery"
             },
             "refresh": 1,
@@ -1314,18 +1803,16 @@ data:
           },
           {
             "current": {
-              "text": [
-                "release-service"
-              ],
+              "text": "All",
               "value": [
-                "release-service"
+                "$__all"
               ]
             },
             "datasource": {
               "type": "prometheus",
               "uid": "${datasource}"
             },
-            "definition": "label_values(konflux_up,namespace)",
+            "definition": "label_values(konflux_up, namespace)",
             "description": "Select Namespace",
             "hide": 1,
             "includeAll": true,
@@ -1335,7 +1822,7 @@ data:
             "options": [],
             "query": {
               "qryType": 1,
-              "query": "label_values(konflux_up,namespace)",
+              "query": "label_values(konflux_up, namespace)",
               "refId": "PrometheusVariableQueryEditor-VariableQuery"
             },
             "refresh": 1,
@@ -1345,7 +1832,7 @@ data:
         ]
       },
       "time": {
-        "from": "now-24h",
+        "from": "now-1h",
         "to": "now"
       },
       "timepicker": {},
