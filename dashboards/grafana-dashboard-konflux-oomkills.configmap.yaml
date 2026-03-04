@@ -29,7 +29,7 @@ data:
       "editable": true,
       "fiscalYearStartMonth": 0,
       "graphTooltip": 1,
-      "id": 1101029,
+      "id": 1102145,
       "links": [],
       "panels": [
         {
@@ -249,7 +249,7 @@ data:
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "sum by (container) (\n  last_over_time(\n    kube_pod_container_status_terminated_reason{reason=\"OOMKilled\"}[$__interval]\n  )\n)",
+              "expr": "sum by (container) (\n  last_over_time(\n    kube_pod_container_status_terminated_reason{source_cluster=~\"$cluster\", namespace=~\"$namespace\", reason=\"OOMKilled\"}[$__interval]\n  )\n)",
               "format": "time_series",
               "hide": false,
               "instant": false,
@@ -2017,5 +2017,5 @@ data:
       "timezone": "UTC",
       "title": "OOM Dashboard",
       "uid": "afbir89ys4ge8a",
-      "version": 46
+      "version": 1
     }
