@@ -340,55 +340,56 @@ tests:
   - name: Test Worker Node high CPU and memory (firing)
   - interval: 1m
     input_series:
-      # instance1: CPU ~85%, memory ~85% (worker) -> alert fires
+      # instance1: CPU ~85%, memory ~65% (worker) for 2h -> alert fires
       - series: 'node_cpu_seconds_total{instance="instance1", mode="idle", source_cluster="cluster01"}'
-        values: '0.15+0x15'
+        values: '0.15+0x130'
       - series: 'node_cpu_seconds_total{instance="instance2", mode="idle", source_cluster="cluster01"}'
-        values: '0.85+0x15'
+        values: '0.85+0x130'
       - series: 'node_memory_MemTotal_bytes{instance="instance1", source_cluster="cluster01"}'
-        values: '100+0x12'
+        values: '100+0x130'
       - series: 'node_memory_MemAvailable_bytes{instance="instance1", source_cluster="cluster01"}'
-        values: '15+0x12'
+        values: '35+0x130'
       - series: 'node_memory_MemTotal_bytes{instance="instance2", source_cluster="cluster01"}'
-        values: '100+0x12'
+        values: '100+0x130'
       - series: 'node_memory_MemAvailable_bytes{instance="instance2", source_cluster="cluster01"}'
-        values: '85+0x12'
+        values: '85+0x130'
       - series: 'kube_node_role{node="instance1", role="worker"}'
-        values: '1+0x12'
+        values: '1+0x130'
       - series: 'kube_node_role{node="instance2", role="worker"}'
-        values: '1+0x12'
+        values: '1+0x130'
     alert_rule_test:
-      - eval_time: 12m
+      - eval_time: 130m
         alertname: WorkerNodeHighCPUAndMemory
         exp_alerts:
           - exp_labels:
               severity: high
+              instance: instance1
               source_cluster: cluster01
             exp_annotations:
-              summary: "Worker nodes with high CPU and memory in cluster01"
-              description: "At least one worker node in cluster cluster01 has had both CPU and memory above 80% for the last 10 minutes."
+              summary: "Worker or infra node instance1 high CPU and memory in cluster01"
+              description: "Worker or infra node instance1 in cluster cluster01 has had CPU above 80% and memory above 60% for the last 2 hours."
               alert_routing_key: perfandspreandinfra
 
   - name: Test Worker Node high CPU and memory (not firing - only CPU high)
   - interval: 1m
     input_series:
-      # instance1: CPU ~85%, memory ~50% -> condition not met
+      # instance1: CPU ~85%, memory ~50% (<60%) -> condition not met
       - series: 'node_cpu_seconds_total{instance="instance1", mode="idle", source_cluster="cluster01"}'
-        values: '0.15+0x15'
+        values: '0.15+0x130'
       - series: 'node_cpu_seconds_total{instance="instance2", mode="idle", source_cluster="cluster01"}'
-        values: '0.85+0x15'
+        values: '0.85+0x130'
       - series: 'node_memory_MemTotal_bytes{instance="instance1", source_cluster="cluster01"}'
-        values: '100+0x12'
+        values: '100+0x130'
       - series: 'node_memory_MemAvailable_bytes{instance="instance1", source_cluster="cluster01"}'
-        values: '50+0x12'
+        values: '50+0x130'
       - series: 'node_memory_MemTotal_bytes{instance="instance2", source_cluster="cluster01"}'
-        values: '100+0x12'
+        values: '100+0x130'
       - series: 'node_memory_MemAvailable_bytes{instance="instance2", source_cluster="cluster01"}'
-        values: '85+0x12'
+        values: '85+0x130'
       - series: 'kube_node_role{node="instance1", role="worker"}'
-        values: '1+0x12'
+        values: '1+0x130'
       - series: 'kube_node_role{node="instance2", role="worker"}'
-        values: '1+0x12'
+        values: '1+0x130'
     alert_rule_test:
-      - eval_time: 12m
+      - eval_time: 130m
         alertname: WorkerNodeHighCPUAndMemory
