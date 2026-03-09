@@ -1,0 +1,96 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.internal_requests_alerts.yaml
+
+tests:
+  - name: InternalRequestsQuotaBelowThreshold
+    interval: 1m
+    input_series:
+      # quota usage is below the 75% threshold - no alert expected
+      - series: 'kube_resourcequota{type="hard", namespace="internal-services", resourcequota="internalrequests-quota", resource="count/internalrequests.appstudio.redhat.com", source_cluster="cluster01"}'
+        values: '10x20'
+      - series: 'kube_resourcequota{type="used", namespace="internal-services", resourcequota="internalrequests-quota", resource="count/internalrequests.appstudio.redhat.com", source_cluster="cluster01"}'
+        values: '5x20'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: InternalRequestsQuotaNearLimit
+        exp_alerts: []
+
+  - name: InternalRequestsQuotaAtThreshold
+    interval: 1m
+    input_series:
+      # quota usage is at exactly 75% - no alert (threshold is strictly > 0.75)
+      - series: 'kube_resourcequota{type="hard", namespace="internal-services", resourcequota="internalrequests-quota", resource="count/internalrequests.appstudio.redhat.com", source_cluster="cluster01"}'
+        values: '10x20'
+      - series: 'kube_resourcequota{type="used", namespace="internal-services", resourcequota="internalrequests-quota", resource="count/internalrequests.appstudio.redhat.com", source_cluster="cluster01"}'
+        values: '7.5x20'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: InternalRequestsQuotaNearLimit
+        exp_alerts: []
+
+  - name: InternalRequestsQuotaOverThreshold
+    interval: 1m
+    input_series:
+      # quota usage exceeds 75% for 15m - alert expected
+      - series: 'kube_resourcequota{type="hard", namespace="internal-services", resourcequota="internalrequests-quota", resource="count/internalrequests.appstudio.redhat.com", source_cluster="cluster01"}'
+        values: '10x20'
+      - series: 'kube_resourcequota{type="used", namespace="internal-services", resourcequota="internalrequests-quota", resource="count/internalrequests.appstudio.redhat.com", source_cluster="cluster01"}'
+        values: '9x20'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: InternalRequestsQuotaNearLimit
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              namespace: internal-services
+              resource: count/internalrequests.appstudio.redhat.com
+              resourcequota: internalrequests-quota
+              source_cluster: cluster01
+              component: release-service
+            exp_annotations:
+              summary: >-
+                InternalRequests count is near the quota limit in cluster cluster01
+              description: >-
+                InternalRequests in namespace internal-services on cluster cluster01
+                are using more than 75% of the internalrequests-quota quota. The cleanup job may be
+                misbehaving, causing stale InternalRequests to accumulate.
+              alert_routing_key: internal-services
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/release-service/internal-requests-quota.md
+              team: release
+
+  - name: InternalRequestsCleanupJobNotFailed
+    interval: 1m
+    input_series:
+      # cleanup job has not failed - no alert expected
+      - series: 'kube_job_failed{namespace="internal-services", job_name="cleanup-internal-requests-pipelineruns-28914560", condition="true", source_cluster="cluster01"}'
+        values: '0x5'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: InternalRequestsCleanupJobFailed
+        exp_alerts: []
+
+  - name: InternalRequestsCleanupJobHasFailed
+    interval: 1m
+    input_series:
+      # cleanup job has failed - alert expected after 1m
+      - series: 'kube_job_failed{namespace="internal-services", job_name="cleanup-internal-requests-pipelineruns-28914560", condition="true", source_cluster="cluster01"}'
+        values: '1x5'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: InternalRequestsCleanupJobFailed
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              source_cluster: cluster01
+              component: release-service
+            exp_annotations:
+              summary: >-
+                InternalRequests cleanup job failed on cluster cluster01
+              description: >-
+                The InternalRequests cleanup job has failed on cluster cluster01.
+                Stale InternalRequests may accumulate and approach the quota limit.
+              alert_routing_key: internal-services
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/release-service/internal-requests-quota.md
+              team: release
