@@ -24,6 +24,7 @@ spec:
             description: >-
               CPU Usage is {{$value}}% on master node {{ $labels.instance }} in cluster {{ $labels.source_cluster }}.
             alert_routing_key: perfandspreandinfra
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rules/node_alerts.md
 
         - alert: MasterNodeHighMemory
           expr: |
@@ -56,6 +57,7 @@ spec:
             description: >-
               CPU Usage is {{$value}}% on infra node {{ $labels.instance }} in cluster {{ $labels.source_cluster }}.
             alert_routing_key: perfandspreandinfra
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rules/node_alerts.md
 
         - alert: InfraNodeHighMemory
           expr: |
@@ -70,6 +72,7 @@ spec:
             description: >-
               Infra Memory Usage is {{$value}}% on infra node {{ $labels.instance }} in cluster {{ $labels.source_cluster }}.
             alert_routing_key: perfandspreandinfra
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rules/node_alerts.md
 
         # Node based Alerts
         - alert: WorkerNodeHighCPU
@@ -83,6 +86,7 @@ spec:
             summary: "Instances with high CPU in {{ $labels.source_cluster }}"
             description: "More than 10 worker node instances in cluster {{ $labels.source_cluster }} have had CPU usage above 95% for the last 10 minutes."
             alert_routing_key: perfandspreandinfra
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rules/node_alerts.md
 
         - alert: WorkerNodeHighMemory
           expr: |
@@ -97,6 +101,7 @@ spec:
             description: >-
               More than 10 worker node instances in cluster {{ $labels.source_cluster }} have had Memory usage above 90% for the last 10 minutes.
             alert_routing_key: perfandspreandinfra
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rules/node_alerts.md
 
         - alert: WorkerNodeHighCPUAndMemory
           expr: |
@@ -130,3 +135,4 @@ spec:
             summary: "Worker node {{ $labels.instance }} high CPU and memory in {{ $labels.source_cluster }}"
             description: "Worker node {{ $labels.instance }} in cluster {{ $labels.source_cluster }} has had CPU above 80% and memory above 60% for the last 10 minutes."
             alert_routing_key: perfandspreandinfra
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alert-rules/node_alerts.md
