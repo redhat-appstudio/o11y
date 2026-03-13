@@ -451,7 +451,7 @@ spec:
             runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/sre/tekton-pipeline-related-deadlocks.md
         - alert: ResultsDeadlock
           expr: |
-            sum by (source_cluster) (increase(tekton_pipelines_controller_pipelinerun_count[5m])) > 0
+            sum by (source_cluster) (increase(tekton_pipelines_controller_pipelinerun_total[5m])) > 0
             and
             sum by (source_cluster) (increase(grpc_server_handled_total{job='tekton-results-api', grpc_service=~'tekton.results.*'}[5m])) == 0
           for: 75m
