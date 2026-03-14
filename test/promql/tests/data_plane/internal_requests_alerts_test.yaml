@@ -64,7 +64,7 @@ tests:
     interval: 1m
     input_series:
       # cleanup job has not failed - no alert expected
-      - series: 'kube_job_failed{namespace="internal-services", job_name="cleanup-internal-requests-pipelineruns-28914560", condition="true", source_cluster="cluster01"}'
+      - series: 'kube_job_failed{namespace="release-service", job_name="cleanup-timed-out-pipelineruns-internal-requests-28914560", condition="true", source_cluster="cluster01"}'
         values: '0x5'
     alert_rule_test:
       - eval_time: 5m
@@ -75,7 +75,7 @@ tests:
     interval: 1m
     input_series:
       # cleanup job has failed - alert expected after 1m
-      - series: 'kube_job_failed{namespace="internal-services", job_name="cleanup-internal-requests-pipelineruns-28914560", condition="true", source_cluster="cluster01"}'
+      - series: 'kube_job_failed{namespace="release-service", job_name="cleanup-timed-out-pipelineruns-internal-requests-28914560", condition="true", source_cluster="cluster01"}'
         values: '1x5'
     alert_rule_test:
       - eval_time: 1m
