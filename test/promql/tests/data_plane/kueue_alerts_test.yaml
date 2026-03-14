@@ -90,19 +90,29 @@ tests:
   - interval: 1m
     input_series:
       # High admission wait time buckets - should trigger alert (>1800s = 30min)
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="900", source_cluster="c1"}'
-        values: '0 1 2 3 4 5'
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="1200", source_cluster="c1"}'
-        values: '0 1 2 3 4 5'
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="1800", source_cluster="c1"}'
-        values: '0 1 2 3 4 5'
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="2400", source_cluster="c1"}'
-        values: '0 5 10 15 20 25'
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="+Inf", source_cluster="c1"}'
-        values: '0 5 10 15 20 25'
+      # These series should be included (priority_class != "konflux-dependency-update")
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="300", source_cluster="c1", priority_class="other"}'
+        values: '0 1 2 3 4 5 5 5 5 5 5 5'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="600", source_cluster="c1", priority_class="other"}'
+        values: '0 1 2 3 4 5 5 5 5 5 5 5'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="900", source_cluster="c1", priority_class="other"}'
+        values: '0 1 2 3 4 5 5 5 5 5 5 5'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="1200", source_cluster="c1", priority_class="other"}'
+        values: '0 1 2 3 4 5 5 5 5 5 5 5'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="1800", source_cluster="c1", priority_class="other"}'
+        values: '0 1 2 3 4 5 5 5 5 5 5 5'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="2400", source_cluster="c1", priority_class="other"}'
+        values: '0 5 10 15 20 25 25 25 25 25 25 25'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="+Inf", source_cluster="c1", priority_class="other"}'
+        values: '0 5 10 15 20 25 25 25 25 25 25 25'
+      # These series should be excluded (priority_class="konflux-dependency-update")
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="300", source_cluster="c1", priority_class="konflux-dependency-update"}'
+        values: '0 100 200 300 400 500'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="+Inf", source_cluster="c1", priority_class="konflux-dependency-update"}'
+        values: '0 100 200 300 400 500'
 
     alert_rule_test:
-      - eval_time: 6m
+      - eval_time: 11m
         alertname: KueueHighAdmissionWaitTime
         exp_alerts:
           - exp_labels:
@@ -135,9 +145,9 @@ tests:
         values: '1 1 1 1 1 1'
 
       # Low admission wait time
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="300"}'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="300", priority_class="other"}'
         values: '0 5 10 15 20 25'
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="+Inf"}'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="+Inf", priority_class="other"}'
         values: '0 5 10 15 20 25'
 
     alert_rule_test:
