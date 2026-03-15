@@ -6,7 +6,7 @@ rule_files:
 tests:
   - interval: 1m
     input_series:
-      # Scenario: Upgrade in progress (soak days = -2.5)
+      # Scenario: Upgrade in progress (soak days = -2.5, falls within <= -2 and >= -3)
       - series: 'aus_cluster_version_remaining_soak_days{cluster_uuid="uuid-1"}'
         values: '-2.5x10'
       - series: 'aus_cluster_upgrade_policy_info{cluster_uuid="uuid-1", cluster_name="prod-cluster", org_name="redhat", current_version="4.14.1"}'
@@ -21,6 +21,7 @@ tests:
               component: release-service
               team: release
               slo: "false"
+              tenant: rhtap
               cluster_uuid: "uuid-1"
               cluster_name: "prod-cluster"
               org_name: "redhat"
@@ -30,7 +31,6 @@ tests:
               description: >-
                 Cluster prod-cluster (Org: redhat) is currently undergoing an upgrade.
                 Current version: 4.14.1
-                Soak days status: -2.5
               alert_routing_key: "release"
               alert_team_handle: "<!subteam^S03SVBS426R>"
               team: release
@@ -38,9 +38,22 @@ tests:
 
   - interval: 1m
     input_series:
-      # Scenario: Normal state (soak days > 0), alert should NOT fire
+      # Scenario: Normal state (soak days = 5), alert should NOT fire
       - series: 'aus_cluster_version_remaining_soak_days{cluster_uuid="uuid-1"}'
         values: '5x10'
+      - series: 'aus_cluster_upgrade_policy_info{cluster_uuid="uuid-1", cluster_name="prod-cluster", org_name="redhat", current_version="4.14.1"}'
+        values: '1x10'
+
+    alert_rule_test:
+      - alertname: ClusterUpgradeOngoing
+        eval_time: 10m
+        exp_alerts: []
+
+  - interval: 1m
+    input_series:
+      # Scenario: Out of specific range (soak days = -1), alert should NOT fire based on your logic
+      - series: 'aus_cluster_version_remaining_soak_days{cluster_uuid="uuid-1"}'
+        values: '-1x10'
       - series: 'aus_cluster_upgrade_policy_info{cluster_uuid="uuid-1", cluster_name="prod-cluster", org_name="redhat", current_version="4.14.1"}'
         values: '1x10'
 

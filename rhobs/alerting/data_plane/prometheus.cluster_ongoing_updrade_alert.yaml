@@ -11,21 +11,23 @@ spec:
     rules:
     - alert: ClusterUpgradeOngoing
       expr: |
-        (aus_cluster_version_remaining_soak_days <= -2 >= -3)
-        * on (cluster_uuid) group_left(cluster_name, org_name, current_version)
-        (aus_cluster_upgrade_policy_info > 0)
+        (
+          (aus_cluster_version_remaining_soak_days <= -2 >= -3)
+          * on (cluster_uuid) group_left(cluster_name, org_name, current_version)
+          (aus_cluster_upgrade_policy_info > 0)
+        ) * 0 + 1
       for: 5m
       labels:
         severity: info
         component: release-service
         team: release
         slo: "false"
+        tenant: rhtap
       annotations:
         summary: "Cluster upgrade ongoing: {{ $labels.cluster_name }}"
         description: >-
           Cluster {{ $labels.cluster_name }} (Org: {{ $labels.org_name }}) is currently undergoing an upgrade.
           Current version: {{ $labels.current_version }}
-          Soak days status: {{ $value }}
         alert_routing_key: "release"
         alert_team_handle: "<!subteam^S03SVBS426R>"
         team: release
