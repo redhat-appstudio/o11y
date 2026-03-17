@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi9/go-toolset:1.25.7-1771417345 AS builder
+FROM registry.access.redhat.com/ubi9/go-toolset:1.25.7-1773318690 AS builder
 
 USER root
 
@@ -28,7 +28,7 @@ RUN cd exporters && \
     done
 
 # Oras binary from konflux image
-FROM quay.io/konflux-ci/oras:latest@sha256:d126f98e16bfad71aab782eb212a5be701e2cde915d294a7bd6423a4ab448705 as oras
+FROM quay.io/konflux-ci/oras:latest@sha256:a24785126ef20a631354f3ee0cb1ca3f75f7c7013b778e901a8983f6cc9a8390 as oras
 
 FROM registry.access.redhat.com/ubi9-micro@sha256:093a704be0eaef9bb52d9bc0219c67ee9db13c2e797da400ddb5d5ae6849fa10
 
