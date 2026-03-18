@@ -6,10 +6,9 @@ rule_files:
 tests:
   - interval: 1m
     input_series:
-      # Scenario: Upgrade in progress (soak days = -2.5, falls within <= -2 and >= -3)
       - series: 'aus_cluster_version_remaining_soak_days{cluster_uuid="uuid-1"}'
         values: '-2.5x10'
-      - series: 'aus_cluster_upgrade_policy_info{cluster_uuid="uuid-1", cluster_name="prod-cluster", org_name="redhat", current_version="4.14.1"}'
+      - series: 'aus_cluster_upgrade_policy_info{cluster_uuid="uuid-1", cluster_name="prod-cluster", org_name="RHTAP", current_version="4.14.1"}'
         values: '1x10'
 
     alert_rule_test:
@@ -24,12 +23,12 @@ tests:
               tenant: rhtap
               cluster_uuid: "uuid-1"
               cluster_name: "prod-cluster"
-              org_name: "redhat"
+              org_name: "RHTAP"
               current_version: "4.14.1"
             exp_annotations:
               summary: "Cluster upgrade ongoing: prod-cluster"
               description: >-
-                Cluster prod-cluster (Org: redhat) is currently undergoing an upgrade.
+                Cluster prod-cluster (Org: RHTAP) is currently undergoing an upgrade.
                 Current version: 4.14.1
               alert_routing_key: "release"
               alert_team_handle: "<!subteam^S03SVBS426R>"
@@ -38,10 +37,9 @@ tests:
 
   - interval: 1m
     input_series:
-      # Scenario: Normal state (soak days = 5), alert should NOT fire
       - series: 'aus_cluster_version_remaining_soak_days{cluster_uuid="uuid-1"}'
         values: '5x10'
-      - series: 'aus_cluster_upgrade_policy_info{cluster_uuid="uuid-1", cluster_name="prod-cluster", org_name="redhat", current_version="4.14.1"}'
+      - series: 'aus_cluster_upgrade_policy_info{cluster_uuid="uuid-1", cluster_name="prod-cluster", org_name="RHTAP", current_version="4.14.1"}'
         values: '1x10'
 
     alert_rule_test:
@@ -51,10 +49,9 @@ tests:
 
   - interval: 1m
     input_series:
-      # Scenario: Out of specific range (soak days = -1), alert should NOT fire based on your logic
       - series: 'aus_cluster_version_remaining_soak_days{cluster_uuid="uuid-1"}'
         values: '-1x10'
-      - series: 'aus_cluster_upgrade_policy_info{cluster_uuid="uuid-1", cluster_name="prod-cluster", org_name="redhat", current_version="4.14.1"}'
+      - series: 'aus_cluster_upgrade_policy_info{cluster_uuid="uuid-1", cluster_name="prod-cluster", org_name="RHTAP", current_version="4.14.1"}'
         values: '1x10'
 
     alert_rule_test:
