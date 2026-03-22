@@ -269,7 +269,7 @@ tests:
 
       # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
       # tekton results appears deadlocked
-      - series: 'tekton_pipelines_controller_pipelinerun_count{source_cluster="cluster01"}'
+      - series: 'tekton_pipelines_controller_pipelinerun_total{source_cluster="cluster01"}'
         values: '1+1x780'
       - series: 'grpc_server_handled_total{job="tekton-results-api", grpc_service="tekton.results.v1alpha2.CreateResult", source_cluster="cluster01"}'
         values: '0x780'
@@ -299,7 +299,7 @@ tests:
 
       # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
       # tekton chains controller is experiencing some delays processing pipelineruns but not fast enough so it should not alert
-      - series: 'tekton_pipelines_controller_pipelinerun_count{source_cluster="cluster01"}'
+      - series: 'tekton_pipelines_controller_pipelinerun_total{source_cluster="cluster01"}'
         values: '0x780'
       - series: 'grpc_server_handled_total{job="tekton-results-api", grpc_service="tekton.results.v1alpha2.CreateResult", source_cluster="cluster01"}'
         values: '0x780'
@@ -313,7 +313,7 @@ tests:
 
       # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
       # tekton results not deadlocked
-      - series: 'tekton_pipelines_controller_pipelinerun_count{source_cluster="cluster01"}'
+      - series: 'tekton_pipelines_controller_pipelinerun_total{source_cluster="cluster01"}'
         values: '1+1x780'
       - series: 'grpc_server_handled_total{job="tekton-results-api", grpc_service="tekton.results.v1alpha2.CreateResult", source_cluster="cluster01"}'
         values: '1+1x780'
@@ -327,7 +327,7 @@ tests:
 
       # see https://prometheus.io/docs/prometheus/latest/configuration/unit_testing_rules/ for explanations of the expanding notation used for the values
       # tekton results not deadlocked
-      - series: 'tekton_pipelines_controller_pipelinerun_count{source_cluster="cluster01"}'
+      - series: 'tekton_pipelines_controller_pipelinerun_total{source_cluster="cluster01"}'
         values: '1+1x780'
       - series: 'grpc_server_handled_total{job="foo", grpc_service="foo", source_cluster="cluster01"}'
         values: '0x780'
