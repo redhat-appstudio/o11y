@@ -4,7 +4,8 @@ rule_files:
   - prometheus.cluster_ongoing_updrade_alert.yaml
 
 tests:
-  - interval: 1m
+  - name: ClusterUpgradeOngoingFiring
+    interval: 1m
     input_series:
       - series: 'aus_cluster_version_remaining_soak_days{cluster_uuid="uuid-1"}'
         values: '-2.5x10'
@@ -12,8 +13,8 @@ tests:
         values: '1x10'
 
     alert_rule_test:
-      - alertname: ClusterUpgradeOngoing
-        eval_time: 10m
+      - eval_time: 10m
+        alertname: ClusterUpgradeOngoing
         exp_alerts:
           - exp_labels:
               severity: info
@@ -22,6 +23,7 @@ tests:
               cluster_name: "prod-cluster"
               org_name: "RHTAP"
               current_version: "4.14.1"
+              alertname: ClusterUpgradeOngoing
             exp_annotations:
               summary: "Cluster upgrade ongoing: prod-cluster"
               description: "Cluster prod-cluster is currently undergoing an upgrade. Current version: 4.14.1"
@@ -29,7 +31,8 @@ tests:
               team: konflux-spre
               runbook_url: "https://gitlab.cee.redhat.com/konflux/docs/sop/"
 
-  - interval: 1m
+  - name: ClusterUpgradeOngoingNotFiring
+    interval: 1m
     input_series:
       - series: 'aus_cluster_version_remaining_soak_days{cluster_uuid="uuid-1"}'
         values: '5x10'
@@ -37,11 +40,12 @@ tests:
         values: '1x10'
 
     alert_rule_test:
-      - alertname: ClusterUpgradeOngoing
-        eval_time: 10m
+      - eval_time: 10m
+        alertname: ClusterUpgradeOngoing
         exp_alerts: []
 
-  - interval: 1m
+  - name: ClusterUpgradeOngoingNotFiringCloseToLimit
+    interval: 1m
     input_series:
       - series: 'aus_cluster_version_remaining_soak_days{cluster_uuid="uuid-1"}'
         values: '-1x10'
@@ -49,6 +53,6 @@ tests:
         values: '1x10'
 
     alert_rule_test:
-      - alertname: ClusterUpgradeOngoing
-        eval_time: 10m
+      - eval_time: 10m
+        alertname: ClusterUpgradeOngoing
         exp_alerts: []
