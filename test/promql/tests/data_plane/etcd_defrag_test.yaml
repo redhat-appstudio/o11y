@@ -1,0 +1,48 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.etcd_defrag.yaml
+
+tests:
+
+  - interval: 1m
+    input_series:
+      - series: etcd_disk_defrag_inflight{source_cluster="cluster01"}
+        values: 1x5 0x25 1x5 0x35
+
+    alert_rule_test:
+      - eval_time: 33m
+        alertname: EtcdDefragFrequent
+        exp_alerts:
+          - exp_labels:
+              component: etcd
+              severity: high
+              source_cluster: cluster01
+            exp_annotations:
+              summary: Etcd defragmentation is happening too frequently
+              description: 'Etcd defragmentation occurred more than once in the last 30 minutes in cluster cluster01.'
+              alert_routing_key: infra
+              team: konflux-infra
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/etcd.md
+
+  - interval: 1m
+    input_series:
+      - series: etcd_disk_defrag_inflight{source_cluster="cluster01", instance="instance1"}
+        values: 1x2 0x68
+      - series: etcd_disk_defrag_inflight{source_cluster="cluster01", instance="instance2"}
+        values: 0x2 1x2 0x66
+      - series: etcd_disk_defrag_inflight{source_cluster="cluster01", instance="instance3"}
+        values: 0x4 1x2 0x64
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: EtcdDefragFrequent
+
+  - interval: 1m
+    input_series:
+      - series: etcd_disk_defrag_inflight{source_cluster="cluster01"}
+        values: 0+0x70
+
+    alert_rule_test:
+      - eval_time: 65m
+        alertname: EtcdDefragFrequent
