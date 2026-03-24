@@ -8,6 +8,7 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/lib/pq v1.12.0
 	github.com/prometheus/client_golang v1.23.2
+	k8s.io/apimachinery v0.35.3
 )
 
 require (
@@ -48,7 +49,6 @@ require (
 	gopkg.in/evanphx/json-patch.v4 v4.13.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	k8s.io/api v0.35.3 // indirect
-	k8s.io/apimachinery v0.35.3 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20260304202019-5b3e3fdb0acf // indirect
 	k8s.io/utils v0.0.0-20260319190234-28399d86e0b5 // indirect
