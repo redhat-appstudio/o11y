@@ -1,0 +1,182 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: appstudio-exporters
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec: {}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ka-exporter-sa
+  namespace: appstudio-exporters
+---
+# kube-rbac-proxy ClusterRole — required to perform TokenReview / SubjectAccessReview
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kube-rbac-proxy-ka
+rules:
+  - apiGroups: ["authentication.k8s.io"]
+    resources: ["tokenreviews"]
+    verbs: ["create"]
+  - apiGroups: ["authorization.k8s.io"]
+    resources: ["subjectaccessreviews"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kube-rbac-proxy-ka-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kube-rbac-proxy-ka
+subjects:
+  - kind: ServiceAccount
+    name: ka-exporter-sa
+    namespace: appstudio-exporters
+---
+# Namespace discovery — exporter must list tenant namespaces via Kubernetes API.
+# Required by ka_exporter_multitenant.py's get_tenant_namespaces().
+# Scope: cluster-wide list of namespaces filtered by label konflux-ci.dev/type=tenant.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ka-exporter-namespace-reader
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ka-exporter-namespace-reader-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ka-exporter-namespace-reader
+subjects:
+  - kind: ServiceAccount
+    name: ka-exporter-sa
+    namespace: appstudio-exporters
+---
+# KubeArchive credentials — must be created out-of-band (or via ExternalSecret).
+# Expected keys:
+#   ka-host  : KubeArchive API base URL
+#   ka-token : Bearer token
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ka-kubearchive-credentials
+  namespace: appstudio-exporters
+type: Opaque
+# data is managed externally; do not commit actual values here.
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ka-exporter-service
+  namespace: appstudio-exporters
+  labels:
+    app: ka-exporter
+spec:
+  ports:
+    - name: https
+      port: 8443
+      targetPort: https
+  selector:
+    app: ka-exporter
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ka-exporter-deployment
+  namespace: appstudio-exporters
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ka-exporter
+  template:
+    metadata:
+      labels:
+        app: ka-exporter
+    spec:
+      serviceAccountName: ka-exporter-sa
+      containers:
+        # kube-rbac-proxy terminates TLS and enforces RBAC before forwarding to the exporter
+        - name: kube-rbac-proxy
+          image: quay.io/brancz/kube-rbac-proxy:v0.14.0
+          args:
+            - "--secure-listen-address=0.0.0.0:8443"
+            - "--upstream=http://127.0.0.1:9101/"
+            - "--logtostderr=true"
+            - "--v=3"
+          ports:
+            - containerPort: 8443
+              name: https
+          resources:
+            limits:
+              cpu: 50m
+              memory: 64Mi
+            requests:
+              cpu: 20m
+              memory: 32Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+
+        - name: ka-exporter
+          image: ka-exporter:latest
+          command: ["/usr/local/bin/entrypoint.sh", "kaexporter"]
+          ports:
+            - containerPort: 9101
+              name: http-metrics
+          env:
+            - name: KA_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: ka-kubearchive-credentials
+                  key: ka-host
+            - name: KA_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: ka-kubearchive-credentials
+                  key: ka-token
+            - name: CLUSTER_NAME
+              value: "staging-cluster"
+            - name: TENANT_NAMESPACE
+              value: "rhtap-o11y-tenant"
+            # Comma-separated: directory names under konflux-release-data/.../cluster/<cluster>/managed/<ns>/
+            # Example: rhtap-releng-tenant
+            - name: MANAGED_RELEASE_PLR_NAMESPACES
+              value: ""
+            - name: EXPORTER_PORT
+              value: "9101"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http-metrics
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http-metrics
+            initialDelaySeconds: 5
+            periodSeconds: 15
+          resources:
+            limits:
+              cpu: 100m
+              memory: 128Mi
+            requests:
+              cpu: 20m
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true

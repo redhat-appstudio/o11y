@@ -1,0 +1,60 @@
+---
+# ServiceAccount + Secret for Prometheus to scrape the secured /metrics endpoint
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ka-metrics-reader
+  namespace: appstudio-exporters
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ka-metrics-reader
+  namespace: appstudio-exporters
+  annotations:
+    kubernetes.io/service-account.name: ka-metrics-reader
+type: kubernetes.io/service-account-token
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ka-exporter-metrics-reader
+rules:
+  - nonResourceURLs:
+      - /metrics
+    verbs:
+      - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ka-exporter-metrics-reader-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ka-exporter-metrics-reader
+subjects:
+  - kind: ServiceAccount
+    name: ka-metrics-reader
+    namespace: appstudio-exporters
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ka-exporter-servicemonitor
+  namespace: appstudio-exporters
+spec:
+  endpoints:
+    - path: /metrics
+      port: https
+      scheme: https
+      bearerTokenSecret:
+        name: ka-metrics-reader
+        key: token
+      tlsConfig:
+        insecureSkipVerify: true
+      interval: 60s
+      scrapeTimeout: 30s
+  selector:
+    matchLabels:
+      app: ka-exporter
