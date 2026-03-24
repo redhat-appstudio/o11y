@@ -10,6 +10,24 @@ spec:
       interval: 1m
       rules:
 
+      - alert: EtcdCustomDefragOccurred
+        expr: |
+          sum by (source_cluster) (etcd_disk_defrag_inflight) > 0
+          and
+          sum by (source_cluster) (max_over_time(etcd_disk_defrag_inflight[7m] offset 3m)) > 0
+        for: 1m
+        labels:
+          severity: high
+          component: etcd
+        annotations:
+          summary: >-
+            Custom etcd defragmentation occurred after built-in defrag
+          description: >-
+            Two etcd defragmentation cycles detected within a 3-10 minute window in cluster {{ $labels.source_cluster }}.
+          alert_routing_key: infra
+          team: konflux-infra
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/etcd.md
+
       - alert: EtcdDefragFrequent
         expr: |
           sum by (source_cluster) (etcd_disk_defrag_inflight) > 0
