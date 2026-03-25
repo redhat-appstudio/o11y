@@ -46,3 +46,41 @@ tests:
     alert_rule_test:
       - eval_time: 65m
         alertname: EtcdDefragFrequent
+
+  - interval: 1m
+    input_series:
+      - series: etcd_disk_defrag_inflight{source_cluster="cluster01"}
+        values: 1x2 0x1 1x2 0x14
+
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: EtcdCustomDefragOccurred
+        exp_alerts:
+          - exp_labels:
+              component: etcd
+              severity: high
+              source_cluster: cluster01
+            exp_annotations:
+              summary: Custom etcd defragmentation occurred after built-in defrag
+              description: 'Two etcd defragmentation cycles detected within a 3-10 minute window in cluster cluster01.'
+              alert_routing_key: infra
+              team: konflux-infra
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/etcd.md
+
+  - interval: 1m
+    input_series:
+      - series: etcd_disk_defrag_inflight{source_cluster="cluster01"}
+        values: 1x2 0x10 1x2 0x10
+
+    alert_rule_test:
+      - eval_time: 14m
+        alertname: EtcdCustomDefragOccurred
+
+  - interval: 1m
+    input_series:
+      - series: etcd_disk_defrag_inflight{source_cluster="cluster01"}
+        values: 0+0x20
+
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: EtcdCustomDefragOccurred
