@@ -65,9 +65,16 @@ const (
 	// If KubeArchive is slow or a namespace hangs, this cancels all in-flight HTTP
 	// requests and allows Prometheus to record a scrape failure rather than waiting
 	// until its own scrape_timeout fires and drops the entire scrape.
-	// Should be set to slightly less than the Prometheus scrape_timeout.
-	// Default: 120s (2 minutes), suitable for a 3-minute Prometheus scrape_timeout.
-	kaScrapeTimeoutSecsEnv     = "KA_SCRAPE_TIMEOUT_SECONDS"
+	//
+	// IMPORTANT: Must be set to slightly less than the Prometheus scrape_timeout
+	// configured in the ServiceMonitor. promhttp.HandlerFor does not propagate the
+	// HTTP request context into Collect(), so without this internal deadline, goroutines
+	// continue running for the full default duration even after Prometheus drops the
+	// connection — causing goroutine accumulation under repeated slow scrapes.
+	//
+	// Current deployment: ServiceMonitor scrapeTimeout=180s → KA_SCRAPE_TIMEOUT_SECONDS=160s
+	// Default: 120s (fallback only; the deployment manifest should always set this explicitly).
+	kaScrapeTimeoutSecsEnv      = "KA_SCRAPE_TIMEOUT_SECONDS"
 	defaultScrapeTimeoutSeconds = 120
 
 	// kaPageLimit is the number of items requested per KubeArchive API page.
