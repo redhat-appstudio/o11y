@@ -53,11 +53,10 @@ const (
 	managedReleasePLRNamespacesEnv = "MANAGED_RELEASE_PLR_NAMESPACES"
 
 	// kaWindowHoursEnv controls how far back the exporter fetches resources from
-	// KubeArchive. KubeArchive has no built-in retention period 
+	// KubeArchive.
 	kaWindowHoursEnv     = "KA_WINDOW_HOURS"
 	defaultKAWindowHours = 48
 
-	// kaScrapeTimeoutSecsEnv sets a hard deadline on the entire Collect() call.
 	kaScrapeTimeoutSecsEnv      = "KA_SCRAPE_TIMEOUT_SECONDS"
 	defaultScrapeTimeoutSeconds = 120
 
@@ -67,7 +66,7 @@ const (
 	// kaMaxItems is the safety cap on total items fetched per endpoint per scrape.
 	kaMaxItems = 1000
 
-	// maxConcurrentFetches controls parallelism for KubeArchive API calls.
+	// parallelism for KubeArchive API calls.
 	defaultMaxConcurrent = 10
 	maxConcurrentEnv     = "KA_MAX_CONCURRENT"
 )
@@ -153,9 +152,10 @@ type PipelineRun struct {
 
 type Release struct {
 	Metadata struct {
-		Name      string            `json:"name"`
-		Namespace string            `json:"namespace,omitempty"`
-		Labels    map[string]string `json:"labels"`
+		Name              string            `json:"name"`
+		Namespace         string            `json:"namespace,omitempty"`
+		Labels            map[string]string `json:"labels"`
+		CreationTimestamp string            `json:"creationTimestamp"`
 	} `json:"metadata"`
 	Status struct {
 		StartTime      string      `json:"startTime"`
@@ -170,10 +170,7 @@ type releaseEntry struct {
 	crNamespace string
 }
 
-// releaseIndex is a dual-keyed lookup for O(1) build-PLR → Release correlation.
-// When multiple releases share a key (e.g. retries), the most recently added wins
-// for byBuildPLR (overwrite) and the first wins for bySnapshot (skip duplicates),
-// which matches the old linear-scan semantics.
+// releaseIndex is a dual-keyed lookup for build-PLR → Release correlation.
 type releaseIndex struct {
 	store      []releaseEntry
 	byBuildPLR map[string]int // label[build-pipelinerun] → store index
@@ -188,8 +185,6 @@ func newReleaseIndex() *releaseIndex {
 }
 
 // addReleases copies releases from a namespace into the index.
-// Safe to call from multiple goroutines only if each call is for a distinct batch;
-// callers in gatherAllReleasesParallel hold a mutex around this.
 func (idx *releaseIndex) addReleases(ns string, releases []Release) {
 	for _, r := range releases {
 		i := len(idx.store)
@@ -203,7 +198,7 @@ func (idx *releaseIndex) addReleases(ns string, releases []Release) {
 		if bplr := getLabel(r, labelBuildPipelineRun, ""); bplr != "" {
 			idx.byBuildPLR[bplr] = i
 		}
-		// Fallback key: snapshot label — keep the first (avoid overwriting with retries).
+		// Fallback key: snapshot label — keep the first to avoid overwriting with retries.
 		if snap := getLabel(r, "release.appstudio.openshift.io/snapshot", ""); snap != "" {
 			if _, exists := idx.bySnapshot[snap]; !exists {
 				idx.bySnapshot[snap] = i
@@ -221,7 +216,7 @@ type Condition struct {
 // archivedOutcomeKey groups counts for konflux_archived_completion_count (Gauge).
 type archivedOutcomeKey struct {
 	namespace            string // tenant NS for build/test/release_cr; managed NS for release_plr
-	applicationNamespace string // tenant NS for release_plr (from label); empty otherwise
+	applicationNamespace string // tenant NS for release_plr
 	phase                string // build | test | release_cr | release_plr
 	application          string
 	component            string
@@ -263,7 +258,7 @@ type KAExporter struct {
 	cluster    string
 	httpClient *http.Client
 
-	// windowHours is the look-back window for KubeArchive queries (creationTimestampAfter).
+	// windowHours is the look-back window for KubeArchive queries
 	windowHours int
 
 	// scrapeTimeout is a hard deadline applied to each Collect() invocation.
@@ -275,8 +270,7 @@ type KAExporter struct {
 	// k8sClient lists tenant namespaces when fixedTenantNamespace is empty; nil in single-tenant mode.
 	k8sClient kubernetes.Interface
 
-	// Duration metrics — Histograms for event durations (support exemplars + distribution queries).
-	// Queue/gap/count metrics remain as Gauges (point-in-time state, not event durations).
+	// Duration metrics — Histograms for event durations
 	buildDurationHist       *prometheus.HistogramVec // build PLR creation → completion
 	integrationDurationHist *prometheus.HistogramVec // integration test PLR creation → completion
 	releaseDurationHist     *prometheus.HistogramVec // Release CR creation → completion
@@ -285,6 +279,7 @@ type KAExporter struct {
 
 	// State metrics — Gauges (point-in-time, no single join key, or counts).
 	queueWaitGauge          *prometheus.GaugeVec // build PLR creation → start (queue wait)
+	integrationQueueGauge   *prometheus.GaugeVec // integration test PLR creation → start (queue wait)
 	integrationDelayGauge   *prometheus.GaugeVec // build completion → first test PLR creation (gap)
 	releasePLRQueueGauge    *prometheus.GaugeVec // release PLR creation → start (queue wait)
 	archivedCompletionGauge *prometheus.GaugeVec // count of completed resources by outcome
@@ -372,7 +367,7 @@ func NewKAExporter() (*KAExporter, error) {
 			prometheus.HistogramOpts{
 				Name:    "konflux_build_pipelinerun_duration_seconds",
 				Help:    "Distribution of build PipelineRun durations from creation to completion. Exemplars carry pipelinerun and snapshot names as join keys.",
-				Buckets: []float64{60, 120, 300, 600, 900, 1200, 1800, 2700, 3600}, // 1m–1h
+			Buckets: []float64{60, 120, 300, 600, 900, 1200, 1800, 2700, 3600, 5400}, // 1m–90m
 			},
 			[]string{"cluster", "namespace", "application", "component", "result"},
 		),
@@ -380,7 +375,7 @@ func NewKAExporter() (*KAExporter, error) {
 			prometheus.HistogramOpts{
 				Name:    "konflux_integration_pipelinerun_duration_seconds",
 				Help:    "Distribution of integration test PipelineRun durations from creation to completion. Exemplars carry pipelinerun and snapshot names as join keys.",
-				Buckets: []float64{60, 120, 300, 600, 900, 1800, 3600}, // 1m–1h
+			Buckets: []float64{120, 300, 600, 900, 1800, 3600, 5400}, // 2m–90m
 			},
 			[]string{"cluster", "namespace", "application", "component", "scenario", "result", "optional"},
 		),
@@ -418,6 +413,13 @@ func NewKAExporter() (*KAExporter, error) {
 				Help: "Elapsed time in seconds from build PipelineRun creation to execution start.",
 			},
 			[]string{"cluster", "namespace", "application", "component"},
+		),
+		integrationQueueGauge: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Name: "konflux_integration_pipelinerun_queue_seconds",
+				Help: "Elapsed time in seconds from integration test PipelineRun creation to execution start (Kueue admission + Tekton reconciler delay).",
+			},
+			[]string{"cluster", "namespace", "application", "component", "scenario"},
 		),
 		integrationDelayGauge: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
@@ -474,6 +476,7 @@ func (e *KAExporter) Describe(ch chan<- *prometheus.Desc) {
 	e.releasePLRTotalHist.Describe(ch)
 	e.releasePLRExecHist.Describe(ch)
 	e.queueWaitGauge.Describe(ch)
+	e.integrationQueueGauge.Describe(ch)
 	e.integrationDelayGauge.Describe(ch)
 	e.releasePLRQueueGauge.Describe(ch)
 	e.archivedCompletionGauge.Describe(ch)
@@ -490,6 +493,7 @@ func (e *KAExporter) Collect(ch chan<- prometheus.Metric) {
 	// Gauges reset each scrape — stale label sets from completed/deleted resources are removed.
 	// Histograms accumulate across scrapes (correct behavior); rate() normalises the counts.
 	e.queueWaitGauge.Reset()
+	e.integrationQueueGauge.Reset()
 	e.integrationDelayGauge.Reset()
 	e.releasePLRQueueGauge.Reset()
 	e.archivedCompletionGauge.Reset()
@@ -514,6 +518,7 @@ func (e *KAExporter) Collect(ch chan<- prometheus.Metric) {
 	e.releasePLRTotalHist.Collect(ch)
 	e.releasePLRExecHist.Collect(ch)
 	e.queueWaitGauge.Collect(ch)
+	e.integrationQueueGauge.Collect(ch)
 	e.integrationDelayGauge.Collect(ch)
 	e.releasePLRQueueGauge.Collect(ch)
 	e.archivedCompletionGauge.Collect(ch)
@@ -733,13 +738,21 @@ func (e *KAExporter) collectNamespace(ctx context.Context, tenantNS string, glob
 	}
 
 	// Phase 2: stream PLRs one page at a time.
-	//   - Build PLRs: emit gauge for the FIRST (newest) occurrence per label set only.
-	//   - Test PLRs:  copied into testBySnapshot (small, bounded by window × build rate).
-	//   - buildInfoBySnapshot holds only string triples needed for the integration gap.
+	//
+	// Build PLRs — two passes over each PLR:
+	//   1. observeBuildHistograms: called for EVERY completed build PLR in the window.
+	//      Histograms accumulate across scrapes; observing all builds gives the true
+	//      duration distribution, not just the "most recent" value.
+	//   2. seenBuilds gate: only the FIRST (newest) occurrence per (app, component, result)
+	//      sets the queueWaitGauge and populates buildInfoBySnapshot for the gap metric.
+	//      Gauges are reset each scrape, so only "latest" is meaningful; the gap metric
+	//      must also reference the newest build to stay consistent with integration tests.
+	//
+	// Test PLRs: copied into testBySnapshot for Phase 3.
+	// buildInfoBySnapshot: string triples for the integration gap — negligible size.
 	type buildMeta struct{ application, component, completedAt string }
-	// buildKey identifies the Prometheus label set for a build duration gauge.
-	// seenBuilds is keyed on (app, component, result); since KubeArchive returns
-	// newest-first, the first hit per key is the most recent completed build.
+	// seenBuilds prevents setting point-in-time Gauges more than once per label set.
+	// KubeArchive returns items newest-first, so the first hit is always the most recent.
 	type buildKey struct{ app, component, result string }
 	seenBuilds := make(map[buildKey]bool)
 	testBySnapshot := make(map[string][]PipelineRun)
@@ -759,17 +772,22 @@ func (e *KAExporter) collectNamespace(ctx context.Context, tenantNS string, glob
 				app := getLabel(*plr, labelAppStudioApp, "unknown")
 				comp := getLabel(*plr, labelAppStudioComp, "unknown")
 				result := getResult(*plr)
+
+				// Resolve snapshot once — used by both histogram exemplar and release correlation.
+				snap := resolveSnapshotNameForBuild(tenantNS, *plr, idx)
+
+				// Always observe histograms — captures every build in the window.
+				e.observeBuildHistograms(tenantNS, *plr, app, comp, snap, result, globalReleases)
+
 				bk := buildKey{app, comp, result}
 				if !seenBuilds[bk] {
-					// First (newest) occurrence for this label set — emit gauges.
+					// Newest occurrence: set point-in-time Gauges and populate correlation index.
 					seenBuilds[bk] = true
-					snap := resolveSnapshotNameForBuild(tenantNS, *plr, idx)
-					e.emitBuildPLRMetrics(tenantNS, *plr, app, comp, snap, globalReleases)
+					e.setNewestBuildGauges(tenantNS, *plr, app, comp)
 					if snap != "" {
 						buildInfoBySnapshot[snap] = buildMeta{app, comp, plr.Status.CompletionTime}
 					}
 				}
-				// Older duplicates: counted in outcomeCounts above but not in gauges.
 			case "test":
 				if plr.Status.CompletionTime == "" {
 					continue
@@ -813,27 +831,26 @@ func (e *KAExporter) collectNamespace(ctx context.Context, tenantNS string, glob
 	return buildCount, testCount, nil
 }
 
-// emitBuildPLRMetrics emits all metrics for a single completed build PLR.
-// Called immediately during PLR page streaming — no slice retention.
-// Histograms carry exemplars with pipelinerun/snapshot names as stable join keys
-// for metric → KubeArchive → OTel trace drill-down.
-func (e *KAExporter) emitBuildPLRMetrics(tenantNS string, plr PipelineRun, application, component, snapshot string, globalReleases *releaseIndex) {
+// observeBuildHistograms observes duration histogram metrics for a completed build PLR.
+// Called for EVERY build PLR in the look-back window (not gated by seenBuilds) so that
+// the histograms capture the true distribution of all builds, not just the most recent.
+// Exemplars carry pipelinerun/snapshot/release_cr names as stable join keys for
+// metric → KubeArchive → OTel trace drill-down.
+func (e *KAExporter) observeBuildHistograms(tenantNS string, plr PipelineRun, application, component, snapshot, result string, globalReleases *releaseIndex) {
 	createdAt := plr.Metadata.CreationTimestamp
-	startedAt := plr.Status.StartTime
 	completedAt := plr.Status.CompletionTime
-	result := getResult(plr)
 
 	buildExemplar := prometheus.Labels{
 		"pipelinerun": plr.Metadata.Name,
 		"snapshot":    snapshot,
 	}
 	if buildDur := secondsBetween(createdAt, completedAt); buildDur >= 0 {
-		e.buildDurationHist.WithLabelValues(e.cluster, tenantNS, application, component, result).
-			(prometheus.ExemplarObserver).ObserveWithExemplar(buildDur, buildExemplar)
+		observeWithExemplar(
+			e.buildDurationHist.WithLabelValues(e.cluster, tenantNS, application, component, result),
+			buildDur, buildExemplar,
+		)
 	}
-	if startDelay := secondsBetween(createdAt, startedAt); startDelay >= 0 {
-		e.queueWaitGauge.WithLabelValues(e.cluster, tenantNS, application, component).Set(startDelay)
-	}
+
 	if matched := findMatchingRelease(plr, snapshot, application, component, globalReleases); matched != nil {
 		relNS := matched.crNamespace
 		relExemplar := prometheus.Labels{
@@ -841,10 +858,33 @@ func (e *KAExporter) emitBuildPLRMetrics(tenantNS string, plr PipelineRun, appli
 			"snapshot":    snapshot,
 			"release_cr":  matched.Metadata.Name,
 		}
-		if relDur := secondsBetween(matched.Status.StartTime, matched.Status.CompletionTime); relDur >= 0 {
-			e.releaseDurationHist.WithLabelValues(e.cluster, tenantNS, application, component, relNS).
-				(prometheus.ExemplarObserver).ObserveWithExemplar(relDur, relExemplar)
+		// Release CR: use status.startTime → status.completionTime.
+		// status.startTime is set by the Release controller when it begins orchestration;
+		// it is typically within milliseconds of metadata.creationTimestamp.
+		// If startTime is absent, fall back to creationTimestamp so the observation is
+		// never silently dropped for releases that lack a populated startTime.
+		relStart := matched.Status.StartTime
+		if relStart == "" {
+			relStart = matched.Metadata.CreationTimestamp
 		}
+		if relDur := secondsBetween(relStart, matched.Status.CompletionTime); relDur >= 0 {
+			observeWithExemplar(
+				e.releaseDurationHist.WithLabelValues(e.cluster, tenantNS, application, component, relNS),
+				relDur, relExemplar,
+			)
+		}
+	}
+}
+
+// setNewestBuildGauges sets point-in-time Gauge metrics for the newest build PLR per
+// (application, component) label set. Must only be called once per label set per scrape
+// (enforced by seenBuilds in the caller). Gauges are reset each scrape, so calling Set
+// more than once per label set would overwrite with an older (non-newest) value.
+func (e *KAExporter) setNewestBuildGauges(tenantNS string, plr PipelineRun, application, component string) {
+	createdAt := plr.Metadata.CreationTimestamp
+	startedAt := plr.Status.StartTime
+	if startDelay := secondsBetween(createdAt, startedAt); startDelay >= 0 {
+		e.queueWaitGauge.WithLabelValues(e.cluster, tenantNS, application, component).Set(startDelay)
 	}
 }
 
@@ -945,15 +985,19 @@ func (e *KAExporter) processReleasePipelineRun(managedNS string, plr PipelineRun
 		"pipelinerun": plr.Metadata.Name,
 	}
 	if total := secondsBetween(created, completed); total >= 0 {
-		e.releasePLRTotalHist.WithLabelValues(e.cluster, managedNS, appTenantNS, app, pipeline, result).
-			(prometheus.ExemplarObserver).ObserveWithExemplar(total, plrExemplar)
+		observeWithExemplar(
+			e.releasePLRTotalHist.WithLabelValues(e.cluster, managedNS, appTenantNS, app, pipeline, result),
+			total, plrExemplar,
+		)
 	}
 	if q := secondsBetween(created, started); q >= 0 {
 		e.releasePLRQueueGauge.WithLabelValues(e.cluster, managedNS, appTenantNS, app, pipeline).Set(q)
 	}
 	if exec := secondsBetween(started, completed); exec >= 0 {
-		e.releasePLRExecHist.WithLabelValues(e.cluster, managedNS, appTenantNS, app, pipeline, result).
-			(prometheus.ExemplarObserver).ObserveWithExemplar(exec, plrExemplar)
+		observeWithExemplar(
+			e.releasePLRExecHist.WithLabelValues(e.cluster, managedNS, appTenantNS, app, pipeline, result),
+			exec, plrExemplar,
+		)
 	}
 
 	comp := getLabel(plr, labelAppStudioComp, "unknown")
@@ -1011,9 +1055,18 @@ func (e *KAExporter) processIntegrationTests(tenantNS string, tests []PipelineRu
 				"pipelinerun": test.Metadata.Name,
 				"snapshot":    getLabel(test, labelOrAnnotationSnapshot, ""),
 			}
-			e.integrationDurationHist.WithLabelValues(
-				e.cluster, tenantNS, application, component, scenario, testResult, optional,
-			).(prometheus.ExemplarObserver).ObserveWithExemplar(testDuration, testExemplar)
+			observeWithExemplar(
+				e.integrationDurationHist.WithLabelValues(
+					e.cluster, tenantNS, application, component, scenario, testResult, optional,
+				),
+				testDuration, testExemplar,
+			)
+		}
+
+		// Queue wait: creation → startTime. Gauge (last-write-wins per scenario within
+		// this snapshot; test PLRs retained here are already scoped to the newest build).
+		if testQueue := secondsBetween(testCreated, test.Status.StartTime); testQueue >= 0 {
+			e.integrationQueueGauge.WithLabelValues(e.cluster, tenantNS, application, component, scenario).Set(testQueue)
 		}
 	}
 
@@ -1383,6 +1436,18 @@ func getReleaseResult(r Release) string {
 		}
 	}
 	return "Unknown"
+}
+
+// observeWithExemplar attempts to record value with the given exemplar labels on obs.
+// If obs does not implement prometheus.ExemplarObserver (should not happen with HistogramVec,
+// but guards against future metric-type changes), it falls back to a plain Observe so that
+// metric data is never silently dropped.
+func observeWithExemplar(obs prometheus.Observer, value float64, exemplar prometheus.Labels) {
+	if eo, ok := obs.(prometheus.ExemplarObserver); ok {
+		eo.ObserveWithExemplar(value, exemplar)
+	} else {
+		obs.Observe(value)
+	}
 }
 
 func secondsBetween(start, end string) float64 {

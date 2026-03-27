@@ -493,28 +493,36 @@ func TestFindMatchingRelease_staleReleaseNotRejected(t *testing.T) {
 func makeTestExporter() *KAExporter {
 	return &KAExporter{
 		cluster: "test-cluster",
+
+		// Production: validated against RH01 (P95=87.6m). See BUCKET-VALIDATION-RH01.md.
 		buildDurationHist: prometheus.NewHistogramVec(
-			prometheus.HistogramOpts{Name: "t_build_dur", Buckets: []float64{60, 300, 600}},
+			prometheus.HistogramOpts{Name: "t_build_dur", Buckets: []float64{60, 120, 300, 600, 900, 1200, 1800, 2700, 3600, 5400}},
 			[]string{"cluster", "namespace", "application", "component", "result"},
 		),
 		queueWaitGauge: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{Name: "t_queue_wait"},
 			[]string{"cluster", "namespace", "application", "component"},
 		),
+
+		// Production: validated against RH01 (P50=2.4m, P95=69.1m; 60s removed — 0% usage). See BUCKET-VALIDATION-RH01.md.
 		integrationDurationHist: prometheus.NewHistogramVec(
-			prometheus.HistogramOpts{Name: "t_int_dur", Buckets: []float64{60, 300, 600}},
+			prometheus.HistogramOpts{Name: "t_int_dur", Buckets: []float64{120, 300, 600, 900, 1800, 3600, 5400}},
 			[]string{"cluster", "namespace", "application", "component", "scenario", "result", "optional"},
 		),
 		integrationDelayGauge: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{Name: "t_int_delay"},
 			[]string{"cluster", "namespace", "application", "component"},
 		),
+
+		// Production: no live RH01 data; range 5m–4h covers expected release durations.
 		releaseDurationHist: prometheus.NewHistogramVec(
-			prometheus.HistogramOpts{Name: "t_rel_dur", Buckets: []float64{300, 600, 3600}},
+			prometheus.HistogramOpts{Name: "t_rel_dur", Buckets: []float64{300, 600, 1200, 1800, 3600, 5400, 7200, 14400}},
 			[]string{"cluster", "namespace", "application", "component", "release_namespace"},
 		),
+
+		// Production: no live RH01 data; range 1m–1h covers expected managed release PLR durations.
 		releasePLRTotalHist: prometheus.NewHistogramVec(
-			prometheus.HistogramOpts{Name: "t_rel_plr_total", Buckets: []float64{60, 300, 600}},
+			prometheus.HistogramOpts{Name: "t_rel_plr_total", Buckets: []float64{60, 120, 300, 600, 900, 1800, 3600}},
 			[]string{"cluster", "namespace", "application_namespace", "application", "pipeline", "result"},
 		),
 		releasePLRQueueGauge: prometheus.NewGaugeVec(
@@ -522,7 +530,7 @@ func makeTestExporter() *KAExporter {
 			[]string{"cluster", "namespace", "application_namespace", "application", "pipeline"},
 		),
 		releasePLRExecHist: prometheus.NewHistogramVec(
-			prometheus.HistogramOpts{Name: "t_rel_plr_exec", Buckets: []float64{60, 300, 600}},
+			prometheus.HistogramOpts{Name: "t_rel_plr_exec", Buckets: []float64{60, 120, 300, 600, 900, 1800, 3600}},
 			[]string{"cluster", "namespace", "application_namespace", "application", "pipeline", "result"},
 		),
 	}
@@ -544,7 +552,10 @@ func gatherOne(t *testing.T, c prometheus.Collector) *dto.MetricFamily {
 	return mfs[0]
 }
 
-func TestEmitBuildPLRMetrics_histogramObservation(t *testing.T) {
+// TestObserveBuildHistograms_noRelease verifies that observeBuildHistograms records the
+// build duration into the histogram and the release histogram stays empty when no release
+// matches. Queue gauge is NOT set by observeBuildHistograms — that is setNewestBuildGauges.
+func TestObserveBuildHistograms_noRelease(t *testing.T) {
 	e := makeTestExporter()
 
 	plr := PipelineRun{}
@@ -558,7 +569,7 @@ func TestEmitBuildPLRMetrics_histogramObservation(t *testing.T) {
 		labelAppStudioComp: "mycomp",
 	}
 
-	e.emitBuildPLRMetrics("tenant-ns", plr, "myapp", "mycomp", "snap-abc", newReleaseIndex())
+	e.observeBuildHistograms("tenant-ns", plr, "myapp", "mycomp", "snap-abc", "Completed", newReleaseIndex())
 
 	// Build histogram: exactly 1 observation of 300s.
 	mf := gatherOne(t, e.buildDurationHist)
@@ -572,18 +583,37 @@ func TestEmitBuildPLRMetrics_histogramObservation(t *testing.T) {
 		t.Errorf("buildDurationHist SampleSum = %v, want 300.0", got)
 	}
 
-	// Queue gauge: 60s.
-	mf = gatherOne(t, e.queueWaitGauge)
-	if mf == nil {
-		t.Fatal("queueWaitGauge: no observations gathered")
-	}
-	if got := mf.Metric[0].Gauge.GetValue(); got != 60.0 {
-		t.Errorf("queueWaitGauge = %v, want 60.0", got)
+	// Queue gauge is NOT set by observeBuildHistograms.
+	if mf = gatherOne(t, e.queueWaitGauge); mf != nil {
+		t.Errorf("queueWaitGauge: expected empty (not set by observeBuildHistograms), got %+v", mf)
 	}
 
 	// Empty release index → release histogram should have no observations.
 	if mf = gatherOne(t, e.releaseDurationHist); mf != nil {
 		t.Errorf("releaseDurationHist: expected no observations, got metric family %+v", mf)
+	}
+}
+
+// TestSetNewestBuildGauges verifies the queue wait Gauge is set correctly.
+func TestSetNewestBuildGauges_queueWait(t *testing.T) {
+	e := makeTestExporter()
+
+	plr := PipelineRun{}
+	plr.Metadata.CreationTimestamp = "2024-01-01T10:00:00Z"
+	plr.Status.StartTime = "2024-01-01T10:01:00Z" // 60s queue wait
+	plr.Metadata.Labels = map[string]string{
+		labelAppStudioApp:  "myapp",
+		labelAppStudioComp: "mycomp",
+	}
+
+	e.setNewestBuildGauges("tenant-ns", plr, "myapp", "mycomp")
+
+	mf := gatherOne(t, e.queueWaitGauge)
+	if mf == nil {
+		t.Fatal("queueWaitGauge: no value gathered")
+	}
+	if got := mf.Metric[0].Gauge.GetValue(); got != 60.0 {
+		t.Errorf("queueWaitGauge = %v, want 60.0", got)
 	}
 }
 
@@ -615,7 +645,7 @@ func TestEmitBuildPLRMetrics_releaseDurationObserved(t *testing.T) {
 	idx := newReleaseIndex()
 	idx.addReleases("release-ns", []Release{rel})
 
-	e.emitBuildPLRMetrics("tenant-ns", plr, "myapp", "mycomp", "snap-xyz", idx)
+	e.observeBuildHistograms("tenant-ns", plr, "myapp", "mycomp", "snap-xyz", "Completed", idx)
 
 	mf := gatherOne(t, e.releaseDurationHist)
 	if mf == nil {
