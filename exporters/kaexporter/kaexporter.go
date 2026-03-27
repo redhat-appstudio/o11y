@@ -32,18 +32,18 @@ const (
 	portEnvVar      = "EXPORTER_PORT"
 	defaultPort     = "9101"
 
-	// Tenant namespaces carry this label in Konflux (see konflux-release-data / tenant onboarding).
+	// To identify Tenant namespaces
 	tenantLabelKey   = "konflux-ci.dev/type"
 	tenantLabelValue = "tenant"
 
-	// Correlation keys (integration-service / AppStudio APIs).
+	// Correlation keys
 	labelBuildPipelineRun = "appstudio.openshift.io/build-pipelinerun"
 	labelAppStudioApp     = "appstudio.openshift.io/application"
 	labelAppStudioComp    = "appstudio.openshift.io/component"
 	// Used as an annotation on the build PLR after Snapshot creation; also a label on test PLRs.
 	labelOrAnnotationSnapshot = "appstudio.openshift.io/snapshot"
 
-	// Release PipelineRun (managed namespace): see KONFLUX-12377 / Faizal UX metrics.
+	// Release PipelineRun
 	labelAppStudioService          = "appstudio.openshift.io/service"
 	valueAppStudioServiceRelease   = "release"
 	labelPipelinesType             = "pipelines.appstudio.openshift.io/type"
@@ -53,47 +53,26 @@ const (
 	managedReleasePLRNamespacesEnv = "MANAGED_RELEASE_PLR_NAMESPACES"
 
 	// kaWindowHoursEnv controls how far back the exporter fetches resources from
-	// KubeArchive. KubeArchive has no built-in retention period — all resources
-	// since deployment (~6+ months) remain queryable. Without a time filter every
-	// scrape scans the full history, causing excessive load and stale gauge values.
-	// KubeArchive API: creationTimestampAfter=<RFC3339>
-	// Default 48 h covers weekends and off-hours builds without pulling history.
+	// KubeArchive. KubeArchive has no built-in retention period 
 	kaWindowHoursEnv     = "KA_WINDOW_HOURS"
 	defaultKAWindowHours = 48
 
 	// kaScrapeTimeoutSecsEnv sets a hard deadline on the entire Collect() call.
-	// If KubeArchive is slow or a namespace hangs, this cancels all in-flight HTTP
-	// requests and allows Prometheus to record a scrape failure rather than waiting
-	// until its own scrape_timeout fires and drops the entire scrape.
-	//
-	// IMPORTANT: Must be set to slightly less than the Prometheus scrape_timeout
-	// configured in the ServiceMonitor. promhttp.HandlerFor does not propagate the
-	// HTTP request context into Collect(), so without this internal deadline, goroutines
-	// continue running for the full default duration even after Prometheus drops the
-	// connection — causing goroutine accumulation under repeated slow scrapes.
-	//
-	// Current deployment: ServiceMonitor scrapeTimeout=180s → KA_SCRAPE_TIMEOUT_SECONDS=160s
-	// Default: 120s (fallback only; the deployment manifest should always set this explicitly).
 	kaScrapeTimeoutSecsEnv      = "KA_SCRAPE_TIMEOUT_SECONDS"
 	defaultScrapeTimeoutSeconds = 120
 
-	// kaPageLimit is the number of items requested per KubeArchive API page.
 	// KubeArchive default is 100; maximum allowed is 1000.
 	kaPageLimit = 500
 
 	// kaMaxItems is the safety cap on total items fetched per endpoint per scrape.
-	// With a 48 h window and typical build rates this should never be reached.
-	// If the warning fires, either reduce the window or investigate component growth.
 	kaMaxItems = 1000
 
 	// maxConcurrentFetches controls parallelism for KubeArchive API calls.
-	// Set to 10 to balance speed vs API load. Configurable via KA_MAX_CONCURRENT env var.
 	defaultMaxConcurrent = 10
 	maxConcurrentEnv     = "KA_MAX_CONCURRENT"
 )
 
 // KubeArchive API response structures.
-// Metadata.Continue is the Kubernetes list pagination token; empty means last page.
 type ListResponse struct {
 	Metadata struct {
 		Continue string `json:"continue"`
@@ -115,19 +94,12 @@ type SnapshotListResponse struct {
 	Items []Snapshot `json:"items"`
 }
 
-// snapshotIndex is an in-memory lookup built page-by-page while streaming Snapshots.
-// It replaces the []Snapshot linear scan with O(1) map lookups for the two primary
-// resolution paths, retaining a compact all-slice only for the rare component fallback.
-//
-// Snapshot values are copied into store so the original page slice can be GC'd promptly.
-// Maps hold integer indices into store — safe across store reallocation.
 type snapshotIndex struct {
-	store      []Snapshot        // owns all Snapshot copies; backed slice, index-stable
-	byBuildPLR map[string]int    // label[build-pipelinerun] → store index (case 1)
-	byName     map[string]int    // snapshot name → store index (case 2 annotation fallback)
+	store      []Snapshot
+	byBuildPLR map[string]int
+	byName     map[string]int
 }
 
-// newSnapshotIndex returns an empty snapshotIndex ready to accept pages.
 func newSnapshotIndex() *snapshotIndex {
 	return &snapshotIndex{
 		byBuildPLR: make(map[string]int),
@@ -135,8 +107,7 @@ func newSnapshotIndex() *snapshotIndex {
 	}
 }
 
-// add copies each Snapshot from a page into the index. It is the fn argument for streamSnapshots.
-// The page slice may be freed after add returns.
+// add copies each Snapshot from a page into the index.
 func (idx *snapshotIndex) add(page []Snapshot) {
 	for _, s := range page {
 		i := len(idx.store)
@@ -193,21 +164,13 @@ type Release struct {
 	} `json:"status"`
 }
 
-// releaseEntry is a Release CR plus the namespace it was listed from (for cross-tenant joins).
+// releaseEntry is a Release CR plus the namespace it was listed
 type releaseEntry struct {
 	Release
 	crNamespace string
 }
 
 // releaseIndex is a dual-keyed lookup for O(1) build-PLR → Release correlation.
-//
-// The backing store owns all releaseEntry values; maps hold integer indices so
-// they remain valid across store reallocation (same pattern as snapshotIndex).
-//
-// Two index keys cover the two cases in findMatchingRelease:
-//   - byBuildPLR: label[appstudio.openshift.io/build-pipelinerun] → index (primary)
-//   - bySnapshot: label[release.appstudio.openshift.io/snapshot]  → index (fallback)
-//
 // When multiple releases share a key (e.g. retries), the most recently added wins
 // for byBuildPLR (overwrite) and the first wins for bySnapshot (skip duplicates),
 // which matches the old linear-scan semantics.
@@ -301,7 +264,6 @@ type KAExporter struct {
 	httpClient *http.Client
 
 	// windowHours is the look-back window for KubeArchive queries (creationTimestampAfter).
-	// Computed once from KA_WINDOW_HOURS at startup; applied per scrape.
 	windowHours int
 
 	// scrapeTimeout is a hard deadline applied to each Collect() invocation.
@@ -313,16 +275,19 @@ type KAExporter struct {
 	// k8sClient lists tenant namespaces when fixedTenantNamespace is empty; nil in single-tenant mode.
 	k8sClient kubernetes.Interface
 
-	// Metrics — all duration gauges are in seconds.
-	buildDurationGauge       *prometheus.GaugeVec
-	queueWaitGauge           *prometheus.GaugeVec
-	integrationDurationGauge *prometheus.GaugeVec
-	integrationDelayGauge    *prometheus.GaugeVec
-	releaseDurationGauge     *prometheus.GaugeVec
-	releasePLRTotalGauge     *prometheus.GaugeVec
-	releasePLRQueueGauge     *prometheus.GaugeVec
-	releasePLRExecGauge      *prometheus.GaugeVec
-	archivedCompletionGauge  *prometheus.GaugeVec
+	// Duration metrics — Histograms for event durations (support exemplars + distribution queries).
+	// Queue/gap/count metrics remain as Gauges (point-in-time state, not event durations).
+	buildDurationHist       *prometheus.HistogramVec // build PLR creation → completion
+	integrationDurationHist *prometheus.HistogramVec // integration test PLR creation → completion
+	releaseDurationHist     *prometheus.HistogramVec // Release CR creation → completion
+	releasePLRTotalHist     *prometheus.HistogramVec // managed release PLR creation → completion
+	releasePLRExecHist      *prometheus.HistogramVec // managed release PLR start → completion
+
+	// State metrics — Gauges (point-in-time, no single join key, or counts).
+	queueWaitGauge          *prometheus.GaugeVec // build PLR creation → start (queue wait)
+	integrationDelayGauge   *prometheus.GaugeVec // build completion → first test PLR creation (gap)
+	releasePLRQueueGauge    *prometheus.GaugeVec // release PLR creation → start (queue wait)
+	archivedCompletionGauge *prometheus.GaugeVec // count of completed resources by outcome
 
 	// Exporter self-monitoring metrics.
 	scrapeErrorsTotal    *prometheus.CounterVec // labels: phase
@@ -398,26 +363,61 @@ func NewKAExporter() (*KAExporter, error) {
 		k8sClient:            k8sClient,
 		httpClient:           httpClient,
 
-		buildDurationGauge: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "konflux_build_pipelinerun_duration_seconds",
-				Help: "Elapsed time in seconds from build PipelineRun creation to completion.",
+		// --- Histograms for event durations ---
+		// Buckets are tuned to Konflux build/test/release cadence.
+		// Exemplars carry stable join keys (pipelinerun, snapshot, release_cr) for
+		// metric → KubeArchive → OTel trace drill-down. Enabled via EnableOpenMetrics=true.
+
+		buildDurationHist: prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Name:    "konflux_build_pipelinerun_duration_seconds",
+				Help:    "Distribution of build PipelineRun durations from creation to completion. Exemplars carry pipelinerun and snapshot names as join keys.",
+				Buckets: []float64{60, 120, 300, 600, 900, 1200, 1800, 2700, 3600}, // 1m–1h
 			},
 			[]string{"cluster", "namespace", "application", "component", "result"},
 		),
+		integrationDurationHist: prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Name:    "konflux_integration_pipelinerun_duration_seconds",
+				Help:    "Distribution of integration test PipelineRun durations from creation to completion. Exemplars carry pipelinerun and snapshot names as join keys.",
+				Buckets: []float64{60, 120, 300, 600, 900, 1800, 3600}, // 1m–1h
+			},
+			[]string{"cluster", "namespace", "application", "component", "scenario", "result", "optional"},
+		),
+		releaseDurationHist: prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Name:    "konflux_release_duration_seconds",
+				Help:    "Distribution of Release CR durations from creation to completion, covering the full release pipeline execution. Exemplars carry pipelinerun, snapshot, and release_cr names.",
+				Buckets: []float64{300, 600, 1200, 1800, 3600, 5400, 7200, 14400}, // 5m–4h
+			},
+			[]string{"cluster", "namespace", "application", "component", "release_namespace"},
+		),
+		releasePLRTotalHist: prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Name:    "konflux_release_pipelinerun_duration_seconds",
+				Help:    "Distribution of managed release PipelineRun total durations from creation to completion. Exemplars carry pipelinerun name.",
+				Buckets: []float64{60, 120, 300, 600, 900, 1800, 3600}, // 1m–1h
+			},
+			[]string{"cluster", "namespace", "application_namespace", "application", "pipeline", "result"},
+		),
+		releasePLRExecHist: prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Name:    "konflux_release_pipelinerun_execution_duration_seconds",
+				Help:    "Distribution of managed release PipelineRun execution durations from start to completion. Exemplars carry pipelinerun name.",
+				Buckets: []float64{60, 120, 300, 600, 900, 1800, 3600}, // 1m–1h
+			},
+			[]string{"cluster", "namespace", "application_namespace", "application", "pipeline", "result"},
+		),
+
+		// --- Gauges for point-in-time state ---
+		// Queue times and gap metrics are not event durations — no single join key for exemplars.
+
 		queueWaitGauge: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: "konflux_build_pipelinerun_queue_seconds",
 				Help: "Elapsed time in seconds from build PipelineRun creation to execution start.",
 			},
 			[]string{"cluster", "namespace", "application", "component"},
-		),
-		integrationDurationGauge: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "konflux_integration_pipelinerun_duration_seconds",
-				Help: "Elapsed time in seconds from integration test PipelineRun creation to completion.",
-			},
-			[]string{"cluster", "namespace", "application", "component", "scenario", "result", "optional"},
 		),
 		integrationDelayGauge: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
@@ -426,33 +426,12 @@ func NewKAExporter() (*KAExporter, error) {
 			},
 			[]string{"cluster", "namespace", "application", "component"},
 		),
-		releaseDurationGauge: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "konflux_release_duration_seconds",
-				Help: "Elapsed time in seconds from Release CR creation to completion, covering the full release pipeline execution.",
-			},
-			[]string{"cluster", "namespace", "application", "component", "release_namespace"},
-		),
-		releasePLRTotalGauge: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "konflux_release_pipelinerun_duration_seconds",
-				Help: "Elapsed time in seconds from managed release PipelineRun creation to completion.",
-			},
-			[]string{"cluster", "namespace", "application_namespace", "application", "pipeline", "result"},
-		),
 		releasePLRQueueGauge: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: "konflux_release_pipelinerun_queue_seconds",
 				Help: "Elapsed time in seconds from managed release PipelineRun creation to execution start.",
 			},
 			[]string{"cluster", "namespace", "application_namespace", "application", "pipeline"},
-		),
-		releasePLRExecGauge: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "konflux_release_pipelinerun_execution_duration_seconds",
-				Help: "Elapsed time in seconds from managed release PipelineRun execution start to completion.",
-			},
-			[]string{"cluster", "namespace", "application_namespace", "application", "pipeline", "result"},
 		),
 		archivedCompletionGauge: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
@@ -489,14 +468,14 @@ func NewKAExporter() (*KAExporter, error) {
 
 // Describe implements prometheus.Collector
 func (e *KAExporter) Describe(ch chan<- *prometheus.Desc) {
-	e.buildDurationGauge.Describe(ch)
+	e.buildDurationHist.Describe(ch)
+	e.integrationDurationHist.Describe(ch)
+	e.releaseDurationHist.Describe(ch)
+	e.releasePLRTotalHist.Describe(ch)
+	e.releasePLRExecHist.Describe(ch)
 	e.queueWaitGauge.Describe(ch)
-	e.integrationDurationGauge.Describe(ch)
 	e.integrationDelayGauge.Describe(ch)
-	e.releaseDurationGauge.Describe(ch)
-	e.releasePLRTotalGauge.Describe(ch)
 	e.releasePLRQueueGauge.Describe(ch)
-	e.releasePLRExecGauge.Describe(ch)
 	e.archivedCompletionGauge.Describe(ch)
 	e.scrapeErrorsTotal.Describe(ch)
 	e.lastScrapeSuccessGauge.Describe(ch)
@@ -508,14 +487,11 @@ func (e *KAExporter) Describe(ch chan<- *prometheus.Desc) {
 func (e *KAExporter) Collect(ch chan<- prometheus.Metric) {
 	start := time.Now()
 
-	e.buildDurationGauge.Reset()
+	// Gauges reset each scrape — stale label sets from completed/deleted resources are removed.
+	// Histograms accumulate across scrapes (correct behavior); rate() normalises the counts.
 	e.queueWaitGauge.Reset()
-	e.integrationDurationGauge.Reset()
 	e.integrationDelayGauge.Reset()
-	e.releaseDurationGauge.Reset()
-	e.releasePLRTotalGauge.Reset()
 	e.releasePLRQueueGauge.Reset()
-	e.releasePLRExecGauge.Reset()
 	e.archivedCompletionGauge.Reset()
 
 	// Hard deadline for the entire scrape. Cancels all in-flight KubeArchive HTTP
@@ -532,14 +508,14 @@ func (e *KAExporter) Collect(ch chan<- prometheus.Metric) {
 	}
 	e.scrapeDurationGauge.Set(time.Since(start).Seconds())
 
-	e.buildDurationGauge.Collect(ch)
+	e.buildDurationHist.Collect(ch)
+	e.integrationDurationHist.Collect(ch)
+	e.releaseDurationHist.Collect(ch)
+	e.releasePLRTotalHist.Collect(ch)
+	e.releasePLRExecHist.Collect(ch)
 	e.queueWaitGauge.Collect(ch)
-	e.integrationDurationGauge.Collect(ch)
 	e.integrationDelayGauge.Collect(ch)
-	e.releaseDurationGauge.Collect(ch)
-	e.releasePLRTotalGauge.Collect(ch)
 	e.releasePLRQueueGauge.Collect(ch)
-	e.releasePLRExecGauge.Collect(ch)
 	e.archivedCompletionGauge.Collect(ch)
 	e.scrapeErrorsTotal.Collect(ch)
 	e.lastScrapeSuccessGauge.Collect(ch)
@@ -839,22 +815,35 @@ func (e *KAExporter) collectNamespace(ctx context.Context, tenantNS string, glob
 
 // emitBuildPLRMetrics emits all metrics for a single completed build PLR.
 // Called immediately during PLR page streaming — no slice retention.
+// Histograms carry exemplars with pipelinerun/snapshot names as stable join keys
+// for metric → KubeArchive → OTel trace drill-down.
 func (e *KAExporter) emitBuildPLRMetrics(tenantNS string, plr PipelineRun, application, component, snapshot string, globalReleases *releaseIndex) {
 	createdAt := plr.Metadata.CreationTimestamp
 	startedAt := plr.Status.StartTime
 	completedAt := plr.Status.CompletionTime
 	result := getResult(plr)
 
+	buildExemplar := prometheus.Labels{
+		"pipelinerun": plr.Metadata.Name,
+		"snapshot":    snapshot,
+	}
 	if buildDur := secondsBetween(createdAt, completedAt); buildDur >= 0 {
-		e.buildDurationGauge.WithLabelValues(e.cluster, tenantNS, application, component, result).Set(buildDur)
+		e.buildDurationHist.WithLabelValues(e.cluster, tenantNS, application, component, result).
+			(prometheus.ExemplarObserver).ObserveWithExemplar(buildDur, buildExemplar)
 	}
 	if startDelay := secondsBetween(createdAt, startedAt); startDelay >= 0 {
 		e.queueWaitGauge.WithLabelValues(e.cluster, tenantNS, application, component).Set(startDelay)
 	}
 	if matched := findMatchingRelease(plr, snapshot, application, component, globalReleases); matched != nil {
 		relNS := matched.crNamespace
+		relExemplar := prometheus.Labels{
+			"pipelinerun": plr.Metadata.Name,
+			"snapshot":    snapshot,
+			"release_cr":  matched.Metadata.Name,
+		}
 		if relDur := secondsBetween(matched.Status.StartTime, matched.Status.CompletionTime); relDur >= 0 {
-			e.releaseDurationGauge.WithLabelValues(e.cluster, tenantNS, application, component, relNS).Set(relDur)
+			e.releaseDurationHist.WithLabelValues(e.cluster, tenantNS, application, component, relNS).
+				(prometheus.ExemplarObserver).ObserveWithExemplar(relDur, relExemplar)
 		}
 	}
 }
@@ -952,14 +941,19 @@ func (e *KAExporter) processReleasePipelineRun(managedNS string, plr PipelineRun
 	started := plr.Status.StartTime
 	completed := plr.Status.CompletionTime
 
+	plrExemplar := prometheus.Labels{
+		"pipelinerun": plr.Metadata.Name,
+	}
 	if total := secondsBetween(created, completed); total >= 0 {
-		e.releasePLRTotalGauge.WithLabelValues(e.cluster, managedNS, appTenantNS, app, pipeline, result).Set(total)
+		e.releasePLRTotalHist.WithLabelValues(e.cluster, managedNS, appTenantNS, app, pipeline, result).
+			(prometheus.ExemplarObserver).ObserveWithExemplar(total, plrExemplar)
 	}
 	if q := secondsBetween(created, started); q >= 0 {
 		e.releasePLRQueueGauge.WithLabelValues(e.cluster, managedNS, appTenantNS, app, pipeline).Set(q)
 	}
 	if exec := secondsBetween(started, completed); exec >= 0 {
-		e.releasePLRExecGauge.WithLabelValues(e.cluster, managedNS, appTenantNS, app, pipeline, result).Set(exec)
+		e.releasePLRExecHist.WithLabelValues(e.cluster, managedNS, appTenantNS, app, pipeline, result).
+			(prometheus.ExemplarObserver).ObserveWithExemplar(exec, plrExemplar)
 	}
 
 	comp := getLabel(plr, labelAppStudioComp, "unknown")
@@ -1013,9 +1007,13 @@ func (e *KAExporter) processIntegrationTests(tenantNS string, tests []PipelineRu
 		}
 
 		if testDuration := secondsBetween(testCreated, testCompleted); testDuration >= 0 {
-			e.integrationDurationGauge.WithLabelValues(
+			testExemplar := prometheus.Labels{
+				"pipelinerun": test.Metadata.Name,
+				"snapshot":    getLabel(test, labelOrAnnotationSnapshot, ""),
+			}
+			e.integrationDurationHist.WithLabelValues(
 				e.cluster, tenantNS, application, component, scenario, testResult, optional,
-			).Set(testDuration)
+			).(prometheus.ExemplarObserver).ObserveWithExemplar(testDuration, testExemplar)
 		}
 	}
 

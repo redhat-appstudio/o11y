@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"testing"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	dto "github.com/prometheus/client_model/go"
 )
 
 func TestSecondsBetween(t *testing.T) {
@@ -477,11 +480,242 @@ func TestFindMatchingRelease_staleReleaseNotRejected(t *testing.T) {
 	if mttb >= 0 {
 		t.Errorf("expected negative value for stale match, got %v — caller >= 0 guard would not protect here", mttb)
 	}
-	// releaseDurationGauge uses startTime→completionTime on the Release CR itself,
-	// which is always positive for a valid completed Release, so it IS set even for stale matches.
+	// releaseDurationHist uses startTime→completionTime on the Release CR itself,
+	// which is always positive for a valid completed Release, so it IS observed even for stale matches.
 	relDur := secondsBetween(got.Status.StartTime, got.Status.CompletionTime)
 	if relDur < 0 {
 		t.Errorf("release duration should be positive: %v", relDur)
+	}
+}
+
+// makeTestExporter creates a minimal KAExporter with fresh metric objects — no KA_HOST/KA_TOKEN
+// required. Metric names use a "t_" prefix so they never clash with production registrations.
+func makeTestExporter() *KAExporter {
+	return &KAExporter{
+		cluster: "test-cluster",
+		buildDurationHist: prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{Name: "t_build_dur", Buckets: []float64{60, 300, 600}},
+			[]string{"cluster", "namespace", "application", "component", "result"},
+		),
+		queueWaitGauge: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{Name: "t_queue_wait"},
+			[]string{"cluster", "namespace", "application", "component"},
+		),
+		integrationDurationHist: prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{Name: "t_int_dur", Buckets: []float64{60, 300, 600}},
+			[]string{"cluster", "namespace", "application", "component", "scenario", "result", "optional"},
+		),
+		integrationDelayGauge: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{Name: "t_int_delay"},
+			[]string{"cluster", "namespace", "application", "component"},
+		),
+		releaseDurationHist: prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{Name: "t_rel_dur", Buckets: []float64{300, 600, 3600}},
+			[]string{"cluster", "namespace", "application", "component", "release_namespace"},
+		),
+		releasePLRTotalHist: prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{Name: "t_rel_plr_total", Buckets: []float64{60, 300, 600}},
+			[]string{"cluster", "namespace", "application_namespace", "application", "pipeline", "result"},
+		),
+		releasePLRQueueGauge: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{Name: "t_rel_plr_queue"},
+			[]string{"cluster", "namespace", "application_namespace", "application", "pipeline"},
+		),
+		releasePLRExecHist: prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{Name: "t_rel_plr_exec", Buckets: []float64{60, 300, 600}},
+			[]string{"cluster", "namespace", "application_namespace", "application", "pipeline", "result"},
+		),
+	}
+}
+
+// gatherOne registers a single Collector to a fresh registry and returns the first MetricFamily
+// gathered. Returns nil when the collector has no observations (nothing to export yet).
+func gatherOne(t *testing.T, c prometheus.Collector) *dto.MetricFamily {
+	t.Helper()
+	reg := prometheus.NewRegistry()
+	reg.MustRegister(c)
+	mfs, err := reg.Gather()
+	if err != nil {
+		t.Fatalf("Gather: %v", err)
+	}
+	if len(mfs) == 0 {
+		return nil
+	}
+	return mfs[0]
+}
+
+func TestEmitBuildPLRMetrics_histogramObservation(t *testing.T) {
+	e := makeTestExporter()
+
+	plr := PipelineRun{}
+	plr.Metadata.Name = "build-run-abc"
+	plr.Metadata.CreationTimestamp = "2024-01-01T10:00:00Z"
+	plr.Status.StartTime = "2024-01-01T10:01:00Z"      // 60s queue wait
+	plr.Status.CompletionTime = "2024-01-01T10:05:00Z" // 300s total duration
+	plr.Status.Conditions = []Condition{{Type: "Succeeded", Reason: "Completed"}}
+	plr.Metadata.Labels = map[string]string{
+		labelAppStudioApp:  "myapp",
+		labelAppStudioComp: "mycomp",
+	}
+
+	e.emitBuildPLRMetrics("tenant-ns", plr, "myapp", "mycomp", "snap-abc", newReleaseIndex())
+
+	// Build histogram: exactly 1 observation of 300s.
+	mf := gatherOne(t, e.buildDurationHist)
+	if mf == nil {
+		t.Fatal("buildDurationHist: no observations gathered")
+	}
+	if got := mf.Metric[0].Histogram.GetSampleCount(); got != 1 {
+		t.Errorf("buildDurationHist SampleCount = %d, want 1", got)
+	}
+	if got := mf.Metric[0].Histogram.GetSampleSum(); got != 300.0 {
+		t.Errorf("buildDurationHist SampleSum = %v, want 300.0", got)
+	}
+
+	// Queue gauge: 60s.
+	mf = gatherOne(t, e.queueWaitGauge)
+	if mf == nil {
+		t.Fatal("queueWaitGauge: no observations gathered")
+	}
+	if got := mf.Metric[0].Gauge.GetValue(); got != 60.0 {
+		t.Errorf("queueWaitGauge = %v, want 60.0", got)
+	}
+
+	// Empty release index → release histogram should have no observations.
+	if mf = gatherOne(t, e.releaseDurationHist); mf != nil {
+		t.Errorf("releaseDurationHist: expected no observations, got metric family %+v", mf)
+	}
+}
+
+func TestEmitBuildPLRMetrics_releaseDurationObserved(t *testing.T) {
+	e := makeTestExporter()
+
+	plr := PipelineRun{}
+	plr.Metadata.Name = "build-run-xyz"
+	plr.Metadata.CreationTimestamp = "2024-01-01T10:00:00Z"
+	plr.Status.StartTime = "2024-01-01T10:00:30Z"
+	plr.Status.CompletionTime = "2024-01-01T10:05:00Z"
+	plr.Status.Conditions = []Condition{{Type: "Succeeded", Reason: "Completed"}}
+	plr.Metadata.Labels = map[string]string{
+		labelAppStudioApp:  "myapp",
+		labelAppStudioComp: "mycomp",
+	}
+
+	rel := Release{}
+	rel.Metadata.Name = "release-cr-001"
+	rel.Metadata.Namespace = "release-ns"
+	rel.Metadata.Labels = map[string]string{
+		labelBuildPipelineRun: "build-run-xyz",
+		labelAppStudioApp:     "myapp",
+		labelAppStudioComp:    "mycomp",
+	}
+	rel.Status.StartTime = "2024-01-01T10:06:00Z"
+	rel.Status.CompletionTime = "2024-01-01T10:16:00Z" // 600s release duration
+
+	idx := newReleaseIndex()
+	idx.addReleases("release-ns", []Release{rel})
+
+	e.emitBuildPLRMetrics("tenant-ns", plr, "myapp", "mycomp", "snap-xyz", idx)
+
+	mf := gatherOne(t, e.releaseDurationHist)
+	if mf == nil {
+		t.Fatal("releaseDurationHist: no observations gathered")
+	}
+	if got := mf.Metric[0].Histogram.GetSampleCount(); got != 1 {
+		t.Errorf("releaseDurationHist SampleCount = %d, want 1", got)
+	}
+	if got := mf.Metric[0].Histogram.GetSampleSum(); got != 600.0 {
+		t.Errorf("releaseDurationHist SampleSum = %v, want 600.0", got)
+	}
+}
+
+func TestProcessReleasePipelineRun_histogramObservations(t *testing.T) {
+	e := makeTestExporter()
+
+	plr := PipelineRun{}
+	plr.Metadata.Name = "release-plr-001"
+	plr.Metadata.CreationTimestamp = "2024-01-01T10:00:00Z"
+	plr.Status.StartTime = "2024-01-01T10:02:00Z"      // 120s queue
+	plr.Status.CompletionTime = "2024-01-01T10:07:00Z" // 420s total, 300s exec
+	plr.Status.Conditions = []Condition{{Type: "Succeeded", Reason: "Completed"}}
+	plr.Metadata.Labels = map[string]string{
+		labelAppStudioApp:       "myapp",
+		labelReleaseApplicationNS: "tenant-ns",
+		labelTektonPipeline:     "release-pipeline",
+	}
+
+	e.processReleasePipelineRun("managed-ns", plr, newSafeOutcomeCounts())
+
+	// Total duration: 420s (creation → completion).
+	mf := gatherOne(t, e.releasePLRTotalHist)
+	if mf == nil {
+		t.Fatal("releasePLRTotalHist: no observations gathered")
+	}
+	if got := mf.Metric[0].Histogram.GetSampleCount(); got != 1 {
+		t.Errorf("releasePLRTotalHist SampleCount = %d, want 1", got)
+	}
+	if got := mf.Metric[0].Histogram.GetSampleSum(); got != 420.0 {
+		t.Errorf("releasePLRTotalHist SampleSum = %v, want 420.0", got)
+	}
+
+	// Exec duration: 300s (start → completion).
+	mf = gatherOne(t, e.releasePLRExecHist)
+	if mf == nil {
+		t.Fatal("releasePLRExecHist: no observations gathered")
+	}
+	if got := mf.Metric[0].Histogram.GetSampleCount(); got != 1 {
+		t.Errorf("releasePLRExecHist SampleCount = %d, want 1", got)
+	}
+	if got := mf.Metric[0].Histogram.GetSampleSum(); got != 300.0 {
+		t.Errorf("releasePLRExecHist SampleSum = %v, want 300.0", got)
+	}
+
+	// Queue gauge: 120s.
+	mf = gatherOne(t, e.releasePLRQueueGauge)
+	if mf == nil {
+		t.Fatal("releasePLRQueueGauge: no observations gathered")
+	}
+	if got := mf.Metric[0].Gauge.GetValue(); got != 120.0 {
+		t.Errorf("releasePLRQueueGauge = %v, want 120.0", got)
+	}
+}
+
+func TestProcessIntegrationTests_histogramObservations(t *testing.T) {
+	e := makeTestExporter()
+
+	testPLR := PipelineRun{}
+	testPLR.Metadata.Name = "int-test-001"
+	testPLR.Metadata.CreationTimestamp = "2024-01-01T10:06:00Z"
+	testPLR.Status.CompletionTime = "2024-01-01T10:10:00Z" // 240s test duration
+	testPLR.Status.Conditions = []Condition{{Type: "Succeeded", Reason: "Completed"}}
+	testPLR.Metadata.Labels = map[string]string{
+		"test.appstudio.openshift.io/scenario": "scenario-a",
+		"test.appstudio.openshift.io/optional": "false",
+		labelOrAnnotationSnapshot:               "snap-abc",
+	}
+
+	buildCompletedAt := "2024-01-01T10:05:00Z" // 60s gap to first test creation
+	e.processIntegrationTests("tenant-ns", []PipelineRun{testPLR}, "myapp", "mycomp", buildCompletedAt)
+
+	// Integration duration histogram: 1 observation of 240s.
+	mf := gatherOne(t, e.integrationDurationHist)
+	if mf == nil {
+		t.Fatal("integrationDurationHist: no observations gathered")
+	}
+	if got := mf.Metric[0].Histogram.GetSampleCount(); got != 1 {
+		t.Errorf("integrationDurationHist SampleCount = %d, want 1", got)
+	}
+	if got := mf.Metric[0].Histogram.GetSampleSum(); got != 240.0 {
+		t.Errorf("integrationDurationHist SampleSum = %v, want 240.0", got)
+	}
+
+	// Integration delay gauge: 60s gap (build completion → first test creation).
+	mf = gatherOne(t, e.integrationDelayGauge)
+	if mf == nil {
+		t.Fatal("integrationDelayGauge: no observations gathered")
+	}
+	if got := mf.Metric[0].Gauge.GetValue(); got != 60.0 {
+		t.Errorf("integrationDelayGauge = %v, want 60.0", got)
 	}
 }
 
