@@ -93,6 +93,8 @@ type SnapshotListResponse struct {
 	Items []Snapshot `json:"items"`
 }
 
+// snapshotIndex is an in-memory lookup for Snapshot CRs built page-by-page during streaming.
+// Maps hold integer indices into store so they remain valid after slice reallocation.
 type snapshotIndex struct {
 	store      []Snapshot
 	byBuildPLR map[string]int
@@ -173,10 +175,11 @@ type releaseEntry struct {
 // releaseIndex is a dual-keyed lookup for build-PLR → Release correlation.
 type releaseIndex struct {
 	store      []releaseEntry
-	byBuildPLR map[string]int // label[build-pipelinerun] → store index
-	bySnapshot map[string]int // label[snapshot]          → store index
+	byBuildPLR map[string]int 
+	bySnapshot map[string]int
 }
 
+// newReleaseIndex returns an empty releaseIndex ready to receive releases.
 func newReleaseIndex() *releaseIndex {
 	return &releaseIndex{
 		byBuildPLR: make(map[string]int),
@@ -229,6 +232,7 @@ type safeOutcomeCounts struct {
 	counts map[archivedOutcomeKey]float64
 }
 
+// newSafeOutcomeCounts returns an empty safeOutcomeCounts.
 func newSafeOutcomeCounts() *safeOutcomeCounts {
 	return &safeOutcomeCounts{
 		counts: make(map[archivedOutcomeKey]float64),
@@ -659,12 +663,10 @@ func (e *KAExporter) tenantNamespaces(ctx context.Context) ([]string, error) {
 	return names, nil
 }
 
-// gatherAllReleasesParallel fetches Release CRs from every tenant namespace in parallel and
-// returns a *releaseIndex for O(1) build-PLR → Release correlation.
-//
-// The global Release catalog must be complete before namespace processing begins because
-// releases can arrive weeks after builds and may live in dedicated release namespaces
-// (cross-namespace correlation). Parallel fetching keeps this phase from dominating scrape time.
+// gatherAllReleasesParallel fetches Release CRs from every tenant namespace in parallel
+// and returns a *releaseIndex for O(1) build-PLR → Release correlation. The full catalog
+// must be assembled before namespace processing begins because releases may arrive weeks
+// after builds and may live in dedicated release namespaces.
 func (e *KAExporter) gatherAllReleasesParallel(ctx context.Context, namespaces []string, since string, maxConcurrent int) *releaseIndex {
 	type fetchResult struct {
 		namespace string
@@ -709,25 +711,8 @@ func (e *KAExporter) gatherAllReleasesParallel(ctx context.Context, namespaces [
 	return idx
 }
 
-// collectNamespace scrapes one tenant namespace with bounded, streaming memory usage.
-//
-// Memory model:
-//   - Snapshots: streamed once → compacted into snapshotIndex. Pages freed after indexing.
-//   - PLRs: streamed page-by-page. Each page is processed and discarded.
-//     Test PLRs are copied into testBySnapshot only while streaming; after the stream a
-//     cleanup pass removes entries with no matching build PLR (de-duplicated older runs).
-//   - buildInfoBySnapshot holds only string triples — negligible.
-//
-// Gauge overwrite fix:
-//   KubeArchive returns items newest-first (by creationTimestamp). seenBuilds tracks
-//   the first (= most recent) build PLR encountered per (app, component, result) label
-//   set. Subsequent PLRs for the same label set are counted in outcomeCounts but do not
-//   overwrite the gauge — ensuring the gauge always reflects the latest build.
-//
-// Peak memory per namespace:
-//   (snapshotIndex) + (testBySnapshot after cleanup) + (buildInfoBySnapshot) + (seenBuilds) + (1 page PLRs)
-//   testBySnapshot is bounded by window × build rate × component count (one entry per most-recent build).
-//   Validate this assumption for high-velocity tenants; the cleanup pass enforces the bound post-stream.
+// collectNamespace scrapes PLRs, Snapshots, and linked Releases for one tenant namespace
+// and emits duration metrics. Resources are streamed page-by-page to bound memory usage.
 func (e *KAExporter) collectNamespace(ctx context.Context, tenantNS string, globalReleases *releaseIndex, since string, outcomeCounts *safeOutcomeCounts) (buildCount, testCount int, err error) {
 	// Phase 1: build snapshot index by streaming — pages are freed after indexing.
 	snapURL := fmt.Sprintf("%s/apis/appstudio.redhat.com/v1alpha1/namespaces/%s/snapshots", e.kaHost, tenantNS)
@@ -831,11 +816,9 @@ func (e *KAExporter) collectNamespace(ctx context.Context, tenantNS string, glob
 	return buildCount, testCount, nil
 }
 
-// observeBuildHistograms observes duration histogram metrics for a completed build PLR.
-// Called for EVERY build PLR in the look-back window (not gated by seenBuilds) so that
-// the histograms capture the true distribution of all builds, not just the most recent.
-// Exemplars carry pipelinerun/snapshot/release_cr names as stable join keys for
-// metric → KubeArchive → OTel trace drill-down.
+// observeBuildHistograms records duration observations for a completed build PLR and,
+// when a matching Release CR is found, also for the release. Exemplars carry resource
+// names as stable join keys for cross-signal correlation.
 func (e *KAExporter) observeBuildHistograms(tenantNS string, plr PipelineRun, application, component, snapshot, result string, globalReleases *releaseIndex) {
 	createdAt := plr.Metadata.CreationTimestamp
 	completedAt := plr.Status.CompletionTime
@@ -860,9 +843,6 @@ func (e *KAExporter) observeBuildHistograms(tenantNS string, plr PipelineRun, ap
 		}
 		// Release CR: use status.startTime → status.completionTime.
 		// status.startTime is set by the Release controller when it begins orchestration;
-		// it is typically within milliseconds of metadata.creationTimestamp.
-		// If startTime is absent, fall back to creationTimestamp so the observation is
-		// never silently dropped for releases that lack a populated startTime.
 		relStart := matched.Status.StartTime
 		if relStart == "" {
 			relStart = matched.Metadata.CreationTimestamp
@@ -877,9 +857,7 @@ func (e *KAExporter) observeBuildHistograms(tenantNS string, plr PipelineRun, ap
 }
 
 // setNewestBuildGauges sets point-in-time Gauge metrics for the newest build PLR per
-// (application, component) label set. Must only be called once per label set per scrape
-// (enforced by seenBuilds in the caller). Gauges are reset each scrape, so calling Set
-// more than once per label set would overwrite with an older (non-newest) value.
+// (application, component) label set.
 func (e *KAExporter) setNewestBuildGauges(tenantNS string, plr PipelineRun, application, component string) {
 	createdAt := plr.Metadata.CreationTimestamp
 	startedAt := plr.Status.StartTime
@@ -888,6 +866,7 @@ func (e *KAExporter) setNewestBuildGauges(tenantNS string, plr PipelineRun, appl
 	}
 }
 
+// addArchivedOutcome increments the completion counter for the given PLR and phase.
 func addArchivedOutcome(tenantNS, phase string, plr PipelineRun, outcomeCounts *safeOutcomeCounts) {
 	app := getLabel(plr, labelAppStudioApp, "unknown")
 	comp := getLabel(plr, labelAppStudioComp, "unknown")
@@ -898,6 +877,7 @@ func addArchivedOutcome(tenantNS, phase string, plr PipelineRun, outcomeCounts *
 	outcomeCounts.increment(k)
 }
 
+// addReleaseOutcomeCounts increments completion counters for all completed Release CRs in the index.
 func addReleaseOutcomeCounts(idx *releaseIndex, outcomeCounts *safeOutcomeCounts) {
 	for i := range idx.store {
 		re := &idx.store[i]
@@ -918,7 +898,8 @@ func addReleaseOutcomeCounts(idx *releaseIndex, outcomeCounts *safeOutcomeCounts
 	}
 }
 
-// parseManagedReleasePLRNamespaces parses MANAGED_RELEASE_PLR_NAMESPACES
+// parseManagedReleasePLRNamespaces returns the deduplicated, sorted list of namespaces
+// from MANAGED_RELEASE_PLR_NAMESPACES (comma-separated).
 func parseManagedReleasePLRNamespaces() []string {
 	s := strings.TrimSpace(os.Getenv(managedReleasePLRNamespacesEnv))
 	if s == "" {
@@ -942,6 +923,8 @@ func parseManagedReleasePLRNamespaces() []string {
 	return out
 }
 
+// collectManagedReleasePLRs streams PipelineRuns from managed release namespaces and
+// emits queue, execution, and total duration metrics for release-service PLRs.
 func (e *KAExporter) collectManagedReleasePLRs(ctx context.Context, since string, outcomeCounts *safeOutcomeCounts) {
 	managedNS := parseManagedReleasePLRNamespaces()
 	if len(managedNS) == 0 {
@@ -971,6 +954,8 @@ func isReleaseServicePLR(plr PipelineRun) bool {
 		plr.Status.CompletionTime != ""
 }
 
+// processReleasePipelineRun emits queue, execution, and total duration metrics for one
+// managed release-service PipelineRun and increments its outcome counter.
 func (e *KAExporter) processReleasePipelineRun(managedNS string, plr PipelineRun, outcomeCounts *safeOutcomeCounts) {
 	app := getLabel(plr, labelAppStudioApp, "unknown")
 	appTenantNS := getLabel(plr, labelReleaseApplicationNS, "unknown")
@@ -1024,13 +1009,10 @@ func kubeRESTConfig() (*rest.Config, error) {
 }
 
 
-// processIntegrationTests processes integration test PLRs
+// processIntegrationTests emits duration, queue, and build-to-integration gap metrics
+// for a set of integration test PLRs belonging to a single snapshot.
 func (e *KAExporter) processIntegrationTests(tenantNS string, tests []PipelineRun, application, component, buildCompletedAt string) {
 	// firstTestCreatedTime tracks the earliest integration test start for the gap metric.
-	// Use time.Time comparison rather than raw string comparison: RFC3339 strings are
-	// lexicographically ordered only when all timestamps are in UTC ("Z" suffix).
-	// Mixing "+HH:MM" offsets (technically valid RFC3339) with "Z" would silently
-	// produce wrong results with a string min. time.Time comparison is always correct.
 	var firstTestCreatedTime time.Time
 	hasFirst := false
 
@@ -1080,10 +1062,6 @@ func (e *KAExporter) processIntegrationTests(tenantNS string, tests []PipelineRu
 }
 
 // pageURL appends pagination parameters and an optional creation-timestamp filter to base.
-// since is an RFC3339 timestamp; when non-empty it adds creationTimestampAfter=<since>
-// which limits results to resources created after that point in time.
-// KubeArchive returns items newest-first (by creationTimestamp), so page 1 holds the
-// most recent items — the seen-map in the caller relies on this ordering guarantee.
 func pageURL(base, continueToken, since string) (string, error) {
 	u, err := url.Parse(base)
 	if err != nil {
@@ -1102,9 +1080,6 @@ func pageURL(base, continueToken, since string) (string, error) {
 }
 
 // fetchPage executes a single GET request and closes the response body before returning.
-// ctx is honoured for cancellation — if the scrape deadline fires all in-flight calls
-// return immediately with context.DeadlineExceeded rather than blocking until the
-// per-request HTTP client timeout (30s) expires.
 func (e *KAExporter) fetchPage(ctx context.Context, pageURL string) ([]byte, int, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, pageURL, nil)
 	if err != nil {
@@ -1241,16 +1216,9 @@ func (e *KAExporter) fetchReleases(ctx context.Context, baseURL, since string) (
 }
 
 
-// resolveSnapshotNameForBuild derives the Snapshot name for a build PLR.
-//
-// Integration-service creates the Snapshot first, sets label build-pipelinerun=<PLR name>,
-// then patches the build PLR annotation. KubeArchive may archive the PLR before the annotation
-// exists; the Snapshot CR is the durable source of truth.
-//
-// Resolution order (all O(1) except the rare component-fallback scan):
-//  1. O(1) index: Snapshot whose label[build-pipelinerun] == plrName.
-//  2. O(1) index: PLR annotation snapshot name, validated against the index.
-//  3. O(n) fallback: unique Snapshot in the namespace whose spec.components contains plrComp.
+// resolveSnapshotNameForBuild returns the Snapshot name for a build PLR.
+// It prefers the index (O(1)) over the PLR annotation, because KubeArchive may archive
+// a PLR before the annotation is patched; the Snapshot label is the durable source.
 func resolveSnapshotNameForBuild(tenantNS string, plr PipelineRun, idx *snapshotIndex) string {
 	if idx == nil {
 		return getAnnotation(plr, labelOrAnnotationSnapshot)
@@ -1309,6 +1277,7 @@ func resolveSnapshotNameForBuild(tenantNS string, plr PipelineRun, idx *snapshot
 	return ""
 }
 
+// snapshotCRNamespace returns the namespace stored in the Snapshot metadata, or listNS if empty.
 func snapshotCRNamespace(s *Snapshot, listNS string) string {
 	if s.Metadata.Namespace != "" {
 		return s.Metadata.Namespace
@@ -1316,6 +1285,7 @@ func snapshotCRNamespace(s *Snapshot, listNS string) string {
 	return listNS
 }
 
+// snapshotLabel returns the value of key from s.Metadata.Labels, or "" if absent.
 func snapshotLabel(s *Snapshot, key string) string {
 	if s.Metadata.Labels == nil {
 		return ""
@@ -1323,6 +1293,8 @@ func snapshotLabel(s *Snapshot, key string) string {
 	return s.Metadata.Labels[key]
 }
 
+// snapshotCompatibleWithPLR reports whether s's application and component labels are
+// consistent with the given PLR's application and component (empty labels match anything).
 func snapshotCompatibleWithPLR(s *Snapshot, plrApp, plrComp string) bool {
 	sa := snapshotLabel(s, labelAppStudioApp)
 	sc := snapshotLabel(s, labelAppStudioComp)
@@ -1338,15 +1310,8 @@ func snapshotCompatibleWithPLR(s *Snapshot, plrApp, plrComp string) bool {
 	return true
 }
 
-// Helper functions
-
-
-// findMatchingRelease joins a build PLR to a Release CR using the pre-built releaseIndex.
-// Both lookups are O(1); the old O(n) linear scan over []releaseEntry is replaced.
-//
-// Lookup order matches the previous semantics:
-//  1. label[build-pipelinerun] == plrName (primary, unambiguous)
-//  2. label[snapshot] == resolved snapshot name (fallback for manual/heterogeneous releases)
+// findMatchingRelease returns the Release CR for a build PLR using the pre-built releaseIndex.
+// It tries the build-pipelinerun label first (primary), then the snapshot label (fallback).
 func findMatchingRelease(plr PipelineRun, snapshot, application, component string, idx *releaseIndex) *releaseEntry {
 	if idx == nil {
 		return nil
@@ -1376,6 +1341,8 @@ func findMatchingRelease(plr PipelineRun, snapshot, application, component strin
 	return nil
 }
 
+// releaseLabelsCompatible reports whether a Release's app/component labels are consistent
+// with the given PLR's app/component (empty Release labels match anything).
 func releaseLabelsCompatible(relApp, relComp, plrApp, plrComp string) bool {
 	if relApp != "" && relApp != plrApp {
 		return false
@@ -1386,6 +1353,7 @@ func releaseLabelsCompatible(relApp, relComp, plrApp, plrComp string) bool {
 	return true
 }
 
+// getLabel returns the value of key from obj's metadata labels, or defaultVal if absent.
 func getLabel(obj interface{}, key, defaultVal string) string {
 	switch v := obj.(type) {
 	case PipelineRun:
@@ -1400,6 +1368,7 @@ func getLabel(obj interface{}, key, defaultVal string) string {
 	return defaultVal
 }
 
+// getAnnotation returns the value of key from plr.Metadata.Annotations, or "" if absent.
 func getAnnotation(plr PipelineRun, key string) string {
 	if val, ok := plr.Metadata.Annotations[key]; ok {
 		return val
@@ -1407,6 +1376,7 @@ func getAnnotation(plr PipelineRun, key string) string {
 	return ""
 }
 
+// getResult returns the Reason of the "Succeeded" condition from a PipelineRun, or "Unknown".
 func getResult(plr PipelineRun) string {
 	for _, cond := range plr.Status.Conditions {
 		if cond.Type == "Succeeded" {
@@ -1438,10 +1408,8 @@ func getReleaseResult(r Release) string {
 	return "Unknown"
 }
 
-// observeWithExemplar attempts to record value with the given exemplar labels on obs.
-// If obs does not implement prometheus.ExemplarObserver (should not happen with HistogramVec,
-// but guards against future metric-type changes), it falls back to a plain Observe so that
-// metric data is never silently dropped.
+// observeWithExemplar records value on obs with exemplar labels, falling back to plain
+// Observe if obs does not implement prometheus.ExemplarObserver.
 func observeWithExemplar(obs prometheus.Observer, value float64, exemplar prometheus.Labels) {
 	if eo, ok := obs.(prometheus.ExemplarObserver); ok {
 		eo.ObserveWithExemplar(value, exemplar)
@@ -1450,6 +1418,8 @@ func observeWithExemplar(obs prometheus.Observer, value float64, exemplar promet
 	}
 }
 
+// secondsBetween parses two RFC3339 timestamps and returns the elapsed seconds.
+// Returns -1 if either string is empty or unparseable.
 func secondsBetween(start, end string) float64 {
 	if start == "" || end == "" {
 		return -1
