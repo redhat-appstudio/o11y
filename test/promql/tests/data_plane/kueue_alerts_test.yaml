@@ -115,6 +115,103 @@ tests:
               alert_routing_key: infra
               team: konflux-infra
 
+  # Test TektonKueueControllerDown alert
+  - interval: 1m
+    input_series:
+      # Controller deployment not available - should trigger alert
+      - series: 'konflux_up{namespace="tekton-kueue", service="tekton-kueue-controller-manager", check="replicas-available", source_cluster="c1"}'
+        values: '0 0 0 0 0 0'
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: TektonKueueControllerDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              component: tekton-kueue
+              slo: "true"
+              namespace: tekton-kueue
+              service: tekton-kueue-controller-manager
+              check: replicas-available
+              source_cluster: c1
+            exp_annotations:
+              summary: "Tekton Kueue controller is down"
+              description: "The Tekton Kueue controller has no available replicas in cluster c1. PipelineRuns will be created in Pending state but cannot be processed, resulting in stuck builds."
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueueControllerDown.md
+              alert_team_handle: <!subteam^S05Q1P4Q2TG>
+              team: konflux-infra
+
+  # Test TektonKueueWebhookDown alert
+  - interval: 1m
+    input_series:
+      # Webhook deployment not available - should trigger alert
+      - series: 'konflux_up{namespace="tekton-kueue", service="tekton-kueue-webhook", check="replicas-available", source_cluster="c1"}'
+        values: '0 0 0 0 0 0'
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: TektonKueueWebhookDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              component: tekton-kueue
+              slo: "true"
+              namespace: tekton-kueue
+              service: tekton-kueue-webhook
+              check: replicas-available
+              source_cluster: c1
+            exp_annotations:
+              summary: "Tekton Kueue webhook is down"
+              description: "The Tekton Kueue webhook has no available replicas in cluster c1. PipelineRuns may not be created with Pending state and Workload resources, bypassing Kueue admission control."
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueueWebhookDown.md
+              alert_team_handle: <!subteam^S05Q1P4Q2TG>
+              team: konflux-infra
+
+  # Test TektonKueuePodsRepeatedRestarts alert
+  - interval: 1m
+    input_series:
+      # Pod restarts - counter increases continuously
+      - series: 'kube_pod_container_status_restarts_total{namespace="tekton-kueue", pod="tekton-kueue-controller-xxx", container="manager", source_cluster="c1"}'
+        values: '0+1x10'
+
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: TektonKueuePodsRepeatedRestarts
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              component: tekton-kueue
+              source_cluster: c1
+            exp_annotations:
+              summary: "Tekton Kueue pods are repeatedly restarting"
+              description: "Tekton Kueue pods have restarted 5 times in the last 5 minutes in cluster c1. This may indicate resource pressure or application issues."
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueuePodsRepeatedRestarts.md
+              alert_routing_key: infra
+              team: konflux-infra
+
+  # Test TektonKueuePodsCrashLoopBackOff alert
+  - interval: 1m
+    input_series:
+      # Pod in CrashLoopBackOff state - should trigger alert
+      - series: 'kube_pod_container_status_waiting_reason{namespace="tekton-kueue", pod="tekton-kueue-controller-xxx", container="manager", reason="CrashLoopBackOff", source_cluster="c1"}'
+        values: '1 1 1 1 1'
+
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: TektonKueuePodsCrashLoopBackOff
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              component: tekton-kueue
+              slo: "true"
+              source_cluster: c1
+            exp_annotations:
+              summary: "Tekton Kueue pod is in a crash loop"
+              description: "Tekton Kueue pod has degraded into CrashLoopBackOff status in cluster c1 and is not starting up."
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueuePodsCrashLoopBackOff.md
+              alert_team_handle: <!subteam^S05Q1P4Q2TG>
+              team: konflux-infra
+
   # Test positive case - no alerts should fire when everything is healthy
   - interval: 1m
     input_series:
@@ -140,6 +237,20 @@ tests:
       - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", le="+Inf"}'
         values: '0 5 10 15 20 25'
 
+      # Deployments are healthy
+      - series: 'konflux_up{namespace="tekton-kueue", service="tekton-kueue-controller-manager", check="replicas-available"}'
+        values: '1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'
+      - series: 'konflux_up{namespace="tekton-kueue", service="tekton-kueue-webhook", check="replicas-available"}'
+        values: '1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1'
+
+      # No pod restarts
+      - series: 'kube_pod_container_status_restarts_total{namespace="tekton-kueue", pod="tekton-kueue-controller-xxx"}'
+        values: '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0'
+
+      # No CrashLoopBackOff
+      - series: 'kube_pod_container_status_waiting_reason{namespace="tekton-kueue", reason="CrashLoopBackOff"}'
+        values: '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0'
+
     alert_rule_test:
       - eval_time: 15m
         alertname: KueueCELEvaluationFailures
@@ -152,4 +263,16 @@ tests:
         exp_alerts: []
       - eval_time: 15m
         alertname: KueueHighAdmissionWaitTime
+        exp_alerts: []
+      - eval_time: 15m
+        alertname: TektonKueueControllerDown
+        exp_alerts: []
+      - eval_time: 15m
+        alertname: TektonKueueWebhookDown
+        exp_alerts: []
+      - eval_time: 15m
+        alertname: TektonKueuePodsRepeatedRestarts
+        exp_alerts: []
+      - eval_time: 15m
+        alertname: TektonKueuePodsCrashLoopBackOff
         exp_alerts: []

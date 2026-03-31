@@ -9,6 +9,82 @@ spec:
   - name: kueue.health
     interval: 30s
     rules:
+    - alert: TektonKueueControllerDown
+      expr: |
+        konflux_up{
+          namespace="tekton-kueue",
+          check="replicas-available",
+          service="tekton-kueue-controller-manager",
+        } != 1
+      for: 5m
+      labels:
+        severity: critical
+        component: tekton-kueue
+        slo: "true"
+      annotations:
+        summary: "Tekton Kueue controller is down"
+        description: "The Tekton Kueue controller has no available replicas in cluster {{ $labels.source_cluster }}. PipelineRuns will be created in Pending state but cannot be processed, resulting in stuck builds."
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueueControllerDown.md
+        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        team: konflux-infra
+
+    - alert: TektonKueueWebhookDown
+      expr: |
+        konflux_up{
+          namespace="tekton-kueue",
+          check="replicas-available",
+          service="tekton-kueue-webhook",
+        } != 1
+      for: 5m
+      labels:
+        severity: critical
+        component: tekton-kueue
+        slo: "true"
+      annotations:
+        summary: "Tekton Kueue webhook is down"
+        description: "The Tekton Kueue webhook has no available replicas in cluster {{ $labels.source_cluster }}. PipelineRuns may not be created with Pending state and Workload resources, bypassing Kueue admission control."
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueueWebhookDown.md
+        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        team: konflux-infra
+
+    - alert: TektonKueuePodsRepeatedRestarts
+      expr: |
+        sum by (source_cluster) (
+          increase(kube_pod_container_status_restarts_total{
+            namespace="tekton-kueue"
+          }[5m])
+        ) > 0
+      for: 5m
+      labels:
+        severity: warning
+        component: tekton-kueue
+      annotations:
+        summary: "Tekton Kueue pods are repeatedly restarting"
+        description: "Tekton Kueue pods have restarted {{ $value }} times in the last 5 minutes in cluster {{ $labels.source_cluster }}. This may indicate resource pressure or application issues."
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueuePodsRepeatedRestarts.md
+        alert_routing_key: infra
+        team: konflux-infra
+
+    - alert: TektonKueuePodsCrashLoopBackOff
+      expr: |
+        sum by (source_cluster) (
+          max_over_time(kube_pod_container_status_waiting_reason{
+            namespace="tekton-kueue",
+            reason="CrashLoopBackOff"
+          }[3m]) or vector(0)
+        ) > 0
+      for: 3m
+      labels:
+        severity: critical
+        component: tekton-kueue
+        slo: "true"
+      annotations:
+        summary: "Tekton Kueue pod is in a crash loop"
+        description: "Tekton Kueue pod has degraded into CrashLoopBackOff status in cluster {{ $labels.source_cluster }} and is not starting up."
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueuePodsCrashLoopBackOff.md
+        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        team: konflux-infra
+
     - alert: KueueCELEvaluationFailures
       expr: increase(tekton_kueue_cel_evaluations_total{result="failure"}[5m]) > 0
       for: 1m
