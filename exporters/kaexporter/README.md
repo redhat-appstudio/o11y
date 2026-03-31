@@ -1,7 +1,7 @@
 # KubeArchive exporter (kaexporter)
 
 Prometheus exporter for **Konflux delivery metrics** built from archived pipeline data.
-This exporter reads archived **PipelineRun**, **Snapshot**, and **Release** resources from the [KubeArchive](https://github.com/kubearchive/kubearchive) HTTP API and exposes Konflux delivery metrics as Gauges.
+This exporter reads archived **PipelineRun**, **Snapshot**, and **Release** resources from the [KubeArchive](https://github.com/kubearchive/kubearchive) HTTP API and exposes Konflux delivery metrics as **Histograms** (duration distributions) and **Gauges** (point-in-time values).
 
 ---
 
@@ -15,7 +15,7 @@ This exporter reads archived **PipelineRun**, **Snapshot**, and **Release** reso
 | `TENANT_NAMESPACE` | No | *(empty)* | Single-tenant mode when set; multi-tenant (all `konflux-ci.dev/type=tenant` namespaces) when empty |
 | `MANAGED_RELEASE_PLR_NAMESPACES` | No | *(empty)* | Comma-separated list of managed namespaces to scrape for release PipelineRuns (e.g. `rhtap-releng-tenant`) |
 | `KA_WINDOW_HOURS` | No | `48` | Look-back window in hours for all KubeArchive queries (`creationTimestampAfter`). KubeArchive has no automatic retention — without this filter each scrape scans 6+ months of history. 48 h covers weekends and off-hours builds. |
-| `KA_SCRAPE_TIMEOUT_SECONDS` | No | `120` | Hard deadline in seconds for each Collect() call. All in-flight HTTP requests are cancelled when this fires. Set to slightly less than the Prometheus `scrape_timeout`. |
+| `KA_SCRAPE_TIMEOUT_SECONDS` | No | `120` (code fallback) | Hard deadline in seconds for each `Collect()` call. All in-flight KubeArchive HTTP requests are cancelled when this fires. **Must be set below the Prometheus `scrapeTimeout`** configured in the ServiceMonitor. The code fallback of `120s` is safe but conservative — the deployment manifest sets `160s` explicitly (20s below `scrapeTimeout: 180s`), and that value is authoritative for production. If you deploy without this env var you get `120s`, which still works correctly but gives less headroom for slow KubeArchive responses. |
 | `KA_MAX_CONCURRENT` | No | `10` | Maximum concurrent KubeArchive API calls (release fetch and namespace scraping). |
 | `EXPORTER_PORT` | No | `9101` | HTTP listen port |
 
@@ -23,28 +23,40 @@ This exporter reads archived **PipelineRun**, **Snapshot**, and **Release** reso
 
 ## Metrics
 
-All metrics represent **durations in seconds** for the latest completed runs.
+**Histograms** accumulate across scrapes and expose `_bucket`, `_sum`, and `_count` suffixes.
+Use `histogram_quantile(0.95, rate(..._bucket[1h]))` for percentiles, or `rate(..._sum[1h]) / rate(..._count[1h])` for averages.
+
+**Gauges** are point-in-time and reset each scrape (reflect the most recent completed run per label set).
 
 ### Build
 
-- `konflux_build_pipelinerun_duration_seconds`
-- `konflux_build_pipelinerun_queue_seconds`
+| Metric | Type |
+|--------|------|
+| `konflux_build_pipelinerun_duration_seconds` | Histogram |
+| `konflux_build_pipelinerun_wait_seconds` | Gauge |
 
 ### Integration
 
-- `konflux_build_to_integration_gap_seconds`
-- `konflux_integration_pipelinerun_duration_seconds`
+| Metric | Type |
+|--------|------|
+| `konflux_build_to_integration_gap_seconds` | Gauge |
+| `konflux_integration_pipelinerun_duration_seconds` | Histogram |
+| `konflux_integration_pipelinerun_wait_seconds` | Gauge |
 
 ### Release
 
-- `konflux_release_duration_seconds`
-- `konflux_release_pipelinerun_duration_seconds`
-- `konflux_release_pipelinerun_queue_seconds`
-- `konflux_release_pipelinerun_execution_duration_seconds`
+| Metric | Type |
+|--------|------|
+| `konflux_release_duration_seconds` | Histogram |
+| `konflux_release_pipelinerun_duration_seconds` | Histogram |
+| `konflux_release_pipelinerun_wait_seconds` | Gauge |
+| `konflux_release_pipelinerun_execution_duration_seconds` | Histogram |
 
 ### Operational
 
-- `konflux_archived_completion_count`
+| Metric | Type |
+|--------|------|
+| `konflux_archived_completion_count` | Gauge |
 
 ---
 
@@ -88,6 +100,16 @@ Manifests: `config/exporters/monitoring/ka/base/`
 ```bash
 oc apply -k config/exporters/monitoring/ka/base/
 ```
+
+**Scrape timeout alignment** — the following three values must stay consistent. The deployment manifest already sets them correctly; document any changes here if you adjust them:
+
+| Setting | Location | Value | Rule |
+|---------|----------|-------|------|
+| `scrapeTimeout` | `ka-exporter-service-monitor.yaml` | `180s` | Outermost Prometheus deadline |
+| `KA_SCRAPE_TIMEOUT_SECONDS` | `ka-exporter-service.yaml` (env var) | `160s` | Must be < `scrapeTimeout` |
+| `interval` | `ka-exporter-service-monitor.yaml` | `300s` | Must be > `scrapeTimeout` to prevent overlapping scrapes |
+
+The code default for `KA_SCRAPE_TIMEOUT_SECONDS` is `120s` (safe fallback), but the deployment manifest is the authoritative source. If you deploy outside of the provided manifests, set `KA_SCRAPE_TIMEOUT_SECONDS` explicitly.
 
 ---
 

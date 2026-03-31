@@ -262,6 +262,9 @@ type KAExporter struct {
 	cluster    string
 	httpClient *http.Client
 
+	// mu serializes Collect() calls to prevent concurrent scrape races on Reset()/Set()
+	mu sync.Mutex
+
 	// windowHours is the look-back window for KubeArchive queries
 	windowHours int
 
@@ -282,10 +285,10 @@ type KAExporter struct {
 	releasePLRExecHist      *prometheus.HistogramVec // managed release PLR start → completion
 
 	// State metrics — Gauges (point-in-time, no single join key, or counts).
-	queueWaitGauge          *prometheus.GaugeVec // build PLR creation → start (queue wait)
-	integrationQueueGauge   *prometheus.GaugeVec // integration test PLR creation → start (queue wait)
+	buildWaitGauge          *prometheus.GaugeVec // build PLR creation → start (Kueue admission wait)
+	integrationWaitGauge    *prometheus.GaugeVec // integration test PLR creation → start (Kueue admission wait)
 	integrationDelayGauge   *prometheus.GaugeVec // build completion → first test PLR creation (gap)
-	releasePLRQueueGauge    *prometheus.GaugeVec // release PLR creation → start (queue wait)
+	releasePLRWaitGauge     *prometheus.GaugeVec // release PLR creation → start (Kueue admission wait)
 	archivedCompletionGauge *prometheus.GaugeVec // count of completed resources by outcome
 
 	// Exporter self-monitoring metrics.
@@ -411,16 +414,16 @@ func NewKAExporter() (*KAExporter, error) {
 		// --- Gauges for point-in-time state ---
 		// Queue times and gap metrics are not event durations — no single join key for exemplars.
 
-		queueWaitGauge: prometheus.NewGaugeVec(
+		buildWaitGauge: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
-				Name: "konflux_build_pipelinerun_queue_seconds",
+				Name: "konflux_build_pipelinerun_wait_seconds",
 				Help: "Elapsed time in seconds from build PipelineRun creation to execution start.",
 			},
 			[]string{"cluster", "namespace", "application", "component"},
 		),
-		integrationQueueGauge: prometheus.NewGaugeVec(
+		integrationWaitGauge: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
-				Name: "konflux_integration_pipelinerun_queue_seconds",
+				Name: "konflux_integration_pipelinerun_wait_seconds",
 				Help: "Elapsed time in seconds from integration test PipelineRun creation to execution start (Kueue admission + Tekton reconciler delay).",
 			},
 			[]string{"cluster", "namespace", "application", "component", "scenario"},
@@ -432,9 +435,9 @@ func NewKAExporter() (*KAExporter, error) {
 			},
 			[]string{"cluster", "namespace", "application", "component"},
 		),
-		releasePLRQueueGauge: prometheus.NewGaugeVec(
+		releasePLRWaitGauge: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
-				Name: "konflux_release_pipelinerun_queue_seconds",
+				Name: "konflux_release_pipelinerun_wait_seconds",
 				Help: "Elapsed time in seconds from managed release PipelineRun creation to execution start.",
 			},
 			[]string{"cluster", "namespace", "application_namespace", "application", "pipeline"},
@@ -479,10 +482,10 @@ func (e *KAExporter) Describe(ch chan<- *prometheus.Desc) {
 	e.releaseDurationHist.Describe(ch)
 	e.releasePLRTotalHist.Describe(ch)
 	e.releasePLRExecHist.Describe(ch)
-	e.queueWaitGauge.Describe(ch)
-	e.integrationQueueGauge.Describe(ch)
+	e.buildWaitGauge.Describe(ch)
+	e.integrationWaitGauge.Describe(ch)
 	e.integrationDelayGauge.Describe(ch)
-	e.releasePLRQueueGauge.Describe(ch)
+	e.releasePLRWaitGauge.Describe(ch)
 	e.archivedCompletionGauge.Describe(ch)
 	e.scrapeErrorsTotal.Describe(ch)
 	e.lastScrapeSuccessGauge.Describe(ch)
@@ -492,14 +495,19 @@ func (e *KAExporter) Describe(ch chan<- *prometheus.Desc) {
 
 // Collect implements prometheus.Collector
 func (e *KAExporter) Collect(ch chan<- prometheus.Metric) {
+	// Serialize concurrent scrapes to prevent data races on gauge Reset()/Set().
+	// Second scrape blocks until first completes (correct behavior).
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
 	start := time.Now()
 
 	// Gauges reset each scrape — stale label sets from completed/deleted resources are removed.
 	// Histograms accumulate across scrapes (correct behavior); rate() normalises the counts.
-	e.queueWaitGauge.Reset()
-	e.integrationQueueGauge.Reset()
+	e.buildWaitGauge.Reset()
+	e.integrationWaitGauge.Reset()
 	e.integrationDelayGauge.Reset()
-	e.releasePLRQueueGauge.Reset()
+	e.releasePLRWaitGauge.Reset()
 	e.archivedCompletionGauge.Reset()
 
 	// Hard deadline for the entire scrape. Cancels all in-flight KubeArchive HTTP
@@ -521,10 +529,10 @@ func (e *KAExporter) Collect(ch chan<- prometheus.Metric) {
 	e.releaseDurationHist.Collect(ch)
 	e.releasePLRTotalHist.Collect(ch)
 	e.releasePLRExecHist.Collect(ch)
-	e.queueWaitGauge.Collect(ch)
-	e.integrationQueueGauge.Collect(ch)
+	e.buildWaitGauge.Collect(ch)
+	e.integrationWaitGauge.Collect(ch)
 	e.integrationDelayGauge.Collect(ch)
-	e.releasePLRQueueGauge.Collect(ch)
+	e.releasePLRWaitGauge.Collect(ch)
 	e.archivedCompletionGauge.Collect(ch)
 	e.scrapeErrorsTotal.Collect(ch)
 	e.lastScrapeSuccessGauge.Collect(ch)
@@ -729,7 +737,7 @@ func (e *KAExporter) collectNamespace(ctx context.Context, tenantNS string, glob
 	//      Histograms accumulate across scrapes; observing all builds gives the true
 	//      duration distribution, not just the "most recent" value.
 	//   2. seenBuilds gate: only the FIRST (newest) occurrence per (app, component, result)
-	//      sets the queueWaitGauge and populates buildInfoBySnapshot for the gap metric.
+	//      sets the buildWaitGauge and populates buildInfoBySnapshot for the gap metric.
 	//      Gauges are reset each scrape, so only "latest" is meaningful; the gap metric
 	//      must also reference the newest build to stay consistent with integration tests.
 	//
@@ -862,7 +870,7 @@ func (e *KAExporter) setNewestBuildGauges(tenantNS string, plr PipelineRun, appl
 	createdAt := plr.Metadata.CreationTimestamp
 	startedAt := plr.Status.StartTime
 	if startDelay := secondsBetween(createdAt, startedAt); startDelay >= 0 {
-		e.queueWaitGauge.WithLabelValues(e.cluster, tenantNS, application, component).Set(startDelay)
+		e.buildWaitGauge.WithLabelValues(e.cluster, tenantNS, application, component).Set(startDelay)
 	}
 }
 
@@ -976,7 +984,7 @@ func (e *KAExporter) processReleasePipelineRun(managedNS string, plr PipelineRun
 		)
 	}
 	if q := secondsBetween(created, started); q >= 0 {
-		e.releasePLRQueueGauge.WithLabelValues(e.cluster, managedNS, appTenantNS, app, pipeline).Set(q)
+		e.releasePLRWaitGauge.WithLabelValues(e.cluster, managedNS, appTenantNS, app, pipeline).Set(q)
 	}
 	if exec := secondsBetween(started, completed); exec >= 0 {
 		observeWithExemplar(
@@ -1048,7 +1056,7 @@ func (e *KAExporter) processIntegrationTests(tenantNS string, tests []PipelineRu
 		// Queue wait: creation → startTime. Gauge (last-write-wins per scenario within
 		// this snapshot; test PLRs retained here are already scoped to the newest build).
 		if testQueue := secondsBetween(testCreated, test.Status.StartTime); testQueue >= 0 {
-			e.integrationQueueGauge.WithLabelValues(e.cluster, tenantNS, application, component, scenario).Set(testQueue)
+			e.integrationWaitGauge.WithLabelValues(e.cluster, tenantNS, application, component, scenario).Set(testQueue)
 		}
 	}
 
@@ -1447,8 +1455,9 @@ func main() {
 	http.Handle("/metrics", promhttp.HandlerFor(
 		reg,
 		promhttp.HandlerOpts{
-			EnableOpenMetrics: true,
-			Registry:          reg,
+			EnableOpenMetrics:   true,
+			Registry:            reg,
+			MaxRequestsInFlight: 1, // Reject concurrent scrapes with HTTP 503
 		},
 	))
 
