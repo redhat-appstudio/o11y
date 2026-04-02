@@ -128,9 +128,9 @@ tests:
         alertname: TektonKueueControllerDown
         exp_alerts:
           - exp_labels:
-              severity: critical
+              severity: high
               component: tekton-kueue
-              slo: "true"
+              slo: "false"
               namespace: tekton-kueue
               service: tekton-kueue-controller-manager
               check: replicas-available
@@ -139,7 +139,7 @@ tests:
               summary: "Tekton Kueue controller is down"
               description: "The Tekton Kueue controller has no available replicas in cluster c1. PipelineRuns will be created in Pending state but cannot be processed, resulting in stuck builds."
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueueControllerDown.md
-              alert_team_handle: <!subteam^S05Q1P4Q2TG>
+              alert_routing_key: infra
               team: konflux-infra
 
   # Test TektonKueueWebhookDown alert
@@ -154,9 +154,9 @@ tests:
         alertname: TektonKueueWebhookDown
         exp_alerts:
           - exp_labels:
-              severity: critical
+              severity: high
               component: tekton-kueue
-              slo: "true"
+              slo: "false"
               namespace: tekton-kueue
               service: tekton-kueue-webhook
               check: replicas-available
@@ -165,7 +165,7 @@ tests:
               summary: "Tekton Kueue webhook is down"
               description: "The Tekton Kueue webhook has no available replicas in cluster c1. PipelineRuns may not be created with Pending state and Workload resources, bypassing Kueue admission control."
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueueWebhookDown.md
-              alert_team_handle: <!subteam^S05Q1P4Q2TG>
+              alert_routing_key: infra
               team: konflux-infra
 
   # Test TektonKueuePodsRepeatedRestarts alert
@@ -202,15 +202,15 @@ tests:
         alertname: TektonKueuePodsCrashLoopBackOff
         exp_alerts:
           - exp_labels:
-              severity: critical
+              severity: high
               component: tekton-kueue
-              slo: "true"
+              slo: "false"
               source_cluster: c1
             exp_annotations:
               summary: "Tekton Kueue pod is in a crash loop"
               description: "Tekton Kueue pod has degraded into CrashLoopBackOff status in cluster c1 and is not starting up."
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueuePodsCrashLoopBackOff.md
-              alert_team_handle: <!subteam^S05Q1P4Q2TG>
+              alert_routing_key: infra
               team: konflux-infra
 
   # Test positive case - no alerts should fire when everything is healthy
