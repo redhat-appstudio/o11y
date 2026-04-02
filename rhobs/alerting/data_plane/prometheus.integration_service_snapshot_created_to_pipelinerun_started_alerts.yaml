@@ -21,8 +21,8 @@ spec:
         ) > 0.10
       for: 15m
       labels:
-        severity: critical
-        slo: "true"
+        severity: high
+        slo: "false"
         component: integration-service
       annotations:
         summary: >-
@@ -30,6 +30,7 @@ spec:
         description: >
           Time from Snapshot created to integration PLRs created has been over
           5s for more than 10% of requests during the last 15 minutes on cluster {{ $labels.source_cluster }}
-        alert_team_handle: <!subteam^S05M4AG8CJH>
+        # alert_team_handle: <!subteam^S05M4AG8CJH>
+        alert_routing_key: <!subteam^S05M4AG8CJH>
         team: integration
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/sre/time_to_start_pipelinerun.md
