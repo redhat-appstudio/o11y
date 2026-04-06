@@ -59,11 +59,8 @@ const (
 	kaWindowHoursEnv     = "KA_WINDOW_HOURS"
 	defaultKAWindowHours = 48
 
-	// kaCollectionTimeoutSecsEnv is the canonical name for the background
-	// collection cycle deadline. The old name (kaScrapeTimeoutSecsEnv) is
-	// accepted for backward compatibility but logs a deprecation warning.
+	// kaCollectionTimeoutSecsEnv is the background collection cycle deadline.
 	kaCollectionTimeoutSecsEnv   = "KA_COLLECTION_TIMEOUT_SECONDS"
-	kaScrapeTimeoutSecsEnv       = "KA_SCRAPE_TIMEOUT_SECONDS" // Deprecated: use KA_COLLECTION_TIMEOUT_SECONDS
 	defaultCollectionTimeoutSecs = 120
 
 	// KubeArchive default is 100; maximum allowed is 1000.
@@ -345,22 +342,11 @@ func NewKAExporter() (*KAExporter, error) {
 		}
 	}
 
-	// Prefer KA_COLLECTION_TIMEOUT_SECONDS; fall back to the deprecated
-	// KA_SCRAPE_TIMEOUT_SECONDS with a warning; use the compiled default if neither is set.
 	collectionTimeoutSecs := defaultCollectionTimeoutSecs
 	if v := strings.TrimSpace(os.Getenv(kaCollectionTimeoutSecsEnv)); v != "" {
 		if parsed, err := strconv.Atoi(v); err != nil || parsed <= 0 {
 			log.Printf("WARNING: %s=%q is not a positive integer; using default %ds",
 				kaCollectionTimeoutSecsEnv, v, defaultCollectionTimeoutSecs)
-		} else {
-			collectionTimeoutSecs = parsed
-		}
-	} else if v := strings.TrimSpace(os.Getenv(kaScrapeTimeoutSecsEnv)); v != "" {
-		log.Printf("DEPRECATED: %s is deprecated; rename to %s (value will still be honoured)",
-			kaScrapeTimeoutSecsEnv, kaCollectionTimeoutSecsEnv)
-		if parsed, err := strconv.Atoi(v); err != nil || parsed <= 0 {
-			log.Printf("WARNING: %s=%q is not a positive integer; using default %ds",
-				kaScrapeTimeoutSecsEnv, v, defaultCollectionTimeoutSecs)
 		} else {
 			collectionTimeoutSecs = parsed
 		}
