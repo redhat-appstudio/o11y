@@ -16,7 +16,7 @@ This exporter reads archived **PipelineRun**, **Snapshot**, and **Release** reso
 | `MANAGED_RELEASE_PLR_NAMESPACES` | No | *(empty)* | Comma-separated list of managed namespaces to scrape for release PipelineRuns (e.g. `rhtap-releng-tenant`) |
 | `KA_WINDOW_HOURS` | No | `48` | Look-back window in hours for all KubeArchive queries (`creationTimestampAfter`). KubeArchive has no automatic retention — without this filter each scrape scans 6+ months of history. 48 h covers weekends and off-hours builds. |
 | `KA_COLLECT_INTERVAL_SECONDS` | No | `300` | How often (in seconds) the background goroutine refreshes metric state from KubeArchive. Typically set to match the Prometheus scrape interval. Prometheus scrapes return cached data instantly (sub-millisecond). |
-| `KA_SCRAPE_TIMEOUT_SECONDS` | No | `120` (code fallback) | Hard deadline in seconds for each **background collection cycle**. All in-flight KubeArchive HTTP requests are cancelled when this fires. **Must be set below `KA_COLLECT_INTERVAL_SECONDS`** to prevent overlapping collections. The code fallback of `120s` is safe but conservative — the deployment manifest sets `160s` explicitly (20s below `collectInterval: 300s`), and that value is authoritative for production. **Note:** Despite the name, this does NOT control Prometheus scrape timeout (scrapes are instant); it controls the background collection timeout. The name is kept for backward compatibility. |
+| `KA_COLLECTION_TIMEOUT_SECONDS` | No | `120` (code fallback) | Hard deadline in seconds for each **background collection cycle**. All in-flight KubeArchive HTTP requests are cancelled when this fires. **Must be set below `KA_COLLECT_INTERVAL_SECONDS`** to prevent overlapping collections. The code fallback of `120s` is safe but conservative — the deployment manifest sets `160s` explicitly (20s below `collectInterval: 300s`), and that value is authoritative for production. |
 | `KA_MAX_CONCURRENT` | No | `10` | Maximum concurrent KubeArchive API calls (release fetch and namespace scraping) during each background collection cycle. |
 | `EXPORTER_PORT` | No | `9101` | HTTP listen port |
 
@@ -108,12 +108,12 @@ oc apply -k config/exporters/monitoring/ka/base/
 |---------|----------|-------|------|
 | `interval` | `ka-exporter-service-monitor.yaml` | `300s` | Prometheus scrape interval (can be faster/slower than collection) |
 | `KA_COLLECT_INTERVAL_SECONDS` | `ka-exporter-service.yaml` (env var) | `300s` | Background collection refresh rate (typically matches `interval`) |
-| `KA_SCRAPE_TIMEOUT_SECONDS` | `ka-exporter-service.yaml` (env var) | `160s` | Background collection timeout — must be < `KA_COLLECT_INTERVAL_SECONDS` to prevent overlapping collection cycles |
+| `KA_COLLECTION_TIMEOUT_SECONDS` | `ka-exporter-service.yaml` (env var) | `160s` | Background collection timeout — must be < `KA_COLLECT_INTERVAL_SECONDS` to prevent overlapping collection cycles |
 | `scrapeTimeout` | `ka-exporter-service-monitor.yaml` | `180s` | Prometheus scrape timeout (irrelevant now since scrapes are instant, but still set per Prometheus convention) |
 
 **Data freshness:** Metrics lag behind real KubeArchive state by up to `KA_COLLECT_INTERVAL_SECONDS` (300s). This is the same freshness as the previous synchronous model (which scraped every 300s).
 
-The code defaults are `KA_COLLECT_INTERVAL_SECONDS=300s` and `KA_SCRAPE_TIMEOUT_SECONDS=120s`, but the deployment manifest is the authoritative source. If you deploy outside of the provided manifests, set both explicitly.
+The code defaults are `KA_COLLECT_INTERVAL_SECONDS=300s` and `KA_COLLECTION_TIMEOUT_SECONDS=120s`, but the deployment manifest is the authoritative source. If you deploy outside of the provided manifests, set both explicitly.
 
 ---
 
