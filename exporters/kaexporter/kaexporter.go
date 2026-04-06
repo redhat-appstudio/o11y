@@ -10,10 +10,12 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"os/signal"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -57,8 +59,12 @@ const (
 	kaWindowHoursEnv     = "KA_WINDOW_HOURS"
 	defaultKAWindowHours = 48
 
-	kaScrapeTimeoutSecsEnv      = "KA_SCRAPE_TIMEOUT_SECONDS"
-	defaultScrapeTimeoutSeconds = 120
+	// kaCollectionTimeoutSecsEnv is the canonical name for the background
+	// collection cycle deadline. The old name (kaScrapeTimeoutSecsEnv) is
+	// accepted for backward compatibility but logs a deprecation warning.
+	kaCollectionTimeoutSecsEnv   = "KA_COLLECTION_TIMEOUT_SECONDS"
+	kaScrapeTimeoutSecsEnv       = "KA_SCRAPE_TIMEOUT_SECONDS" // Deprecated: use KA_COLLECTION_TIMEOUT_SECONDS
+	defaultCollectionTimeoutSecs = 120
 
 	// KubeArchive default is 100; maximum allowed is 1000.
 	kaPageLimit = 500
@@ -69,6 +75,12 @@ const (
 	// parallelism for KubeArchive API calls.
 	defaultMaxConcurrent = 10
 	maxConcurrentEnv     = "KA_MAX_CONCURRENT"
+
+	// kaCollectIntervalSecsEnv controls how often the background collection
+	// goroutine fetches data from KubeArchive and refreshes the metric cache.
+	// Should be set to match the Prometheus scrape interval.
+	kaCollectIntervalSecsEnv      = "KA_COLLECT_INTERVAL_SECONDS"
+	defaultCollectIntervalSeconds = 300
 )
 
 // KubeArchive API response structures.
@@ -175,7 +187,7 @@ type releaseEntry struct {
 // releaseIndex is a dual-keyed lookup for build-PLR → Release correlation.
 type releaseIndex struct {
 	store      []releaseEntry
-	byBuildPLR map[string]int 
+	byBuildPLR map[string]int
 	bySnapshot map[string]int
 }
 
@@ -262,15 +274,24 @@ type KAExporter struct {
 	cluster    string
 	httpClient *http.Client
 
-	// mu serializes Collect() calls to prevent concurrent scrape races on Reset()/Set()
-	mu sync.Mutex
+	// mu guards the Reset()+Set() sequence in runCollection() from concurrent Collect() reads.
+	// runCollection() holds the write lock for the entire gauge reset+populate cycle.
+	// Collect() holds the read lock while emitting cached metric state — no I/O.
+	mu sync.RWMutex
 
 	// windowHours is the look-back window for KubeArchive queries
 	windowHours int
 
-	// scrapeTimeout is a hard deadline applied to each Collect() invocation.
+	// scrapeTimeout is a hard deadline applied to each background collection cycle.
 	// All in-flight HTTP requests are cancelled when it fires.
 	scrapeTimeout time.Duration
+
+	// collectInterval controls how often the background goroutine refreshes metric state.
+	collectInterval time.Duration
+
+	// readyCh is closed by Start() after the first successful background collection,
+	// signalling main() that /metrics is ready to serve non-empty data.
+	readyCh chan struct{}
 
 	// fixedTenantNamespace, if non-empty, restricts scraping to that namespace only (no K8s list).
 	fixedTenantNamespace string
@@ -292,10 +313,10 @@ type KAExporter struct {
 	archivedCompletionGauge *prometheus.GaugeVec // count of completed resources by outcome
 
 	// Exporter self-monitoring metrics.
-	scrapeErrorsTotal    *prometheus.CounterVec // labels: phase
-	lastScrapeSuccessGauge prometheus.Gauge     // unix timestamp of last successful full scrape
-	scrapeDurationGauge  prometheus.Gauge       // last scrape wall-clock duration in seconds
-	truncationsTotal     *prometheus.CounterVec // labels: resource (pipelineruns|snapshots|releases), namespace
+	scrapeErrorsTotal      *prometheus.CounterVec // labels: phase
+	lastScrapeSuccessGauge prometheus.Gauge       // unix timestamp of last successful full scrape
+	scrapeDurationGauge    prometheus.Gauge       // last scrape wall-clock duration in seconds
+	truncationsTotal       *prometheus.CounterVec // labels: resource (pipelineruns|snapshots|releases), namespace
 }
 
 // NewKAExporter creates a new KubeArchive exporter
@@ -324,12 +345,33 @@ func NewKAExporter() (*KAExporter, error) {
 		}
 	}
 
-	scrapeTimeoutSecs := defaultScrapeTimeoutSeconds
-	if st := strings.TrimSpace(os.Getenv(kaScrapeTimeoutSecsEnv)); st != "" {
-		if parsed, err := strconv.Atoi(st); err != nil || parsed <= 0 {
-			log.Printf("WARNING: %s=%q is not a positive integer; using default %ds", kaScrapeTimeoutSecsEnv, st, defaultScrapeTimeoutSeconds)
+	// Prefer KA_COLLECTION_TIMEOUT_SECONDS; fall back to the deprecated
+	// KA_SCRAPE_TIMEOUT_SECONDS with a warning; use the compiled default if neither is set.
+	collectionTimeoutSecs := defaultCollectionTimeoutSecs
+	if v := strings.TrimSpace(os.Getenv(kaCollectionTimeoutSecsEnv)); v != "" {
+		if parsed, err := strconv.Atoi(v); err != nil || parsed <= 0 {
+			log.Printf("WARNING: %s=%q is not a positive integer; using default %ds",
+				kaCollectionTimeoutSecsEnv, v, defaultCollectionTimeoutSecs)
 		} else {
-			scrapeTimeoutSecs = parsed
+			collectionTimeoutSecs = parsed
+		}
+	} else if v := strings.TrimSpace(os.Getenv(kaScrapeTimeoutSecsEnv)); v != "" {
+		log.Printf("DEPRECATED: %s is deprecated; rename to %s (value will still be honoured)",
+			kaScrapeTimeoutSecsEnv, kaCollectionTimeoutSecsEnv)
+		if parsed, err := strconv.Atoi(v); err != nil || parsed <= 0 {
+			log.Printf("WARNING: %s=%q is not a positive integer; using default %ds",
+				kaScrapeTimeoutSecsEnv, v, defaultCollectionTimeoutSecs)
+		} else {
+			collectionTimeoutSecs = parsed
+		}
+	}
+
+	collectIntervalSecs := defaultCollectIntervalSeconds
+	if ci := strings.TrimSpace(os.Getenv(kaCollectIntervalSecsEnv)); ci != "" {
+		if parsed, err := strconv.Atoi(ci); err != nil || parsed <= 0 {
+			log.Printf("WARNING: %s=%q is not a positive integer; using default %ds", kaCollectIntervalSecsEnv, ci, defaultCollectIntervalSeconds)
+		} else {
+			collectIntervalSecs = parsed
 		}
 	}
 
@@ -360,7 +402,9 @@ func NewKAExporter() (*KAExporter, error) {
 		kaToken:              kaToken,
 		cluster:              cluster,
 		windowHours:          windowHours,
-		scrapeTimeout:        time.Duration(scrapeTimeoutSecs) * time.Second,
+		scrapeTimeout:        time.Duration(collectionTimeoutSecs) * time.Second,
+		collectInterval:      time.Duration(collectIntervalSecs) * time.Second,
+		readyCh:              make(chan struct{}),
 		fixedTenantNamespace: fixedNS,
 		k8sClient:            k8sClient,
 		httpClient:           httpClient,
@@ -374,7 +418,7 @@ func NewKAExporter() (*KAExporter, error) {
 			prometheus.HistogramOpts{
 				Name:    "konflux_build_pipelinerun_duration_seconds",
 				Help:    "Distribution of build PipelineRun durations from creation to completion. Exemplars carry pipelinerun and snapshot names as join keys.",
-			Buckets: []float64{60, 120, 300, 600, 900, 1200, 1800, 2700, 3600, 5400}, // 1m–90m
+				Buckets: []float64{60, 120, 300, 600, 900, 1200, 1800, 2700, 3600, 5400}, // 1m–90m
 			},
 			[]string{"cluster", "namespace", "application", "component", "result"},
 		),
@@ -382,7 +426,7 @@ func NewKAExporter() (*KAExporter, error) {
 			prometheus.HistogramOpts{
 				Name:    "konflux_integration_pipelinerun_duration_seconds",
 				Help:    "Distribution of integration test PipelineRun durations from creation to completion. Exemplars carry pipelinerun and snapshot names as join keys.",
-			Buckets: []float64{120, 300, 600, 900, 1800, 3600, 5400}, // 2m–90m
+				Buckets: []float64{120, 300, 600, 900, 1800, 3600, 5400}, // 2m–90m
 			},
 			[]string{"cluster", "namespace", "application", "component", "scenario", "result", "optional"},
 		),
@@ -463,7 +507,7 @@ func NewKAExporter() (*KAExporter, error) {
 		}),
 		scrapeDurationGauge: prometheus.NewGauge(prometheus.GaugeOpts{
 			Name: "konflux_ka_exporter_scrape_duration_seconds",
-			Help: "Wall-clock time in seconds of the last Collect() invocation.",
+			Help: "Wall-clock time in seconds of the last background KubeArchive collection cycle.",
 		}),
 		truncationsTotal: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
@@ -493,26 +537,50 @@ func (e *KAExporter) Describe(ch chan<- *prometheus.Desc) {
 	e.truncationsTotal.Describe(ch)
 }
 
-// Collect implements prometheus.Collector
-func (e *KAExporter) Collect(ch chan<- prometheus.Metric) {
-	// Serialize concurrent scrapes to prevent data races on gauge Reset()/Set().
-	// Second scrape blocks until first completes (correct behavior).
+// Start runs the background metric collection loop. It performs one initial
+// collection synchronously so that metrics are populated before /metrics is
+// served, closes readyCh to signal readiness, then ticks every collectInterval
+// until ctx is cancelled. Intended to be called in a goroutine from main().
+func (e *KAExporter) Start(ctx context.Context) {
+	log.Printf("Starting background collection (interval=%s, collection-timeout=%s)",
+		e.collectInterval, e.scrapeTimeout)
+	e.runCollection()
+	close(e.readyCh)
+
+	ticker := time.NewTicker(e.collectInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			e.runCollection()
+		case <-ctx.Done():
+			log.Printf("Background collection stopped")
+			return
+		}
+	}
+}
+
+// runCollection performs one full KubeArchive fetch cycle and updates all
+// metric objects in memory. A write lock is held across the entire
+// gauge Reset()+Set() sequence so that concurrent Collect() calls always
+// observe a consistent (fully-populated or fully-empty) snapshot.
+func (e *KAExporter) runCollection() {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 
 	start := time.Now()
 
-	// Gauges reset each scrape — stale label sets from completed/deleted resources are removed.
-	// Histograms accumulate across scrapes (correct behavior); rate() normalises the counts.
+	// Gauges are reset at the start of every collection cycle so that stale
+	// label sets (resources that have aged out of the window) are pruned.
+	// Histograms accumulate monotonically across cycles; rate() normalises.
 	e.buildWaitGauge.Reset()
 	e.integrationWaitGauge.Reset()
 	e.integrationDelayGauge.Reset()
 	e.releasePLRWaitGauge.Reset()
 	e.archivedCompletionGauge.Reset()
 
-	// Hard deadline for the entire scrape. Cancels all in-flight KubeArchive HTTP
-	// requests if KubeArchive is slow or a namespace hangs, preventing unbounded
-	// goroutine accumulation when Prometheus's own scrape_timeout fires.
+	// Hard deadline for the entire KubeArchive fetch. Cancels all in-flight
+	// HTTP requests if KubeArchive is slow or a namespace hangs.
 	ctx, cancel := context.WithTimeout(context.Background(), e.scrapeTimeout)
 	defer cancel()
 
@@ -523,6 +591,15 @@ func (e *KAExporter) Collect(ch chan<- prometheus.Metric) {
 		e.lastScrapeSuccessGauge.Set(float64(time.Now().Unix()))
 	}
 	e.scrapeDurationGauge.Set(time.Since(start).Seconds())
+}
+
+// Collect implements prometheus.Collector. It emits the metric state cached
+// by the most recent background collection cycle — no I/O is performed here.
+// A read lock is held so that a concurrent runCollection() cannot interleave
+// its gauge Reset()+Set() sequence with this read.
+func (e *KAExporter) Collect(ch chan<- prometheus.Metric) {
+	e.mu.RLock()
+	defer e.mu.RUnlock()
 
 	e.buildDurationHist.Collect(ch)
 	e.integrationDurationHist.Collect(ch)
@@ -1016,7 +1093,6 @@ func kubeRESTConfig() (*rest.Config, error) {
 	return kubeConfig.ClientConfig()
 }
 
-
 // processIntegrationTests emits duration, queue, and build-to-integration gap metrics
 // for a set of integration test PLRs belonging to a single snapshot.
 func (e *KAExporter) processIntegrationTests(tenantNS string, tests []PipelineRun, application, component, buildCompletedAt string) {
@@ -1222,7 +1298,6 @@ func (e *KAExporter) fetchReleases(ctx context.Context, baseURL, since string) (
 	}
 	return all, nil
 }
-
 
 // resolveSnapshotNameForBuild returns the Snapshot name for a build PLR.
 // It prefers the index (O(1)) over the PLR annotation, because KubeArchive may archive
@@ -1449,19 +1524,39 @@ func main() {
 		log.Fatalf("Failed to create exporter: %v", err)
 	}
 
+	// Propagate SIGINT/SIGTERM into context so goroutines and the HTTP server
+	// can shut down cleanly.
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	// Start background collection in a goroutine. Start() blocks until the first
+	// collection completes, then closes readyCh, then enters the ticker loop.
+	go exporter.Start(ctx)
+
+	// Do not open /metrics until the initial collection has populated the cache.
+	// This prevents Prometheus from recording a misleading empty scrape on startup.
+	select {
+	case <-exporter.readyCh:
+		log.Printf("Initial collection complete — starting metrics server")
+	case <-ctx.Done():
+		log.Printf("Shutdown signalled before initial collection completed; exiting")
+		return
+	}
+
 	reg := prometheus.NewPedanticRegistry()
 	reg.MustRegister(exporter)
 
-	http.Handle("/metrics", promhttp.HandlerFor(
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.HandlerFor(
 		reg,
 		promhttp.HandlerOpts{
-			EnableOpenMetrics:   true,
-			Registry:            reg,
-			MaxRequestsInFlight: 1, // Reject concurrent scrapes with HTTP 503
+			EnableOpenMetrics: true,
+			Registry:          reg,
+			// MaxRequestsInFlight removed: Collect() now performs no I/O, so
+			// concurrent scrapes are safe and the 503 band-aid is unnecessary.
 		},
 	))
-
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("OK"))
 	})
@@ -1471,6 +1566,22 @@ func main() {
 		port = defaultPort
 	}
 
+	srv := &http.Server{
+		Addr:    ":" + port,
+		Handler: mux,
+	}
+
+	// Shut down the HTTP server when the context is cancelled.
+	go func() {
+		<-ctx.Done()
+		log.Printf("Shutdown signal received; stopping HTTP server")
+		shutCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := srv.Shutdown(shutCtx); err != nil {
+			log.Printf("HTTP server shutdown error: %v", err)
+		}
+	}()
+
 	log.Printf("KubeArchive Prometheus Exporter started on http://0.0.0.0:%s/metrics", port)
 	if exporter.fixedTenantNamespace != "" {
 		log.Printf("Cluster: %s, mode: single-tenant, TENANT_NAMESPACE=%s", exporter.cluster, exporter.fixedTenantNamespace)
@@ -1478,7 +1589,7 @@ func main() {
 		log.Printf("Cluster: %s, mode: multi-tenant (namespaces with label %s=%s)", exporter.cluster, tenantLabelKey, tenantLabelValue)
 	}
 
-	if err := http.ListenAndServe(":"+port, nil); err != nil {
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("Server failed: %v", err)
 	}
 }
