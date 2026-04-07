@@ -757,7 +757,7 @@ func (e *KAExporter) gatherAllReleasesParallel(ctx context.Context, namespaces [
 			defer func() { <-sem }()
 
 			releasesURL := fmt.Sprintf("%s/apis/appstudio.redhat.com/v1alpha1/namespaces/%s/releases", e.kaHost, ns)
-			items, err := e.fetchReleases(ctx, releasesURL, since)
+			items, err := e.fetchReleases(ctx, releasesURL, since, ns)
 			results <- fetchResult{namespace: ns, releases: items, err: err}
 		}(ns)
 	}
@@ -773,6 +773,7 @@ func (e *KAExporter) gatherAllReleasesParallel(ctx context.Context, namespaces [
 	for result := range results {
 		if result.err != nil {
 			log.Printf("releases fetch namespace %q: %v", result.namespace, result.err)
+			e.scrapeErrorsTotal.WithLabelValues(e.cluster, "releases").Inc()
 			continue
 		}
 		mu.Lock()
@@ -788,7 +789,7 @@ func (e *KAExporter) collectNamespace(ctx context.Context, tenantNS string, glob
 	// Phase 1: build snapshot index by streaming — pages are freed after indexing.
 	snapURL := fmt.Sprintf("%s/apis/appstudio.redhat.com/v1alpha1/namespaces/%s/snapshots", e.kaHost, tenantNS)
 	idx := newSnapshotIndex()
-	if streamErr := e.streamSnapshots(ctx, snapURL, since, idx.add); streamErr != nil {
+	if streamErr := e.streamSnapshots(ctx, snapURL, since, tenantNS, idx.add); streamErr != nil {
 		log.Printf("namespace %q: could not index snapshots (annotation fallback only): %v", tenantNS, streamErr)
 		idx = nil // nil idx → resolveSnapshotNameForBuild falls back to annotation
 	}
@@ -815,7 +816,7 @@ func (e *KAExporter) collectNamespace(ctx context.Context, tenantNS string, glob
 	buildInfoBySnapshot := make(map[string]buildMeta)
 
 	plrURL := fmt.Sprintf("%s/apis/tekton.dev/v1/namespaces/%s/pipelineruns", e.kaHost, tenantNS)
-	streamErr := e.streamPLRs(ctx, plrURL, since, func(page []PipelineRun) {
+	streamErr := e.streamPLRs(ctx, plrURL, since, tenantNS, func(page []PipelineRun) {
 		for i := range page {
 			plr := &page[i]
 			switch getLabel(*plr, labelPipelinesType, "") {
@@ -1005,7 +1006,7 @@ func (e *KAExporter) collectManagedReleasePLRs(ctx context.Context, since string
 	log.Printf("KubeArchive: scraping %d managed namespace(s) for release PipelineRuns: %v", len(managedNS), managedNS)
 	for _, ns := range managedNS {
 		plrURL := fmt.Sprintf("%s/apis/tekton.dev/v1/namespaces/%s/pipelineruns", e.kaHost, ns)
-		if err := e.streamPLRs(ctx, plrURL, since, func(page []PipelineRun) {
+		if err := e.streamPLRs(ctx, plrURL, since, ns, func(page []PipelineRun) {
 			for i := range page {
 				plr := &page[i]
 				if isReleaseServicePLR(*plr) {
@@ -1014,6 +1015,7 @@ func (e *KAExporter) collectManagedReleasePLRs(ctx context.Context, since string
 			}
 		}); err != nil {
 			log.Printf("managed namespace %q: stream pipelineruns: %v", ns, err)
+			e.scrapeErrorsTotal.WithLabelValues(e.cluster, "managed_plrs").Inc()
 		}
 	}
 }
@@ -1172,7 +1174,7 @@ func (e *KAExporter) fetchPage(ctx context.Context, pageURL string) ([]byte, int
 // limiting results to the configured look-back window (KA_WINDOW_HOURS).
 // KubeArchive returns items newest-first; callers may rely on this ordering.
 // fn receives the page slice and must not retain references beyond its return.
-func (e *KAExporter) streamPLRs(ctx context.Context, baseURL, since string, fn func(page []PipelineRun)) error {
+func (e *KAExporter) streamPLRs(ctx context.Context, baseURL, since, namespace string, fn func(page []PipelineRun)) error {
 	continueToken := ""
 	total := 0
 	for {
@@ -1196,7 +1198,7 @@ func (e *KAExporter) streamPLRs(ctx context.Context, baseURL, since string, fn f
 		if total >= kaMaxItems {
 			log.Printf("WARNING: streamPLRs %s: reached kaMaxItems cap (%d); "+
 				"check KubeArchive retention — results may be incomplete", baseURL, kaMaxItems)
-			e.truncationsTotal.WithLabelValues(e.cluster, "pipelineruns", baseURL).Inc()
+			e.truncationsTotal.WithLabelValues(e.cluster, "pipelineruns", namespace).Inc()
 			break
 		}
 		if page.Metadata.Continue == "" {
@@ -1212,7 +1214,7 @@ func (e *KAExporter) streamPLRs(ctx context.Context, baseURL, since string, fn f
 // streamSnapshots fetches Snapshot CRs page-by-page, calling fn once per page.
 // since limits results to the configured look-back window (KA_WINDOW_HOURS).
 // Intended to be called with snapshotIndex.add so pages are indexed and then freed.
-func (e *KAExporter) streamSnapshots(ctx context.Context, baseURL, since string, fn func(page []Snapshot)) error {
+func (e *KAExporter) streamSnapshots(ctx context.Context, baseURL, since, namespace string, fn func(page []Snapshot)) error {
 	continueToken := ""
 	total := 0
 	for {
@@ -1236,7 +1238,7 @@ func (e *KAExporter) streamSnapshots(ctx context.Context, baseURL, since string,
 		if total >= kaMaxItems {
 			log.Printf("WARNING: streamSnapshots %s: reached kaMaxItems cap (%d); "+
 				"check KubeArchive retention — results may be incomplete", baseURL, kaMaxItems)
-			e.truncationsTotal.WithLabelValues(e.cluster, "snapshots", baseURL).Inc()
+			e.truncationsTotal.WithLabelValues(e.cluster, "snapshots", namespace).Inc()
 			break
 		}
 		if page.Metadata.Continue == "" {
@@ -1249,7 +1251,7 @@ func (e *KAExporter) streamSnapshots(ctx context.Context, baseURL, since string,
 
 // fetchReleases fetches all Release CRs from a KubeArchive endpoint with pagination.
 // since limits results to the configured look-back window (KA_WINDOW_HOURS).
-func (e *KAExporter) fetchReleases(ctx context.Context, baseURL, since string) ([]Release, error) {
+func (e *KAExporter) fetchReleases(ctx context.Context, baseURL, since, namespace string) ([]Release, error) {
 	var all []Release
 	continueToken := ""
 	for {
@@ -1272,7 +1274,7 @@ func (e *KAExporter) fetchReleases(ctx context.Context, baseURL, since string) (
 		if len(all) >= kaMaxItems {
 			log.Printf("WARNING: fetchReleases %s: reached kaMaxItems cap (%d); "+
 				"check KubeArchive retention — results may be incomplete", baseURL, kaMaxItems)
-			e.truncationsTotal.WithLabelValues(e.cluster, "releases", baseURL).Inc()
+			e.truncationsTotal.WithLabelValues(e.cluster, "releases", namespace).Inc()
 			break
 		}
 		if page.Metadata.Continue == "" {
