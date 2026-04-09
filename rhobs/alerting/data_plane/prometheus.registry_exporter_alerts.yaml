@@ -34,6 +34,11 @@ spec:
     - alert: RegistryExporterTestTypeFailure
       expr: |
         max by(source_cluster, tested_registry, type) (registry_exporter_success) == 0
+        and on(source_cluster, tested_registry)
+          label_replace(
+            konflux_up{service="registry-exporter"} == 1,
+            "tested_registry", "$1", "check", "(.*)"
+          )
       for: 15m
       labels:
         severity: high
@@ -53,14 +58,16 @@ spec:
     rules:
     - alert: RegistryExporterNodeFailure
       expr: |
-        min by(source_cluster, tested_registry, node) (registry_exporter_success) == 0
+        min by(source_cluster, tested_registry, node) (
+          registry_exporter_success
+          unless on(source_cluster, tested_registry, type)
+            (max by(source_cluster, tested_registry, type) (registry_exporter_success) == 0)
+        ) == 0
         and on(source_cluster, tested_registry)
           label_replace(
             konflux_up{service="registry-exporter"} == 1,
             "tested_registry", "$1", "check", "(.*)"
           )
-        unless on(source_cluster, tested_registry)
-          (max by(source_cluster, tested_registry, type) (registry_exporter_success) == 0)
       for: 15m
       labels:
         severity: warning

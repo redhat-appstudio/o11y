@@ -144,6 +144,8 @@ tests:
   # Single test type failing on all nodes (should alert for that type)
   - interval: 1m
     input_series:
+      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
+        values: "1x16"
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c1"}'
         values: "0x16"
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="push", source_cluster="c1"}'
@@ -201,6 +203,8 @@ tests:
   # Multiple test types failing across all nodes (should alert for each type)
   - interval: 1m
     input_series:
+      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
+        values: "1x16"
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c1"}'
         values: "0x16"
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="push", source_cluster="c1"}'
@@ -250,6 +254,10 @@ tests:
   # Test type failure isolated to one registry (should only alert for that registry)
   - interval: 1m
     input_series:
+      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
+        values: "1x16"
+      - series: 'konflux_up{service="registry-exporter", check="registry.example.com", source_cluster="c1"}'
+        values: "1x16"
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="pull", source_cluster="c1"}'
         values: "0x16"
       - series: 'registry_exporter_success{tested_registry="registry.example.com", node="node1", type="pull", source_cluster="c1"}'
@@ -273,6 +281,25 @@ tests:
                 Tests for pull for quay.io in c1 is failing for 15 minutes.
               alert_routing_key: o11y
               team: o11y
+
+  # Test type failure suppressed when cluster check is down (should NOT alert - covered by RegistryExporterDown)
+  - interval: 1m
+    input_series:
+      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
+        values: "0x16"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c1"}'
+        values: "0x16"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="push", source_cluster="c1"}'
+        values: "0x16"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="pull", source_cluster="c1"}'
+        values: "0x16"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="pull", source_cluster="c1"}'
+        values: "0x16"
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: RegistryExporterTestTypeFailure
+        exp_alerts: []
 
   # Combined test: push fails cluster-wide — TestTypeFailure fires at 15m, NodeFailure suppressed at 15m
   - interval: 1m
@@ -339,6 +366,50 @@ tests:
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="push", source_cluster="c1"}'
         values: "1x16"
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="metadata", source_cluster="c1"}'
+        values: "1x16"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="authentication", source_cluster="c1"}'
+        values: "1x16"
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: RegistryExporterNodeFailure
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              tested_registry: quay.io
+              node: node1
+              source_cluster: c1
+              slo: "false"
+              component: registry-exporter
+            exp_annotations:
+              summary: >-
+                Registry exporter running tests on node node1 for registry quay.io in cluster c1 is failing.
+              description: >-
+                Registry exporter running tests on node node1 for registry quay.io in cluster c1 is failing.
+                At least one test type (pull, push, metadata, or authentication) has been failing for 15 minutes.
+                The cluster-level check for this registry is still passing, indicating this is a node-specific issue.
+              alert_routing_key: o11y
+              team: o11y
+
+  # Node-specific failure alongside cluster-wide type failure (should alert for node-specific issue only)
+  # Push fails cluster-wide (covered by TestTypeFailure), pull fails only on node1 (node-specific)
+  - interval: 1m
+    input_series:
+      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
+        values: "1x16"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c1"}'
+        values: "0x16"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="push", source_cluster="c1"}'
+        values: "0x16"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="pull", source_cluster="c1"}'
+        values: "0x16"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="pull", source_cluster="c1"}'
+        values: "1x16"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="metadata", source_cluster="c1"}'
+        values: "1x16"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="metadata", source_cluster="c1"}'
+        values: "1x16"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="authentication", source_cluster="c1"}'
         values: "1x16"
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="authentication", source_cluster="c1"}'
         values: "1x16"
