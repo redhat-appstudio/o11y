@@ -31,3 +31,31 @@ tests:
         exp_samples:
           - labels: 'konflux_up{namespace="caching", service="squid"}'
             value: 0
+
+  - interval: 1m
+    # All replicas up → konflux_up = 1
+    input_series:
+      - series: 'nginx_up{namespace="caching", service="artifact-registry-proxy", job="uwm/scrape", instance="10.0.0.1:9113", pod="nginx-0"}'
+        values: '1 1 1'
+      - series: 'nginx_up{namespace="caching", service="artifact-registry-proxy", job="uwm/scrape", instance="10.0.0.2:9113", pod="nginx-1"}'
+        values: '1 1 1'
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 2m
+        exp_samples:
+          - labels: 'konflux_up{namespace="caching", service="artifact-registry-proxy"}'
+            value: 1
+
+  - interval: 1m
+    # One replica down → konflux_up = 0 (min across targets)
+    input_series:
+      - series: 'nginx_up{namespace="caching", service="artifact-registry-proxy", job="uwm/scrape", instance="10.0.0.1:9113", pod="nginx-0"}'
+        values: '1 1 1'
+      - series: 'nginx_up{namespace="caching", service="artifact-registry-proxy", job="uwm/scrape", instance="10.0.0.2:9113", pod="nginx-1"}'
+        values: '1 0 0'
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 2m
+        exp_samples:
+          - labels: 'konflux_up{namespace="caching", service="artifact-registry-proxy"}'
+            value: 0
