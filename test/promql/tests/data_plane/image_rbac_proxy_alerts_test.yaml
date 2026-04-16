@@ -1,0 +1,64 @@
+---
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.image_rbac_proxy_alerts.yaml
+
+tests:
+# ImageRbacProxyDown - replica count = 0
+- interval: 1m
+  input_series:
+    - series: 'konflux_up{namespace="image-rbac-proxy", check="replicas-available", service="image-rbac-proxy", source_cluster="c1"}'
+      values: '0 0 0 0 0'
+    - series: 'konflux_up{namespace="image-rbac-proxy", check="replicas-available", service="image-rbac-proxy", source_cluster="c2"}'
+      values: '1 1 1 1 1'
+
+  alert_rule_test:
+    - eval_time: 5m
+      alertname: ImageRbacProxyDown
+      exp_alerts:
+        - exp_labels:
+            severity: critical
+            component: image-rbac-proxy
+            check: replicas-available
+            namespace: image-rbac-proxy
+            service: image-rbac-proxy
+            slo: "true"
+            source_cluster: c1
+          exp_annotations:
+            summary: >-
+              image-rbac-proxy is down in cluster c1
+            description: >
+              The image-rbac-proxy pod has been down for 5min in cluster c1
+            team: build
+            alert_team_handle: <!subteam^S0AK93A5U80>
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/image-rbac-proxy/image-rbac-proxy-availability.md
+
+# ImageRbacProxyDexDown - replica count = 0
+- interval: 1m
+  input_series:
+    - series: 'konflux_up{namespace="image-rbac-proxy", check="replicas-available", service="dex", source_cluster="c1"}'
+      values: '0 0 0 0 0'
+    - series: 'konflux_up{namespace="image-rbac-proxy", check="replicas-available", service="dex", source_cluster="c2"}'
+      values: '1 1 1 1 1'
+
+  alert_rule_test:
+    - eval_time: 5m
+      alertname: ImageRbacProxyDexDown
+      exp_alerts:
+        - exp_labels:
+            severity: critical
+            component: image-rbac-proxy
+            check: replicas-available
+            namespace: image-rbac-proxy
+            service: dex
+            slo: "true"
+            source_cluster: c1
+          exp_annotations:
+            summary: >-
+              image-rbac-proxy dex is down in cluster c1
+            description: >
+              The image-rbac-proxy dex pod has been down for 5min in cluster c1
+            team: build
+            alert_team_handle: <!subteam^S0AK93A5U80>
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/image-rbac-proxy/image-rbac-proxy-availability.md

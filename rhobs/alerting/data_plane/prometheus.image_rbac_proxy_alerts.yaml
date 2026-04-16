@@ -1,0 +1,52 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-image-rbac-proxy-alerting
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: image-rbac-proxy-availability
+    interval: 1m
+    rules:
+    - alert: ImageRbacProxyDown
+      expr: |
+        konflux_up{
+          namespace="image-rbac-proxy",
+          check="replicas-available",
+          service="image-rbac-proxy"
+        } != 1
+      for: 5m
+      labels:
+        severity: critical
+        slo: "true"
+        component: image-rbac-proxy
+      annotations:
+        summary: >-
+          image-rbac-proxy is down in cluster {{ $labels.source_cluster }}
+        description: >
+          The image-rbac-proxy pod has been down for 5min in cluster {{ $labels.source_cluster }}
+        team: build
+        alert_team_handle: <!subteam^S0AK93A5U80>
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/image-rbac-proxy/image-rbac-proxy-availability.md
+
+    - alert: ImageRbacProxyDexDown
+      expr: |
+        konflux_up{
+          namespace="image-rbac-proxy",
+          check="replicas-available",
+          service="dex"
+        } != 1
+      for: 5m
+      labels:
+        severity: critical
+        slo: "true"
+        component: image-rbac-proxy
+      annotations:
+        summary: >-
+          image-rbac-proxy dex is down in cluster {{ $labels.source_cluster }}
+        description: >
+          The image-rbac-proxy dex pod has been down for 5min in cluster {{ $labels.source_cluster }}
+        team: build
+        alert_team_handle: <!subteam^S0AK93A5U80>
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/image-rbac-proxy/image-rbac-proxy-availability.md
