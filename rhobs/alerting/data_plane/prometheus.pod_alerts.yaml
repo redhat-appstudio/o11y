@@ -22,7 +22,7 @@ spec:
         alert_routing_key: '{{ $labels.namespace }}'
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-unschedualablePods.md
     - alert: CrashLoopBackOff
-      expr: max_over_time(kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff", namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-templates-e2e|multi-platform-.*)"}[5m]) >= 1
+      expr: max_over_time(kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff", namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-templates-e2e|multi-platform-.*|clusters-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})"}[5m]) >= 1
       for: 15m
       labels:
         severity: warning

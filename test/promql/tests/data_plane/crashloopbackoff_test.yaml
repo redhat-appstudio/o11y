@@ -51,6 +51,10 @@ tests:
       - series: 'kube_pod_container_status_waiting_reason{namespace="build-templates-e2e", pod="test-pod", container="test-container", reason="CrashLoopBackOff", source_cluster="cluster01"}'
         values: '1x15'
 
+      # Pod failing with CrashLoopBackOff error but it has a 'clusters-{uuid}' namespace so it's ignored
+      - series: 'kube_pod_container_status_waiting_reason{namespace="clusters-37fcee5b-cbe0-4732-9b0b-b6c12054510f", pod="olm-collect-profiles-29554010-p4g26", container="test-container", reason="CrashLoopBackOff", source_cluster="cluster01"}'
+        values: '1x15'
+
     alert_rule_test:
       - eval_time: 15m
         alertname: CrashLoopBackOff
