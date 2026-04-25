@@ -1,0 +1,274 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.artifact_registry_proxy_alerts.yaml
+
+tests:
+  # ========================================
+  # NginxProxyDown Alert Tests
+  # ========================================
+  - name: NginxProxyDown_Firing
+    interval: 1m
+    input_series:
+      - series: 'konflux_up{namespace="caching", service="artifact-registry-proxy", source_cluster="cluster01"}'
+        values: '0x10'
+
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: NginxProxyDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              component: artifact-registry-proxy
+              namespace: caching
+              service: artifact-registry-proxy
+              source_cluster: cluster01
+            exp_annotations:
+              summary: "Artifact Registry Nginx proxy is down"
+              description: "Nginx exporter cannot scrape the artifact registry proxy successfully in namespace caching. The proxy has been down for 5 minutes in cluster cluster01."
+              alert_team_handle: "<!subteam^S07NDQV6A4D>"
+              team: vanguard
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/vanguard/sre/artifact-registry-proxy-down.md
+
+  - name: NginxProxyDown_NotFiring
+    interval: 1m
+    input_series:
+      - series: 'konflux_up{namespace="caching", service="artifact-registry-proxy", source_cluster="cluster01"}'
+        values: '1x10'
+
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: NginxProxyDown
+        exp_alerts: []
+
+  - name: NginxProxyDown_RecoveredBeforeThreshold
+    interval: 1m
+    input_series:
+      # Down for 4 minutes, then recovers - should not fire (needs 5m)
+      - series: 'konflux_up{namespace="caching", service="artifact-registry-proxy", source_cluster="cluster01"}'
+        values: '0x4 1x6'
+
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: NginxProxyDown
+        exp_alerts: []
+
+  # ========================================
+  # NginxHighErrorRate Alert Tests
+  # ========================================
+  - name: NginxHighErrorRate_Firing
+    interval: 1m
+    input_series:
+      # 10 errors out of 100 requests = 10% error rate (> 5% threshold)
+      - series: 'http_requests_total{namespace="caching", service="artifact-registry-proxy", status="500", source_cluster="cluster01"}'
+        values: '0+10x20'
+      - series: 'http_requests_total{namespace="caching", service="artifact-registry-proxy", status="200", source_cluster="cluster01"}'
+        values: '0+90x20'
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: NginxHighErrorRate
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              slo: "true"
+              component: artifact-registry-proxy
+              source_cluster: cluster01
+              namespace: caching
+              service: artifact-registry-proxy
+            exp_annotations:
+              summary: "Artifact Registry Nginx proxy has high error rate"
+              description: "More than 5% of requests to the artifact registry proxy are returning 5xx errors in cluster cluster01. Current error rate: 10%."
+              alert_team_handle: "<!subteam^S07NDQV6A4D>"
+              team: vanguard
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/vanguard/sre/artifact-registry-proxy-high-error-rate.md
+
+  - name: NginxHighErrorRate_NotFiring_BelowThreshold
+    interval: 1m
+    input_series:
+      # 3 errors out of 100 requests = 3% error rate (< 5% threshold)
+      - series: 'http_requests_total{namespace="caching", service="artifact-registry-proxy", status="500", source_cluster="cluster01"}'
+        values: '0+3x20'
+      - series: 'http_requests_total{namespace="caching", service="artifact-registry-proxy", status="200", source_cluster="cluster01"}'
+        values: '0+97x20'
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: NginxHighErrorRate
+        exp_alerts: []
+
+  - name: NginxHighErrorRate_NotFiring_NoErrors
+    interval: 1m
+    input_series:
+      # No errors at all
+      - series: 'http_requests_total{namespace="caching", service="artifact-registry-proxy", status="200", source_cluster="cluster01"}'
+        values: '0+100x20'
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: NginxHighErrorRate
+        exp_alerts: []
+
+  # ========================================
+  # NginxLowCacheHitRatio Alert Tests
+  # ========================================
+  - name: NginxLowCacheHitRatio_Firing
+    interval: 1m
+    input_series:
+      # 30 HITs out of 100 total (30 HIT + 70 MISS) = 30% hit ratio (< 50% threshold)
+      - series: 'http_requests_total{namespace="caching", service="artifact-registry-proxy", cache_status="HIT", source_cluster="cluster01"}'
+        values: '0+30x40'
+      - series: 'http_requests_total{namespace="caching", service="artifact-registry-proxy", cache_status="MISS", source_cluster="cluster01"}'
+        values: '0+70x40'
+
+    alert_rule_test:
+      - eval_time: 35m
+        alertname: NginxLowCacheHitRatio
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              component: artifact-registry-proxy
+              source_cluster: cluster01
+              namespace: caching
+              service: artifact-registry-proxy
+            exp_annotations:
+              summary: "Artifact Registry Nginx proxy has low cache hit ratio"
+              description: "Cache hit ratio for artifact registry proxy is below 50% in cluster cluster01. This may indicate cache configuration issues or unusual traffic patterns. Current hit ratio: 30%."
+              alert_team_handle: "<!subteam^S07NDQV6A4D>"
+              team: vanguard
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/vanguard/sre/artifact-registry-proxy-low-cache-hit-ratio.md
+
+  - name: NginxLowCacheHitRatio_NotFiring_HealthyRatio
+    interval: 1m
+    input_series:
+      # 70 HITs out of 100 total = 70% hit ratio (> 50% threshold)
+      - series: 'http_requests_total{namespace="caching", service="artifact-registry-proxy", cache_status="HIT", source_cluster="cluster01"}'
+        values: '0+70x40'
+      - series: 'http_requests_total{namespace="caching", service="artifact-registry-proxy", cache_status="MISS", source_cluster="cluster01"}'
+        values: '0+30x40'
+
+    alert_rule_test:
+      - eval_time: 35m
+        alertname: NginxLowCacheHitRatio
+        exp_alerts: []
+
+  - name: NginxLowCacheHitRatio_NotFiring_LowTraffic
+    interval: 1m
+    input_series:
+      # Very low traffic (below 0.1 req/s threshold) - should not fire even with 0% hit rate
+      - series: 'http_requests_total{namespace="caching", service="artifact-registry-proxy", cache_status="HIT", source_cluster="cluster01"}'
+        values: '0+0x40'
+      - series: 'http_requests_total{namespace="caching", service="artifact-registry-proxy", cache_status="MISS", source_cluster="cluster01"}'
+        values: '0+1x40'
+
+    alert_rule_test:
+      - eval_time: 35m
+        alertname: NginxLowCacheHitRatio
+        exp_alerts: []
+
+  - name: NginxLowCacheHitRatio_NotFiring_RecoveredBeforeThreshold
+    interval: 1m
+    input_series:
+      # Low hit ratio for 25 minutes (< 30m threshold), then improves
+      - series: 'http_requests_total{namespace="caching", service="artifact-registry-proxy", cache_status="HIT", source_cluster="cluster01"}'
+        values: '0+30x25 0+70x15'
+      - series: 'http_requests_total{namespace="caching", service="artifact-registry-proxy", cache_status="MISS", source_cluster="cluster01"}'
+        values: '0+70x25 0+30x15'
+
+    alert_rule_test:
+      - eval_time: 35m
+        alertname: NginxLowCacheHitRatio
+        exp_alerts: []
+
+  # ========================================
+  # NginxExporterDown Alert Tests
+  # ========================================
+  - name: NginxExporterDown_Firing
+    interval: 1m
+    input_series:
+      - series: 'up{namespace="caching", job="artifact-registry-proxy-exporter", source_cluster="cluster01"}'
+        values: '0x10'
+
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: NginxExporterDown
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              component: artifact-registry-proxy
+              namespace: caching
+              job: artifact-registry-proxy-exporter
+              source_cluster: cluster01
+            exp_annotations:
+              summary: "Nginx Prometheus exporter is down"
+              description: "The nginx-prometheus-exporter for artifact registry proxy is down in cluster cluster01. Metrics collection is not working."
+              alert_team_handle: "<!subteam^S07NDQV6A4D>"
+              team: vanguard
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/vanguard/sre/artifact-registry-proxy-exporter-down.md
+
+  - name: NginxExporterDown_NotFiring
+    interval: 1m
+    input_series:
+      - series: 'up{namespace="caching", job="artifact-registry-proxy-exporter", source_cluster="cluster01"}'
+        values: '1x10'
+
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: NginxExporterDown
+        exp_alerts: []
+
+  # ========================================
+  # NginxHighResponseTime Alert Tests
+  # ========================================
+  - name: NginxHighResponseTime_Firing
+    interval: 1m
+    input_series:
+      # p95 = 6 seconds (> 5s threshold)
+      # Simulating histogram buckets where most requests are > 5s
+      - series: 'http_request_duration_seconds_bucket{namespace="caching", service="artifact-registry-proxy", le="1", source_cluster="cluster01"}'
+        values: '0+5x20'
+      - series: 'http_request_duration_seconds_bucket{namespace="caching", service="artifact-registry-proxy", le="5", source_cluster="cluster01"}'
+        values: '0+90x20'
+      - series: 'http_request_duration_seconds_bucket{namespace="caching", service="artifact-registry-proxy", le="10", source_cluster="cluster01"}'
+        values: '0+100x20'
+      - series: 'http_request_duration_seconds_bucket{namespace="caching", service="artifact-registry-proxy", le="+Inf", source_cluster="cluster01"}'
+        values: '0+100x20'
+
+    alert_rule_test:
+      - eval_time: 18m
+        alertname: NginxHighResponseTime
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              component: artifact-registry-proxy
+              source_cluster: cluster01
+              namespace: caching
+              service: artifact-registry-proxy
+            exp_annotations:
+              summary: "Artifact Registry Nginx proxy has high response time"
+              description: "95th percentile response time for artifact registry proxy exceeds 5 seconds in cluster cluster01. Current p95: 6s."
+              alert_team_handle: "<!subteam^S07NDQV6A4D>"
+              team: vanguard
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/vanguard/sre/artifact-registry-proxy-high-latency.md
+
+  - name: NginxHighResponseTime_NotFiring
+    interval: 1m
+    input_series:
+      # p95 < 5s - most requests complete quickly
+      - series: 'http_request_duration_seconds_bucket{namespace="caching", service="artifact-registry-proxy", le="1", source_cluster="cluster01"}'
+        values: '0+90x20'
+      - series: 'http_request_duration_seconds_bucket{namespace="caching", service="artifact-registry-proxy", le="5", source_cluster="cluster01"}'
+        values: '0+98x20'
+      - series: 'http_request_duration_seconds_bucket{namespace="caching", service="artifact-registry-proxy", le="10", source_cluster="cluster01"}'
+        values: '0+100x20'
+      - series: 'http_request_duration_seconds_bucket{namespace="caching", service="artifact-registry-proxy", le="+Inf", source_cluster="cluster01"}'
+        values: '0+100x20'
+
+    alert_rule_test:
+      - eval_time: 18m
+        alertname: NginxHighResponseTime
+        exp_alerts: []

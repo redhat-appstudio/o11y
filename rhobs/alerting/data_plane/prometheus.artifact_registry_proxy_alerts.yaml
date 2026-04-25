@@ -1,0 +1,142 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-artifact-registry-proxy-alerting-rules
+  labels:
+    tenant: rhtap
+
+spec:
+  groups:
+  - name: artifact_registry_proxy_availability
+    interval: 1m
+    rules:
+    - alert: NginxProxyDown
+      expr: |
+        konflux_up{namespace="caching", service="artifact-registry-proxy"} == 0
+      for: 5m
+      labels:
+        severity: critical
+        slo: "true"
+        component: artifact-registry-proxy
+      annotations:
+        summary: >-
+          Artifact Registry Nginx proxy is down
+        description: >-
+          Nginx exporter cannot scrape the artifact registry proxy successfully in namespace caching.
+          The proxy has been down for 5 minutes in cluster {{ $labels.source_cluster }}.
+        alert_team_handle: <!subteam^S07NDQV6A4D>
+        team: vanguard
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/vanguard/sre/artifact-registry-proxy-down.md
+
+  - name: artifact_registry_proxy_performance
+    interval: 1m
+    rules:
+    # Record rule: calculate total request rate
+    - record: artifact_registry_proxy:http_requests:rate5m
+      expr: sum by (source_cluster, namespace, service) (rate(http_requests_total{namespace="caching", service="artifact-registry-proxy"}[5m]))
+
+    # Record rule: calculate error rate (5xx responses)
+    - record: artifact_registry_proxy:http_errors:rate5m
+      expr: sum by (source_cluster, namespace, service) (rate(http_requests_total{namespace="caching", service="artifact-registry-proxy", status=~"5.."}[5m]))
+
+    # Record rule: calculate cache HIT rate
+    - record: artifact_registry_proxy:cache_hit:rate5m
+      expr: sum by (source_cluster, namespace, service) (rate(http_requests_total{namespace="caching", service="artifact-registry-proxy", cache_status="HIT"}[5m]))
+
+    # Record rule: calculate cache MISS rate
+    - record: artifact_registry_proxy:cache_miss:rate5m
+      expr: sum by (source_cluster, namespace, service) (rate(http_requests_total{namespace="caching", service="artifact-registry-proxy", cache_status="MISS"}[5m]))
+
+    # Alert: High error rate (>5% of requests are 5xx errors)
+    - alert: NginxHighErrorRate
+      expr: |
+        (
+          artifact_registry_proxy:http_errors:rate5m
+          /
+          artifact_registry_proxy:http_requests:rate5m
+        ) > 0.05
+      for: 10m
+      labels:
+        severity: high
+        slo: "true"
+        component: artifact-registry-proxy
+      annotations:
+        summary: >-
+          Artifact Registry Nginx proxy has high error rate
+        description: >-
+          More than 5% of requests to the artifact registry proxy are returning 5xx errors
+          in cluster {{ $labels.source_cluster }}. Current error rate: {{ $value | humanizePercentage }}.
+        alert_team_handle: <!subteam^S07NDQV6A4D>
+        team: vanguard
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/vanguard/sre/artifact-registry-proxy-high-error-rate.md
+
+    # Alert: Low cache hit ratio (<50% cache hits)
+    - alert: NginxLowCacheHitRatio
+      expr: |
+        (
+          artifact_registry_proxy:cache_hit:rate5m
+          /
+          (artifact_registry_proxy:cache_hit:rate5m + artifact_registry_proxy:cache_miss:rate5m)
+        ) < 0.50
+        and
+        (artifact_registry_proxy:cache_hit:rate5m + artifact_registry_proxy:cache_miss:rate5m) > 0.1
+      for: 30m
+      labels:
+        severity: warning
+        slo: "false"
+        component: artifact-registry-proxy
+      annotations:
+        summary: >-
+          Artifact Registry Nginx proxy has low cache hit ratio
+        description: >-
+          Cache hit ratio for artifact registry proxy is below 50% in cluster {{ $labels.source_cluster }}.
+          This may indicate cache configuration issues or unusual traffic patterns.
+          Current hit ratio: {{ $value | humanizePercentage }}.
+        alert_team_handle: <!subteam^S07NDQV6A4D>
+        team: vanguard
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/vanguard/sre/artifact-registry-proxy-low-cache-hit-ratio.md
+
+    # Alert: Nginx exporter is down
+    - alert: NginxExporterDown
+      expr: |
+        up{namespace="caching", job=~".*artifact-registry-proxy.*"} == 0
+      for: 5m
+      labels:
+        severity: warning
+        slo: "false"
+        component: artifact-registry-proxy
+      annotations:
+        summary: >-
+          Nginx Prometheus exporter is down
+        description: >-
+          The nginx-prometheus-exporter for artifact registry proxy is down in cluster {{ $labels.source_cluster }}.
+          Metrics collection is not working.
+        alert_team_handle: <!subteam^S07NDQV6A4D>
+        team: vanguard
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/vanguard/sre/artifact-registry-proxy-exporter-down.md
+
+  - name: artifact_registry_proxy_latency
+    interval: 1m
+    rules:
+    # Alert: High response time (p95 > 5 seconds)
+    - alert: NginxHighResponseTime
+      expr: |
+        histogram_quantile(0.95,
+          sum by (source_cluster, namespace, service, le) (
+            rate(http_request_duration_seconds_bucket{namespace="caching", service="artifact-registry-proxy"}[5m])
+          )
+        ) > 5
+      for: 15m
+      labels:
+        severity: warning
+        slo: "false"
+        component: artifact-registry-proxy
+      annotations:
+        summary: >-
+          Artifact Registry Nginx proxy has high response time
+        description: >-
+          95th percentile response time for artifact registry proxy exceeds 5 seconds
+          in cluster {{ $labels.source_cluster }}. Current p95: {{ $value | humanizeDuration }}.
+        alert_team_handle: <!subteam^S07NDQV6A4D>
+        team: vanguard
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/vanguard/sre/artifact-registry-proxy-high-latency.md
