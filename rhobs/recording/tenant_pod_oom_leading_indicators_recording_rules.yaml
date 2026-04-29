@@ -1,0 +1,53 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-tenant-pod-oom-leading-indicators
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    # OOM leading indicators for Konflux user tenant namespaces (namespace =~ ".*-tenant").
+    # Uses federated kube-state-metrics series already in the OBO endpoints-params allowlist.
+    # Review cardinality before widening namespace regex.
+    - name: tenant_pod_memory_headroom
+      interval: 1m
+      rules:
+        - record: tenant:namespace:containers:memory_request_to_limit_ratio:avg
+          expr: |
+            avg by (source_cluster, namespace) (
+              kube_pod_container_resource_requests{
+                namespace=~".*-tenant",
+                resource="memory"
+              }
+              / on (namespace, pod, container, source_cluster)
+              kube_pod_container_resource_limits{
+                namespace=~".*-tenant",
+                resource="memory"
+              }
+            )
+    - name: tenant_pod_oom_risk
+      interval: 1m
+      rules:
+        - record: tenant:namespace:containers:memory_oom_risk:count
+          expr: |
+            count by (source_cluster, namespace) (
+              (
+                kube_pod_container_resource_requests{
+                  namespace=~".*-tenant",
+                  resource="memory"
+                }
+                / on (namespace, pod, container, source_cluster)
+                kube_pod_container_resource_limits{
+                  namespace=~".*-tenant",
+                  resource="memory"
+                }
+              ) > 0.8
+            )
+    - name: tenant_pod_restart_total
+      interval: 1m
+      rules:
+        - record: tenant:namespace:pod_container:restarts:sum
+          expr: |
+            sum by (source_cluster, namespace) (
+              kube_pod_container_status_restarts_total{namespace=~".*-tenant"}
+            )
