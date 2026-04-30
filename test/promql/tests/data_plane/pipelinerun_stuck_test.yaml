@@ -1,0 +1,203 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.pipelinerun_stuck_alerts.yaml
+
+tests:
+  # Test 1: Chains finalizer — stuck PipelineRun fires alert
+  - interval: 1m
+    input_series:
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-chains-stuck", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[chains.tekton.dev/pipelinerun]"}
+        values: '1+0x50'
+
+    alert_rule_test:
+      - eval_time: 45m
+        alertname: PipelineRunStuckWithChainsFinalizer
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              component: tekton-chains
+              slo: "false"
+              pipelinerun: pr-chains-stuck
+              namespace: tenant-ns
+              pipeline: build-pipeline
+              finalizers: "[chains.tekton.dev/pipelinerun]"
+            exp_annotations:
+              summary: "PipelineRun pr-chains-stuck stuck with Tekton Chains finalizer in namespace tenant-ns"
+              description: "PipelineRun pr-chains-stuck (pipeline: build-pipeline) in namespace tenant-ns has had deletionTimestamp set for more than 30 minutes and still has finalizers: [chains.tekton.dev/pipelinerun]."
+              alert_routing_key: pipelines
+              team: pipelines
+
+  # Test 2: Chains finalizer — deleted 10 minutes ago (age positive but under 30 min), no alert
+  - interval: 1m
+    input_series:
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-chains-recent", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[chains.tekton.dev/pipelinerun]"}
+        values: '600+0x20'
+
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: PipelineRunStuckWithChainsFinalizer
+        exp_alerts: []
+
+  # Test 3: Results finalizer — stuck PipelineRun fires alert
+  - interval: 1m
+    input_series:
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-results-stuck", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[results.tekton.dev/pipelinerun]"}
+        values: '1+0x50'
+
+    alert_rule_test:
+      - eval_time: 45m
+        alertname: PipelineRunStuckWithResultsFinalizer
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              component: tekton-results
+              slo: "false"
+              pipelinerun: pr-results-stuck
+              namespace: tenant-ns
+              pipeline: build-pipeline
+              finalizers: "[results.tekton.dev/pipelinerun]"
+            exp_annotations:
+              summary: "PipelineRun pr-results-stuck stuck with Tekton Results finalizer in namespace tenant-ns"
+              description: "PipelineRun pr-results-stuck (pipeline: build-pipeline) in namespace tenant-ns has had deletionTimestamp set for more than 30 minutes and still has finalizers: [results.tekton.dev/pipelinerun]."
+              alert_routing_key: pipelines
+              team: pipelines
+
+  # Test 4: PAC finalizer — stuck PipelineRun fires alert
+  - interval: 1m
+    input_series:
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-pac-stuck", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[pipelinesascode.tekton.dev/finalizer]"}
+        values: '1+0x50'
+
+    alert_rule_test:
+      - eval_time: 45m
+        alertname: PipelineRunStuckWithPACFinalizer
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              component: pipelines-as-code
+              slo: "false"
+              pipelinerun: pr-pac-stuck
+              namespace: tenant-ns
+              pipeline: build-pipeline
+              finalizers: "[pipelinesascode.tekton.dev/finalizer]"
+            exp_annotations:
+              summary: "PipelineRun pr-pac-stuck stuck with Pipelines-as-Code finalizer in namespace tenant-ns"
+              description: "PipelineRun pr-pac-stuck (pipeline: build-pipeline) in namespace tenant-ns has had deletionTimestamp set for more than 30 minutes and still has finalizers: [pipelinesascode.tekton.dev/finalizer]."
+              alert_routing_key: pipelines
+              team: pipelines
+
+  # Test 5: Integration finalizer — stuck PipelineRun fires alert
+  - interval: 1m
+    input_series:
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-integration-stuck", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[test.appstudio.openshift.io/pipelinerun]"}
+        values: '1+0x50'
+
+    alert_rule_test:
+      - eval_time: 45m
+        alertname: PipelineRunStuckWithIntegrationFinalizer
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              component: integration-service
+              slo: "false"
+              pipelinerun: pr-integration-stuck
+              namespace: tenant-ns
+              pipeline: build-pipeline
+              finalizers: "[test.appstudio.openshift.io/pipelinerun]"
+            exp_annotations:
+              summary: "PipelineRun pr-integration-stuck stuck with Integration Service finalizer in namespace tenant-ns"
+              description: "PipelineRun pr-integration-stuck (pipeline: build-pipeline) in namespace tenant-ns has had deletionTimestamp set for more than 30 minutes and still has finalizers: [test.appstudio.openshift.io/pipelinerun]."
+              alert_routing_key: integration
+              team: integration
+
+  # Test 6: Release finalizer — stuck PipelineRun fires alert
+  - interval: 1m
+    input_series:
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-stuck", namespace="tenant-ns", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]"}
+        values: '1+0x50'
+
+    alert_rule_test:
+      - eval_time: 45m
+        alertname: PipelineRunStuckWithReleaseFinalizer
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              component: release-service
+              slo: "false"
+              pipelinerun: pr-release-stuck
+              namespace: tenant-ns
+              pipeline: fbc-release
+              finalizers: "[appstudio.redhat.com/release-finalizer]"
+            exp_annotations:
+              summary: "PipelineRun pr-release-stuck stuck with Release Service finalizer in namespace tenant-ns"
+              description: "PipelineRun pr-release-stuck (pipeline: fbc-release) in namespace tenant-ns has had deletionTimestamp set for more than 30 minutes and still has finalizers: [appstudio.redhat.com/release-finalizer]."
+              alert_routing_key: release
+              team: release
+
+  # Test 7: Multiple finalizers — fires alerts for each matching finalizer
+  - interval: 1m
+    input_series:
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-multi-stuck", namespace="tenant-ns", pipeline="rh-advisories", finalizers="[appstudio.redhat.com/release-finalizer results.tekton.dev/pipelinerun chains.tekton.dev/pipelinerun]"}
+        values: '1+0x50'
+
+    alert_rule_test:
+      - eval_time: 45m
+        alertname: PipelineRunStuckWithChainsFinalizer
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              component: tekton-chains
+              slo: "false"
+              pipelinerun: pr-multi-stuck
+              namespace: tenant-ns
+              pipeline: rh-advisories
+              finalizers: "[appstudio.redhat.com/release-finalizer results.tekton.dev/pipelinerun chains.tekton.dev/pipelinerun]"
+            exp_annotations:
+              summary: "PipelineRun pr-multi-stuck stuck with Tekton Chains finalizer in namespace tenant-ns"
+              description: "PipelineRun pr-multi-stuck (pipeline: rh-advisories) in namespace tenant-ns has had deletionTimestamp set for more than 30 minutes and still has finalizers: [appstudio.redhat.com/release-finalizer results.tekton.dev/pipelinerun chains.tekton.dev/pipelinerun]."
+              alert_routing_key: pipelines
+              team: pipelines
+      - eval_time: 45m
+        alertname: PipelineRunStuckWithResultsFinalizer
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              component: tekton-results
+              slo: "false"
+              pipelinerun: pr-multi-stuck
+              namespace: tenant-ns
+              pipeline: rh-advisories
+              finalizers: "[appstudio.redhat.com/release-finalizer results.tekton.dev/pipelinerun chains.tekton.dev/pipelinerun]"
+            exp_annotations:
+              summary: "PipelineRun pr-multi-stuck stuck with Tekton Results finalizer in namespace tenant-ns"
+              description: "PipelineRun pr-multi-stuck (pipeline: rh-advisories) in namespace tenant-ns has had deletionTimestamp set for more than 30 minutes and still has finalizers: [appstudio.redhat.com/release-finalizer results.tekton.dev/pipelinerun chains.tekton.dev/pipelinerun]."
+              alert_routing_key: pipelines
+              team: pipelines
+      - eval_time: 45m
+        alertname: PipelineRunStuckWithReleaseFinalizer
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              component: release-service
+              slo: "false"
+              pipelinerun: pr-multi-stuck
+              namespace: tenant-ns
+              pipeline: rh-advisories
+              finalizers: "[appstudio.redhat.com/release-finalizer results.tekton.dev/pipelinerun chains.tekton.dev/pipelinerun]"
+            exp_annotations:
+              summary: "PipelineRun pr-multi-stuck stuck with Release Service finalizer in namespace tenant-ns"
+              description: "PipelineRun pr-multi-stuck (pipeline: rh-advisories) in namespace tenant-ns has had deletionTimestamp set for more than 30 minutes and still has finalizers: [appstudio.redhat.com/release-finalizer results.tekton.dev/pipelinerun chains.tekton.dev/pipelinerun]."
+              alert_routing_key: release
+              team: release
+
+  # Test 8: deletionTimestamp is 0 (not deleted) — no alert
+  - interval: 1m
+    input_series:
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-not-deleted", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[chains.tekton.dev/pipelinerun]"}
+        values: '0+0x50'
+
+    alert_rule_test:
+      - eval_time: 45m
+        alertname: PipelineRunStuckWithChainsFinalizer
+        exp_alerts: []
