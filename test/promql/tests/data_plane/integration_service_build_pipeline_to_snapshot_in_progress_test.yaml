@@ -5,21 +5,21 @@ rule_files:
 
 tests:
 
-# Scenario where one cluster crosses the 10% threshold and another does not
+# Scenario where one cluster crosses the 25% threshold and another does not
 - interval: 1m
   input_series:
     # Simulating data from Cluster 1
     - series: 'integration_svc_response_seconds_bucket{le="30", namespace="integration-service",  source_cluster="cluster01"}'
-      values: '0+10x25'  # 10 requests took less than 30s
+      values: '0+70x40'
     - series: 'integration_svc_response_seconds_bucket{le="+Inf", namespace="integration-service", source_cluster="cluster01"}'
-      values: '0+100x25'  # 100 total occurrences in cluster1
+      values: '0+100x40'
     # Simulating data from Cluster 2
     - series: 'integration_svc_response_seconds_bucket{le="30", namespace="integration-service", source_cluster="cluster02"}'
-      values: '0+95x25'  # 95 requests took less than 30s
+      values: '0+95x40'
     - series: 'integration_svc_response_seconds_bucket{le="+Inf", namespace="integration-service", source_cluster="cluster02"}'
-      values: '0+100x25'  # 100 total occurrences in cluster2
+      values: '0+100x40'
   alert_rule_test:
-    - eval_time: 25m
+    - eval_time: 35m
       alertname: PipelineRunToSnapshotExceeded
       exp_alerts:
         - exp_labels:
@@ -31,26 +31,26 @@ tests:
           exp_annotations:
             summary: PipelineRunFinish to SnapshotInProgress time exceeded
             description: >
-              Time from build pipeline run finished to snapshot marked in progress has been over 30s for more than 10% of requests during the last 20 minutes on cluster cluster01
+              Time from build pipeline run finished to snapshot marked in progress has been over 30s for more than 25% of requests during the last 30 minutes on cluster cluster01
             alert_team_handle: <!subteam^S05M4AG8CJH>
             team: integration
             runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/sre/latency_service_response.md
 
-# Scenario where both clusters cross the 10% threshold, alert should trigger for both
+# Scenario where both clusters cross the 25% threshold
 - interval: 1m
   input_series:
-    # Simulating data from Cluster 01
+    # Cluster 01: 70 fast, 100 total = 30% failure (Alerts!)
     - series: 'integration_svc_response_seconds_bucket{le="30", namespace="integration-service", source_cluster="cluster01"}'
-      values: '0+10x25'  # 10 requests took less than 30s
+      values: '0+70x40'
     - series: 'integration_svc_response_seconds_bucket{le="+Inf", namespace="integration-service", source_cluster="cluster01"}'
-      values: '0+100x25'  # 100 total occurrences in cluster1
-    # Simulating data from Cluster 2
+      values: '0+100x40'
+    # Cluster 02: 10 fast, 100 total = 90% failure (Alerts!)
     - series: 'integration_svc_response_seconds_bucket{le="30", namespace="integration-service", source_cluster="cluster02"}'
-      values: '0+10x25'  # 10 requests took less than 30s
+      values: '0+10x40'
     - series: 'integration_svc_response_seconds_bucket{le="+Inf", namespace="integration-service", source_cluster="cluster02"}'
-      values: '0+100x25'  # 100 total occurrences in cluster2
+      values: '0+100x40'
   alert_rule_test:
-    - eval_time: 25m
+    - eval_time: 35m
       alertname: PipelineRunToSnapshotExceeded
       exp_alerts:
         - exp_labels:
@@ -62,7 +62,7 @@ tests:
           exp_annotations:
             summary: PipelineRunFinish to SnapshotInProgress time exceeded
             description: >
-              Time from build pipeline run finished to snapshot marked in progress has been over 30s for more than 10% of requests during the last 20 minutes on cluster cluster01
+              Time from build pipeline run finished to snapshot marked in progress has been over 30s for more than 25% of requests during the last 30 minutes on cluster cluster01
             alert_team_handle: <!subteam^S05M4AG8CJH>
             team: integration
             runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/sre/latency_service_response.md
@@ -75,26 +75,26 @@ tests:
           exp_annotations:
             summary: PipelineRunFinish to SnapshotInProgress time exceeded
             description: >
-              Time from build pipeline run finished to snapshot marked in progress has been over 30s for more than 10% of requests during the last 20 minutes on cluster cluster02
+              Time from build pipeline run finished to snapshot marked in progress has been over 30s for more than 25% of requests during the last 30 minutes on cluster cluster02
             alert_team_handle: <!subteam^S05M4AG8CJH>
             team: integration
             runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/sre/latency_service_response.md
 
-# Scenario where no alert is triggered as both clusters stay below the 10% threshold
+# Scenario where no alert is triggered as both clusters stay below the 25% threshold
 - interval: 1m
   input_series:
-    # Simulating data from Cluster 1 for 9% above 30s
+    # Cluster 01: 91 fast, 100 total = 9% failure (Below 25%)
     - series: 'integration_svc_response_seconds_bucket{le="30", namespace="integration-service", source_cluster="cluster01"}'
-      values: '0+91x25'  # 91 requests took less than 30s
+      values: '0+91x40'
     - series: 'integration_svc_response_seconds_bucket{le="+Inf", namespace="integration-service", source_cluster="cluster01"}'
-      values: '0+100x25'  # 100 total occurrences in cluster1
+      values: '0+100x40'
 
     # Simulating data from Cluster 2 for 4% above 30s, alert should not trigger
     - series: 'integration_svc_response_seconds_bucket{le="30", namespace="integration-service", source_cluster="cluster02"}'
-      values: '0+96x25'  # 96 requests took less than 30s
+      values: '0+96x40'  # 96 requests took less than 30s
     - series: 'integration_svc_response_seconds_bucket{le="+Inf", namespace="integration-service", source_cluster="cluster02"}'
-      values: '0+100x25'  # 100 total occurrences in cluster2
+      values: '0+100x40'  # 100 total occurrences in cluster2
   alert_rule_test:
-    - eval_time: 25m
+    - eval_time: 35m
       alertname: PipelineRunToSnapshotExceeded
       exp_alerts: []  # No alerts are expected in this scenario

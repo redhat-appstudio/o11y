@@ -29,7 +29,7 @@ data:
       "editable": true,
       "fiscalYearStartMonth": 0,
       "graphTooltip": 0,
-      "id": 1140623,
+      "id": 1267772,
       "links": [
         {
           "asDropdown": false,
@@ -327,7 +327,7 @@ data:
             "type": "prometheus",
             "uid": "${Datasource}"
           },
-          "description": "Measures the duration from when a build PipelineRun completes. until the corresponding Snapshot CR is marked as 'in progress'. Spikes in the red zone are > 30 sec",
+          "description": "Latency (Left Axis): P90 response time. Spikes in the red zone are > 30 sec, indicating a violation of the target service level.\n\nSaturation (Right Axis): The white dashed line indicates 80% saturation. This represents the percentage of requests hitting the maximum measurable delay (20m).\n\nNote: Use the saturation line to identify if a spike is caused by total cluster exhaustion rather than isolated service slowness.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -384,7 +384,57 @@ data:
               },
               "unit": "short"
             },
-            "overrides": []
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "/Saturation/"
+                },
+                "properties": [
+                  {
+                    "id": "custom.axisPlacement",
+                    "value": "right"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "percent"
+                  },
+                  {
+                    "id": "min",
+                    "value": 0
+                  },
+                  {
+                    "id": "max",
+                    "value": 100
+                  },
+                  {
+                    "id": "custom.axisLabel",
+                    "value": "saturation"
+                  },
+                  {
+                    "id": "custom.thresholdsStyle",
+                    "value": {
+                      "mode": "dashed"
+                    }
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "transparent"
+                        },
+                        {
+                          "color": "#ffffff",
+                          "value": 80
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
           },
           "gridPos": {
             "h": 9,
@@ -426,6 +476,21 @@ data:
               "legendFormat": "{{source_cluster}}",
               "range": true,
               "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${Datasource}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "(sum by (source_cluster) (rate(integration_svc_response_seconds_bucket{le=\"+Inf\", source_cluster=~\"$cluster\"}[$__rate_interval])) - sum by (source_cluster) (rate(integration_svc_response_seconds_bucket{le=\"1200\", source_cluster=~\"$cluster\"}[$__rate_interval]))) / sum by (source_cluster) (rate(integration_svc_response_seconds_count{source_cluster=~\"$cluster\"}[$__rate_interval])) * 100",
+              "hide": false,
+              "instant": false,
+              "interval": "",
+              "legendFormat": "Saturation {{source_cluster}}",
+              "range": true,
+              "refId": "B"
             }
           ],
           "title": "#1 Latency - Percentile Service Response (in-progress change)",
@@ -1104,5 +1169,5 @@ data:
       "timezone": "browser",
       "title": "Konflux - Integration Service SLO",
       "uid": "cerzhj80cyvi8c",
-      "version": 51
+      "version": 1
     }

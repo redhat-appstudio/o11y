@@ -4,57 +4,46 @@ rule_files:
   - prometheus.internal_requests_alerts.yaml
 
 tests:
-  - name: InternalRequestsQuotaBelowThreshold
+  - name: InternalRequestsCountBelowThreshold
     interval: 1m
     input_series:
-      # quota usage is below the 75% threshold - no alert expected
-      - series: 'kube_resourcequota{type="hard", namespace="internal-services", resourcequota="internalrequests-quota", resource="count/internalrequests.appstudio.redhat.com", source_cluster="cluster01"}'
-        values: '10x20'
-      - series: 'kube_resourcequota{type="used", namespace="internal-services", resourcequota="internalrequests-quota", resource="count/internalrequests.appstudio.redhat.com", source_cluster="cluster01"}'
-        values: '5x20'
+      # count is below 300 - no alert expected
+      - series: 'apiserver_storage_objects{resource="internalrequests.appstudio.redhat.com", instance="api:6443"}'
+        values: '100x20'
     alert_rule_test:
       - eval_time: 20m
         alertname: InternalRequestsQuotaNearLimit
         exp_alerts: []
 
-  - name: InternalRequestsQuotaAtThreshold
+  - name: InternalRequestsCountAtThreshold
     interval: 1m
     input_series:
-      # quota usage is at exactly 75% - no alert (threshold is strictly > 0.75)
-      - series: 'kube_resourcequota{type="hard", namespace="internal-services", resourcequota="internalrequests-quota", resource="count/internalrequests.appstudio.redhat.com", source_cluster="cluster01"}'
-        values: '10x20'
-      - series: 'kube_resourcequota{type="used", namespace="internal-services", resourcequota="internalrequests-quota", resource="count/internalrequests.appstudio.redhat.com", source_cluster="cluster01"}'
-        values: '7.5x20'
+      # count is at exactly 500 - no alert (threshold is strictly > 500)
+      - series: 'apiserver_storage_objects{resource="internalrequests.appstudio.redhat.com", instance="api:6443"}'
+        values: '500x20'
     alert_rule_test:
       - eval_time: 20m
         alertname: InternalRequestsQuotaNearLimit
         exp_alerts: []
 
-  - name: InternalRequestsQuotaOverThreshold
+  - name: InternalRequestsCountAboveThreshold
     interval: 1m
     input_series:
-      # quota usage exceeds 75% for 15m - alert expected
-      - series: 'kube_resourcequota{type="hard", namespace="internal-services", resourcequota="internalrequests-quota", resource="count/internalrequests.appstudio.redhat.com", source_cluster="cluster01"}'
-        values: '10x20'
-      - series: 'kube_resourcequota{type="used", namespace="internal-services", resourcequota="internalrequests-quota", resource="count/internalrequests.appstudio.redhat.com", source_cluster="cluster01"}'
-        values: '9x20'
+      # count exceeds 500 for 15m - alert expected
+      - series: 'apiserver_storage_objects{resource="internalrequests.appstudio.redhat.com", instance="api:6443"}'
+        values: '550x20'
     alert_rule_test:
       - eval_time: 15m
         alertname: InternalRequestsQuotaNearLimit
         exp_alerts:
           - exp_labels:
               severity: warning
-              namespace: internal-services
-              resource: count/internalrequests.appstudio.redhat.com
-              resourcequota: internalrequests-quota
-              source_cluster: cluster01
               component: release-service
             exp_annotations:
               summary: >-
-                InternalRequests count is near the quota limit in cluster cluster01
+                InternalRequests count has exceeded the threshold
               description: >-
-                InternalRequests in namespace internal-services on cluster cluster01
-                are using more than 75% of the internalrequests-quota quota. The cleanup job may be
+                The number of InternalRequests has exceeded 500. The cleanup job may be
                 misbehaving, causing stale InternalRequests to accumulate.
               alert_routing_key: internal-services
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/release-service/internal-requests-quota.md
@@ -64,7 +53,7 @@ tests:
     interval: 1m
     input_series:
       # cleanup job has not failed - no alert expected
-      - series: 'kube_job_failed{namespace="internal-services", job_name="cleanup-internal-requests-pipelineruns-28914560", condition="true", source_cluster="cluster01"}'
+      - series: 'kube_job_status_failed{namespace="release-service", job_name="cleanup-timed-out-pipelineruns-internal-requests-28914560", source_cluster="cluster01"}'
         values: '0x5'
     alert_rule_test:
       - eval_time: 5m
@@ -75,7 +64,7 @@ tests:
     interval: 1m
     input_series:
       # cleanup job has failed - alert expected after 1m
-      - series: 'kube_job_failed{namespace="internal-services", job_name="cleanup-internal-requests-pipelineruns-28914560", condition="true", source_cluster="cluster01"}'
+      - series: 'kube_job_status_failed{namespace="release-service", job_name="cleanup-timed-out-pipelineruns-internal-requests-28914560", source_cluster="cluster01"}'
         values: '1x5'
     alert_rule_test:
       - eval_time: 1m

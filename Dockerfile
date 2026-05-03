@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi9/go-toolset:1.25.7-1772728670 AS builder
+FROM registry.access.redhat.com/ubi9/go-toolset:1.25.8-1776962329 AS builder
 
 USER root
 
@@ -28,9 +28,9 @@ RUN cd exporters && \
     done
 
 # Oras binary from konflux image
-FROM quay.io/konflux-ci/oras:latest@sha256:180b50c7be50c20e3349a79df8dd6062fee0e0dd01aa30e9a09d1d07d9ebd0c2 as oras
+FROM quay.io/konflux-ci/oras:latest@sha256:db7afb1302a8dbe128998d5b7969a0c315a0b77202f0bec2a1517fd398cd7e56 as oras
 
-FROM registry.access.redhat.com/ubi9-micro@sha256:093a704be0eaef9bb52d9bc0219c67ee9db13c2e797da400ddb5d5ae6849fa10
+FROM registry.access.redhat.com/ubi9-micro@sha256:2173487b3b72b1a7b11edc908e9bbf1726f9df46a4f78fd6d19a2bab0a701f38
 
 # Copy oras binary from the oras image to the final image.
 COPY --from=oras /bin/oras /bin/oras
