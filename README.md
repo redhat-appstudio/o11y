@@ -209,7 +209,7 @@ data:
   <your-dashboard-name>.json: |-
 ```
 
-Note: The dashboard UID must always be unique in each Grafana instance. Make sure to modify it by changing a few characters or deleting the test dashboard in staging instance. If the test dashboard is kept and the uid is not updated, glitches will occur insta grafana as it will juggle between the two dashboards with identical UIDs.
+Note: The dashboard `uid` must always be unique in each Grafana instance and must be a maximum of 40 characters. Make sure to modify it by changing a few characters or deleting the test dashboard in staging instance. If the test dashboard is kept and the uid is not updated, glitches will occur in Grafana as it will juggle between the two dashboards with identical UIDs.
 
 ## Adding Metrics and Labels
 
