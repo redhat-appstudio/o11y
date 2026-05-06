@@ -1,0 +1,111 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-pipelinerun-stuck-alerts
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: pipelinerun.stuck
+    interval: 1m
+    rules:
+
+    - alert: PipelineRunStuckWithChainsFinalizer
+      expr: |
+        kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{
+          finalizers=~".*chains.tekton.dev/pipelinerun.*",
+        } > 0
+        and
+        (time() - kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{
+          finalizers=~".*chains.tekton.dev/pipelinerun.*",
+        }) > 1800
+      for: 10m
+      labels:
+        severity: warning
+        component: tekton-chains
+        slo: "false"
+      annotations:
+        summary: "PipelineRun {{ $labels.pipelinerun }} stuck with Tekton Chains finalizer in namespace {{ $labels.namespace }}"
+        description: "PipelineRun {{ $labels.pipelinerun }} (pipeline: {{ $labels.pipeline }}) in namespace {{ $labels.namespace }} has had deletionTimestamp set for more than 30 minutes and still has finalizers: {{ $labels.finalizers }}."
+        alert_routing_key: pipelines
+        team: pipelines
+
+    - alert: PipelineRunStuckWithResultsFinalizer
+      expr: |
+        kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{
+          finalizers=~".*results.tekton.dev/pipelinerun.*",
+        } > 0
+        and
+        (time() - kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{
+          finalizers=~".*results.tekton.dev/pipelinerun.*",
+        }) > 1800
+      for: 10m
+      labels:
+        severity: warning
+        component: tekton-results
+        slo: "false"
+      annotations:
+        summary: "PipelineRun {{ $labels.pipelinerun }} stuck with Tekton Results finalizer in namespace {{ $labels.namespace }}"
+        description: "PipelineRun {{ $labels.pipelinerun }} (pipeline: {{ $labels.pipeline }}) in namespace {{ $labels.namespace }} has had deletionTimestamp set for more than 30 minutes and still has finalizers: {{ $labels.finalizers }}."
+        alert_routing_key: pipelines
+        team: pipelines
+
+    - alert: PipelineRunStuckWithPACFinalizer
+      expr: |
+        kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{
+          finalizers=~".*pipelinesascode.tekton.dev/finalizer.*",
+        } > 0
+        and
+        (time() - kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{
+          finalizers=~".*pipelinesascode.tekton.dev/finalizer.*",
+        }) > 1800
+      for: 10m
+      labels:
+        severity: warning
+        component: pipelines-as-code
+        slo: "false"
+      annotations:
+        summary: "PipelineRun {{ $labels.pipelinerun }} stuck with Pipelines-as-Code finalizer in namespace {{ $labels.namespace }}"
+        description: "PipelineRun {{ $labels.pipelinerun }} (pipeline: {{ $labels.pipeline }}) in namespace {{ $labels.namespace }} has had deletionTimestamp set for more than 30 minutes and still has finalizers: {{ $labels.finalizers }}."
+        alert_routing_key: pipelines
+        team: pipelines
+
+    - alert: PipelineRunStuckWithIntegrationFinalizer
+      expr: |
+        kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{
+          finalizers=~".*test.appstudio.openshift.io/pipelinerun.*",
+        } > 0
+        and
+        (time() - kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{
+          finalizers=~".*test.appstudio.openshift.io/pipelinerun.*",
+        }) > 1800
+      for: 10m
+      labels:
+        severity: warning
+        component: integration-service
+        slo: "false"
+      annotations:
+        summary: "PipelineRun {{ $labels.pipelinerun }} stuck with Integration Service finalizer in namespace {{ $labels.namespace }}"
+        description: "PipelineRun {{ $labels.pipelinerun }} (pipeline: {{ $labels.pipeline }}) in namespace {{ $labels.namespace }} has had deletionTimestamp set for more than 30 minutes and still has finalizers: {{ $labels.finalizers }}."
+        alert_routing_key: integration
+        team: integration
+
+    - alert: PipelineRunStuckWithReleaseFinalizer
+      expr: |
+        kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{
+          finalizers=~".*appstudio.redhat.com/release-finalizer.*",
+        } > 0
+        and
+        (time() - kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{
+          finalizers=~".*appstudio.redhat.com/release-finalizer.*",
+        }) > 1800
+      for: 10m
+      labels:
+        severity: warning
+        component: release-service
+        slo: "false"
+      annotations:
+        summary: "PipelineRun {{ $labels.pipelinerun }} stuck with Release Service finalizer in namespace {{ $labels.namespace }}"
+        description: "PipelineRun {{ $labels.pipelinerun }} (pipeline: {{ $labels.pipeline }}) in namespace {{ $labels.namespace }} has had deletionTimestamp set for more than 30 minutes and still has finalizers: {{ $labels.finalizers }}."
+        alert_routing_key: release
+        team: release
