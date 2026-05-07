@@ -615,7 +615,7 @@ data:
             "type": "prometheus",
             "uid": "${Datasource}"
           },
-          "description": "Measure the time between ApplicationSnapshot creation to pipelineRun creation. Spikes in the red zone are > 5 sec",
+          "description": "Measure the time between ApplicationSnapshot creation to pipelineRun creation. Spikes in the red zone are > 5 sec\n\nSaturation (Right Axis): The white dashed line indicates 80% saturation. This represents the percentage of requests hitting the maximum measurable delay (20m).\n\nNote: Use the saturation line to identify if a spike is caused by total cluster exhaustion rather than isolated service slowness.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -672,7 +672,57 @@ data:
               },
               "unit": "s"
             },
-            "overrides": []
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "/Saturation/"
+                },
+                "properties": [
+                  {
+                    "id": "custom.axisPlacement",
+                    "value": "right"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "percent"
+                  },
+                  {
+                    "id": "min",
+                    "value": 0
+                  },
+                  {
+                    "id": "max",
+                    "value": 100
+                  },
+                  {
+                    "id": "custom.axisLabel",
+                    "value": "saturation"
+                  },
+                  {
+                    "id": "custom.thresholdsStyle",
+                    "value": {
+                      "mode": "dashed"
+                    }
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "transparent"
+                        },
+                        {
+                          "color": "#f7f1f2",
+                          "value": 80
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
           },
           "gridPos": {
             "h": 9,
@@ -714,6 +764,19 @@ data:
               "legendFormat": "{{source_cluster}}",
               "range": true,
               "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${Datasource}"
+              },
+              "editorMode": "code",
+              "expr": "(sum by (source_cluster) (rate(integration_svc_snapshot_created_to_pipelinerun_started_seconds_bucket{le=\"+Inf\", source_cluster=~\"$cluster\"}[$__rate_interval])) - sum by (source_cluster) (rate(integration_svc_snapshot_created_to_pipelinerun_started_seconds_bucket{le=\"1200\", source_cluster=~\"$cluster\"}[$__rate_interval]))) / sum by (source_cluster) (rate(integration_svc_snapshot_created_to_pipelinerun_started_seconds_count{source_cluster=~\"$cluster\"}[$__rate_interval])) * 100",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "Saturation {{source_cluster}}",
+              "range": true,
+              "refId": "B"
             }
           ],
           "title": "#2A Time to Start PipelineRun",
@@ -1169,5 +1232,5 @@ data:
       "timezone": "browser",
       "title": "Konflux - Integration Service SLO",
       "uid": "cerzhj80cyvi8c",
-      "version": 1
+      "version": 2
     }
