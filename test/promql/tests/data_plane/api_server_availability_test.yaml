@@ -112,3 +112,76 @@ tests:
       - alertname: KonfluxAPIServerHighMemoryUsage
         eval_time: 10m
         exp_alerts: []
+
+  # Latency SLO Warning - 98% of requests complete within 1s, below 99% SLO
+  - name: KonfluxAPIServerLatencyWarning
+    interval: 1m
+    input_series:
+      - series: 'apiserver_request_duration_seconds_bucket{le="1", verb="GET", source_cluster="cluster01"}'
+        values: '0+98x20'
+      - series: 'apiserver_request_duration_seconds_count{verb="GET", source_cluster="cluster01"}'
+        values: '0+100x20'
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: KonfluxAPIServerLatencyWarning
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              component: api-server
+              team: konflux-infra
+              source_cluster: "cluster01"
+            exp_annotations:
+              summary: "API Server high latency detected in cluster cluster01"
+              description: "More than 1% of requests exceeded 1s for 15m. Impact: Slow CLI/UI response. Action: Check for Control Plane load or resource pressure."
+              alert_routing_key: "infra"
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/apiserver_HighP99Latency.md
+
+  # Latency SLO Warning - 100% of requests complete within 1s, alert should not fire
+  - name: KonfluxAPIServerLatencyWarning not firing
+    interval: 1m
+    input_series:
+      - series: 'apiserver_request_duration_seconds_bucket{le="1", verb="GET", source_cluster="cluster01"}'
+        values: '0+100x20'
+      - series: 'apiserver_request_duration_seconds_count{verb="GET", source_cluster="cluster01"}'
+        values: '0+100x20'
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: KonfluxAPIServerLatencyWarning
+        exp_alerts: []
+
+  # Latency SLO Critical - 90% of requests complete within 1s, below 95% in both 5m and 1h windows
+  - name: KonfluxAPIServerLatencySLOCritical
+    interval: 1m
+    input_series:
+      - series: 'apiserver_request_duration_seconds_bucket{le="1", verb="GET", source_cluster="cluster01"}'
+        values: '0+90x70'
+      - series: 'apiserver_request_duration_seconds_count{verb="GET", source_cluster="cluster01"}'
+        values: '0+100x70'
+    alert_rule_test:
+      - eval_time: 66m
+        alertname: KonfluxAPIServerLatencySLOCritical
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              component: api-server
+              team: konflux-infra
+              source_cluster: "cluster01"
+            exp_annotations:
+              summary: "API Server Latency: Critical SLO Breach (cluster01)"
+              description: "More than 5% of requests exceeded 1s. Impact: High risk of system-wide timeouts. Action: Immediate check of Etcd health and admission webhooks."
+              alert_team_handle: "<!subteam^S05Q1P4Q2TG>"
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/apiserver_HighP99Latency.md
+
+  # Latency SLO Critical - 100% of requests complete within 1s, alert should not fire
+  - name: KonfluxAPIServerLatencySLOCritical not firing
+    interval: 1m
+    input_series:
+      - series: 'apiserver_request_duration_seconds_bucket{le="1", verb="GET", source_cluster="cluster01"}'
+        values: '0+100x70'
+      - series: 'apiserver_request_duration_seconds_count{verb="GET", source_cluster="cluster01"}'
+        values: '0+100x70'
+    alert_rule_test:
+      - eval_time: 66m
+        alertname: KonfluxAPIServerLatencySLOCritical
+        exp_alerts: []
