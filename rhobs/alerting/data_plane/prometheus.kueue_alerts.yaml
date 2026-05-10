@@ -118,7 +118,6 @@ spec:
         summary: "Kueue mutating webhook success rate is below 99%"
         description: "The mutating webhook 'pipelinerun-kueue-defaulter.tekton-kueue.io' has had a success rate below 99% over the past 10 minutes in cluster {{ $labels.source_cluster }}. Possible causes include webhook errors, rejections, or unreachability (e.g., code=600)."
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md?ref_type=heads
-        # alert_team_handle: <!subteam^S05Q1P4Q2TG>
         alert_routing_key: infra
         team: konflux-infra
 
@@ -139,14 +138,36 @@ spec:
         alert_team_handle: <!subteam^S05Q1P4Q2TG>
         team: konflux-infra
 
-    - alert: KueueHighAdmissionWaitTime
-      expr: histogram_quantile(0.99, sum(increase(kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue"}[10m])) by (le, source_cluster)) > 1800
+    - alert: KueueHighAdmissionWaitTimePreMerge
+      expr: |
+        histogram_quantile(0.99, sum(increase(kueue_admission_wait_time_seconds_bucket{
+          cluster_queue="cluster-pipeline-queue",
+          priority_class=~"konflux-pre-merge-.*"
+        }[10m])) by (le, source_cluster)) > 900
       for: 5m
       labels:
         severity: high
         component: kueue
       annotations:
-        summary: "High admission wait time in Kueue"
-        description: "99th percentile admission wait time is {{ $value }}s, which is above 30 minutes in cluster {{ $labels.source_cluster }}"
+        summary: "High admission wait time for Pre-merge builds"
+        description: "99th percentile admission wait time for Pre-merge is {{ $value | humanizeDuration }}, which is above 15 minutes in cluster {{ $labels.source_cluster }}"
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
+        alert_routing_key: infra
+        team: konflux-infra
+
+    - alert: KueueHighAdmissionWaitTimeMintmaker
+      expr: |
+        histogram_quantile(0.99, sum(increase(kueue_admission_wait_time_seconds_bucket{
+          cluster_queue="cluster-pipeline-queue",
+          priority_class="konflux-dependency-update"
+        }[10m])) by (le, source_cluster)) > 43200
+      for: 5m
+      labels:
+        severity: high
+        component: kueue
+      annotations:
+        summary: "High admission wait time for Mintmaker"
+        description: "99th percentile admission wait time for Mintmaker is {{ $value | humanizeDuration }}, which is above 12 hours in cluster {{ $labels.source_cluster }}"
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
         alert_routing_key: infra
         team: konflux-infra
