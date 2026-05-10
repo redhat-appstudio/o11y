@@ -52,6 +52,54 @@ spec:
 #          team: konflux-infra
 #          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/apiserver_HighCPUUsage.md
 
+  - name: api_server_latency
+    interval: 1m
+    rules:
+    - alert: KonfluxAPIServerLatencyWarning
+      expr: |
+        (
+          sum by (source_cluster) (rate(apiserver_request_duration_seconds_bucket{le="1", verb!~"WATCH|LIST"}[5m]))
+          /
+          sum by (source_cluster) (rate(apiserver_request_duration_seconds_count{verb!~"WATCH|LIST"}[5m]))
+        ) < 0.99
+      for: 15m
+      labels:
+        severity: warning
+        component: api-server
+        team: konflux-infra
+      annotations:
+        summary: "API Server high latency detected in cluster {{ $labels.source_cluster }}"
+        description: "More than 1% of requests exceeded 1s for 15m. Impact: Slow CLI/UI response. Action: Check for Control Plane load or resource pressure."
+        alert_routing_key: infra
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/apiserver_HighP99Latency.md
+
+    - alert: KonfluxAPIServerLatencySLOCritical
+      expr: |
+        (
+          sum by (source_cluster) (rate(apiserver_request_duration_seconds_bucket{le="1", verb!~"WATCH|LIST"}[1h]))
+          /
+          sum by (source_cluster) (rate(apiserver_request_duration_seconds_count{verb!~"WATCH|LIST"}[1h]))
+          < 0.95
+        )
+        and
+        (
+          sum by (source_cluster) (rate(apiserver_request_duration_seconds_bucket{le="1", verb!~"WATCH|LIST"}[5m]))
+          /
+          sum by (source_cluster) (rate(apiserver_request_duration_seconds_count{verb!~"WATCH|LIST"}[5m]))
+          < 0.95
+        )
+      for: 5m
+      labels:
+        severity: critical
+        slo: "true"
+        component: api-server
+        team: konflux-infra
+      annotations:
+        summary: "API Server Latency: Critical SLO Breach ({{ $labels.source_cluster }})"
+        description: "More than 5% of requests exceeded 1s. Impact: High risk of system-wide timeouts. Action: Immediate check of Etcd health and admission webhooks."
+        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/apiserver_HighP99Latency.md
+
   - name: api_memory_usage
     interval: 1m
     rules:
