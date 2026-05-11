@@ -1,0 +1,67 @@
+# SLO Alert Template
+# SLO alerts page on-call via PagerDuty and post to #konflux-slo-alerts.
+# See docs/ALERTS.md for full conventions.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  # [required] Name format: rhtap-<service>-alerting
+  name: rhtap-<service>-alerting
+  labels:
+    # [required]Must be "rhtap" — identifies this tenant in RHOBS
+    tenant: rhtap
+spec:
+  groups:
+  - name: <service>-availability
+    # [required] How often the rule is evaluated. Default 1m works for most alerts.
+    # Tune to match the alert's time horizon:
+    #   30s — for alerts with very short `for` durations (1-2m)
+    #   5m  — for expensive queries or slow-burn alerts (e.g. memory usage with for: 10m+)
+    #   30m — for long-window aggregations (e.g. increase(...[3h]))
+    interval: 1m
+    rules:
+    - alert: <ServiceName>Down
+      # [required] PromQL expression. Metrics must be forwarded to RHOBS via infra-deployments.
+      #
+      # Go templating is available in summary, description, and other annotation values:
+      #   {{ $labels.<name> }} — value of a label from the matching time series
+      #   {{ $value }}         — the numeric result of the expression
+      #   {{ $value | humanize }}            — e.g. 1200 → "1.2k"
+      #   {{ $value | humanizePercentage }}  — e.g. 0.95 → "95%"
+      #
+      # IMPORTANT: only labels present on the queried metric can be used in templates.
+      # Labels defined in the rule's `labels:` block (e.g. component, severity) are NOT
+      # available via {{ $labels.* }}. Common metric labels you can use:
+      #   source_cluster, namespace, service, pod, container, check
+      expr: |
+        konflux_up{
+          namespace="<service-namespace>",
+          check="replicas-available",
+          service="<service>"
+        } != 1
+      # [required] How long the condition must be true before firing.
+      # Keep above 5m to avoid flapping. See docs/ALERTS.md#flapping-alerts.
+      for: 5m
+      labels:
+        # [required] Must be "critical" for SLO alerts
+        severity: critical
+        # [required] Must always be "true" for SLO alerts — routes to PagerDuty + #konflux-slo-alerts
+        slo: "true"
+        # [optional] Konflux component name. Useful for determining the specific failing component.
+        component: <service>
+      annotations:
+        # [required] Short one-line summary. Use {{ $labels.source_cluster }} to identify the cluster.
+        summary: >-
+          <service> is down in cluster {{ $labels.source_cluster }}
+        # [required] Longer description with context
+        description: >-
+          The <service> pod has been down for 5min in cluster {{ $labels.source_cluster }}
+        # [required] Slack subteam ID for direct team tagging.
+        # To get the ID: click on the team handle in Slack → three dots → "Copy group ID".
+        # Format: <!subteam^SLACK_GROUP_ID>
+        # Multiple teams can be tagged: <!subteam^ID1> <!subteam^ID2>
+        alert_team_handle: <!subteam^SXXXXXXXXXX>
+        # [optional] Human readable team name.
+        team: <team-name>
+        # [required] Link to the SOP runbook.
+        # Must be created before the alert is merged.
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/<path-to-runbook>.md
