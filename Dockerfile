@@ -30,7 +30,7 @@ RUN cd exporters && \
 # Oras binary from konflux image
 FROM quay.io/konflux-ci/oras:latest@sha256:5c1f494651222d73be9ded77c8ea0d4ae7bcf493e3591428b2a6a4bc78a7165c as oras
 
-FROM registry.access.redhat.com/ubi9-micro@sha256:e0b6e93fe3800bf75a3e95aaf63bdfd020ea6dc30a92ca4bfa0021fa28cd671a
+FROM registry.access.redhat.com/ubi9-micro@sha256:1ef916d40ff7f1a4882a31ad5ab37f9572baa7bd182c3519d5e0cb557ffc04f3
 
 # Copy oras binary from the oras image to the final image.
 COPY --from=oras /bin/oras /bin/oras
