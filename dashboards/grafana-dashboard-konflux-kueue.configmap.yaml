@@ -1702,6 +1702,110 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
+              "description": "Description:This metric measures the current resource utilization of the cluster queue as a percentage of its defined nominal quota ($Reservation / Quota * 100$). It provides a high-level view of how much of the allocated capacity (e.g., CPU, Memory, or GPU) is being consumed by admitted workloads.At 100%: The cluster has reached its maximum allowed capacity. New workloads will be held in a Pending state and will not be admitted until existing resources are released.Sustained 100% (Flat Line): When this graph stays at the ceiling for an extended period while the Pending Workloads count remains high, it indicates a bottleneck.The \"Correlation\" Check: If this graph shows 100% saturation but the Workload Admission Gap also shows a high number of \"ghost\" workloads, it confirms a Quota Leak. In this state, the cluster is \"full\" on paper due to stale resources or finalizers, even if the physical infrastructure is underutilized.",
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "barWidthFactor": 0.6,
+                    "drawStyle": "line",
+                    "fillOpacity": 0,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineStyle": {
+                      "fill": "solid"
+                    },
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "auto",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "fieldMinMax": false,
+                  "mappings": [],
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      },
+                      {
+                        "color": "red",
+                        "value": 90
+                      }
+                    ]
+                  },
+                  "unit": "percent"
+                },
+                "overrides": []
+              },
+              "gridPos": {
+                "h": 20,
+                "w": 24,
+                "x": 0,
+                "y": 25
+              },
+              "id": 37,
+              "options": {
+                "legend": {
+                  "calcs": [],
+                  "displayMode": "list",
+                  "placement": "bottom",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "hideZeros": false,
+                  "mode": "single",
+                  "sort": "none"
+                }
+              },
+              "pluginVersion": "11.6.3",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "max by (resource, source_cluster) (\n  kueue_cluster_queue_resource_reservation{source_cluster=~\"$cluster\"} \n  / \n  kueue_cluster_queue_nominal_quota{source_cluster=~\"$cluster\"}\n) * 100",
+                  "legendFormat": "{{resource}} - {{source_cluster}}",
+                  "range": true,
+                  "refId": "A"
+                }
+              ],
+              "title": "Kueue Resource Saturation",
+              "transparent": true,
+              "type": "timeseries"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
               "description": "This metric calculates the discrepancy between the workloads Kueue has officially admitted into the quota and the workloads currently reported as \"active\" in the cluster queue status.\n\nPositive Value: Indicates a \"Quota Leak.\" Workloads are occupying capacity in the admission controller but are not actively progressing or accounted for in the operational status. This usually points to stale resources, such as PipelineRuns or Workloads stuck with finalizers that prevent them from fully clearing the system.\n\nZero Value: Indicates a healthy state where the admission controller and the cluster queue are in perfect synchronization.\n\nMonitoring this gap is essential for maintaining the software supply chain's throughput, as a persistent gap will block new builds even if physical resources appear available.",
               "fieldConfig": {
                 "defaults": {
@@ -2272,5 +2376,5 @@ data:
       "timezone": "UTC",
       "title": "Konflux Kueue-sre",
       "uid": "ef0bjmoh7cbggc--",
-      "version": 28
+      "version": 29
     }
