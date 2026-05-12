@@ -98,15 +98,15 @@ To promote a non-SLO alert to SLO:
 
 To demote an SLO alert to non-SLO: reverse the above — replace `alert_team_handle` with `alert_routing_key`, set `slo: ""`, and adjust severity as appropriate.
 
-### Flapping alerts
+### Potential Outcomes
 
-Alerts that auto-resolve within 10 minutes are considered flapping. When more than 5% of alerts for a service are flapping, a notification is sent to alert owners. To reduce flapping:
+Alerts that auto-resolve within 10 minutes are considered flapping. SPREs review alert history biweekly and notify teams when a significant number of service's alerts are flapping. Based on their analysis, SPREs may ask teams to (among other things):
 - Increase the `for` duration (trades off detection speed)
 - Use `keep_firing_for` to prevent premature resolution
 - Re-evaluate alert threshold values
-- Consider widening the PromQL time range (e.g. `[1h]` → `[1d]` for SLO calculations)
+- Widen the PromQL time range (e.g. `[1h]` → `[1d]` for SLO calculations)
 
-See the [flapping alerts SOP](https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/flapping-alerts.md) for examples.
+See the [flapping alerts SOP](https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/flapping-alerts.md) for details.
 
 ### PromQL Test File Format
 
