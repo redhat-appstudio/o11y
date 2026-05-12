@@ -5,6 +5,7 @@ import sys
 import yaml
 
 ALERT_DIR = "rhobs/alerting/data_plane"
+VALID_SEVERITIES = {"critical", "high", "warning", "info"}
 
 def check_rules(path):
     errors = []
@@ -20,6 +21,8 @@ def check_rules(path):
             severity = labels.get("severity")
             slo = labels.get("slo")
 
+            if severity not in VALID_SEVERITIES:
+                errors.append(f"{path}: {alert}: invalid severity \"{severity}\" (must be one of {sorted(VALID_SEVERITIES)})")
             if slo == "true" and severity != "critical":
                 errors.append(f"{path}: {alert}: slo is \"true\" but severity is not critical")
 
