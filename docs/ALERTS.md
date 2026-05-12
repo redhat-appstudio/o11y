@@ -94,7 +94,7 @@ To promote a non-SLO alert to SLO:
 1. Change `slo: ""` to `slo: "true"` and `severity` to `critical`
 2. Replace `alert_routing_key` with `alert_team_handle` (map the routing key to the corresponding Slack subteam ID)
 3. Create a SOP runbook and link it via `runbook_url`
-4. Get approval in `#wg-sre-konflux`
+4. Get approval in `#forum-konflux-sre`
 
 To demote an SLO alert to non-SLO: reverse the above — replace `alert_team_handle` with `alert_routing_key`, set `slo: ""`, and adjust severity as appropriate.
 
