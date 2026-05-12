@@ -40,7 +40,7 @@ Alert rules are evaluated by RHOBS (Red Hat Observability Service), not by in-cl
 Changes are deployed into rhobs based on [references defined in app-interface](https://gitlab.cee.redhat.com/service/app-interface/-/blob/master/data/services/stonesoup/cicd/saas-rhtap-rules.yaml?ref_type=heads).
 
 - **Staging**: auto-deploys from `main` branch via app-interface.
-- **Production**: requires manually updating the commit reference. Always check that the updated sha does not roll back already deployed changes.
+- **Production**: requires manually updating the commit reference. Always use the merge commit sha from `main` (not an individual branch commit) to ensure all changes are included. Check that the updated sha does not roll back already deployed changes.
 
 ## Conventions
 
