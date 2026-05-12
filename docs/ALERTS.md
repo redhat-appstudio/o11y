@@ -32,7 +32,7 @@ Alert rules are evaluated by RHOBS (Red Hat Observability Service), not by in-cl
 
 **Alert grouping:** Alertmanager groups alerts before sending notifications. The grouping strategy differs by tier:
 - **SLO alerts** are grouped by all labels (`group_by: ['...']`). Each unique label combination produces its own Slack message and PagerDuty incident, so every distinct alert instance is reported individually.
-- **Non-SLO alerts** are grouped by `alertname` and `cluster` (`group_by: [alertname, cluster]`). Multiple instances of the same alert on the same cluster are batched into a single Slack message — e.g. if `PodNotReady` fires for 5 pods on the same cluster, they appear as one message.
+- **Non-SLO alerts** are grouped by `alertname` and `cluster` (`group_by: [alertname, cluster]`). Multiple instances of the same alert on the same cluster are batched into a single Slack message with team routings preserved — e.g. if `PodNotReady` fires for 5 pods on the same cluster for multiple teams, they appear as one message containing several team-specific alerts.
 
 **Metric forwarding:** Because alerts are evaluated by RHOBS (not in-cluster Prometheus), any metric used in an alert must first be forwarded from Konflux clusters to RHOBS via [infra-deployments](https://github.com/redhat-appstudio/infra-deployments). An alert referencing a metric that isn't forwarded will silently never fire. See [adding-alert SOP](https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/adding-alert.md) for the full checklist.
 
