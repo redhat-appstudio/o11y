@@ -19,7 +19,7 @@ make selective-check-and-test \
 ```
 make check-alert-conventions
 ```
-Validates label conventions — e.g. `severity: critical` must pair with `slo: "true"`. Runs in the same container image.
+Validates label conventions — e.g. `slo: "true"` must be paired with `severity: critical`. Runs in the same container image.
 
 ### YAML linting
 ```
@@ -64,7 +64,7 @@ If a key doesn't match any mapping, the o11y team is notified as fallback. See t
 **Severity levels:**
 | Severity | Usage |
 |----------|-------|
-| critical | SLO alerts and severe outages (with `slo: "true"`), or high-priority non-SLO issues |
+| critical | Required for SLO alerts (`slo: "true"`). Also allowed for high-priority non-SLO issues |
 | high | Important service degradation, not SLO-bound |
 | warning | Non-urgent, lower priority |
 | info | Maintenance/informational events (rare) |
