@@ -52,13 +52,13 @@ spec:
         # [required] Longer description with context
         description: >-
           <detailed description> on cluster {{ $labels.source_cluster }}
-        # [required] Routing key — matched against the Alertmanager routing matrix to tag
+        # [required] Routing key — matched against the Alertmanager routing matrix or used directly to tag
         # the right team in #konflux-misc-alerts. Can be a static value or dynamic.
-        # Static examples: o11y, infra, integration, pipeline, build, release
+        # Static examples: o11y, infra, or directly a Slack handle: <!subteam^SXXXXXXXXXX> (useful when converting an SLO alert to non-SLO)
         # Dynamic: '{{ $labels.namespace }}' — routes based on the firing metric's namespace. Useful for generic alerts like pod/quota alerts.
         # If no match is found, the o11y team is notified as fallback.
         alert_routing_key: <routing-key>
         # [optional] Human readable team name.
         team: <team-name>
-        # [optional] Link to the SOP runbook. Optional for non-SLO, but recommended.
+        # [optional] Link to the SOP runbook. Recommended for non-SLO alerts.
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/<path-to-runbook>.md
