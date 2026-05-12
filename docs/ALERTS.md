@@ -72,8 +72,21 @@ If a key doesn't match any mapping, the o11y team is notified as fallback. See t
 Note: The [adding-alert SOP](https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/adding-alert.md) formally documents `critical` and `warning`; `high` and `info` are used in practice but not in the SOP.
 
 **Availability alerts (`konflux_up` pattern):**
-Konflux services should have an alert built on query `konflux_up` with namespace/service/check labels, and fire when `!= 1`. This allows dashboards such as 
 
+`konflux_up` is a standardized binary metric (0 = down, 1 = up) that every Konflux service should expose. It enables a unified SLO dashboard and the Tactical Status Page to show fleet-wide availability.
+
+Required labels:
+- `service` — component name (e.g. `build-service`, `grafana`)
+- `check` — what's being verified (e.g. `replicas-available`, `probe`, `github`)
+- `source_cluster` — added automatically by RHOBS forwarding
+
+How `konflux_up` signals are created:
+- **Recording rules** (most common): transform an existing metric into `konflux_up` via `label_replace` and clamp to 0/1. Example: `kube_deployment_status_replicas_available / kube_deployment_spec_replicas`. See `rhobs/recording/` for examples.
+- **Custom Go exporters**: expose `konflux_up` directly via the Prometheus client library when availability checks require custom logic (HTTP probes, API calls). See `exporters/dsexporter/` for the reference implementation.
+
+In both cases, the metric must be forwarded to RHOBS via infra-deployments before alerts can consume it.
+
+Alerts built on `konflux_up` follow the pattern `konflux_up{namespace="...", check="...", service="..."} != 1`. A meta-alert (`KonfluxAlert`) also monitors for missing `konflux_up` signals by comparing against an `offset 1h` window and notifies o11y if a signal disappears.
 
 ### Converting between alert types
 
