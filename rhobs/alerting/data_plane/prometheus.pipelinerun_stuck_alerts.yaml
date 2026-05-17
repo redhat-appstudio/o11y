@@ -78,7 +78,7 @@ spec:
         and
         (time() - kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{
           finalizers=~".*test.appstudio.openshift.io/pipelinerun.*",
-        }) > 1800
+        }) > 3600
       for: 10m
       labels:
         severity: warning
@@ -86,7 +86,7 @@ spec:
         slo: "false"
       annotations:
         summary: "PipelineRun {{ $labels.pipelinerun }} stuck with Integration Service finalizer in namespace {{ $labels.namespace }}"
-        description: "PipelineRun {{ $labels.pipelinerun }} (pipeline: {{ $labels.pipeline }}) in namespace {{ $labels.namespace }} has had deletionTimestamp set for more than 30 minutes and still has finalizers: {{ $labels.finalizers }}."
+        description: "PipelineRun {{ $labels.pipelinerun }} (pipeline: {{ $labels.pipeline }}) in namespace {{ $labels.namespace }} has had deletionTimestamp set for more than 60 minutes and still has finalizers: {{ $labels.finalizers }}."
         alert_routing_key: integration
         team: integration
 
