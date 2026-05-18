@@ -507,7 +507,7 @@ func makeTestExporter() *KAExporter {
 
 		// Production: validated against RH01 (P50=2.4m, P95=69.1m; 60s removed — 0% usage). See BUCKET-VALIDATION-RH01.md.
 		integrationDurationHist: prometheus.NewHistogramVec(
-			prometheus.HistogramOpts{Name: "t_int_dur", Buckets: []float64{120, 300, 600, 900, 1800, 3600, 5400}},
+			prometheus.HistogramOpts{Name: "t_int_dur", Buckets: []float64{120, 300, 600, 900, 1200, 1800, 3600, 5400}},
 			[]string{"cluster", "namespace", "application", "component", "scenario", "result", "optional"},
 		),
 		integrationWaitGauge: prometheus.NewGaugeVec(

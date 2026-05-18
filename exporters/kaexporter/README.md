@@ -68,6 +68,18 @@ Use `histogram_quantile(0.95, rate(..._bucket[1h]))` for percentiles, or `rate(.
 - `konflux_ka_exporter_scrape_duration_seconds`
 - `konflux_ka_exporter_truncations_total`
 
+### Derived (recording rules only — not emitted by this exporter)
+
+Full delivery pipeline duration is intentionally **not** hardcoded in the exporter. Build, integration, and release durations are independent signals. Manual approvals, retries, and parallel test scenarios make a single "total" metric ambiguous.
+
+The recording rule `konflux:delivery_pipeline_duration_seconds:sum_avg_rate1h` approximates `avg(build) + max_scenario(integration) + avg(release)` at the Prometheus evaluation layer:
+
+```
+o11y/rhobs/recording/konflux_delivery_pipeline_recording_rules.yaml
+```
+
+**Limitations:** inner join (only components with data in all three phases appear); not correlated per-delivery; excludes `konflux_build_to_integration_gap_seconds` and manual release gate wait.
+
 ---
 
 ## Build and run

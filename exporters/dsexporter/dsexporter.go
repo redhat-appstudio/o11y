@@ -119,6 +119,13 @@ func main() {
 		},
 	))
 
+	// /healthz — liveness: this exporter is stateless (collects on every scrape),
+	// so a simple process-alive check is sufficient. No separate /readyz is needed.
+	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, "OK")
+	})
+
 	fmt.Println("Server is listening on http://localhost:8090/metrics")
 	http.ListenAndServe(":8090", nil)
 }
