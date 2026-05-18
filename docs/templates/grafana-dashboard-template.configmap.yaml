@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-<name>.configmap
+  labels:
+    grafana_dashboard: "true"
+  annotations:
+    grafana-folder: /grafana-dashboard-definitions/RHTAP
+data:
+  grafana-dashboard-<name>.json: |-
+    {
+      "id": null,
+      "uid": "<unique-uid-max-40-chars>",
+      "title": "<Dashboard Title>",
+      "templating": {
+        "list": [
+          {
+            "name": "Datasource",
+            "type": "datasource",
+            "query": "prometheus",
+            "regex": "/rhtap*/",
+            "refresh": 1
+          },
+          {
+            "name": "cluster",
+            "type": "query",
+            "datasource": { "type": "prometheus", "uid": "${Datasource}" },
+            "definition": "label_values(source_cluster)",
+            "includeAll": true,
+            "multi": true,
+            "refresh": 1
+          }
+        ]
+      },
+      "panels": [],
+      "schemaVersion": 39,
+      "version": 0
+    }
