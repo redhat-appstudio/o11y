@@ -52,21 +52,25 @@ spec:
 
     - alert: PipelineRunStuckWithPACFinalizer
       expr: |
-        kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{
-          finalizers=~".*pipelinesascode.tekton.dev/finalizer.*",
-        } > 0
-        and
-        (time() - kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{
-          finalizers=~".*pipelinesascode.tekton.dev/finalizer.*",
-        }) > 1800
-      for: 10m
+        count by (source_cluster) (
+          kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{
+            finalizers=~".*pipelinesascode.tekton.dev/finalizer.*",
+          } > 0
+          and
+          (
+            time() - kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{
+              finalizers=~".*pipelinesascode.tekton.dev/finalizer.*",
+            }
+          ) > 2400
+        ) > 0
+      for: 0m
       labels:
         severity: warning
         component: pipelines-as-code
         slo: "false"
       annotations:
-        summary: "PipelineRun {{ $labels.pipelinerun }} stuck with Pipelines-as-Code finalizer in namespace {{ $labels.namespace }}"
-        description: "PipelineRun {{ $labels.pipelinerun }} (pipeline: {{ $labels.pipeline }}) in namespace {{ $labels.namespace }} has had deletionTimestamp set for more than 30 minutes and still has finalizers: {{ $labels.finalizers }}."
+        summary: "{{ $value }} PipelineRun(s) on {{ $labels.source_cluster }} stuck with Pipelines-as-Code finalizer"
+        description: "{{ $value }} PipelineRun(s) on {{ $labels.source_cluster }} have had deletionTimestamp set for more than 40 minutes and still have the PAC finalizer."
         alert_routing_key: pipelines
         team: pipelines
 
