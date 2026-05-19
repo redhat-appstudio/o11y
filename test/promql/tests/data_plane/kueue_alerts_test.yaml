@@ -71,3 +71,51 @@ tests:
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
               alert_routing_key: infra
               team: konflux-infra
+
+  # TektonKueueRolloutStuck - should fire: updated < desired for 20m
+  - interval: 1m
+    input_series:
+      - series: 'kube_deployment_spec_replicas{namespace="tekton-kueue", deployment="tekton-kueue-controller-manager", source_cluster="c1"}'
+        values: '2+0x25'
+      - series: 'kube_deployment_status_replicas_updated{namespace="tekton-kueue", deployment="tekton-kueue-controller-manager", source_cluster="c1"}'
+        values: '1+0x25'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: TektonKueueRolloutStuck
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              component: tekton-kueue
+              namespace: tekton-kueue
+              deployment: tekton-kueue-controller-manager
+              source_cluster: c1
+            exp_annotations:
+              summary: "Tekton Kueue rollout stuck: tekton-kueue-controller-manager"
+              description: "Deployment tekton-kueue-controller-manager in namespace tekton-kueue on cluster c1 has not completed its rollout for over 20 minutes. New pods are failing to start while old pods continue serving traffic. Check pod events and logs for the failing ReplicaSet."
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueueRolloutStuck.md
+              alert_routing_key: infra
+              team: konflux-infra
+
+  # TektonKueueRolloutStuck - should NOT fire: updated == desired (healthy)
+  - interval: 1m
+    input_series:
+      - series: 'kube_deployment_spec_replicas{namespace="tekton-kueue", deployment="tekton-kueue-controller-manager", source_cluster="c1"}'
+        values: '2+0x25'
+      - series: 'kube_deployment_status_replicas_updated{namespace="tekton-kueue", deployment="tekton-kueue-controller-manager", source_cluster="c1"}'
+        values: '2+0x25'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: TektonKueueRolloutStuck
+        exp_alerts: []
+
+  # TektonKueueRolloutStuck - should NOT fire at 10m: rollout may still be in progress
+  - interval: 1m
+    input_series:
+      - series: 'kube_deployment_spec_replicas{namespace="tekton-kueue", deployment="tekton-kueue-controller-manager", source_cluster="c1"}'
+        values: '2+0x25'
+      - series: 'kube_deployment_status_replicas_updated{namespace="tekton-kueue", deployment="tekton-kueue-controller-manager", source_cluster="c1"}'
+        values: '1+0x25'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: TektonKueueRolloutStuck
+        exp_alerts: []
