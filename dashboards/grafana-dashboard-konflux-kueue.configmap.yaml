@@ -965,6 +965,164 @@ data:
               "type": "stat"
             },
             {
+              "id": 102,
+              "type": "stat",
+              "title": "Admission Wait Time 99th Percentile By Priority Class",
+              "description": "99% of the workloads waited in the queue less time from the shown value. Broke into Priority Classes.",
+              "gridPos": {
+                "x": 12,
+                "y": 26,
+                "h": 6,
+                "w": 12
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "mappings": [],
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      },
+                      {
+                        "color": "yellow",
+                        "value": 300
+                      },
+                      {
+                        "color": "orange",
+                        "value": 600
+                      },
+                      {
+                        "color": "red",
+                        "value": 900
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "thresholds"
+                  },
+                  "unit": "s"
+                },
+                "overrides": []
+              },
+              "transparent": true,
+              "pluginVersion": "11.6.3",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "histogram_quantile(0.99, sum(increase(kueue_admission_wait_time_seconds_bucket{source_cluster=~\"$cluster\", cluster_queue=\"cluster-pipeline-queue\"}[$__range])) by (le, priority_class))",
+                  "legendFormat": "__auto",
+                  "range": true,
+                  "refId": "A"
+                }
+              ],
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "options": {
+                "reduceOptions": {
+                  "values": false,
+                  "calcs": [
+                    "lastNotNull"
+                  ],
+                  "fields": ""
+                },
+                "orientation": "auto",
+                "textMode": "auto",
+                "wideLayout": true,
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "showPercentChange": false,
+                "percentChangeColorMode": "standard"
+              }
+            },
+            {
+              "id": 103,
+              "type": "stat",
+              "title": "Admitted Workloads Increase By Priority Class",
+              "description": "The total number of admitted workloads,  by priority class , in the selected range",
+              "gridPos": {
+                "x": 12,
+                "y": 32,
+                "h": 6,
+                "w": 12
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "mappings": [],
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      },
+                      {
+                        "color": "yellow",
+                        "value": 300
+                      },
+                      {
+                        "color": "orange",
+                        "value": 600
+                      },
+                      {
+                        "color": "red",
+                        "value": 900
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "thresholds"
+                  },
+                  "unit": "none"
+                },
+                "overrides": []
+              },
+              "transparent": true,
+              "pluginVersion": "11.6.3",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "round(sum by (priority_class) (increase(kueue_admitted_workloads_total{source_cluster=~\"$cluster\"}[$__range])))",
+                  "legendFormat": "__auto",
+                  "range": true,
+                  "refId": "A"
+                }
+              ],
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "options": {
+                "reduceOptions": {
+                  "values": false,
+                  "calcs": [
+                    "lastNotNull"
+                  ],
+                  "fields": ""
+                },
+                "orientation": "auto",
+                "textMode": "auto",
+                "wideLayout": true,
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "showPercentChange": false,
+                "percentChangeColorMode": "standard"
+              }
+            },
+            {
               "datasource": {
                 "type": "prometheus",
                 "uid": "${datasource}"
@@ -2376,5 +2534,5 @@ data:
       "timezone": "UTC",
       "title": "Konflux Kueue-sre",
       "uid": "ef0bjmoh7cbggc--",
-      "version": 29
+      "version": 30
     }
