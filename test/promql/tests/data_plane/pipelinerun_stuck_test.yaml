@@ -63,10 +63,10 @@ tests:
               alert_routing_key: pipelines
               team: pipelines
 
-  # Test 4: PAC finalizer — stuck PipelineRun fires alert
+  # Test 4: PAC finalizer — 1 stuck PipelineRun for >40m fires alert with count=1
   - interval: 1m
     input_series:
-      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-pac-stuck", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[pipelinesascode.tekton.dev/finalizer]"}
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-pac-stuck", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[pipelinesascode.tekton.dev/finalizer]", source_cluster="stone-prod-p02"}
         values: '1+0x50'
 
     alert_rule_test:
@@ -77,15 +77,62 @@ tests:
               severity: warning
               component: pipelines-as-code
               slo: "false"
-              pipelinerun: pr-pac-stuck
-              namespace: tenant-ns
-              pipeline: build-pipeline
-              finalizers: "[pipelinesascode.tekton.dev/finalizer]"
+              source_cluster: stone-prod-p02
             exp_annotations:
-              summary: "PipelineRun pr-pac-stuck stuck with Pipelines-as-Code finalizer in namespace tenant-ns"
-              description: "PipelineRun pr-pac-stuck (pipeline: build-pipeline) in namespace tenant-ns has had deletionTimestamp set for more than 30 minutes and still has finalizers: [pipelinesascode.tekton.dev/finalizer]."
+              summary: "1 PipelineRun(s) on stone-prod-p02 stuck with Pipelines-as-Code finalizer"
+              description: "1 PipelineRun(s) on stone-prod-p02 have had deletionTimestamp set for more than 40 minutes and still have the PAC finalizer."
               alert_routing_key: pipelines
               team: pipelines
+
+  # Test 4b: PAC finalizer — 3 stuck PipelineRuns for >40m, alert fires with count=3
+  - interval: 1m
+    input_series:
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-pac-stuck-1", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[pipelinesascode.tekton.dev/finalizer]", source_cluster="stone-prod-p02"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-pac-stuck-2", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[pipelinesascode.tekton.dev/finalizer]", source_cluster="stone-prod-p02"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-pac-stuck-3", namespace="other-ns", pipeline="build-pipeline", finalizers="[pipelinesascode.tekton.dev/finalizer]", source_cluster="stone-prod-p02"}
+        values: '1+0x50'
+
+    alert_rule_test:
+      - eval_time: 45m
+        alertname: PipelineRunStuckWithPACFinalizer
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              component: pipelines-as-code
+              slo: "false"
+              source_cluster: stone-prod-p02
+            exp_annotations:
+              summary: "3 PipelineRun(s) on stone-prod-p02 stuck with Pipelines-as-Code finalizer"
+              description: "3 PipelineRun(s) on stone-prod-p02 have had deletionTimestamp set for more than 40 minutes and still have the PAC finalizer."
+              alert_routing_key: pipelines
+              team: pipelines
+
+  # Test 4c: PAC finalizer — stuck less than 40 minutes ago, no alert
+  - interval: 1m
+    input_series:
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-pac-recent", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[pipelinesascode.tekton.dev/finalizer]"}
+        values: '600+0x20'
+
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: PipelineRunStuckWithPACFinalizer
+        exp_alerts: []
+
+  # Test 4d: PAC finalizer — rotation scenario: PipelineRuns rotate under 40m threshold, no alert
+  # pr-pac-rotate-1 disappears at 30m, pr-pac-rotate-2 appears at 25m — neither was stuck >40m
+  - interval: 1m
+    input_series:
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-pac-rotate-1", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[pipelinesascode.tekton.dev/finalizer]"}
+        values: '1+0x30 stale'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-pac-rotate-2", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[pipelinesascode.tekton.dev/finalizer]"}
+        values: '1500+0x20'
+
+    alert_rule_test:
+      - eval_time: 38m
+        alertname: PipelineRunStuckWithPACFinalizer
+        exp_alerts: []
 
   # Test 5: Integration finalizer — stuck PipelineRun fires alert
   - interval: 1m
