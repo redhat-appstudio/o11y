@@ -99,6 +99,36 @@ spec:
         alert_team_handle: <!subteam^S05Q1P4Q2TG>
         team: konflux-infra
 
+    - alert: TektonKueueRolloutStuck
+      expr: |
+        (
+          kube_deployment_status_replicas_updated{namespace="tekton-kueue"}
+            <
+          kube_deployment_spec_replicas{namespace="tekton-kueue"}
+        )
+        and
+        (
+          changes(kube_deployment_status_replicas_updated{namespace="tekton-kueue"}[15m]) == 0
+        )
+        and
+        (
+          kube_deployment_status_replicas_updated{namespace="tekton-kueue"} offset 15m
+        )
+      for: 5m
+      labels:
+        severity: warning
+        component: tekton-kueue
+      annotations:
+        summary: "Tekton Kueue rollout stuck: {{ $labels.deployment }}"
+        description: >-
+          Deployment {{ $labels.deployment }} in namespace {{ $labels.namespace }} on cluster
+          {{ $labels.source_cluster }} has not completed its rollout for over 20 minutes.
+          New pods are failing to start while old pods continue serving traffic.
+          Check pod events and logs for the failing ReplicaSet.
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueueRolloutStuck.md
+        alert_routing_key: infra
+        team: konflux-infra
+
     - alert: KueueMutatingWebhookLowSuccessRate
       expr: |
         100 * sum by (instance, source_cluster) (increase(apiserver_admission_webhook_request_total{
