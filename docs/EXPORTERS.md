@@ -38,6 +38,7 @@ The entrypoint script selects which exporter to run based on the first container
 ```
 go test ./...                             # all exporter unit tests
 go test ./exporters/<exporter-name>       # single exporter
+go test -v ...                            # detailed test output
 make kustomize-build                      # validate Kubernetes manifests
 ```
 
