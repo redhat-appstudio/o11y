@@ -30,7 +30,7 @@ All exporters are compiled into a single multi-binary container image via a mult
 The entrypoint script selects which exporter to run based on the first container argument:
 ```
 # Run <exporter-name>
-docker run <image> <exporter-name> 
+{docker || podman || other-container-runtime} run <image> <exporter-name> 
 ```
 
 ### Testing
