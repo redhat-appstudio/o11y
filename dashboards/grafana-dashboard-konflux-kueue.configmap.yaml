@@ -286,6 +286,78 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "description": "Percentage of replicas running the latest version. Below 100% indicates a rollout in progress or stuck. Compare with the Replicas panel: if Replicas shows 100% but Rollout Status is below 100%, the rollout is stuck while old pods continue serving.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "dark-red"
+                  },
+                  {
+                    "color": "green",
+                    "value": 100
+                  }
+                ]
+              },
+              "unit": "percent"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 5,
+            "w": 12,
+            "x": 0,
+            "y": 26
+          },
+          "id": 40,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "horizontal",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "(\n  kube_deployment_status_replicas_updated{namespace=~\"openshift-kueue-operator|tekton-kueue|kueue-external-admission\", source_cluster=~\"$cluster\"}\n)\n/\nclamp_min(\n  kube_deployment_spec_replicas{namespace=~\"openshift-kueue-operator|tekton-kueue|kueue-external-admission\", source_cluster=~\"$cluster\"},\n  1\n) * 100",
+              "format": "time_series",
+              "instant": false,
+              "legendFormat": "{{deployment}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Rollout Status",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
           "description": "99th Percentile of the latency of an admission attempt.",
           "fieldConfig": {
             "defaults": {
@@ -321,7 +393,7 @@ data:
             "h": 5,
             "w": 6,
             "x": 0,
-            "y": 26
+            "y": 31
           },
           "id": 27,
           "options": {
@@ -399,7 +471,7 @@ data:
             "h": 5,
             "w": 6,
             "x": 6,
-            "y": 26
+            "y": 31
           },
           "id": 28,
           "options": {
@@ -471,7 +543,7 @@ data:
             "h": 4,
             "w": 12,
             "x": 0,
-            "y": 31
+            "y": 36
           },
           "id": 22,
           "options": {
@@ -514,7 +586,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 35
+            "y": 40
           },
           "id": 6,
           "panels": [
@@ -1359,7 +1431,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 36
+            "y": 41
           },
           "id": 4,
           "panels": [
@@ -1851,7 +1923,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 37
+            "y": 42
           },
           "id": 100,
           "panels": [
