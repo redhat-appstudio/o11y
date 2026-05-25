@@ -1,0 +1,23 @@
+# Recording Rule Template
+# Recording rules pre-compute PromQL expressions and store the result as new time series.
+# See docs/RECORDING.md for full conventions.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  # [required] Name format: rhtap-<service>-<purpose>
+  name: rhtap-<service>-<purpose>
+  labels:
+    # [required] Must be "rhtap" — identifies this tenant in RHOBS
+    tenant: rhtap
+spec:
+  groups:
+    - name: <service>_<purpose>
+      # [required] How often the rule is evaluated. Default 1m works for most rules.
+      # Use longer intervals (e.g. 10m) for rules using avg_over_time or other range queries.
+      interval: 1m
+      rules:
+        # [required] Name of the recorded metric.
+        - record: <metric_name>
+          # [required] PromQL expression. Metrics must be forwarded to RHOBS via infra-deployments.
+          expr: |
+            <promql_expression>
