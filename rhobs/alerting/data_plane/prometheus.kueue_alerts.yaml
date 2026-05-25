@@ -101,20 +101,10 @@ spec:
 
     - alert: TektonKueueRolloutStuck
       expr: |
-        (
-          kube_deployment_status_replicas_updated{namespace="tekton-kueue"}
-            <
-          kube_deployment_spec_replicas{namespace="tekton-kueue"}
-        )
-        and
-        (
-          changes(kube_deployment_status_replicas_updated{namespace="tekton-kueue"}[15m]) == 0
-        )
-        and
-        (
-          kube_deployment_status_replicas_updated{namespace="tekton-kueue"} offset 15m
-        )
-      for: 5m
+        kube_deployment_status_replicas_updated{namespace="tekton-kueue"}
+          <
+        kube_deployment_spec_replicas{namespace="tekton-kueue"}
+      for: 20m
       labels:
         severity: warning
         component: tekton-kueue

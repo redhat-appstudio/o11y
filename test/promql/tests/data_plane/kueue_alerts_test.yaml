@@ -72,7 +72,7 @@ tests:
               alert_routing_key: infra
               team: konflux-infra
 
-  # TektonKueueRolloutStuck - should fire: updated < desired, no progress, metric exists 15m+
+  # TektonKueueRolloutStuck - should fire: updated < desired for 20m
   - interval: 1m
     input_series:
       - series: 'kube_deployment_spec_replicas{namespace="tekton-kueue", deployment="tekton-kueue-controller-manager", source_cluster="c1"}'
@@ -108,7 +108,7 @@ tests:
         alertname: TektonKueueRolloutStuck
         exp_alerts: []
 
-  # TektonKueueRolloutStuck - should NOT fire at 10m: young series, offset 15m returns nothing
+  # TektonKueueRolloutStuck - should NOT fire at 10m: condition true but for: 20m not yet satisfied
   - interval: 1m
     input_series:
       - series: 'kube_deployment_spec_replicas{namespace="tekton-kueue", deployment="tekton-kueue-controller-manager", source_cluster="c1"}'
