@@ -112,9 +112,8 @@ spec:
         summary: "Tekton Kueue rollout stuck: {{ $labels.deployment }}"
         description: >-
           Deployment {{ $labels.deployment }} in namespace {{ $labels.namespace }} on cluster
-          {{ $labels.source_cluster }} has not completed its rollout for over 20 minutes.
-          New pods are failing to start while old pods continue serving traffic.
-          Check pod events and logs for the failing ReplicaSet.
+          {{ $labels.source_cluster }} update is delayed or stuck (no full health for 20m).
+          Check pod events and logs for the deployment and its ReplicaSets.
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueueRolloutStuck.md
         alert_routing_key: infra
         team: konflux-infra
