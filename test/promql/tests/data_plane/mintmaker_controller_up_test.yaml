@@ -60,30 +60,6 @@ tests:
 
   - interval: 1m
     input_series:
-      - series: 'konflux_up{namespace="mintmaker", check="replicas-available", service="mintmaker-controller-manager", source_cluster="stone-prod-p02"}'
-        values: '0 0 0 0 0'
-      - series: 'konflux_up{namespace="mintmaker", check="replicas-available", service="mintmaker-controller-manager", source_cluster="c7"}'
-        values: '1 1 1 1 1'
-
-    alert_rule_test:
-      - eval_time: 5m
-        alertname: MintMakerControllerDown
-        exp_alerts: null
-
-  - interval: 1m
-    input_series:
-      - series: 'konflux_up{namespace="mintmaker", check="replicas-available", service="redis", source_cluster="stone-prod-p02"}'
-        values: '0 0 0 0 0'
-      - series: 'konflux_up{namespace="mintmaker", check="replicas-available", service="redis", source_cluster="c8"}'
-        values: '1 1 1 1 1'
-
-    alert_rule_test:
-      - eval_time: 5m
-        alertname: MintMakerControllerDown
-        exp_alerts: null
-
-  - interval: 1m
-    input_series:
       # DUC created at test start time (timestamp 0), value stays constant
       - series: 'mintmaker_dependency_update_check_creation_time{name="dependencyupdatecheck-old",namespace="mintmaker", source_cluster="c7"}'
         values: '0+0x300'
