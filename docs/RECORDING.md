@@ -40,7 +40,15 @@ Test both the expected-up and expected-down cases. For rules with namespace or l
 
 ## Architecture
 
-Recording rules are evaluated by RHOBS (Red Hat Observability Service), not by in-cluster Prometheus. Any metric used in a recording rule expression must first be [forwarded to RHOBS](https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/monitoring/tshoot-missing-metrics.md) via [infra-deployments](https://github.com/redhat-appstudio/infra-deployments). A rule referencing a metric that isn't forwarded will silently produce no data.
+Recording rules in this repository are evaluated by RHOBS (Red Hat Observability Service), not by in-cluster Prometheus. Any metric used in a recording rule expression must first be [forwarded to RHOBS](https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/monitoring/tshoot-missing-metrics.md) via [infra-deployments](https://github.com/redhat-appstudio/infra-deployments). A rule referencing a metric that isn't forwarded will silently produce no data.
+
+### Cluster-level recording rules
+
+Recording rules that need to be evaluated by in-cluster Prometheus (rather than RHOBS) are defined in [infra-deployments](https://github.com/redhat-appstudio/infra-deployments). They are deployed as `PrometheusRule` resources into the `openshift-user-workload-monitoring` namespace via kustomize patches.
+
+Environment overlays patches: `components/monitoring/prometheus/{staging,production}/base/monitoringstack/prometheusrule-uwm.yaml`
+
+Use cluster-level recording rules when the derived metric is only needed on-cluster).
 
 ## Deployment Model
 
@@ -54,6 +62,6 @@ Use the [recording rule template](templates/recording_rule_template.yaml) as a s
 
 ### The `konflux_up` availability pattern
 
-`konflux_up` is a standardized binary metric that every Konflux service should expose. It enables a unified SLO dashboard and the Tactical Status Page to show fleet-wide availability. See [ALERTS.md § Availability alerts](ALERTS.md#availability-alerts-konflux_up-pattern) for the full specification of required labels and how signals are created.
+`konflux_up` is a standardized boolean metric that every Konflux service should expose. It enables a unified SLO dashboard and the Tactical Status Page to show fleet-wide availability. See [ALERTS.md § Availability alerts](ALERTS.md#availability-alerts-konflux_up-pattern) for the full specification of required labels and how signals are created.
 
 Use the [availability recording rule template](templates/recording_rule_availability_template.yaml) for the standard deployment replica pattern. The template includes inline comments explaining each step.
