@@ -26,6 +26,18 @@ To **re-trigger** a failed PR pipeline, comment `/retest` on the PR.
 
 To **re-trigger** a failed push pipeline, annotate the Component with `build.appstudio.openshift.io/request=trigger-pac-build` or use the Konflux UI to rerun the pipeline run.
 
+### Debugging failed releases
+
+Release objects live in the o11y tenant namespace:
+
+```
+oc get releases -n rhtap-o11y-tenant
+```
+
+Each Release has a `status.managedProcessing.pipelineRun` field pointing to the associated pipeline run in `rhtap-releng-tenant` (e.g. `rhtap-releng-tenant/managed-5lc82`). The release status and failure reason are also visible in the Konflux UI under **Applications** > **o11y** > **Releases**.
+
+To re-trigger a failed release without rebuilding the image, create a new Release object from the failed one. See [Re-trigger a release manually](https://konflux-ci.dev/docs/releasing/retrigger-release/) for the procedure. Alternatively, re-triggering the push pipeline rebuilds the image and creates a new release automatically, but is slower since it restarts the entire build-EC-release chain.
+
 ### Dependency updates
 
 [MintMaker](https://github.com/konflux-ci/mintmaker), a Renovate-based service, automatically opens PRs (from `red-hat-konflux[bot]`) to bump pinned references across the repo: Tekton pipeline task bundles in `.tekton/`, Dockerfile base image digests/tags, and Python and Go dependencies. MintMaker does not touch the repo-specific validation tasks -- the o11y team owns their logic and container image versions.
