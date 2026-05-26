@@ -28,7 +28,7 @@ To **re-trigger** a failed push pipeline, annotate the Component with `build.app
 
 ### Dependency updates
 
-[MintMaker](https://github.com/konflux-ci/mintmaker), a Renovate-based service, automatically opens PRs (from `red-hat-konflux[bot]`) to bump pinned references across the repo: Tekton pipeline task bundles in `.tekton/`, Dockerfile base image digests/tags, and Go dependencies. MintMaker does not touch the repo-specific validation tasks -- the o11y team owns their logic and container image versions.
+[MintMaker](https://github.com/konflux-ci/mintmaker), a Renovate-based service, automatically opens PRs (from `red-hat-konflux[bot]`) to bump pinned references across the repo: Tekton pipeline task bundles in `.tekton/`, Dockerfile base image digests/tags, and Python and Go dependencies. MintMaker does not touch the repo-specific validation tasks -- the o11y team owns their logic and container image versions.
 
 ## Local vs CI execution
 
