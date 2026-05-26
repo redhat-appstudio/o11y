@@ -72,6 +72,40 @@ tests:
               alert_routing_key: infra
               team: konflux-infra
 
+  # TektonKueuePodsCrashLoopBackOff - should fire: pod in CrashLoopBackOff for 3m
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_waiting_reason{namespace="tekton-kueue", reason="CrashLoopBackOff", pod="tekton-kueue-controller-manager-abc123", source_cluster="c1"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: TektonKueuePodsCrashLoopBackOff
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              component: tekton-kueue
+              slo: "false"
+              namespace: tekton-kueue
+              reason: CrashLoopBackOff
+              pod: tekton-kueue-controller-manager-abc123
+              source_cluster: c1
+            exp_annotations:
+              summary: "Tekton Kueue pod is in a crash loop: tekton-kueue-controller-manager-abc123"
+              description: "Pod tekton-kueue-controller-manager-abc123 in namespace tekton-kueue on cluster c1 is in CrashLoopBackOff and is not starting up."
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueuePodsCrashLoopBackOff.md
+              alert_routing_key: infra
+              team: konflux-infra
+
+  # TektonKueuePodsCrashLoopBackOff - should NOT fire: no CrashLoopBackOff pods
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_waiting_reason{namespace="tekton-kueue", reason="CrashLoopBackOff", pod="tekton-kueue-controller-manager-abc123", source_cluster="c1"}'
+        values: '0+0x10'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: TektonKueuePodsCrashLoopBackOff
+        exp_alerts: []
+
   # TektonKueueRolloutStuck - should fire: updated < desired for 20m
   - interval: 1m
     input_series:
