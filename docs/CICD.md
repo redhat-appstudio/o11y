@@ -16,8 +16,6 @@ Triggers on PRs targeting `main` and runs **repo-specific validation tekton task
 
 Triggers on pushes to `main`. Runs the build and security chain **only**. Produces a signed container image in the tenant registry (`quay.io/redhat-user-workloads/rhtap-o11y-tenant/...`). The image is promoted to the production registry (`quay.io/redhat-appstudio/o11y`) by the release pipeline after the Enterprise Contract check passes (see [Enterprise Contract and release](#enterprise-contract-and-release)).
 
-If the push pipeline fails after merge, there is no proactive notification — the pipeline does not have a Slack webhook task configured. Failures are only visible as GitHub check runs on the merge commit or in the Konflux UI. Konflux supports adding a [`slack-webhook-notification`](https://konflux-ci.dev/docs/patterns/slack-notifications/) task to the pipeline's `finally` block, but this is not currently set up.
-
 ### Debugging failed pipelines
 
 Pipeline results appear as GitHub check runs on the PR. Click the **Details** link on `Red Hat Konflux / o11y-on-pull-request` to open the pipeline run in the Konflux UI (requires cluster SSO login). The UI shows per-task logs and status.
