@@ -46,14 +46,6 @@ To re-trigger a failed release without rebuilding the image, create a new Releas
 
 `make all` runs the full local validation suite. The Makefile spawns the `obsctl-reloader-rules-checker` container for rule checks. In CI, the pipeline step already runs inside that container image, so it overrides the command via `CMD=obsctl-reloader-rules-checker make check-and-test` -- no container-in-container needed.
 
-## Merge requirements
-
-PRs targeting `main` require all of the following (enforced for admins too):
-
-- **Pipeline passes** -- `Red Hat Konflux / o11y-on-pull-request` is the only required status check. Strict mode is off, so the branch doesn't need to be rebased on `main` before merging. It is recommended to keep feature branch updated to avoid possible conflicts.
-- **2 approving reviews** -- stale review dismissal is off, so approvals survive new pushes.
-- **All conversations resolved**
-
 ## Enterprise Contract and release
 
 After every build (PR and push), Konflux runs an **Enterprise Contract (EC)** check that verifies the container image against supply chain policy. On push, if the EC passes, the image is automatically released. The EC check also appears on PRs as `Red Hat Konflux / o11y-enterprise-contract / o11y` but is not a required status check.
