@@ -44,11 +44,9 @@ Recording rules in this repository are evaluated by RHOBS (Red Hat Observability
 
 ### Cluster-level recording rules
 
-Recording rules that need to be evaluated by in-cluster Prometheus (rather than RHOBS) are defined in [infra-deployments](https://github.com/redhat-appstudio/infra-deployments). They are deployed as `PrometheusRule` resources into the `openshift-user-workload-monitoring` namespace via kustomize patches.
+Recording rules that need to be evaluated by in-cluster Prometheus (rather than RHOBS) are defined in [infra-deployments](https://github.com/redhat-appstudio/infra-deployments/components/monitoring/prometheus). 
 
-Environment overlays patches: `components/monitoring/prometheus/{staging,production}/base/monitoringstack/prometheusrule-uwm.yaml`
-
-Use cluster-level recording rules when the derived metric is only needed on-cluster.
+Use cluster-level recording rules when the derived metric is only needed in-cluster, or the metric has a high cardinality that would use a large amount of our RHOBS metrics quota (quota is ~10 million in production and ~1 million in stage).
 
 ## Deployment Model
 
