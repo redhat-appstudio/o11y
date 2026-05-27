@@ -1,8 +1,8 @@
 ## Recording rules overview
 
-Recording rules pre-compute PromQL expressions and store the results as new time series in RHOBS. They are used to create derived metrics that would be too expensive or complex to compute at query time — most commonly the `konflux_up` availability metric that powers the SLO dashboard and the [Tactical Status Page](https://tsp.status.redhat.com).
+Recording rules pre-compute PromQL expressions and store the results as new time series in RHOBS. They are used to create derived metrics that would be too expensive or complex to compute at query time or to precompute them if they are in high demand — most commonly the `konflux_up` availability metric that powers the SLO dashboard and the [Tactical Status Page](https://tsp.status.redhat.com).
 
-Recording rules are defined as `PrometheusRule` resources in the `rhobs/recording/` directory. They share the same Kubernetes kind, deployment pipeline, and testing toolchain as alerting rules.
+Recording rules are defined as [`PrometheusRule`](https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api-reference/api.md#monitoring.coreos.com/v1.PrometheusRule) resources in the `rhobs/recording/` directory. They share the same Kubernetes kind, deployment pipeline, and testing toolchain as alerting rules.
 
 ## Creating a new recording rule
 
@@ -48,7 +48,7 @@ Recording rules that need to be evaluated by in-cluster Prometheus (rather than 
 
 Environment overlays patches: `components/monitoring/prometheus/{staging,production}/base/monitoringstack/prometheusrule-uwm.yaml`
 
-Use cluster-level recording rules when the derived metric is only needed on-cluster).
+Use cluster-level recording rules when the derived metric is only needed on-cluster.
 
 ## Deployment Model
 
