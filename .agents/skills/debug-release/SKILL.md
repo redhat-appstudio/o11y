@@ -46,7 +46,7 @@ This returns a reference like `rhtap-releng-tenant/managed-xxxxx`.
 ### Step 4: Find the failing task via KubeArchive
 
 ```bash
-KUBEARCHIVE_URL="https://kubearchive-api-server-product-kubearchive.{CLUSTER_SPECIFIC_URL}.com"
+KUBEARCHIVE_URL="https://kubearchive-api-server-product-kubearchive.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com"
 TOKEN=$(oc whoami -t)
 
 # List tasks in the release pipeline run

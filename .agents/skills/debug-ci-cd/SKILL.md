@@ -40,7 +40,7 @@ Match the check name to the pipeline type. The current names are derived from `.
 Pipeline runs are cleaned up from the cluster after completion. Use KubeArchive to query archived runs.
 
 ```bash
-KUBEARCHIVE_URL="https://kubearchive-api-server-product-kubearchive.{CLUSTER_SPECIFIC_URL}.com"
+KUBEARCHIVE_URL="https://kubearchive-api-server-product-kubearchive.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com"
 TOKEN=$(oc whoami -t)
 
 # List recent pipeline runs (adjust limit as needed)
