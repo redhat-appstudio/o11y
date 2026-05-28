@@ -165,3 +165,14 @@ func secondsBetween(start, end string) float64 {
 
 	return endTime.Sub(startTime).Seconds()
 }
+
+// getConditionTime returns the lastTransitionTime for a specific condition type.
+// Returns empty string if the condition is not found or status is not "True".
+func getConditionTime(conditions []Condition, conditionType string) string {
+	for _, cond := range conditions {
+		if cond.Type == conditionType && cond.Status == "True" {
+			return cond.LastTransitionTime
+		}
+	}
+	return ""
+}

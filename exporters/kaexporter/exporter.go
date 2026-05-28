@@ -113,6 +113,10 @@ type KAExporter struct {
 	releasePLRTotalHist     *prometheus.HistogramVec // managed release PLR creation → completion
 	releasePLRExecHist      *prometheus.HistogramVec // managed release PLR start → completion
 
+	// Release stage timing metrics
+	releaseValidationDuration        *prometheus.HistogramVec // Release CR creation → Validated condition
+	releasePipelineExecutionDuration *prometheus.HistogramVec // Validated condition → Released condition
+
 	// State metrics — Gauges (point-in-time, no single join key, or counts).
 	buildWaitGauge          *prometheus.GaugeVec // build PLR creation → start (Kueue admission wait)
 	integrationWaitGauge    *prometheus.GaugeVec // integration test PLR creation → start (Kueue admission wait)
@@ -251,6 +255,24 @@ func NewKAExporter() (*KAExporter, error) {
 				Buckets: []float64{60, 120, 300, 600, 900, 1800, 3600}, // 1m–1h
 			},
 			[]string{"cluster", "namespace", "application_namespace", "application", "pipeline", "result"},
+		),
+
+		// --- Release stage timing metrics ---
+		releaseValidationDuration: prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Name:    "konflux_release_validation_duration_seconds",
+				Help:    "Time from Release creation to Validated condition (policy gates, EC checks). Exemplars carry pipelinerun, snapshot, and release_cr names.",
+				Buckets: []float64{30, 60, 120, 300, 600, 900, 1800}, // 30s–30m
+			},
+			[]string{"cluster", "namespace", "application", "component"},
+		),
+		releasePipelineExecutionDuration: prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Name:    "konflux_release_pipeline_execution_duration_seconds",
+				Help:    "Time from Validated to Released condition (managed release pipeline execution). Exemplars carry pipelinerun, snapshot, and release_cr names.",
+				Buckets: []float64{60, 120, 300, 600, 900, 1800, 3600}, // 1m–1h
+			},
+			[]string{"cluster", "namespace", "application", "component"},
 		),
 
 		// --- Gauges for point-in-time state ---

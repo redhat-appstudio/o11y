@@ -45,6 +45,9 @@ func (e *KAExporter) observeBuildHistograms(tenantNS string, plr PipelineRun, ap
 				relDur, relExemplar,
 			)
 		}
+
+		// Emit release stage timing metrics
+		e.observeReleaseStageTimings(matched.Release, tenantNS, application, component, relExemplar)
 	}
 }
 
@@ -155,4 +158,30 @@ func (e *KAExporter) processReleasePipelineRun(managedNS string, plr PipelineRun
 		result:               result,
 	}
 	outcomeCounts.increment(k)
+}
+
+// ── Release stage timing metrics ──────────────────────────────────────────────
+
+// observeReleaseStageTimings emits validation and pipeline execution duration metrics
+// for a Release CR by tracking condition transitions.
+func (e *KAExporter) observeReleaseStageTimings(rel Release, tenantNS, application, component string, exemplar prometheus.Labels) {
+	creationTime := rel.Metadata.CreationTimestamp
+	validatedTime := getConditionTime(rel.Status.Conditions, "Validated")
+	releasedTime := getConditionTime(rel.Status.Conditions, "Released")
+
+	// Creation → Validated (validation stage: policy gates, EC checks)
+	if validationDur := secondsBetween(creationTime, validatedTime); validationDur >= 0 {
+		observeWithExemplar(
+			e.releaseValidationDuration.WithLabelValues(e.cluster, tenantNS, application, component),
+			validationDur, exemplar,
+		)
+	}
+
+	// Validated → Released (managed pipeline execution)
+	if pipelineDur := secondsBetween(validatedTime, releasedTime); pipelineDur >= 0 {
+		observeWithExemplar(
+			e.releasePipelineExecutionDuration.WithLabelValues(e.cluster, tenantNS, application, component),
+			pipelineDur, exemplar,
+		)
+	}
 }

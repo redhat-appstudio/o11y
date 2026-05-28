@@ -74,9 +74,11 @@ type Release struct {
 }
 
 type Condition struct {
-	Type   string `json:"type"`
-	Status string `json:"status,omitempty"`
-	Reason string `json:"reason"`
+	Type               string `json:"type"`
+	Status             string `json:"status,omitempty"`
+	Reason             string `json:"reason"`
+	LastTransitionTime string `json:"lastTransitionTime,omitempty"`
+	Message            string `json:"message,omitempty"`
 }
 
 // ── In-memory indexes ─────────────────────────────────────────────────────────
