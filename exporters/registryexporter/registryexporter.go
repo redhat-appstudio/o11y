@@ -13,18 +13,12 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strings"
-	"sync/atomic"
 	"syscall"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
-
-// initialFetchDone is set to true after the first complete set of registry
-// tests has run. The /readyz handler returns 503 until this is true, so
-// Prometheus will not record an empty-data scrape on DaemonSet pod startup.
-var initialFetchDone atomic.Bool
 
 type Metrics struct {
 	RegistrySuccess    *prometheus.GaugeVec
@@ -485,26 +479,6 @@ func main() {
 
 	http.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 
-	// /healthz — liveness: process is alive and the HTTP server is responsive.
-	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, "OK")
-	})
-
-	// /readyz — readiness: at least one full set of registry tests has completed.
-	// The first test cycle runs after scrapeInterval (5m), so this returns 503
-	// until that first cycle finishes. This prevents Prometheus from recording
-	// zero-value metrics immediately after pod (re)start.
-	http.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
-		if !initialFetchDone.Load() {
-			w.WriteHeader(http.StatusServiceUnavailable)
-			fmt.Fprint(w, "initial registry tests not yet complete")
-			return
-		}
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, "OK")
-	})
-
 	go func() {
 		log.Println("Prometheus exporter starting on :9101/metrics...")
 		if err := http.ListenAndServe(":9101", nil); err != nil {
@@ -548,9 +522,5 @@ func main() {
 			go MetadataTest(metrics, registryMap, registryType)
 			go AuthenticationTest(metrics, registryMap, registryType)
 		}
-		// Mark ready after the first scrape cycle so /readyz returns 200.
-		// Tests run as goroutines; the flag indicates the cycle was dispatched,
-		// not that all goroutines have finished — consistent with the ticker model.
-		initialFetchDone.Store(true)
 	}
 }

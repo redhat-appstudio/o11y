@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"sync/atomic"
 	"time"
 
 	"slices"
@@ -86,11 +85,6 @@ type TestType struct {
 	DelayCheckQuery string
 	DataQuery       string
 }
-
-// initialFetchDone is set to true after the first complete metrics collection
-// cycle. The /readyz handler uses this to prevent Prometheus from scraping
-// before any data has been populated.
-var initialFetchDone atomic.Bool
 
 var (
 	kanaryUpMetric = prometheus.NewGaugeVec(
@@ -384,25 +378,6 @@ func main() {
 	// Expose the registered metrics via HTTP.
 	http.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{}))
 
-	// /healthz — liveness: process is alive, HTTP server is responsive.
-	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, "OK")
-	})
-
-	// /readyz — readiness: initial fetch is complete and metrics are populated.
-	// Returns 503 until the first full collection cycle has finished, preventing
-	// Prometheus from recording an empty-data scrape on pod startup.
-	http.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
-		if !initialFetchDone.Load() {
-			w.WriteHeader(http.StatusServiceUnavailable)
-			fmt.Fprint(w, "initial metrics fetch not yet complete")
-			return
-		}
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, "OK")
-	})
-
 	go func() {
 		log.Println("Prometheus exporter starting on :8000/metrics ...")
 		if err := http.ListenAndServe(":8000", nil); err != nil {
@@ -417,7 +392,6 @@ func main() {
 		fetchAndExportMetrics(db, testType)
 	}
 	log.Println("Initial metrics fetch complete.")
-	initialFetchDone.Store(true)
 
 	// Periodically fetch metrics. The interval could be made configurable.
 	log.Printf("Starting periodic metrics fetch every %v.", scrapeInterval)
