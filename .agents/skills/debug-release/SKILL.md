@@ -1,7 +1,7 @@
 ---
 name: debug-release
 description: "Use when a Konflux release has failed for the o11y exporter container image and you need to find the root cause and recover. Queries release objects, traces to release pipeline runs via KubeArchive."
-compatibility: "Requires oc (authenticated to Konflux cluster with access to rhtap-o11y-tenant namespace), python3, and network access to the in-cluster KubeArchive API."
+compatibility: "Requires oc (authenticated to Konflux cluster with access to rhtap-o11y-tenant namespace) with the kubectl-ka plugin (https://kubearchive.github.io/kubearchive/main/cli/installation.html)."
 ---
 
 Diagnose and recover from failed Konflux releases for the o11y exporter container image. This is an o11y-team-internal workflow -- releases only affect the exporter image deployed via infra-deployments.
@@ -15,70 +15,51 @@ Diagnose and recover from failed Konflux releases for the o11y exporter containe
 ## Prerequisites
 
 - `oc` CLI authenticated to the Konflux cluster with access to `rhtap-o11y-tenant` namespace
+- `kubectl-ka` plugin installed ([installation guide](https://kubearchive.github.io/kubearchive/main/cli/installation.html))
 
 ## Diagnostic workflow
 
-### Step 1: List releases
-
-```bash
-oc get releases -n rhtap-o11y-tenant --sort-by=.metadata.creationTimestamp
-```
-
-### Step 2: Get the failure reason
+### Step 1: Get the failure reason
 
 ```bash
 oc get release <RELEASE_NAME> -n rhtap-o11y-tenant -o yaml
 ```
 
-Check `status.conditions` for the failure reason. The `ManagedPipelineProcessed` condition typically contains the failing task and step name.
+Check `status.conditions` for the failure reason. The `ManagedPipelineProcessed` condition contains the failing task and step name. 
 
-### Step 3: Trace to the release pipeline run
+Also get the release pipeline run reference (runs in `rhtap-releng-tenant`, not the o11y namespace) under `.status.managedProcessing.pipelineRun`.
 
-The release pipeline runs in `rhtap-releng-tenant`, not the o11y namespace. Get the reference:
+### Step 2: Find the failing task run
+
+List the task runs for the pipeline run and match the failing task name from Step 1. This is needed for log lookup in the next step:
 
 ```bash
-oc get release <RELEASE_NAME> -n rhtap-o11y-tenant \
-  -o jsonpath='{.status.managedProcessing.pipelineRun}'
+oc ka get taskrun -n rhtap-releng-tenant -l "tekton.dev/pipelineRun=<PIPELINERUN_NAME>"
 ```
 
-This returns a reference like `rhtap-releng-tenant/managed-xxxxx`.
+### Step 3: Get the step logs
 
-### Step 4: Find the failing task via KubeArchive
+```bash
+oc ka logs taskrun/<TASKRUN_NAME> -n rhtap-releng-tenant -c step-<STEP_NAME>
+```
+
+## Fallback: curl-based queries
+
+If `kubectl-ka` is not installed and installation is not possible, query the KubeArchive API directly:
 
 ```bash
 KUBEARCHIVE_URL="https://kubearchive-api-server-product-kubearchive.apps.stone-prd-rh01.pg1f.p1.openshiftapps.com"
 TOKEN=$(oc whoami -t)
 
-# List tasks in the release pipeline run
+# Get a pipeline run
 curl -s -H "Authorization: Bearer $TOKEN" \
-  "$KUBEARCHIVE_URL/apis/tekton.dev/v1/namespaces/rhtap-releng-tenant/pipelineruns/<PIPELINERUN_NAME>" \
-  | python3 -c "
-import sys,json
-d=json.load(sys.stdin)
-for child in d.get('status',{}).get('childReferences',[]):
-    print(child.get('pipelineTaskName',''), child.get('name',''))
-"
-```
+  "$KUBEARCHIVE_URL/apis/tekton.dev/v1/namespaces/rhtap-releng-tenant/pipelineruns/<PIPELINERUN_NAME>"
 
-Check each task run's status:
-```bash
+# Get a task run
 curl -s -H "Authorization: Bearer $TOKEN" \
-  "$KUBEARCHIVE_URL/apis/tekton.dev/v1/namespaces/rhtap-releng-tenant/taskruns/<TASKRUN_NAME>" \
-  | python3 -c "
-import sys,json
-d=json.load(sys.stdin)
-c = d.get('status',{}).get('conditions',[{}])[0]
-print(f\"Reason: {c.get('reason','')}\")
-print(f\"Message: {c.get('message','')}\")
-for s in d.get('status',{}).get('steps',[]):
-    term = s.get('terminated',{})
-    if term.get('exitCode',0) != 0:
-        print(f\"Failing step: {s.get('name','')} exit={term.get('exitCode','')}\")"
-```
+  "$KUBEARCHIVE_URL/apis/tekton.dev/v1/namespaces/rhtap-releng-tenant/taskruns/<TASKRUN_NAME>"
 
-### Step 5: Get the step logs
-
-```bash
+# Get step logs (pod name is <taskrun-name>-pod)
 curl -s -H "Authorization: Bearer $TOKEN" \
   "$KUBEARCHIVE_URL/api/v1/namespaces/rhtap-releng-tenant/pods/<TASKRUN_NAME>-pod/log?container=step-<STEP_NAME>"
 ```
