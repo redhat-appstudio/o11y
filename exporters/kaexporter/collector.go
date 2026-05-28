@@ -35,6 +35,8 @@ func (e *KAExporter) Describe(ch chan<- *prometheus.Desc) {
 	e.lastScrapeSuccessGauge.Describe(ch)
 	e.scrapeDurationGauge.Describe(ch)
 	e.truncationsTotal.Describe(ch)
+	e.lookbackOrphanedReleases.Describe(ch)
+	e.lookbackBuildsNotFound.Describe(ch)
 }
 
 // Collect implements prometheus.Collector. It emits the metric state cached
@@ -61,6 +63,8 @@ func (e *KAExporter) Collect(ch chan<- prometheus.Metric) {
 	e.lastScrapeSuccessGauge.Collect(ch)
 	e.scrapeDurationGauge.Collect(ch)
 	e.truncationsTotal.Collect(ch)
+	e.lookbackOrphanedReleases.Collect(ch)
+	e.lookbackBuildsNotFound.Collect(ch)
 }
 
 // ── Background collection lifecycle ──────────────────────────────────────────
@@ -204,6 +208,9 @@ func (e *KAExporter) collectMetrics(ctx context.Context) error {
 
 	e.collectManagedReleasePLRs(ctx, since, outcomeCounts)
 
+	// Lookback mechanism: fetch builds for orphaned releases (builds outside 48h window)
+	orphanedCount := e.processOrphanedReleases(ctx, releaseIdx, outcomeCounts)
+
 	// Get final counts and emit metrics
 	finalCounts := outcomeCounts.getAll()
 	for k, v := range finalCounts {
@@ -212,8 +219,8 @@ func (e *KAExporter) collectMetrics(ctx context.Context) error {
 		).Set(v)
 	}
 
-	log.Printf("Metrics collected: %d build PLRs, %d test PLRs (%d/%d tenant namespaces scraped successfully); %d releases indexed",
-		totalBuild, totalTest, nsOK, len(namespaces), len(releaseIdx.store))
+	log.Printf("Metrics collected: %d build PLRs, %d test PLRs (%d/%d tenant namespaces scraped successfully); %d releases indexed (%d orphaned, correlated via lookback)",
+		totalBuild, totalTest, nsOK, len(namespaces), len(releaseIdx.store), orphanedCount)
 
 	return nil
 }
@@ -507,4 +514,124 @@ func isReleaseServicePLR(plr PipelineRun) bool {
 	return getLabel(plr, labelAppStudioService, "") == valueAppStudioServiceRelease &&
 		getLabel(plr, labelPipelinesType, "") == valuePipelinesTypeManaged &&
 		plr.Status.CompletionTime != ""
+}
+
+// ── Lookback mechanism for orphaned releases ──────────────────────────────────
+
+// orphanedRelease represents a Release CR that didn't find its build PLR in the 48h window.
+type orphanedRelease struct {
+	release        Release
+	namespace      string
+	buildPLRName   string
+	buildNamespace string
+}
+
+// processOrphanedReleases detects releases that weren't correlated in the normal 48h window
+// and fetches their specific builds by name (without time filtering). Returns the count of
+// successfully correlated orphaned releases.
+func (e *KAExporter) processOrphanedReleases(ctx context.Context, idx *releaseIndex, outcomeCounts *safeOutcomeCounts) int {
+	orphaned := e.findOrphanedReleases(idx)
+	if len(orphaned) == 0 {
+		return 0
+	}
+
+	log.Printf("Lookback: %d orphaned releases detected (build outside 48h window)", len(orphaned))
+	return e.fetchAndProcessOrphanedBuilds(ctx, orphaned, outcomeCounts)
+}
+
+// findOrphanedReleases scans the release index for releases that weren't correlated during
+// normal collection (i.e., their build PLR was outside the 48h window).
+func (e *KAExporter) findOrphanedReleases(idx *releaseIndex) []orphanedRelease {
+	var orphaned []orphanedRelease
+
+	for i := range idx.store {
+		if idx.correlated[i] {
+			continue // Already matched
+		}
+
+		entry := &idx.store[i]
+		buildPLRName := getLabel(entry.Release, labelBuildPipelineRun, "")
+		if buildPLRName == "" {
+			// No build label - this release can't be correlated (shouldn't happen in normal workflows)
+			log.Printf("WARNING: Release %s in namespace %s has no build-pipelinerun label, skipping lookback",
+				entry.Metadata.Name, entry.crNamespace)
+			continue
+		}
+
+		// Infer build namespace from release namespace (usually the same)
+		buildNS := entry.crNamespace
+
+		orphaned = append(orphaned, orphanedRelease{
+			release:        entry.Release,
+			namespace:      entry.crNamespace,
+			buildPLRName:   buildPLRName,
+			buildNamespace: buildNS,
+		})
+	}
+
+	return orphaned
+}
+
+// fetchAndProcessOrphanedBuilds fetches specific build PLRs by name (without time filtering)
+// for orphaned releases and emits their metrics. Returns count of successful correlations.
+func (e *KAExporter) fetchAndProcessOrphanedBuilds(ctx context.Context, orphaned []orphanedRelease, outcomeCounts *safeOutcomeCounts) int {
+	successCount := 0
+	notFoundCount := 0
+
+	for _, o := range orphaned {
+		plr, err := e.fetchSpecificPipelineRun(ctx, o.buildNamespace, o.buildPLRName)
+		if err != nil {
+			log.Printf("Orphaned release %s: fetch build %s failed: %v",
+				o.release.Metadata.Name, o.buildPLRName, err)
+			continue
+		}
+		if plr == nil {
+			// Build not found (404) - likely pre-retention
+			notFoundCount++
+			e.lookbackBuildsNotFound.Inc()
+			continue
+		}
+
+		// Verify this is actually a build PLR
+		if getLabel(*plr, labelPipelinesType, "") != "build" {
+			log.Printf("WARNING: PLR %s is not a build (type=%s), skipping lookback",
+				o.buildPLRName, getLabel(*plr, labelPipelinesType, ""))
+			continue
+		}
+
+		if plr.Status.CompletionTime == "" {
+			log.Printf("WARNING: Build PLR %s is not completed, skipping lookback", o.buildPLRName)
+			continue
+		}
+
+		// Process this build WITH the orphaned release
+		app := getLabel(*plr, labelAppStudioApp, "unknown")
+		comp := getLabel(*plr, labelAppStudioComp, "unknown")
+		result := getResult(*plr)
+		snap := getLabel(o.release, "release.appstudio.openshift.io/snapshot", "")
+
+		// Create a temporary releaseIndex with just this release
+		tempIdx := newReleaseIndex()
+		tempIdx.addReleases(o.namespace, []Release{o.release})
+
+		// Emit build histogram (this will find the release and emit duration metrics)
+		e.observeBuildHistograms(o.buildNamespace, *plr, app, comp, snap, result, tempIdx)
+
+		// Also count the build outcome
+		addArchivedOutcome(o.buildNamespace, "build", *plr, outcomeCounts)
+
+		successCount++
+		e.lookbackOrphanedReleases.Inc()
+	}
+
+	if notFoundCount > 0 {
+		log.Printf("Lookback: %d/%d builds not found in KubeArchive (pre-retention)",
+			notFoundCount, len(orphaned))
+	}
+	if successCount > 0 {
+		log.Printf("Lookback complete: %d/%d orphaned releases correlated",
+			successCount, len(orphaned))
+	}
+
+	return successCount
 }

@@ -125,11 +125,13 @@ type KAExporter struct {
 	archivedCompletionGauge *prometheus.GaugeVec // count of completed resources by outcome
 
 	// Exporter self-monitoring metrics.
-	scrapeErrorsTotal       *prometheus.CounterVec // labels: phase
-	lastScrapeSuccessGauge  prometheus.Gauge       // unix timestamp of last successful full scrape
-	lastScrapeSuccessAt     atomic.Int64           // atomic unix timestamp for readiness check
-	scrapeDurationGauge     prometheus.Gauge       // last scrape wall-clock duration in seconds
-	truncationsTotal        *prometheus.CounterVec // labels: resource (pipelineruns|snapshots|releases), namespace
+	scrapeErrorsTotal         *prometheus.CounterVec // labels: phase
+	lastScrapeSuccessGauge    prometheus.Gauge       // unix timestamp of last successful full scrape
+	lastScrapeSuccessAt       atomic.Int64           // atomic unix timestamp for readiness check
+	scrapeDurationGauge       prometheus.Gauge       // last scrape wall-clock duration in seconds
+	truncationsTotal          *prometheus.CounterVec // labels: resource (pipelineruns|snapshots|releases), namespace
+	lookbackOrphanedReleases  prometheus.Counter     // total orphaned releases correlated via lookback
+	lookbackBuildsNotFound    prometheus.Counter     // total builds not found during lookback (pre-retention)
 }
 
 // NewKAExporter creates a new KubeArchive exporter
@@ -336,6 +338,14 @@ func NewKAExporter() (*KAExporter, error) {
 			},
 			[]string{"cluster", "resource", "namespace"},
 		),
+		lookbackOrphanedReleases: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "konflux_ka_exporter_lookback_orphaned_releases_total",
+			Help: "Total number of orphaned releases successfully correlated via lookback mechanism (build outside 48h window).",
+		}),
+		lookbackBuildsNotFound: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "konflux_ka_exporter_lookback_builds_not_found_total",
+			Help: "Total number of builds not found during lookback (pre-KubeArchive retention or missing from archive).",
+		}),
 	}, nil
 }
 

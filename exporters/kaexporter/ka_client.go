@@ -164,3 +164,38 @@ func (e *KAExporter) fetchReleases(ctx context.Context, baseURL, since, namespac
 	}
 	return all, nil
 }
+
+// fetchSpecificPipelineRun fetches a single PipelineRun by name without time filtering.
+// Used by the lookback mechanism to fetch builds for orphaned releases.
+// Returns nil with no error if the PLR is not found (404).
+func (e *KAExporter) fetchSpecificPipelineRun(ctx context.Context, namespace, name string) (*PipelineRun, error) {
+	url := fmt.Sprintf("%s/apis/tekton.dev/v1/namespaces/%s/pipelineruns/%s",
+		e.kaHost, namespace, name)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+e.kaToken)
+
+	resp, err := e.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, nil // Not found - build may be pre-retention
+	}
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("status %d: %s", resp.StatusCode, string(body))
+	}
+
+	var plr PipelineRun
+	if err := json.NewDecoder(resp.Body).Decode(&plr); err != nil {
+		return nil, err
+	}
+
+	return &plr, nil
+}

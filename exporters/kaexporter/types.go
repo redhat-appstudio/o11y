@@ -121,6 +121,7 @@ type releaseIndex struct {
 	store      []releaseEntry
 	byBuildPLR map[string]int
 	bySnapshot map[string]int
+	correlated map[int]bool // Tracks which releases found their build (for lookback)
 }
 
 // newReleaseIndex returns an empty releaseIndex ready to receive releases.
@@ -128,6 +129,7 @@ func newReleaseIndex() *releaseIndex {
 	return &releaseIndex{
 		byBuildPLR: make(map[string]int),
 		bySnapshot: make(map[string]int),
+		correlated: make(map[int]bool),
 	}
 }
 

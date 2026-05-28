@@ -48,6 +48,9 @@ func (e *KAExporter) observeBuildHistograms(tenantNS string, plr PipelineRun, ap
 
 		// Emit release stage timing metrics
 		e.observeReleaseStageTimings(matched.Release, tenantNS, application, component, relExemplar)
+
+		// Mark this release as correlated (for lookback mechanism)
+		e.markReleaseCorrelated(plr.Metadata.Name, globalReleases)
 	}
 }
 
@@ -183,5 +186,13 @@ func (e *KAExporter) observeReleaseStageTimings(rel Release, tenantNS, applicati
 			e.releasePipelineExecutionDuration.WithLabelValues(e.cluster, tenantNS, application, component),
 			pipelineDur, exemplar,
 		)
+	}
+}
+
+// markReleaseCorrelated marks a release as correlated in the global index.
+// This is used by the lookback mechanism to track which releases found their builds.
+func (e *KAExporter) markReleaseCorrelated(buildPLRName string, idx *releaseIndex) {
+	if i, ok := idx.byBuildPLR[buildPLRName]; ok {
+		idx.correlated[i] = true
 	}
 }
