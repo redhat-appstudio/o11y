@@ -3,13 +3,143 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
+	"math/rand"
+	"net"
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 )
+
+// ── Retry logic with exponential backoff ─────────────────────────────────────
+
+// retryableHTTP wraps HTTP requests with exponential backoff retry logic.
+// Retries on transient errors: network failures, 429 (rate limit), 5xx (server errors).
+// Does NOT retry on permanent errors: 4xx (except 429), context cancellation.
+func (e *KAExporter) retryableHTTP(ctx context.Context, req *http.Request) (*http.Response, error) {
+	var lastResp *http.Response
+	var lastErr error
+
+	delay := e.retry.initialDelay
+
+	for attempt := 0; attempt <= e.retry.maxRetries; attempt++ {
+		// Apply exponential backoff delay (skip on first attempt)
+		if attempt > 0 {
+			// Add jitter (±25%) to prevent thundering herd
+			jitter := time.Duration(rand.Int63n(int64(delay) / 2))
+			sleepTime := delay - delay/4 + jitter
+
+			select {
+			case <-time.After(sleepTime):
+			case <-ctx.Done():
+				return nil, fmt.Errorf("context cancelled during retry backoff: %w", ctx.Err())
+			}
+
+			// Exponential backoff: multiply delay for next iteration
+			delay = time.Duration(float64(delay) * e.retry.multiplier)
+			if delay > e.retry.maxDelay {
+				delay = e.retry.maxDelay
+			}
+		}
+
+		// Execute HTTP request
+		resp, err := e.httpClient.Do(req)
+
+		// Success case: 2xx or 3xx response
+		if err == nil && resp.StatusCode < 400 {
+			return resp, nil
+		}
+
+		// Non-retryable 4xx errors (except 429 rate limit)
+		if err == nil && resp.StatusCode >= 400 && resp.StatusCode < 500 && resp.StatusCode != 429 {
+			return resp, nil // Return immediately, caller will handle
+		}
+
+		// Check if error/response is retryable
+		reason, retryable := classifyError(err, resp)
+		if !retryable {
+			// Permanent error, don't retry
+			if resp != nil {
+				return resp, err
+			}
+			return nil, err
+		}
+
+		// Close response body before retry (prevent leak)
+		if resp != nil {
+			io.Copy(io.Discard, resp.Body) // Drain body
+			resp.Body.Close()
+			lastResp = nil // Don't return this response
+		}
+
+		// Track retry attempt
+		e.retryAttemptsTotal.WithLabelValues(e.cluster, reason).Inc()
+
+		// Log retry (only after first failure)
+		if attempt < e.retry.maxRetries {
+			log.Printf("KubeArchive API retry %d/%d for %s: %s (delay: %v)",
+				attempt+1, e.retry.maxRetries, req.URL.Path, reason, delay)
+		}
+
+		lastErr = err
+	}
+
+	// Max retries exhausted
+	reason, _ := classifyError(lastErr, lastResp)
+	e.retryExhaustedTotal.WithLabelValues(e.cluster, reason).Inc()
+
+	if lastErr != nil {
+		return nil, fmt.Errorf("max retries (%d) exhausted: %w", e.retry.maxRetries, lastErr)
+	}
+	if lastResp != nil {
+		return lastResp, fmt.Errorf("max retries (%d) exhausted, status: %d", e.retry.maxRetries, lastResp.StatusCode)
+	}
+	return nil, fmt.Errorf("max retries (%d) exhausted", e.retry.maxRetries)
+}
+
+// classifyError determines if an error/response is retryable and returns a reason label.
+// Returns (reason, retryable).
+func classifyError(err error, resp *http.Response) (string, bool) {
+	// Network errors (timeout, connection refused, DNS failure) are retryable
+	if err != nil {
+		// Context cancellation is NOT retryable
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			return "context_cancelled", false
+		}
+
+		// Check for network errors
+		var netErr net.Error
+		if errors.As(err, &netErr) {
+			if netErr.Timeout() {
+				return "network_timeout", true
+			}
+			return "network_error", true
+		}
+
+		// Other errors (DNS, connection refused, etc.)
+		return "network_error", true
+	}
+
+	// HTTP response errors
+	if resp != nil {
+		switch {
+		case resp.StatusCode == 429:
+			return "rate_limit", true
+		case resp.StatusCode >= 500:
+			return "server_error", true
+		case resp.StatusCode >= 400:
+			// 4xx errors (except 429) are NOT retryable
+			return fmt.Sprintf("client_error_%d", resp.StatusCode), false
+		}
+	}
+
+	// Unknown error, don't retry
+	return "unknown", false
+}
 
 // pageURL appends pagination parameters and an optional creation-timestamp filter to base.
 func pageURL(base, continueToken, since string) (string, error) {
@@ -29,7 +159,7 @@ func pageURL(base, continueToken, since string) (string, error) {
 	return u.String(), nil
 }
 
-// fetchPage executes a single GET request and closes the response body before returning.
+// fetchPage executes a single GET request with retry logic and closes the response body before returning.
 func (e *KAExporter) fetchPage(ctx context.Context, pageURL string) ([]byte, int, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, pageURL, nil)
 	if err != nil {
@@ -37,7 +167,7 @@ func (e *KAExporter) fetchPage(ctx context.Context, pageURL string) ([]byte, int
 	}
 	req.Header.Set("Authorization", "Bearer "+e.kaToken)
 
-	resp, err := e.httpClient.Do(req)
+	resp, err := e.retryableHTTP(ctx, req)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -178,7 +308,7 @@ func (e *KAExporter) fetchSpecificPipelineRun(ctx context.Context, namespace, na
 	}
 	req.Header.Set("Authorization", "Bearer "+e.kaToken)
 
-	resp, err := e.httpClient.Do(req)
+	resp, err := e.retryableHTTP(ctx, req)
 	if err != nil {
 		return nil, err
 	}

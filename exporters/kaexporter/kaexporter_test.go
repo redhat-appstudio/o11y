@@ -495,9 +495,9 @@ func makeTestExporter() *KAExporter {
 	return &KAExporter{
 		cluster: "test-cluster",
 
-		// Production: validated against RH01 (P95=87.6m). See BUCKET-VALIDATION-RH01.md.
+		// Production: 5 buckets for ~40% cardinality reduction. P50/P75/P95 coverage maintained.
 		buildDurationHist: prometheus.NewHistogramVec(
-			prometheus.HistogramOpts{Name: "t_build_dur", Buckets: []float64{60, 120, 300, 600, 900, 1200, 1800, 2700, 3600, 5400}},
+			prometheus.HistogramOpts{Name: "t_build_dur", Buckets: []float64{300, 900, 1800, 3600, 5400}},
 			[]string{"cluster", "namespace", "application", "component", "result"},
 		),
 		buildWaitGauge: prometheus.NewGaugeVec(
@@ -505,9 +505,9 @@ func makeTestExporter() *KAExporter {
 			[]string{"cluster", "namespace", "application", "component"},
 		),
 
-		// Production: validated against RH01 (P50=2.4m, P95=69.1m; 60s removed — 0% usage). See BUCKET-VALIDATION-RH01.md.
+		// Production: 5 buckets for cardinality reduction. P50/P95 coverage maintained.
 		integrationDurationHist: prometheus.NewHistogramVec(
-			prometheus.HistogramOpts{Name: "t_int_dur", Buckets: []float64{120, 300, 600, 900, 1200, 1800, 3600, 5400}},
+			prometheus.HistogramOpts{Name: "t_int_dur", Buckets: []float64{300, 900, 1800, 3600, 5400}},
 			[]string{"cluster", "namespace", "application", "component", "scenario", "result", "optional"},
 		),
 		integrationWaitGauge: prometheus.NewGaugeVec(
@@ -519,15 +519,15 @@ func makeTestExporter() *KAExporter {
 			[]string{"cluster", "namespace", "application", "component"},
 		),
 
-		// Production: no live RH01 data; range 5m–4h covers expected release durations.
+		// Production: 5 buckets, wider range for releases (10m–4h).
 		releaseDurationHist: prometheus.NewHistogramVec(
-			prometheus.HistogramOpts{Name: "t_rel_dur", Buckets: []float64{300, 600, 1200, 1800, 3600, 5400, 7200, 14400}},
+			prometheus.HistogramOpts{Name: "t_rel_dur", Buckets: []float64{600, 1800, 3600, 7200, 14400}},
 			[]string{"cluster", "namespace", "application", "component", "release_namespace"},
 		),
 
-		// Production: no live RH01 data; range 1m–1h covers expected managed release PLR durations.
+		// Production: 5 buckets for managed release PLRs (2m–1h).
 		releasePLRTotalHist: prometheus.NewHistogramVec(
-			prometheus.HistogramOpts{Name: "t_rel_plr_total", Buckets: []float64{60, 120, 300, 600, 900, 1800, 3600}},
+			prometheus.HistogramOpts{Name: "t_rel_plr_total", Buckets: []float64{120, 300, 900, 1800, 3600}},
 			[]string{"cluster", "namespace", "application_namespace", "application", "pipeline", "result"},
 		),
 		releasePLRWaitGauge: prometheus.NewGaugeVec(
@@ -535,7 +535,7 @@ func makeTestExporter() *KAExporter {
 			[]string{"cluster", "namespace", "application_namespace", "application", "pipeline"},
 		),
 		releasePLRExecHist: prometheus.NewHistogramVec(
-			prometheus.HistogramOpts{Name: "t_rel_plr_exec", Buckets: []float64{60, 120, 300, 600, 900, 1800, 3600}},
+			prometheus.HistogramOpts{Name: "t_rel_plr_exec", Buckets: []float64{120, 300, 900, 1800, 3600}},
 			[]string{"cluster", "namespace", "application_namespace", "application", "pipeline", "result"},
 		),
 

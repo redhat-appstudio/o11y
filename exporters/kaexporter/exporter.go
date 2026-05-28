@@ -71,7 +71,26 @@ const (
 	// Should be set to match the Prometheus scrape interval.
 	kaCollectIntervalSecsEnv      = "KA_COLLECT_INTERVAL_SECONDS"
 	defaultCollectIntervalSeconds = 300
+
+	// Retry configuration for KubeArchive API calls
+	kaMaxRetriesEnv         = "KA_MAX_RETRIES"
+	defaultMaxRetries       = 3
+	kaInitialRetryDelayEnv  = "KA_INITIAL_RETRY_DELAY_MS"
+	defaultInitialRetryDelay = 100 // milliseconds
+	kaMaxRetryDelayEnv      = "KA_MAX_RETRY_DELAY_MS"
+	defaultMaxRetryDelay    = 5000 // milliseconds
+	retryBackoffMultiplier  = 2.0
 )
+
+// ── Retry configuration ───────────────────────────────────────────────────────
+
+// retryConfig holds exponential backoff parameters for KubeArchive API retries
+type retryConfig struct {
+	maxRetries   int
+	initialDelay time.Duration
+	maxDelay     time.Duration
+	multiplier   float64
+}
 
 // ── Exporter struct ───────────────────────────────────────────────────────────
 
@@ -106,6 +125,9 @@ type KAExporter struct {
 	// k8sClient lists tenant namespaces when fixedTenantNamespace is empty; nil in single-tenant mode.
 	k8sClient kubernetes.Interface
 
+	// retry holds exponential backoff configuration for KubeArchive API calls
+	retry retryConfig
+
 	// Duration metrics — Histograms for event durations
 	buildDurationHist       *prometheus.HistogramVec // build PLR creation → completion
 	integrationDurationHist *prometheus.HistogramVec // integration test PLR creation → completion
@@ -132,6 +154,8 @@ type KAExporter struct {
 	truncationsTotal          *prometheus.CounterVec // labels: resource (pipelineruns|snapshots|releases), namespace
 	lookbackOrphanedReleases  prometheus.Counter     // total orphaned releases correlated via lookback
 	lookbackBuildsNotFound    prometheus.Counter     // total builds not found during lookback (pre-retention)
+	retryAttemptsTotal        *prometheus.CounterVec // labels: cluster, reason; total retry attempts
+	retryExhaustedTotal       *prometheus.CounterVec // labels: cluster, reason; total requests that exceeded max retries
 }
 
 // NewKAExporter creates a new KubeArchive exporter
@@ -179,6 +203,34 @@ func NewKAExporter() (*KAExporter, error) {
 		}
 	}
 
+	// Parse retry configuration
+	maxRetries := defaultMaxRetries
+	if mr := strings.TrimSpace(os.Getenv(kaMaxRetriesEnv)); mr != "" {
+		if parsed, err := strconv.Atoi(mr); err != nil || parsed < 0 {
+			log.Printf("WARNING: %s=%q is not a non-negative integer; using default %d", kaMaxRetriesEnv, mr, defaultMaxRetries)
+		} else {
+			maxRetries = parsed
+		}
+	}
+
+	initialRetryDelayMs := defaultInitialRetryDelay
+	if ird := strings.TrimSpace(os.Getenv(kaInitialRetryDelayEnv)); ird != "" {
+		if parsed, err := strconv.Atoi(ird); err != nil || parsed <= 0 {
+			log.Printf("WARNING: %s=%q is not a positive integer; using default %dms", kaInitialRetryDelayEnv, ird, defaultInitialRetryDelay)
+		} else {
+			initialRetryDelayMs = parsed
+		}
+	}
+
+	maxRetryDelayMs := defaultMaxRetryDelay
+	if mrd := strings.TrimSpace(os.Getenv(kaMaxRetryDelayEnv)); mrd != "" {
+		if parsed, err := strconv.Atoi(mrd); err != nil || parsed <= 0 {
+			log.Printf("WARNING: %s=%q is not a positive integer; using default %dms", kaMaxRetryDelayEnv, mrd, defaultMaxRetryDelay)
+		} else {
+			maxRetryDelayMs = parsed
+		}
+	}
+
 	fixedNS := strings.TrimSpace(os.Getenv(namespaceEnvVar))
 
 	var k8sClient kubernetes.Interface
@@ -213,6 +265,14 @@ func NewKAExporter() (*KAExporter, error) {
 		k8sClient:            k8sClient,
 		httpClient:           httpClient,
 
+		// Retry configuration
+		retry: retryConfig{
+			maxRetries:   maxRetries,
+			initialDelay: time.Duration(initialRetryDelayMs) * time.Millisecond,
+			maxDelay:     time.Duration(maxRetryDelayMs) * time.Millisecond,
+			multiplier:   retryBackoffMultiplier,
+		},
+
 		// --- Histograms for event durations ---
 		// Buckets are tuned to Konflux build/test/release cadence.
 		// Exemplars carry stable join keys (pipelinerun, snapshot, release_cr) for
@@ -222,7 +282,7 @@ func NewKAExporter() (*KAExporter, error) {
 			prometheus.HistogramOpts{
 				Name:    "konflux_build_pipelinerun_duration_seconds",
 				Help:    "Distribution of build PipelineRun durations from creation to completion. Exemplars carry pipelinerun and snapshot names as join keys.",
-				Buckets: []float64{60, 120, 300, 600, 900, 1200, 1800, 2700, 3600, 5400}, // 1m–90m
+				Buckets: []float64{300, 900, 1800, 3600, 5400}, // 5m–90m (5 buckets: P50/P75/P95 coverage)
 			},
 			[]string{"cluster", "namespace", "application", "component", "result"},
 		),
@@ -230,7 +290,7 @@ func NewKAExporter() (*KAExporter, error) {
 			prometheus.HistogramOpts{
 				Name:    "konflux_integration_pipelinerun_duration_seconds",
 				Help:    "Distribution of integration test PipelineRun durations from creation to completion. Exemplars carry pipelinerun and snapshot names as join keys.",
-				Buckets: []float64{120, 300, 600, 900, 1800, 3600, 5400}, // 2m–90m
+				Buckets: []float64{300, 900, 1800, 3600, 5400}, // 5m–90m (5 buckets: P50/P95 coverage)
 			},
 			[]string{"cluster", "namespace", "application", "component", "scenario", "result", "optional"},
 		),
@@ -238,7 +298,7 @@ func NewKAExporter() (*KAExporter, error) {
 			prometheus.HistogramOpts{
 				Name:    "konflux_release_duration_seconds",
 				Help:    "Distribution of Release CR durations from creation to completion, covering the full release pipeline execution. Exemplars carry pipelinerun, snapshot, and release_cr names.",
-				Buckets: []float64{300, 600, 1200, 1800, 3600, 5400, 7200, 14400}, // 5m–4h
+				Buckets: []float64{600, 1800, 3600, 7200, 14400}, // 10m–4h (5 buckets: wider range for releases)
 			},
 			[]string{"cluster", "namespace", "application", "component", "release_namespace"},
 		),
@@ -246,7 +306,7 @@ func NewKAExporter() (*KAExporter, error) {
 			prometheus.HistogramOpts{
 				Name:    "konflux_release_pipelinerun_duration_seconds",
 				Help:    "Distribution of managed release PipelineRun total durations from creation to completion. Exemplars carry pipelinerun name.",
-				Buckets: []float64{60, 120, 300, 600, 900, 1800, 3600}, // 1m–1h
+				Buckets: []float64{120, 300, 900, 1800, 3600}, // 2m–1h (5 buckets)
 			},
 			[]string{"cluster", "namespace", "application_namespace", "application", "pipeline", "result"},
 		),
@@ -254,7 +314,7 @@ func NewKAExporter() (*KAExporter, error) {
 			prometheus.HistogramOpts{
 				Name:    "konflux_release_pipelinerun_execution_duration_seconds",
 				Help:    "Distribution of managed release PipelineRun execution durations from start to completion. Exemplars carry pipelinerun name.",
-				Buckets: []float64{60, 120, 300, 600, 900, 1800, 3600}, // 1m–1h
+				Buckets: []float64{120, 300, 900, 1800, 3600}, // 2m–1h (5 buckets)
 			},
 			[]string{"cluster", "namespace", "application_namespace", "application", "pipeline", "result"},
 		),
@@ -264,7 +324,7 @@ func NewKAExporter() (*KAExporter, error) {
 			prometheus.HistogramOpts{
 				Name:    "konflux_release_validation_duration_seconds",
 				Help:    "Time from Release creation to Validated condition (policy gates, EC checks). Exemplars carry pipelinerun, snapshot, and release_cr names.",
-				Buckets: []float64{30, 60, 120, 300, 600, 900, 1800}, // 30s–30m
+				Buckets: []float64{60, 300, 600, 1200, 1800}, // 1m–30m (5 buckets)
 			},
 			[]string{"cluster", "namespace", "application", "component"},
 		),
@@ -272,7 +332,7 @@ func NewKAExporter() (*KAExporter, error) {
 			prometheus.HistogramOpts{
 				Name:    "konflux_release_pipeline_execution_duration_seconds",
 				Help:    "Time from Validated to Released condition (managed release pipeline execution). Exemplars carry pipelinerun, snapshot, and release_cr names.",
-				Buckets: []float64{60, 120, 300, 600, 900, 1800, 3600}, // 1m–1h
+				Buckets: []float64{120, 300, 900, 1800, 3600}, // 2m–1h (5 buckets)
 			},
 			[]string{"cluster", "namespace", "application", "component"},
 		),
@@ -346,6 +406,20 @@ func NewKAExporter() (*KAExporter, error) {
 			Name: "konflux_ka_exporter_lookback_builds_not_found_total",
 			Help: "Total number of builds not found during lookback (pre-KubeArchive retention or missing from archive).",
 		}),
+		retryAttemptsTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "konflux_ka_exporter_retry_attempts_total",
+				Help: "Total number of retry attempts for KubeArchive API calls, by reason (network_error, rate_limit, server_error).",
+			},
+			[]string{"cluster", "reason"},
+		),
+		retryExhaustedTotal: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Name: "konflux_ka_exporter_retry_exhausted_total",
+				Help: "Total number of KubeArchive API requests that exceeded max retries and failed permanently.",
+			},
+			[]string{"cluster", "reason"},
+		),
 	}, nil
 }
 

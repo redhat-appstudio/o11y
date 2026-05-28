@@ -37,6 +37,8 @@ func (e *KAExporter) Describe(ch chan<- *prometheus.Desc) {
 	e.truncationsTotal.Describe(ch)
 	e.lookbackOrphanedReleases.Describe(ch)
 	e.lookbackBuildsNotFound.Describe(ch)
+	e.retryAttemptsTotal.Describe(ch)
+	e.retryExhaustedTotal.Describe(ch)
 }
 
 // Collect implements prometheus.Collector. It emits the metric state cached
@@ -65,6 +67,8 @@ func (e *KAExporter) Collect(ch chan<- prometheus.Metric) {
 	e.truncationsTotal.Collect(ch)
 	e.lookbackOrphanedReleases.Collect(ch)
 	e.lookbackBuildsNotFound.Collect(ch)
+	e.retryAttemptsTotal.Collect(ch)
+	e.retryExhaustedTotal.Collect(ch)
 }
 
 // ── Background collection lifecycle ──────────────────────────────────────────
