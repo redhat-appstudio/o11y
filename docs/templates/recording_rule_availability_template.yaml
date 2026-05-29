@@ -1,0 +1,42 @@
+# Availability Recording Rule Template
+# Produces the `konflux_up` boolean metric (0 = down, 1 = up) for deployment availability.
+# See docs/RECORDING.md for full conventions and docs/ALERTS.md for the `konflux_up` specification.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  # [required] Name format: rhtap-<service>-availability
+  name: rhtap-<service>-availability
+  labels:
+    # [required] Must be "rhtap" — identifies this tenant in RHOBS
+    tenant: rhtap
+spec:
+  groups:
+    - name: <service>_availability
+      # [required] How often the rule is evaluated. Use 1m for deployment checks.
+      # Use longer intervals (e.g. 10m) for rules using avg_over_time or other range queries.
+      interval: 1m
+      rules:
+        - record: konflux_up
+          # floor() → 0 if any replica missing, 1 if all present
+          # clamp_max(…, 1) → caps at 1 (available can temporarily exceed spec during rollouts)
+          # label_replace → adds the required `service` and `check` labels
+          #
+          # Adjust the namespace and deployment filters for your service.
+          # For multiple deployments, add one rule per deployment or use regex: deployment=~"foo|bar"
+          # For StatefulSets, use kube_statefulset_status_replicas_available / kube_statefulset_replicas
+          #
+          # Not all availability signals use this pattern — some use service-specific metrics
+          # (e.g. probe_success, squid_up). The important thing is that the resulting metric
+          # is named `konflux_up` with `service` and `check` labels.
+          expr: |
+            clamp_max(
+              label_replace(
+                label_replace(
+                  floor(
+                    kube_deployment_status_replicas_available{
+                      namespace="<namespace>", deployment="<deployment>"
+                    } / kube_deployment_spec_replicas
+                  ), "check", "replicas-available", "",""
+                ), "service", "$1", "deployment","(.*)"
+              ), 1
+            )
