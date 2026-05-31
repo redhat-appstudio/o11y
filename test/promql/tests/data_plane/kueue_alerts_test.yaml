@@ -219,13 +219,15 @@ tests:
         alertname: TektonKueuePodStuckInCreation
         exp_alerts: []
 
-  # TektonKueuePodOOMKilled - should fire: container last terminated by OOMKilled for 1m
+  # TektonKueuePodOOMKilled - should fire: restart occurred and last terminated reason is OOMKilled
   - interval: 1m
     input_series:
+      - series: 'kube_pod_container_status_restarts_total{namespace="tekton-kueue", pod="tekton-kueue-controller-manager-abc123", container="manager", source_cluster="c1"}'
+        values: '0 1 1 1 1 1 1 1 1 1 1'
       - series: 'kube_pod_container_status_last_terminated_reason{namespace="tekton-kueue", reason="OOMKilled", pod="tekton-kueue-controller-manager-abc123", container="manager", source_cluster="c1"}'
         values: '1+0x10'
     alert_rule_test:
-      - eval_time: 1m
+      - eval_time: 2m
         alertname: TektonKueuePodOOMKilled
         exp_alerts:
           - exp_labels:
@@ -243,13 +245,15 @@ tests:
               alert_routing_key: infra
               team: konflux-infra
 
-  # TektonKueuePodOOMKilled - should NOT fire: last terminated reason is not OOMKilled
+  # TektonKueuePodOOMKilled - should NOT fire: no restarts occurred
   - interval: 1m
     input_series:
-      - series: 'kube_pod_container_status_last_terminated_reason{namespace="tekton-kueue", reason="OOMKilled", pod="tekton-kueue-controller-manager-abc123", container="manager", source_cluster="c1"}'
+      - series: 'kube_pod_container_status_restarts_total{namespace="tekton-kueue", pod="tekton-kueue-controller-manager-abc123", container="manager", source_cluster="c1"}'
         values: '0+0x10'
+      - series: 'kube_pod_container_status_last_terminated_reason{namespace="tekton-kueue", reason="OOMKilled", pod="tekton-kueue-controller-manager-abc123", container="manager", source_cluster="c1"}'
+        values: '1+0x10'
     alert_rule_test:
-      - eval_time: 1m
+      - eval_time: 2m
         alertname: TektonKueuePodOOMKilled
         exp_alerts: []
 

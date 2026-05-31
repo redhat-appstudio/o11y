@@ -119,10 +119,15 @@ spec:
 
     - alert: TektonKueuePodOOMKilled
       expr: |
-        kube_pod_container_status_last_terminated_reason{
-          namespace="tekton-kueue",
-          reason="OOMKilled"
-        } == 1
+        (
+          increase(kube_pod_container_status_restarts_total{namespace="tekton-kueue"}[15m]) > 0
+        ) * on (pod, container, namespace, source_cluster) group_left(reason)
+        (
+          kube_pod_container_status_last_terminated_reason{
+            namespace="tekton-kueue",
+            reason="OOMKilled"
+          } == 1
+        )
       for: 1m
       labels:
         severity: high
