@@ -185,6 +185,40 @@ tests:
         alertname: TektonKueuePodsStuckInPending
         exp_alerts: []
 
+  # TektonKueuePodStuckInCreation - should fire: container in ContainerCreating for 5m
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_waiting_reason{namespace="tekton-kueue", reason="ContainerCreating", pod="tekton-kueue-controller-manager-abc123", container="manager", source_cluster="c1"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: TektonKueuePodStuckInCreation
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              component: tekton-kueue
+              namespace: tekton-kueue
+              reason: ContainerCreating
+              pod: tekton-kueue-controller-manager-abc123
+              container: manager
+              source_cluster: c1
+            exp_annotations:
+              summary: "Tekton Kueue pod is stuck in ContainerCreating: tekton-kueue-controller-manager-abc123"
+              description: "Container manager in pod tekton-kueue-controller-manager-abc123 in namespace tekton-kueue on cluster c1 is stuck in ContainerCreating for more than 5 minutes. This typically points to infrastructure issues like Volume/Storage mounting failures or Network attachment delays."
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueuePodStuckInCreation.md
+              alert_routing_key: infra
+              team: konflux-infra
+
+  # TektonKueuePodStuckInCreation - should NOT fire: no containers in ContainerCreating
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_waiting_reason{namespace="tekton-kueue", reason="ContainerCreating", pod="tekton-kueue-controller-manager-abc123", container="manager", source_cluster="c1"}'
+        values: '0+0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: TektonKueuePodStuckInCreation
+        exp_alerts: []
+
   # TektonKueueRolloutStuck - should NOT fire at 10m: condition true but for: 20m not yet satisfied
   - interval: 1m
     input_series:

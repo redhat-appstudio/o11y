@@ -100,6 +100,23 @@ spec:
         alert_routing_key: infra
         team: konflux-infra
 
+    - alert: TektonKueuePodStuckInCreation
+      expr: |
+        kube_pod_container_status_waiting_reason{
+          namespace="tekton-kueue",
+          reason="ContainerCreating"
+        } == 1
+      for: 5m
+      labels:
+        severity: high
+        component: tekton-kueue
+      annotations:
+        summary: "Tekton Kueue pod is stuck in ContainerCreating: {{ $labels.pod }}"
+        description: "Container {{ $labels.container }} in pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} is stuck in ContainerCreating for more than 5 minutes. This typically points to infrastructure issues like Volume/Storage mounting failures or Network attachment delays."
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueuePodStuckInCreation.md
+        alert_routing_key: infra
+        team: konflux-infra
+
     - alert: KueueCELEvaluationFailures
       expr: increase(tekton_kueue_cel_evaluations_total{result="failure"}[5m]) > 0
       for: 1m
