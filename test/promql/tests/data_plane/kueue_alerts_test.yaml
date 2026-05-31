@@ -142,6 +142,49 @@ tests:
         alertname: TektonKueueRolloutStuck
         exp_alerts: []
 
+  # TektonKueuePodsStuckInPending - should fire: pod in Pending for 5m
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_status_phase{namespace="tekton-kueue", phase="Pending", pod="tekton-kueue-controller-manager-abc123", source_cluster="c1"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: TektonKueuePodsStuckInPending
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              component: tekton-kueue
+              namespace: tekton-kueue
+              phase: Pending
+              pod: tekton-kueue-controller-manager-abc123
+              source_cluster: c1
+            exp_annotations:
+              summary: "Tekton Kueue pod is stuck in Pending: tekton-kueue-controller-manager-abc123"
+              description: "Pod tekton-kueue-controller-manager-abc123 in namespace tekton-kueue on cluster c1 has been in Pending state for more than 5 minutes. This may indicate a scheduling issue, resource constraint, or unresolvable volume."
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueuePodsStuckInPending.md
+              alert_routing_key: infra
+              team: konflux-infra
+
+  # TektonKueuePodsStuckInPending - should NOT fire: pod not in Pending
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_status_phase{namespace="tekton-kueue", phase="Pending", pod="tekton-kueue-controller-manager-abc123", source_cluster="c1"}'
+        values: '0+0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: TektonKueuePodsStuckInPending
+        exp_alerts: []
+
+  # TektonKueuePodsStuckInPending - should NOT fire at 4m: for: 5m not yet satisfied
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_status_phase{namespace="tekton-kueue", phase="Pending", pod="tekton-kueue-controller-manager-abc123", source_cluster="c1"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: TektonKueuePodsStuckInPending
+        exp_alerts: []
+
   # TektonKueueRolloutStuck - should NOT fire at 10m: condition true but for: 20m not yet satisfied
   - interval: 1m
     input_series:
