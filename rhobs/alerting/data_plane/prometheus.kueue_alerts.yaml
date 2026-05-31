@@ -117,6 +117,23 @@ spec:
         alert_routing_key: infra
         team: konflux-infra
 
+    - alert: TektonKueuePodOOMKilled
+      expr: |
+        kube_pod_container_status_last_terminated_reason{
+          namespace="tekton-kueue",
+          reason="OOMKilled"
+        } == 1
+      for: 1m
+      labels:
+        severity: high
+        component: tekton-kueue
+      annotations:
+        summary: "Tekton Kueue pod was OOMKilled: {{ $labels.pod }}"
+        description: "Container {{ $labels.container }} in pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} was terminated due to OOM. Memory limits may need to be increased in the deployment spec."
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueuePodOOMKilled.md
+        alert_routing_key: infra
+        team: konflux-infra
+
     - alert: KueueCELEvaluationFailures
       expr: increase(tekton_kueue_cel_evaluations_total{result="failure"}[5m]) > 0
       for: 1m

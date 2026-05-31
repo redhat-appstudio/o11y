@@ -219,6 +219,40 @@ tests:
         alertname: TektonKueuePodStuckInCreation
         exp_alerts: []
 
+  # TektonKueuePodOOMKilled - should fire: container last terminated by OOMKilled for 1m
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_last_terminated_reason{namespace="tekton-kueue", reason="OOMKilled", pod="tekton-kueue-controller-manager-abc123", container="manager", source_cluster="c1"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: TektonKueuePodOOMKilled
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              component: tekton-kueue
+              namespace: tekton-kueue
+              reason: OOMKilled
+              pod: tekton-kueue-controller-manager-abc123
+              container: manager
+              source_cluster: c1
+            exp_annotations:
+              summary: "Tekton Kueue pod was OOMKilled: tekton-kueue-controller-manager-abc123"
+              description: "Container manager in pod tekton-kueue-controller-manager-abc123 in namespace tekton-kueue on cluster c1 was terminated due to OOM. Memory limits may need to be increased in the deployment spec."
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueuePodOOMKilled.md
+              alert_routing_key: infra
+              team: konflux-infra
+
+  # TektonKueuePodOOMKilled - should NOT fire: last terminated reason is not OOMKilled
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_last_terminated_reason{namespace="tekton-kueue", reason="OOMKilled", pod="tekton-kueue-controller-manager-abc123", container="manager", source_cluster="c1"}'
+        values: '0+0x10'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: TektonKueuePodOOMKilled
+        exp_alerts: []
+
   # TektonKueueRolloutStuck - should NOT fire at 10m: condition true but for: 20m not yet satisfied
   - interval: 1m
     input_series:
