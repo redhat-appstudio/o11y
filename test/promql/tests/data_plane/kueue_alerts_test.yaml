@@ -142,6 +142,118 @@ tests:
         alertname: TektonKueueRolloutStuck
         exp_alerts: []
 
+  # TektonKueuePodStuckInPending - should fire: pod in Pending for 5m
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_status_phase{namespace="tekton-kueue", phase="Pending", pod="tekton-kueue-controller-manager-abc123", source_cluster="c1"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: TektonKueuePodStuckInPending
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              component: tekton-kueue
+              namespace: tekton-kueue
+              phase: Pending
+              pod: tekton-kueue-controller-manager-abc123
+              source_cluster: c1
+            exp_annotations:
+              summary: "Tekton Kueue pod is stuck in Pending: tekton-kueue-controller-manager-abc123"
+              description: "Pod tekton-kueue-controller-manager-abc123 in namespace tekton-kueue on cluster c1 has been in Pending state for more than 5 minutes. This may indicate a scheduling issue, resource constraint, or unresolvable volume."
+              alert_routing_key: infra
+              team: konflux-infra
+
+  # TektonKueuePodStuckInPending - should NOT fire: pod not in Pending
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_status_phase{namespace="tekton-kueue", phase="Pending", pod="tekton-kueue-controller-manager-abc123", source_cluster="c1"}'
+        values: '0+0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: TektonKueuePodStuckInPending
+        exp_alerts: []
+
+  # TektonKueuePodStuckInPending - should NOT fire at 4m: for: 5m not yet satisfied
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_status_phase{namespace="tekton-kueue", phase="Pending", pod="tekton-kueue-controller-manager-abc123", source_cluster="c1"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: TektonKueuePodStuckInPending
+        exp_alerts: []
+
+  # TektonKueuePodStuckInCreation - should fire: container in ContainerCreating for 5m
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_waiting_reason{namespace="tekton-kueue", reason="ContainerCreating", pod="tekton-kueue-controller-manager-abc123", container="manager", source_cluster="c1"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: TektonKueuePodStuckInCreation
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              component: tekton-kueue
+              namespace: tekton-kueue
+              reason: ContainerCreating
+              pod: tekton-kueue-controller-manager-abc123
+              container: manager
+              source_cluster: c1
+            exp_annotations:
+              summary: "Tekton Kueue pod is stuck in ContainerCreating: tekton-kueue-controller-manager-abc123"
+              description: "Container manager in pod tekton-kueue-controller-manager-abc123 in namespace tekton-kueue on cluster c1 is stuck in ContainerCreating for more than 5 minutes. This typically points to infrastructure issues like Volume/Storage mounting failures or Network attachment delays."
+              alert_routing_key: infra
+              team: konflux-infra
+
+  # TektonKueuePodStuckInCreation - should NOT fire: no containers in ContainerCreating
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_waiting_reason{namespace="tekton-kueue", reason="ContainerCreating", pod="tekton-kueue-controller-manager-abc123", container="manager", source_cluster="c1"}'
+        values: '0+0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: TektonKueuePodStuckInCreation
+        exp_alerts: []
+
+  # TektonKueuePodOOMKilled - should fire: restart occurred and last terminated reason is OOMKilled
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_restarts_total{namespace="tekton-kueue", pod="tekton-kueue-controller-manager-abc123", container="manager", source_cluster="c1"}'
+        values: '0 1 1 1 1 1 1 1 1 1 1'
+      - series: 'kube_pod_container_status_last_terminated_reason{namespace="tekton-kueue", reason="OOMKilled", pod="tekton-kueue-controller-manager-abc123", container="manager", source_cluster="c1"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: TektonKueuePodOOMKilled
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              component: tekton-kueue
+              namespace: tekton-kueue
+              reason: OOMKilled
+              pod: tekton-kueue-controller-manager-abc123
+              container: manager
+              source_cluster: c1
+            exp_annotations:
+              summary: "Tekton Kueue pod was OOMKilled: tekton-kueue-controller-manager-abc123"
+              description: "Container manager in pod tekton-kueue-controller-manager-abc123 in namespace tekton-kueue on cluster c1 was terminated due to OOM. Memory limits may need to be increased in the deployment spec."
+              alert_routing_key: infra
+              team: konflux-infra
+
+  # TektonKueuePodOOMKilled - should NOT fire: no restarts occurred
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_restarts_total{namespace="tekton-kueue", pod="tekton-kueue-controller-manager-abc123", container="manager", source_cluster="c1"}'
+        values: '0+0x10'
+      - series: 'kube_pod_container_status_last_terminated_reason{namespace="tekton-kueue", reason="OOMKilled", pod="tekton-kueue-controller-manager-abc123", container="manager", source_cluster="c1"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: TektonKueuePodOOMKilled
+        exp_alerts: []
+
   # TektonKueueRolloutStuck - should NOT fire at 10m: condition true but for: 20m not yet satisfied
   - interval: 1m
     input_series:

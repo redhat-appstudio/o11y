@@ -83,6 +83,62 @@ spec:
         alert_routing_key: infra
         team: konflux-infra
 
+    - alert: TektonKueuePodStuckInPending
+      expr: |
+        kube_pod_status_phase{
+          namespace="tekton-kueue",
+          phase="Pending"
+        } == 1
+      for: 5m
+      labels:
+        severity: warning
+        component: tekton-kueue
+      annotations:
+        summary: "Tekton Kueue pod is stuck in Pending: {{ $labels.pod }}"
+        description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} has been in Pending state for more than 5 minutes. This may indicate a scheduling issue, resource constraint, or unresolvable volume."
+        # runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueuePodStuckInPending.md
+        alert_routing_key: infra
+        team: konflux-infra
+
+    - alert: TektonKueuePodStuckInCreation
+      expr: |
+        kube_pod_container_status_waiting_reason{
+          namespace="tekton-kueue",
+          reason="ContainerCreating"
+        } == 1
+      for: 5m
+      labels:
+        severity: high
+        component: tekton-kueue
+      annotations:
+        summary: "Tekton Kueue pod is stuck in ContainerCreating: {{ $labels.pod }}"
+        description: "Container {{ $labels.container }} in pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} is stuck in ContainerCreating for more than 5 minutes. This typically points to infrastructure issues like Volume/Storage mounting failures or Network attachment delays."
+        # runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueuePodStuckInCreation.md
+        alert_routing_key: infra
+        team: konflux-infra
+
+    - alert: TektonKueuePodOOMKilled
+      expr: |
+        (
+          increase(kube_pod_container_status_restarts_total{namespace="tekton-kueue"}[15m]) > 0
+        ) * on (pod, container, namespace, source_cluster) group_left(reason)
+        (
+          kube_pod_container_status_last_terminated_reason{
+            namespace="tekton-kueue",
+            reason="OOMKilled"
+          } == 1
+        )
+      for: 1m
+      labels:
+        severity: high
+        component: tekton-kueue
+      annotations:
+        summary: "Tekton Kueue pod was OOMKilled: {{ $labels.pod }}"
+        description: "Container {{ $labels.container }} in pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} was terminated due to OOM. Memory limits may need to be increased in the deployment spec."
+        # runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueuePodOOMKilled.md
+        alert_routing_key: infra
+        team: konflux-infra
+
     - alert: KueueCELEvaluationFailures
       expr: increase(tekton_kueue_cel_evaluations_total{result="failure"}[5m]) > 0
       for: 1m
