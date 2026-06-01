@@ -83,7 +83,7 @@ spec:
         alert_routing_key: infra
         team: konflux-infra
 
-    - alert: TektonKueuePodsStuckInPending
+    - alert: TektonKueuePodStuckInPending
       expr: |
         kube_pod_status_phase{
           namespace="tekton-kueue",
@@ -96,7 +96,7 @@ spec:
       annotations:
         summary: "Tekton Kueue pod is stuck in Pending: {{ $labels.pod }}"
         description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} has been in Pending state for more than 5 minutes. This may indicate a scheduling issue, resource constraint, or unresolvable volume."
-        # runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueuePodsStuckInPending.md
+        # runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueuePodStuckInPending.md
         alert_routing_key: infra
         team: konflux-infra
 
