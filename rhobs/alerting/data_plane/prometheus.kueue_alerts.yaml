@@ -18,14 +18,14 @@ spec:
         } != 1
       for: 5m
       labels:
-        severity: high
+        severity: critical
         component: tekton-kueue
-        slo: "false"
+        slo: "true"
       annotations:
         summary: "Tekton Kueue controller is down"
         description: "The Tekton Kueue controller has no available replicas in cluster {{ $labels.source_cluster }}. PipelineRuns will be created in Pending state but cannot be processed, resulting in stuck builds."
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueueControllerDown.md
-        alert_routing_key: infra
+        alert_team_handle: <!subteam^S05Q1P4Q2TG>
         team: konflux-infra
 
     - alert: TektonKueueWebhookDown
@@ -37,14 +37,14 @@ spec:
         } != 1
       for: 5m
       labels:
-        severity: high
+        severity: critical
         component: tekton-kueue
-        slo: "false"
+        slo: "true"
       annotations:
         summary: "Tekton Kueue webhook is down"
         description: "The Tekton Kueue webhook has no available replicas in cluster {{ $labels.source_cluster }}. PipelineRuns may not be created with Pending state and Workload resources, bypassing Kueue admission control."
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueueWebhookDown.md
-        alert_routing_key: infra
+        alert_team_handle: <!subteam^S05Q1P4Q2TG>
         team: konflux-infra
 
     - alert: TektonKueuePodsRepeatedRestarts
@@ -67,21 +67,75 @@ spec:
 
     - alert: TektonKueuePodsCrashLoopBackOff
       expr: |
-        sum by (source_cluster) (
-          max_over_time(kube_pod_container_status_waiting_reason{
-            namespace="tekton-kueue",
-            reason="CrashLoopBackOff"
-          }[3m]) or vector(0)
-        ) > 0
+        max_over_time(kube_pod_container_status_waiting_reason{
+          namespace="tekton-kueue",
+          reason="CrashLoopBackOff"
+        }[3m]) > 0
       for: 3m
       labels:
         severity: high
         component: tekton-kueue
         slo: "false"
       annotations:
-        summary: "Tekton Kueue pod is in a crash loop"
-        description: "Tekton Kueue pod has degraded into CrashLoopBackOff status in cluster {{ $labels.source_cluster }} and is not starting up."
+        summary: "Tekton Kueue pod is in a crash loop: {{ $labels.pod }}"
+        description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} is in CrashLoopBackOff and is not starting up."
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueuePodsCrashLoopBackOff.md
+        alert_routing_key: infra
+        team: konflux-infra
+
+    - alert: TektonKueuePodStuckInPending
+      expr: |
+        kube_pod_status_phase{
+          namespace="tekton-kueue",
+          phase="Pending"
+        } == 1
+      for: 5m
+      labels:
+        severity: warning
+        component: tekton-kueue
+      annotations:
+        summary: "Tekton Kueue pod is stuck in Pending: {{ $labels.pod }}"
+        description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} has been in Pending state for more than 5 minutes. This may indicate a scheduling issue, resource constraint, or unresolvable volume."
+        # runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueuePodStuckInPending.md
+        alert_routing_key: infra
+        team: konflux-infra
+
+    - alert: TektonKueuePodStuckInCreation
+      expr: |
+        kube_pod_container_status_waiting_reason{
+          namespace="tekton-kueue",
+          reason="ContainerCreating"
+        } == 1
+      for: 5m
+      labels:
+        severity: high
+        component: tekton-kueue
+      annotations:
+        summary: "Tekton Kueue pod is stuck in ContainerCreating: {{ $labels.pod }}"
+        description: "Container {{ $labels.container }} in pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} is stuck in ContainerCreating for more than 5 minutes. This typically points to infrastructure issues like Volume/Storage mounting failures or Network attachment delays."
+        # runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueuePodStuckInCreation.md
+        alert_routing_key: infra
+        team: konflux-infra
+
+    - alert: TektonKueuePodOOMKilled
+      expr: |
+        (
+          increase(kube_pod_container_status_restarts_total{namespace="tekton-kueue"}[15m]) > 0
+        ) * on (pod, container, namespace, source_cluster) group_left(reason)
+        (
+          kube_pod_container_status_last_terminated_reason{
+            namespace="tekton-kueue",
+            reason="OOMKilled"
+          } == 1
+        )
+      for: 1m
+      labels:
+        severity: high
+        component: tekton-kueue
+      annotations:
+        summary: "Tekton Kueue pod was OOMKilled: {{ $labels.pod }}"
+        description: "Container {{ $labels.container }} in pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} was terminated due to OOM. Memory limits may need to be increased in the deployment spec."
+        # runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueuePodOOMKilled.md
         alert_routing_key: infra
         team: konflux-infra
 
@@ -97,6 +151,25 @@ spec:
         description: "{{ $value }} CEL evaluation failures occurred in the last 5 minutes in cluster {{ $labels.source_cluster }}"
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-KueueCELEvaluationFailures.md?ref_type=heads
         alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        team: konflux-infra
+
+    - alert: TektonKueueRolloutStuck
+      expr: |
+        kube_deployment_status_replicas_updated{namespace="tekton-kueue"}
+          <
+        kube_deployment_spec_replicas{namespace="tekton-kueue"}
+      for: 20m
+      labels:
+        severity: warning
+        component: tekton-kueue
+      annotations:
+        summary: "Tekton Kueue rollout stuck: {{ $labels.deployment }}"
+        description: >-
+          Deployment {{ $labels.deployment }} in namespace {{ $labels.namespace }} on cluster
+          {{ $labels.source_cluster }} update is delayed or stuck (no full health for 20m).
+          Check pod events and logs for the deployment and its ReplicaSets.
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueueRolloutStuck.md
+        alert_routing_key: infra
         team: konflux-infra
 
     - alert: KueueMutatingWebhookLowSuccessRate
@@ -118,7 +191,6 @@ spec:
         summary: "Kueue mutating webhook success rate is below 99%"
         description: "The mutating webhook 'pipelinerun-kueue-defaulter.tekton-kueue.io' has had a success rate below 99% over the past 10 minutes in cluster {{ $labels.source_cluster }}. Possible causes include webhook errors, rejections, or unreachability (e.g., code=600)."
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md?ref_type=heads
-        # alert_team_handle: <!subteam^S05Q1P4Q2TG>
         alert_routing_key: infra
         team: konflux-infra
 
@@ -139,14 +211,70 @@ spec:
         alert_team_handle: <!subteam^S05Q1P4Q2TG>
         team: konflux-infra
 
-    - alert: KueueHighAdmissionWaitTime
-      expr: histogram_quantile(0.99, sum(increase(kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue"}[10m])) by (le, source_cluster)) > 1800
+    - alert: KueueHighAdmissionWaitTimePreMerge
+      expr: |
+        histogram_quantile(0.99, sum(increase(kueue_admission_wait_time_seconds_bucket{
+          cluster_queue="cluster-pipeline-queue",
+          priority_class=~"konflux-pre-merge-.*"
+        }[10m])) by (le, source_cluster)) > 900
       for: 5m
       labels:
         severity: high
         component: kueue
       annotations:
-        summary: "High admission wait time in Kueue"
-        description: "99th percentile admission wait time is {{ $value }}s, which is above 30 minutes in cluster {{ $labels.source_cluster }}"
+        summary: "High admission wait time for Pre-merge builds"
+        description: "99th percentile admission wait time for Pre-merge is {{ $value | humanizeDuration }}, which is above 15 minutes in cluster {{ $labels.source_cluster }}"
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
+        alert_routing_key: infra
+        team: konflux-infra
+
+    - alert: KueueHighAdmissionWaitTimePostMerge
+      expr: |
+        histogram_quantile(0.99, sum(increase(kueue_admission_wait_time_seconds_bucket{
+          cluster_queue="cluster-pipeline-queue",
+          priority_class=~"konflux-post-merge-.*"
+        }[10m])) by (le, source_cluster)) > 900
+      for: 5m
+      labels:
+        severity: high
+        component: kueue
+      annotations:
+        summary: "High admission wait time for Post-merge builds"
+        description: "99th percentile admission wait time for Post-merge is {{ $value | humanizeDuration }}, which is above 15 minutes in cluster {{ $labels.source_cluster }}"
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
+        alert_routing_key: infra
+        team: konflux-infra
+
+    - alert: KueueHighAdmissionWaitTimeMintmaker
+      expr: |
+        histogram_quantile(0.99, sum(increase(kueue_admission_wait_time_seconds_bucket{
+          cluster_queue="cluster-pipeline-queue",
+          priority_class="konflux-dependency-update"
+        }[10m])) by (le, source_cluster)) > 43200
+      for: 5m
+      labels:
+        severity: high
+        component: kueue
+      annotations:
+        summary: "High admission wait time for Mintmaker"
+        description: "99th percentile admission wait time for Mintmaker is {{ $value | humanizeDuration }}, which is above 12 hours in cluster {{ $labels.source_cluster }}"
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
+        alert_routing_key: infra
+        team: konflux-infra
+
+    - alert: KueueHighAdmissionWaitTimeDefault
+      expr: |
+        histogram_quantile(0.99, sum(increase(kueue_admission_wait_time_seconds_bucket{
+          cluster_queue="cluster-pipeline-queue",
+          priority_class!~"konflux-pre-merge-.*|konflux-post-merge-.*|konflux-dependency-update"
+        }[10m])) by (le, source_cluster)) > 7200
+      for: 5m
+      labels:
+        severity: warning
+        component: kueue
+      annotations:
+        summary: "High admission wait time for other workloads"
+        description: "99th percentile admission wait time for other workloads is {{ $value | humanizeDuration }}, which is above 2 hours in cluster {{ $labels.source_cluster }}"
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
         alert_routing_key: infra
         team: konflux-infra

@@ -23,7 +23,7 @@ spec:
           summary: >-
              Probe alert {{ $labels.job }}.
           description: >-
-             Probe is down on instance {{ $labels.instance }} for job {{ $labels.job }} and target {{ $labels.target }} on cluster {{ $labels.source_cluster }}. Probe failures represent less than 80% of total {{ $labels.instance }} probes across all monitored clusters over the last 15 minutes.
+             Probe on {{ $labels.source_cluster }} is unable to connect to {{ $labels.instance }} ({{ $labels.job }}) for the last 25 minutes. At least 80% of Konflux clusters successfully connect to {{ $labels.instance }}.
           alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
           runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/exporters/blackbox/probe-alerts.md
 
@@ -31,7 +31,7 @@ spec:
         expr: |
           multicluster_probe_up{
           check="probe-multicluster",
-          service!~".*-vpn|.*static-host|.*pwvs|quay"
+          service!~".*-vpn|.*static-host|.*pwvs|quay|api-server|openshift-ui"
           } != 1
         for: 25m
         labels:
@@ -41,7 +41,7 @@ spec:
           summary: >-
              Probe alert {{ $labels.instance }} in multiple clusters.
           description: >-
-             Probes are down on instance {{ $labels.instance }} for more than 80% of all clusters over the last 15 minutes.
+             More than 20% of Konflux cluster probes are failing to connect to {{ $labels.instance }} for the last 25 minutes.
           alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
           runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/exporters/blackbox/probe-alerts.md
 
@@ -59,7 +59,7 @@ spec:
           summary: >-
              Quay Probe alert {{ $labels.instance }} in multiple clusters.
           description: >-
-             Quay Probes are down on instance {{ $labels.instance }} for more than 80% of all clusters over the last 15 minutes.
+             Quay probes from more than 20% of Konflux clusters are unable to connect to {{ $labels.instance }} for the last 20 minutes.
           alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG> <!subteam^S01B3J0AEEL>'
           runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/exporters/blackbox/probe-alerts.md
 

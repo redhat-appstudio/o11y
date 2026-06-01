@@ -18,8 +18,8 @@ spec:
             increase(integration_svc_snapshot_created_to_pipelinerun_started_seconds_bucket{le="5"}[5m])
           ) / ignoring(le)
           increase(integration_svc_snapshot_created_to_pipelinerun_started_seconds_bucket{le="+Inf"}[5m])
-        ) > 0.10
-      for: 15m
+        ) > 0.20
+      for: 25m
       labels:
         severity: high
         slo: "false"
@@ -29,7 +29,7 @@ spec:
           Latency from an application snapshot created to integration PLRs created
         description: >
           Time from Snapshot created to integration PLRs created has been over
-          5s for more than 10% of requests during the last 15 minutes on cluster {{ $labels.source_cluster }}
+          5s for more than 20% of requests during the last 25 minutes on cluster {{ $labels.source_cluster }}
         # alert_team_handle: <!subteam^S05M4AG8CJH>
         alert_routing_key: <!subteam^S05M4AG8CJH>
         team: integration

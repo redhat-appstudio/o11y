@@ -1,0 +1,29 @@
+# Recording Rule Test Template
+# Tests use the promtool unit test format.
+# See docs/RECORDING.md for full conventions.
+#
+# [required] Must match the rule's `interval` value.
+evaluation_interval: 1m
+
+# [required] Filename only (not path) — resolved from rhobs/recording/ by the test runner.
+rule_files:
+  - <rule_filename>.yaml
+
+tests:
+  # [required] Test name. Use descriptive PascalCase names.
+  - name: <ServiceName>ExpectedUpTest
+    # [required] Must match evaluation_interval.
+    interval: 1m
+    # [required] Synthetic input time series for the test.
+    input_series:
+      - series: "<metric_name>{<label_selectors>}"
+        values: "<space-separated values, one per interval>"
+    # [required] Expected output after evaluation.
+    promql_expr_test:
+      - expr: <recorded_metric_name>
+        # [required] Point in time to evaluate the expression.
+        eval_time: 5m
+        # [required] Expected output samples. Use empty list [] when no output is expected.
+        exp_samples:
+          - labels: <recorded_metric_name>{<expected_labels>}
+            value: <expected_value>

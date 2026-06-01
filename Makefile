@@ -14,7 +14,7 @@ CMD := ${BASE_CMD}
 endif
 
 .PHONY: all
-all: check-and-test sync_pipenv lint_yamls kustomize-build
+all: check-and-test check-alert-conventions sync_pipenv lint_yamls kustomize-build
 
 kustomize:
 	curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash
@@ -23,6 +23,10 @@ kustomize:
 check-and-test:
 	$(CMD) -t rhtap -d rhobs/alerting/data_plane -y -p --tests-dir test/promql/tests/data_plane
 	$(CMD) -t rhtap -d rhobs/recording -y -p --tests-dir test/promql/tests/recording
+
+.PHONY: check-alert-conventions
+check-alert-conventions:
+	$(CONTAINER_ENGINE) run -v "$(shell pwd):/work" --rm --entrypoint python3 -t quay.io/rhobs/obsctl-reloader-rules-checker:$(IMG_VERSION) /work/scripts/check-alert-conventions.py
 
 .PHONY: selective-check-and-test
 selective-check-and-test:

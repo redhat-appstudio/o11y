@@ -1,0 +1,55 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-artifact-registry-proxy-alerting-rules
+  labels:
+    tenant: rhtap
+
+spec:
+  groups:
+  - name: artifact_registry_proxy_availability
+    interval: 1m
+    rules:
+    - alert: NginxProxyDown
+      expr: |
+        konflux_up{namespace="caching", service="artifact-registry-proxy"} == 0
+      for: 5m
+      labels:
+        severity: critical
+        slo: "true"
+        component: artifact-registry-proxy
+      annotations:
+        summary: >-
+          Artifact Registry Nginx proxy is down
+        description: >-
+          Access log exporter cannot scrape the artifact registry proxy successfully in namespace caching.
+          The proxy has been down for 5 minutes in cluster {{ $labels.source_cluster }}.
+        alert_team_handle: <!subteam^S07NDQV6A4D>
+        team: vanguard
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/vanguard/sre/artifact-registry-proxy-down.md
+
+  - name: artifact_registry_proxy_alerts
+    interval: 1m
+    rules:
+    # Alert: High error rate (>5% of requests are 5xx errors)
+    - alert: NginxHighErrorRate
+      expr: |
+        (
+          artifact_registry_proxy:http_errors:rate5m
+          /
+          artifact_registry_proxy:http_requests:rate5m
+        ) > 0.05
+      for: 10m
+      labels:
+        severity: high
+        slo: "false"
+        component: artifact-registry-proxy
+      annotations:
+        summary: >-
+          Artifact Registry Nginx proxy has high error rate
+        description: >-
+          More than 5% of requests to the artifact registry proxy are returning 5xx errors
+          in cluster {{ $labels.source_cluster }}. Current error rate: {{ $value | humanizePercentage }}.
+        alert_team_handle: <!subteam^S07NDQV6A4D>
+        team: vanguard
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/vanguard/sre/artifact-registry-proxy-high-error-rate.md

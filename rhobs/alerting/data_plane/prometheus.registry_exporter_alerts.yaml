@@ -27,19 +27,48 @@ spec:
         team: o11y
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
 
-# Notify o11y team when there are issues with individual nodes, but cluster-level check is still passing.
-  - name: registry-exporter-node-availability
+  # Alert when a specific test type (pull, push, metadata, authentication) fails across all nodes.
+  - name: registry-exporter-test-type-availability
     interval: 1m
     rules:
-    - alert: RegistryExporterNodeFailure
+    - alert: RegistryExporterTestTypeFailure
       expr: |
-        min by(source_cluster, tested_registry, node) (registry_exporter_success) == 0
+        max by(source_cluster, tested_registry, type) (registry_exporter_success) == 0
         and on(source_cluster, tested_registry)
           label_replace(
             konflux_up{service="registry-exporter"} == 1,
             "tested_registry", "$1", "check", "(.*)"
           )
-      for: 20m
+      for: 15m
+      labels:
+        severity: high
+        slo: "false"
+        component: registry-exporter
+      annotations:
+        summary: >-
+          Test for {{ $labels.type }} failing across all nodes for {{ $labels.tested_registry }} in {{ $labels.source_cluster }}
+        description: >-
+          Tests for {{ $labels.type }} for {{ $labels.tested_registry }} in {{ $labels.source_cluster }} is failing for 15 minutes.
+        alert_routing_key: o11y
+        team: o11y
+
+  # Notify o11y team when there are issues with individual nodes, but cluster-level check is still passing.
+  - name: registry-exporter-node-availability
+    interval: 1m
+    rules:
+    - alert: RegistryExporterNodeFailure
+      expr: |
+        min by(source_cluster, tested_registry, node) (
+          registry_exporter_success
+          unless on(source_cluster, tested_registry, type)
+            (max by(source_cluster, tested_registry, type) (registry_exporter_success) == 0)
+        ) == 0
+        and on(source_cluster, tested_registry)
+          label_replace(
+            konflux_up{service="registry-exporter"} == 1,
+            "tested_registry", "$1", "check", "(.*)"
+          )
+      for: 15m
       labels:
         severity: warning
         slo: "false"
@@ -49,7 +78,7 @@ spec:
           Registry exporter running tests on node {{ $labels.node }} for registry {{ $labels.tested_registry }} in cluster {{ $labels.source_cluster }} is failing.
         description: >-
           Registry exporter running tests on node {{ $labels.node }} for registry {{ $labels.tested_registry }} in cluster {{ $labels.source_cluster }} is failing.
-          At least one test type (pull, push, metadata, or authentication) has been failing for 20 minutes.
+          At least one test type (pull, push, metadata, or authentication) has been failing for 15 minutes.
           The cluster-level check for this registry is still passing, indicating this is a node-specific issue.
         alert_routing_key: o11y
         team: o11y

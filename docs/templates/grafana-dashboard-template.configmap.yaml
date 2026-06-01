@@ -1,0 +1,51 @@
+# Dashboard ConfigMap Template
+# Dashboards are JSON embedded in ConfigMaps, deployed to AppSRE Grafana via app-interface.
+# See docs/DASHBOARDS.md for full conventions.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  # [required] Name format: grafana-dashboard-<name>.configmap
+  name: grafana-dashboard-<name>.configmap
+  labels:
+    # [required] Must be "true" — without this the Grafana sidecar ignores the ConfigMap
+    grafana_dashboard: "true"
+  annotations:
+    # [required] Grafana folder path. Must start with /grafana-dashboard-definitions/RHTAP
+    # Team-specific subfolders are allowed (e.g. /grafana-dashboard-definitions/RHTAP/Release-Service)
+    grafana-folder: /grafana-dashboard-definitions/RHTAP
+data:
+  grafana-dashboard-<name>.json: |-
+    {
+      "id": null,
+      "uid": "<unique-uid-max-40-chars>",
+      "title": "<Dashboard Title>",
+      "templating": {
+        "list": [
+          {
+            "name": "Datasource",
+            "type": "datasource",
+            "query": "prometheus",
+            "regex": "/rhtap*/",
+            "refresh": 1
+          },
+          {
+            "name": "cluster",
+            "type": "query",
+            "datasource": { "type": "prometheus", "uid": "${Datasource}" },
+            "definition": "label_values(source_cluster)",
+            "includeAll": true,
+            "multi": true,
+            "refresh": 1
+          }
+        ]
+      },
+      "panels": [],
+      "schemaVersion": 39,
+      "version": 0
+    }
+#
+# Key rules for new dashboards:
+# - "id" must be null — Grafana assigns instance-specific IDs on import; baked-in IDs create noisy diffs
+# - "uid" must be unique across all files in dashboards/ and ≤ 40 characters
+# - Do not hardcode Grafana-internal datasource UIDs in panels — use "${Datasource}" instead;
+#   hardcoded UIDs break when the datasource is recreated or the dashboard is imported elsewhere

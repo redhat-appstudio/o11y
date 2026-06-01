@@ -28,7 +28,7 @@ data:
       "editable": true,
       "fiscalYearStartMonth": 0,
       "graphTooltip": 0,
-      "id": 1092162,
+      "id": null,
       "links": [],
       "panels": [
         {
@@ -286,6 +286,78 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
+          "description": "Percentage of replicas running the latest version. Below 100% indicates a rollout in progress or stuck. Compare with the Replicas panel: if Replicas shows 100% but Rollout Status is below 100%, the rollout is stuck while old pods continue serving.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "dark-red"
+                  },
+                  {
+                    "color": "green",
+                    "value": 100
+                  }
+                ]
+              },
+              "unit": "percent"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 12,
+            "w": 12,
+            "x": 0,
+            "y": 26
+          },
+          "id": 40,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "horizontal",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "(\n  kube_deployment_status_replicas_updated{namespace=~\"openshift-kueue-operator|tekton-kueue|kueue-external-admission\", source_cluster=~\"$cluster\"}\n)\n/\nclamp_min(\n  kube_deployment_spec_replicas{namespace=~\"openshift-kueue-operator|tekton-kueue|kueue-external-admission\", source_cluster=~\"$cluster\"},\n  1\n) * 100",
+              "format": "time_series",
+              "instant": false,
+              "legendFormat": "{{deployment}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Rollout Status",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
           "description": "99th Percentile of the latency of an admission attempt.",
           "fieldConfig": {
             "defaults": {
@@ -321,7 +393,7 @@ data:
             "h": 5,
             "w": 6,
             "x": 0,
-            "y": 26
+            "y": 38
           },
           "id": 27,
           "options": {
@@ -399,7 +471,7 @@ data:
             "h": 5,
             "w": 6,
             "x": 6,
-            "y": 26
+            "y": 38
           },
           "id": 28,
           "options": {
@@ -471,7 +543,7 @@ data:
             "h": 4,
             "w": 12,
             "x": 0,
-            "y": 31
+            "y": 43
           },
           "id": 22,
           "options": {
@@ -514,7 +586,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 35
+            "y": 47
           },
           "id": 6,
           "panels": [
@@ -965,6 +1037,164 @@ data:
               "type": "stat"
             },
             {
+              "id": 102,
+              "type": "stat",
+              "title": "Admission Wait Time 99th Percentile By Priority Class",
+              "description": "99% of the workloads waited in the queue less time from the shown value. Broke into Priority Classes.",
+              "gridPos": {
+                "x": 12,
+                "y": 26,
+                "h": 6,
+                "w": 12
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "mappings": [],
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      },
+                      {
+                        "color": "yellow",
+                        "value": 300
+                      },
+                      {
+                        "color": "orange",
+                        "value": 600
+                      },
+                      {
+                        "color": "red",
+                        "value": 900
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "thresholds"
+                  },
+                  "unit": "s"
+                },
+                "overrides": []
+              },
+              "transparent": true,
+              "pluginVersion": "11.6.3",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "histogram_quantile(0.99, sum(increase(kueue_admission_wait_time_seconds_bucket{source_cluster=~\"$cluster\", cluster_queue=\"cluster-pipeline-queue\"}[$__range])) by (le, priority_class))",
+                  "legendFormat": "__auto",
+                  "range": true,
+                  "refId": "A"
+                }
+              ],
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "options": {
+                "reduceOptions": {
+                  "values": false,
+                  "calcs": [
+                    "lastNotNull"
+                  ],
+                  "fields": ""
+                },
+                "orientation": "auto",
+                "textMode": "auto",
+                "wideLayout": true,
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "showPercentChange": false,
+                "percentChangeColorMode": "standard"
+              }
+            },
+            {
+              "id": 103,
+              "type": "stat",
+              "title": "Admitted Workloads Increase By Priority Class",
+              "description": "The total number of admitted workloads,  by priority class , in the selected range",
+              "gridPos": {
+                "x": 12,
+                "y": 32,
+                "h": 6,
+                "w": 12
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "mappings": [],
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      },
+                      {
+                        "color": "yellow",
+                        "value": 300
+                      },
+                      {
+                        "color": "orange",
+                        "value": 600
+                      },
+                      {
+                        "color": "red",
+                        "value": 900
+                      }
+                    ]
+                  },
+                  "color": {
+                    "mode": "thresholds"
+                  },
+                  "unit": "none"
+                },
+                "overrides": []
+              },
+              "transparent": true,
+              "pluginVersion": "11.6.3",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "round(sum by (priority_class) (increase(kueue_admitted_workloads_total{source_cluster=~\"$cluster\"}[$__range])))",
+                  "legendFormat": "__auto",
+                  "range": true,
+                  "refId": "A"
+                }
+              ],
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "options": {
+                "reduceOptions": {
+                  "values": false,
+                  "calcs": [
+                    "lastNotNull"
+                  ],
+                  "fields": ""
+                },
+                "orientation": "auto",
+                "textMode": "auto",
+                "wideLayout": true,
+                "colorMode": "value",
+                "graphMode": "area",
+                "justifyMode": "auto",
+                "showPercentChange": false,
+                "percentChangeColorMode": "standard"
+              }
+            },
+            {
               "datasource": {
                 "type": "prometheus",
                 "uid": "${datasource}"
@@ -1201,7 +1431,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 36
+            "y": 48
           },
           "id": 4,
           "panels": [
@@ -1686,10 +1916,643 @@ data:
           ],
           "title": "Cluster Metrics",
           "type": "row"
+        },
+        {
+          "collapsed": true,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 49
+          },
+          "id": 100,
+          "panels": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "description": "Description:This metric measures the current resource utilization of the cluster queue as a percentage of its defined nominal quota ($Reservation / Quota * 100$). It provides a high-level view of how much of the allocated capacity (e.g., CPU, Memory, or GPU) is being consumed by admitted workloads.At 100%: The cluster has reached its maximum allowed capacity. New workloads will be held in a Pending state and will not be admitted until existing resources are released.Sustained 100% (Flat Line): When this graph stays at the ceiling for an extended period while the Pending Workloads count remains high, it indicates a bottleneck.The \"Correlation\" Check: If this graph shows 100% saturation but the Workload Admission Gap also shows a high number of \"ghost\" workloads, it confirms a Quota Leak. In this state, the cluster is \"full\" on paper due to stale resources or finalizers, even if the physical infrastructure is underutilized.",
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "barWidthFactor": 0.6,
+                    "drawStyle": "line",
+                    "fillOpacity": 0,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineStyle": {
+                      "fill": "solid"
+                    },
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "auto",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "fieldMinMax": false,
+                  "mappings": [],
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green",
+                        "value": null
+                      },
+                      {
+                        "color": "red",
+                        "value": 90
+                      }
+                    ]
+                  },
+                  "unit": "percent"
+                },
+                "overrides": []
+              },
+              "gridPos": {
+                "h": 20,
+                "w": 24,
+                "x": 0,
+                "y": 25
+              },
+              "id": 37,
+              "options": {
+                "legend": {
+                  "calcs": [],
+                  "displayMode": "list",
+                  "placement": "bottom",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "hideZeros": false,
+                  "mode": "single",
+                  "sort": "none"
+                }
+              },
+              "pluginVersion": "11.6.3",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "max by (resource, source_cluster) (\n  kueue_cluster_queue_resource_reservation{source_cluster=~\"$cluster\"} \n  / \n  kueue_cluster_queue_nominal_quota{source_cluster=~\"$cluster\"}\n) * 100",
+                  "legendFormat": "{{resource}} - {{source_cluster}}",
+                  "range": true,
+                  "refId": "A"
+                }
+              ],
+              "title": "Kueue Resource Saturation",
+              "transparent": true,
+              "type": "timeseries"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "description": "This metric calculates the discrepancy between the workloads Kueue has officially admitted into the quota and the workloads currently reported as \"active\" in the cluster queue status.\n\nPositive Value: Indicates a \"Quota Leak.\" Workloads are occupying capacity in the admission controller but are not actively progressing or accounted for in the operational status. This usually points to stale resources, such as PipelineRuns or Workloads stuck with finalizers that prevent them from fully clearing the system.\n\nZero Value: Indicates a healthy state where the admission controller and the cluster queue are in perfect synchronization.\n\nMonitoring this gap is essential for maintaining the software supply chain's throughput, as a persistent gap will block new builds even if physical resources appear available.",
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "Workloads",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "barWidthFactor": 0.6,
+                    "drawStyle": "line",
+                    "fillOpacity": 0,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineStyle": {
+                      "fill": "solid"
+                    },
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "auto",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "fieldMinMax": false,
+                  "mappings": [],
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green"
+                      },
+                      {
+                        "color": "red",
+                        "value": 80
+                      }
+                    ]
+                  },
+                  "unit": "none"
+                },
+                "overrides": []
+              },
+              "gridPos": {
+                "h": 17,
+                "w": 24,
+                "x": 0,
+                "y": 24
+              },
+              "id": 31,
+              "options": {
+                "legend": {
+                  "calcs": [],
+                  "displayMode": "list",
+                  "placement": "bottom",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "hideZeros": false,
+                  "mode": "single",
+                  "sort": "none"
+                }
+              },
+              "pluginVersion": "11.6.3",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "sum by (source_cluster) (kueue_admitted_active_workloads{source_cluster=~\"$cluster\"})\n-\nsum by (source_cluster) (kueue_cluster_queue_status{status=\"active\", source_cluster=~\"$cluster\"})",
+                  "legendFormat": "{{source_cluster}}",
+                  "range": true,
+                  "refId": "A"
+                }
+              ],
+              "title": "Kueue Workload Admission Gap ",
+              "transparent": true,
+              "type": "timeseries"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "description": "Description:\nThis metric tracks the total number of workloads currently waiting in the queue to be admitted and executed across the specified clusters. It serves as a primary indicator of Queue\nKey Indicators:\n\nValue = 0: Healthy state. All admitted workloads are actively running. Any wait times observed are due to genuine resource congestion.",
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "Workloads",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "barWidthFactor": 0.6,
+                    "drawStyle": "line",
+                    "fillOpacity": 0,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineStyle": {
+                      "fill": "solid"
+                    },
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "auto",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "fieldMinMax": false,
+                  "mappings": [],
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green"
+                      },
+                      {
+                        "color": "red",
+                        "value": 80
+                      }
+                    ]
+                  },
+                  "unit": "none"
+                },
+                "overrides": []
+              },
+              "gridPos": {
+                "h": 11,
+                "w": 24,
+                "x": 0,
+                "y": 41
+              },
+              "id": 32,
+              "options": {
+                "legend": {
+                  "calcs": [],
+                  "displayMode": "list",
+                  "placement": "bottom",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "hideZeros": false,
+                  "mode": "single",
+                  "sort": "none"
+                }
+              },
+              "pluginVersion": "11.6.3",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "sum by (source_cluster) (kueue_pending_workloads{source_cluster=~\"$cluster\"})",
+                  "legendFormat": "{{source_cluster}}",
+                  "range": true,
+                  "refId": "A"
+                }
+              ],
+              "title": "Kueue Pending Workloads",
+              "transparent": true,
+              "type": "timeseries"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "description": "This metric calculates the median (P50) wait time in minutes for critical CI workloads, specifically those assigned to the konflux-post-merge-build priority class. It represents the time elapsed from the moment a workload is created until it is admitted for execution by Kueue.\n\nPurpose: This is a \"Quality of Service\" (QoS) metric for the developer experience. Since merge-related builds are on the critical path for code integration, they require low latency. High values here directly translate to developer frustration and slower delivery cycles.\n\nAlerting Logic: The system is tuned with a tight threshold of 15 minutes.\n\nNormal State: Values should stay well below the 15-minute mark.",
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "Hour",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "barWidthFactor": 0.6,
+                    "drawStyle": "line",
+                    "fillOpacity": 0,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineStyle": {
+                      "fill": "solid"
+                    },
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "auto",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "fieldMinMax": false,
+                  "mappings": [],
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green"
+                      },
+                      {
+                        "color": "red",
+                        "value": 80
+                      }
+                    ]
+                  },
+                  "unit": "none"
+                },
+                "overrides": []
+              },
+              "gridPos": {
+                "h": 14,
+                "w": 24,
+                "x": 0,
+                "y": 52
+              },
+              "id": 33,
+              "options": {
+                "legend": {
+                  "calcs": [],
+                  "displayMode": "list",
+                  "placement": "bottom",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "hideZeros": false,
+                  "mode": "single",
+                  "sort": "none"
+                }
+              },
+              "pluginVersion": "11.6.3",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "histogram_quantile(0.5, sum by (le, source_cluster) (\n  rate(kueue_admission_wait_time_seconds_bucket{\n    priority_class=\"konflux-post-merge-build\", \n    source_cluster=~\"$cluster\"\n  }[5m])\n)) / 60",
+                  "legendFormat": "{{source_cluster}}",
+                  "range": true,
+                  "refId": "A"
+                }
+              ],
+              "title": "Pre-Merge/Post-Merge Build Admission Wait Time",
+              "transparent": true,
+              "type": "timeseries"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "description": "Description:\nThis metric calculates the median (P50) wait time in hours for workloads under the konflux-dependency-update priority class. It measures how long these non-critical jobs stay in the queue before being admitted to a cluster.\n\nPurpose: Since dependency updates (like those from Mintmaker/Renovate) are low-priority, they are expected to wait during peak traffic. This graph ensures they aren't being completely starved for resources.\n\nAlerting Logic: In a healthy state, this value may fluctuate significantly depending on cluster load. We set a high threshold (12 hours) to avoid noise; an alert is only triggered if the wait time exceeds half a day, indicating a serious long-term capacity issue or a \"starvation\" scenario where high-priority jobs never leave room for lower ones.",
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "Hour",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "barWidthFactor": 0.6,
+                    "drawStyle": "line",
+                    "fillOpacity": 0,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineStyle": {
+                      "fill": "solid"
+                    },
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "auto",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "fieldMinMax": false,
+                  "mappings": [],
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green"
+                      },
+                      {
+                        "color": "red",
+                        "value": 80
+                      }
+                    ]
+                  },
+                  "unit": "none"
+                },
+                "overrides": []
+              },
+              "gridPos": {
+                "h": 14,
+                "w": 24,
+                "x": 0,
+                "y": 66
+              },
+              "id": 34,
+              "options": {
+                "legend": {
+                  "calcs": [],
+                  "displayMode": "list",
+                  "placement": "bottom",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "hideZeros": false,
+                  "mode": "single",
+                  "sort": "none"
+                }
+              },
+              "pluginVersion": "11.6.3",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "histogram_quantile(0.5, sum by (le, source_cluster) (\n  rate(kueue_admission_wait_time_seconds_bucket{\n    priority_class=\"konflux-dependency-update\", \n    source_cluster=~\"$cluster\"\n  }[15m])\n)) / 3600",
+                  "legendFormat": "{{source_cluster}}",
+                  "range": true,
+                  "refId": "A"
+                }
+              ],
+              "title": "Mintmaker Admission Wait Time",
+              "transparent": true,
+              "type": "timeseries"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "description": "Time elapsed since last DUC creation\n\nThe Logic: It subtracts the actual running workloads from the admitted count. In a healthy cluster, this gap should be near zero.\n\nThe \"Leak\": A persistent, high value (e.g., 200+) indicates a Quota Leak. This happens when stale workloads or stuck finalizers occupy \"virtual\" space in the quota, preventing new jobs from starting even if physical resources are available.\n\nExecutive Insight: This graph proves that high wait times for low-priority tasks aren't always caused by lack of hardware, but by \"ghost\" workloads that need automated cleanup.",
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "axisCenteredZero": false,
+                    "axisColorMode": "text",
+                    "axisLabel": "Hours",
+                    "axisPlacement": "auto",
+                    "barAlignment": 0,
+                    "barWidthFactor": 0.6,
+                    "drawStyle": "line",
+                    "fillOpacity": 0,
+                    "gradientMode": "none",
+                    "hideFrom": {
+                      "legend": false,
+                      "tooltip": false,
+                      "viz": false
+                    },
+                    "insertNulls": false,
+                    "lineInterpolation": "linear",
+                    "lineStyle": {
+                      "fill": "solid"
+                    },
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "scaleDistribution": {
+                      "type": "linear"
+                    },
+                    "showPoints": "auto",
+                    "spanNulls": false,
+                    "stacking": {
+                      "group": "A",
+                      "mode": "none"
+                    },
+                    "thresholdsStyle": {
+                      "mode": "off"
+                    }
+                  },
+                  "fieldMinMax": false,
+                  "mappings": [],
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green"
+                      },
+                      {
+                        "color": "red",
+                        "value": 80
+                      }
+                    ]
+                  },
+                  "unit": "h"
+                },
+                "overrides": []
+              },
+              "gridPos": {
+                "h": 13,
+                "w": 24,
+                "x": 0,
+                "y": 80
+              },
+              "id": 36,
+              "options": {
+                "legend": {
+                  "calcs": [],
+                  "displayMode": "list",
+                  "placement": "bottom",
+                  "showLegend": true
+                },
+                "tooltip": {
+                  "hideZeros": false,
+                  "mode": "single",
+                  "sort": "none"
+                }
+              },
+              "pluginVersion": "11.6.3",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${datasource}"
+                  },
+                  "editorMode": "code",
+                  "expr": "(time() - max by(source_cluster) (mintmaker_dependency_update_check_creation_time{source_cluster=~\"$cluster\"})) / 3600",
+                  "legendFormat": "{{source_cluster}}",
+                  "range": true,
+                  "refId": "A"
+                }
+              ],
+              "title": "Mintmaker Time since last trigger",
+              "transparent": true,
+              "type": "timeseries"
+            }
+          ],
+          "title": "Queue Efficiency & Saturation",
+          "type": "row"
         }
       ],
       "preload": false,
-      "refresh": "auto",
+      "refresh": "5m",
       "schemaVersion": 41,
       "tags": [],
       "templating": {
@@ -1697,7 +2560,7 @@ data:
           {
             "current": {
               "text": "rhtap-observatorium-production",
-              "value": "P22466E8E7855F1E0"
+              "value": "${datasource}"
             },
             "name": "datasource",
             "options": [],
@@ -1709,10 +2572,10 @@ data:
           {
             "current": {
               "text": [
-                "kflux-rhel-p01"
+                "All"
               ],
               "value": [
-                "kflux-rhel-p01"
+                "$__all"
               ]
             },
             "datasource": {
@@ -1736,12 +2599,12 @@ data:
         ]
       },
       "time": {
-        "from": "now-6h",
+        "from": "now-12h",
         "to": "now"
       },
       "timepicker": {},
       "timezone": "UTC",
-      "title": "Konflux Kueue",
-      "uid": "ef0bjmoh7cbggc",
-      "version": 13
+      "title": "Konflux Kueue-sre",
+      "uid": "ef0bjmoh7cbggc--",
+      "version": 30
     }
