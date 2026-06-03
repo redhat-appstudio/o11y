@@ -99,7 +99,7 @@ data:
               "color": "rgba(255,0,255,0.7)"
             },
             "filterValues": {
-              "le": 1e-9
+              "le": 1e-09
             },
             "legend": {
               "show": true
@@ -581,12 +581,198 @@ data:
           "type": "stat"
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": "auto",
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "inspect": false
+              },
+              "mappings": [
+                {
+                  "options": {
+                    "Pending": {
+                      "color": "orange",
+                      "index": 0,
+                      "text": "Pending"
+                    },
+                    "ContainerCreating": {
+                      "color": "yellow",
+                      "index": 1,
+                      "text": "ContainerCreating"
+                    },
+                    "CrashLoopBackOff": {
+                      "color": "red",
+                      "index": 2,
+                      "text": "CrashLoopBackOff"
+                    },
+                    "OOMKilled": {
+                      "color": "purple",
+                      "index": 3,
+                      "text": "OOMKilled"
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "state"
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "mode": "basic",
+                      "type": "color-background"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 47
+          },
+          "id": 201,
+          "maxDataPoints": 500,
+          "options": {
+            "cellHeight": "sm",
+            "footer": {
+              "countRows": false,
+              "fields": "",
+              "reducer": [
+                "sum"
+              ],
+              "show": false
+            },
+            "showHeader": true,
+            "sortBy": [
+              {
+                "desc": true,
+                "displayName": "Time"
+              }
+            ]
+          },
+          "pluginVersion": "11.6.3",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "label_replace(\n  kube_pod_status_phase{namespace=\"tekton-kueue\", phase=\"Pending\", source_cluster=~\"$cluster\"} > 0,\n  \"state\", \"Pending\", \"\", \"\"\n)",
+              "format": "table",
+              "instant": false,
+              "legendFormat": "Pending",
+              "range": true,
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "label_replace(\n  kube_pod_container_status_waiting_reason{namespace=\"tekton-kueue\", reason=\"ContainerCreating\", source_cluster=~\"$cluster\"} > 0,\n  \"state\", \"ContainerCreating\", \"\", \"\"\n)",
+              "format": "table",
+              "instant": false,
+              "legendFormat": "ContainerCreating",
+              "range": true,
+              "refId": "B"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "label_replace(\n  max_over_time(kube_pod_container_status_waiting_reason{namespace=\"tekton-kueue\", reason=\"CrashLoopBackOff\", source_cluster=~\"$cluster\"}[$__interval]) > 0,\n  \"state\", \"CrashLoopBackOff\", \"\", \"\"\n)",
+              "format": "table",
+              "instant": false,
+              "legendFormat": "CrashLoopBackOff",
+              "range": true,
+              "refId": "C"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "label_replace(\n  max_over_time(kube_pod_container_status_terminated_reason{namespace=\"tekton-kueue\", reason=\"OOMKilled\", source_cluster=~\"$cluster\"}[$__interval]) > 0,\n  \"state\", \"OOMKilled\", \"\", \"\"\n)",
+              "format": "table",
+              "instant": false,
+              "legendFormat": "OOMKilled",
+              "range": true,
+              "refId": "D"
+            }
+          ],
+          "timeFrom": "7d",
+          "title": "Tekton Kueue - Unhealthy Pods",
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "__name__": true,
+                  "job": true,
+                  "namespace": true,
+                  "phase": true,
+                  "reason": true,
+                  "receive": true,
+                  "service": true,
+                  "source_environment": true,
+                  "tenant_id": true,
+                  "Value": true
+                },
+                "indexByName": {
+                  "Time": 0,
+                  "pod": 1,
+                  "container": 2,
+                  "source_cluster": 3,
+                  "state": 4
+                },
+                "renameByName": {
+                  "source_cluster": "cluster"
+                }
+              }
+            }
+          ],
+          "type": "table"
+        },
+        {
           "collapsed": true,
           "gridPos": {
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 47
+            "y": 57
           },
           "id": 6,
           "panels": [
@@ -696,15 +882,15 @@ data:
                       "options": {
                         "active": {
                           "index": 0,
-                          "text": "🟢 Active"
+                          "text": "\ud83d\udfe2 Active"
                         },
                         "pending": {
                           "index": 1,
-                          "text": "🟡 Pending"
+                          "text": "\ud83d\udfe1 Pending"
                         },
                         "terminated": {
                           "index": 2,
-                          "text": "🔴 Terminated"
+                          "text": "\ud83d\udd34 Terminated"
                         }
                       },
                       "type": "value"
@@ -1306,7 +1492,7 @@ data:
                   "color": "rgba(255,0,255,0.7)"
                 },
                 "filterValues": {
-                  "le": 1e-9
+                  "le": 1e-09
                 },
                 "legend": {
                   "show": true
@@ -1384,7 +1570,7 @@ data:
                   "color": "rgba(255,0,255,0.7)"
                 },
                 "filterValues": {
-                  "le": 1e-9
+                  "le": 1e-09
                 },
                 "legend": {
                   "show": true
@@ -1431,7 +1617,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 48
+            "y": 58
           },
           "id": 4,
           "panels": [
@@ -1542,7 +1728,7 @@ data:
                   "color": "rgba(255,0,255,0.7)"
                 },
                 "filterValues": {
-                  "le": 1e-9
+                  "le": 1e-09
                 },
                 "legend": {
                   "show": true
@@ -1923,7 +2109,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 49
+            "y": 59
           },
           "id": 100,
           "panels": [
