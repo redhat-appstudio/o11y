@@ -182,7 +182,7 @@ tests:
     input_series:
       # Increase in Etcd raft proposal failures over time, so it will be alerted.
       - series: 'etcd_server_proposals_failed_total{pod="etcd-pod-1", source_cluster="cluster01"}'
-        values: '0+5x60'
+        values: '0+10x60'
 
       - series: 'etcd_server_proposals_failed_total{pod="etcd-pod-2", source_cluster="cluster01"}'
         values: '0+0x60'
@@ -201,7 +201,7 @@ tests:
             exp_annotations:
               summary: "ETCD raft proposal failures."
               description: "Etcd high number of failed proposals on some etcd pod in cluster cluster01."
-              alert_routing_key: perfandscale
+              alert_routing_key: spreandinfra
 
   - interval: 1m
     input_series:

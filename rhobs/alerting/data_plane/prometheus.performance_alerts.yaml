@@ -40,7 +40,7 @@ spec:
 
         - alert: EtcdProposalFailures
           expr: |
-            max by (source_cluster) (rate(etcd_server_proposals_failed_total[1h])) > 0.05
+            max by (source_cluster) (rate(etcd_server_proposals_failed_total[1h])) > 0.10
           for: 15m
           labels:
             severity: warning
@@ -50,7 +50,7 @@ spec:
               ETCD raft proposal failures.
             description: >-
               Etcd high number of failed proposals on some etcd pod in cluster {{ $labels.source_cluster }}.
-            alert_routing_key: perfandscale
+            alert_routing_key: spreandinfra
 
         - alert: EtcdSlowNetworkRTT
           expr: |
