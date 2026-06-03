@@ -1,0 +1,94 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-krd-runner-alerting
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: krd-runner-health
+      interval: 1m
+      rules:
+        - alert: KRDRunnerDown
+          expr: |
+            absent(gitlab_runner_concurrent{
+              namespace="krd-gitlab-runner--pipeline"
+            })
+          for: 10m
+          labels:
+            severity: warning
+            slo: "false"
+            component: krd-gitlab-runner
+          annotations:
+            summary: >-
+              KRD GitLab Runner is down
+            description: >-
+              No metrics received from the GitLab runner in namespace krd-gitlab-runner--pipeline
+              for more than 10 minutes. The runner pod may be absent, crash looping, or not ready.
+            alert_routing_key: krd-releng
+            team: releng
+
+    - name: krd-runner-resources
+      interval: 1m
+      rules:
+        - alert: KRDRunnerHighMemoryUsage
+          expr: |
+            process_resident_memory_bytes{
+              namespace="krd-gitlab-runner--pipeline"
+            } > 545259520
+          for: 30m
+          labels:
+            severity: warning
+            slo: "false"
+            component: krd-gitlab-runner
+          annotations:
+            summary: >-
+              KRD GitLab Runner memory usage exceeds 80% of limit on cluster {{ $labels.source_cluster }}
+            description: >-
+              The GitLab runner process in namespace {{ $labels.namespace }} on cluster
+              {{ $labels.source_cluster }} has been using more than 80% of its 650Mi memory limit
+              for 30 minutes.
+            alert_routing_key: krd-releng
+            team: releng
+
+        - alert: KRDRunnerHighCPUUsage
+          expr: |
+            rate(process_cpu_seconds_total{
+              namespace="krd-gitlab-runner--pipeline"
+            }[5m]) > 0.48
+          for: 30m
+          labels:
+            severity: warning
+            slo: "false"
+            component: krd-gitlab-runner
+          annotations:
+            summary: >-
+              KRD GitLab Runner CPU usage exceeds 80% of limit on cluster {{ $labels.source_cluster }}
+            description: >-
+              The GitLab runner process in namespace {{ $labels.namespace }} on cluster
+              {{ $labels.source_cluster }} has been using more than 80% of its 600m CPU limit
+              for 30 minutes.
+            alert_routing_key: krd-releng
+            team: releng
+
+    - name: krd-runner-jobs
+      interval: 1m
+      rules:
+        - alert: KRDRunnerJobFailureSpike
+          expr: |
+            increase(gitlab_runner_failed_jobs_total{
+              namespace="krd-gitlab-runner--pipeline"
+            }[15m]) > 15
+          for: 15m
+          labels:
+            severity: warning
+            slo: "false"
+            component: krd-gitlab-runner
+          annotations:
+            summary: >-
+              KRD GitLab Runner job failure spike.
+            description: >-
+              More than 15 runner job failures in the last 15 minutes in {{ $labels.namespace }} namespace.
+              Failure reason: {{ $labels.failure_reason }}.
+            alert_routing_key: krd-releng
+            team: releng

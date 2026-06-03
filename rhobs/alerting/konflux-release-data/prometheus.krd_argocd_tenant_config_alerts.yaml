@@ -1,0 +1,77 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-krd-argocd-tenant-config-alerting
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: krd-argocd-tenant-config
+      interval: 1m
+      rules:
+        - alert: KRDTenantConfigAppDegraded
+          expr: |
+            last_over_time(
+              argocd_app_info{
+                health_status="Degraded",
+                namespace=~"konflux-tenants-config|konflux-tenants-config-stage"
+              }[2m]
+            ) == 1
+          for: 10m
+          labels:
+            severity: warning
+            slo: "false"
+            component: krd-tenants-config
+          annotations:
+            summary: >-
+              Tenant-config ArgoCD app {{ $labels.name }} is degraded for {{ $labels.dest_namespace }} namespace
+            description: >-
+              ArgoCD application {{ $labels.name }} in {{ $labels.namespace }} has been in Degraded health status
+              for more than 10 minutes.
+            alert_routing_key: krd-releng
+            team: releng
+
+        - alert: KRDTenantConfigAppOutOfSync
+          expr: |
+            last_over_time(
+              argocd_app_info{
+                health_status="Healthy",
+                sync_status="OutOfSync",
+                namespace=~"konflux-tenants-config|konflux-tenants-config-stage"
+              }[2m]
+            ) == 1
+          for: 10m
+          labels:
+            severity: warning
+            slo: "false"
+            component: krd-tenants-config
+          annotations:
+            summary: >-
+              Tenant-config ArgoCD app {{ $labels.name }} is OutOfSync for {{ $labels.dest_namespace }} namespace
+            description: >-
+              ArgoCD application {{ $labels.name }} in {{ $labels.namespace }} namespace
+              has been OutOfSync for more than 10 minutes.
+            alert_routing_key: krd-releng
+            team: releng
+
+        - alert: KRDTenantConfigAppMissingOrUnknown
+          expr: |
+            last_over_time(
+              argocd_app_info{
+                health_status=~"Missing|Unknown",
+                namespace=~"konflux-tenants-config|konflux-tenants-config-stage"
+              }[2m]
+            ) == 1
+          for: 10m
+          labels:
+            severity: warning
+            slo: "false"
+            component: krd-tenants-config
+          annotations:
+            summary: >-
+              Tenant-config ArgoCD app {{ $labels.name }} has {{ $labels.health_status }} health for {{ $labels.dest_namespace }} namespace
+            description: >-
+              ArgoCD application {{ $labels.name }} in {{ $labels.dest_namespace }} namespace
+              has been in {{ $labels.health_status }} health status for more than 10 minutes.
+            alert_routing_key: krd-releng
+            team: releng
