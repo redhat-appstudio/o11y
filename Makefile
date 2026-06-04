@@ -21,15 +21,20 @@ KUSTOMIZE_VERSION ?= v5.6.0
 kustomize:
 	@if command -v kustomize >/dev/null 2>&1; then \
 		echo "kustomize already installed: $$(kustomize version)"; \
-	elif [ -f ./kustomize ]; then \
-		echo "kustomize binary found in current directory"; \
 	else \
-		echo "Downloading kustomize $(KUSTOMIZE_VERSION)..."; \
+		OS=$$(uname -s | tr '[:upper:]' '[:lower:]'); \
+		ARCH=$$(uname -m | sed 's/x86_64/amd64/' | sed 's/aarch64/arm64/'); \
+		TARBALL="kustomize_$(KUSTOMIZE_VERSION)_$${OS}_$${ARCH}.tar.gz"; \
+		BASE_URL="https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F$(KUSTOMIZE_VERSION)"; \
+		echo "Downloading kustomize $(KUSTOMIZE_VERSION) ($${OS}/$${ARCH})..."; \
 		download_ok=false; \
 		for i in 1 2 3; do \
 			if curl -fSL --retry 3 --retry-delay 5 \
-				"https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F$(KUSTOMIZE_VERSION)/kustomize_$(KUSTOMIZE_VERSION)_linux_amd64.tar.gz" \
-				-o kustomize.tar.gz; then \
+				"$${BASE_URL}/$${TARBALL}" \
+				-o kustomize.tar.gz && \
+			   curl -fSL --retry 3 --retry-delay 5 \
+				"$${BASE_URL}/kustomize_$(KUSTOMIZE_VERSION)_checksums.txt" \
+				-o kustomize_checksums.txt; then \
 				download_ok=true; \
 				break; \
 			fi; \
@@ -38,10 +43,14 @@ kustomize:
 		done; \
 		if [ "$$download_ok" != "true" ]; then \
 			echo "ERROR: Failed to download kustomize after 3 attempts"; \
-			rm -f kustomize.tar.gz; \
+			rm -f kustomize.tar.gz kustomize_checksums.txt; \
 			exit 1; \
 		fi; \
-		tar xzf kustomize.tar.gz && rm -f kustomize.tar.gz; \
+		echo "$$(grep "$${TARBALL}" kustomize_checksums.txt)" | sha256sum -c - || \
+			{ echo "ERROR: checksum verification failed"; rm -f kustomize.tar.gz kustomize_checksums.txt; exit 1; }; \
+		tar xzf kustomize.tar.gz && \
+		rm -f kustomize.tar.gz kustomize_checksums.txt && \
+		[ -x ./kustomize ] || { echo "ERROR: extraction failed"; rm -f kustomize.tar.gz kustomize_checksums.txt; exit 1; }; \
 		echo "kustomize $(KUSTOMIZE_VERSION) installed successfully"; \
 	fi
 
