@@ -15,6 +15,13 @@ make selective-check-and-test \
   TEST_CASE_FILES="test/promql/tests/data_plane/my_alert_test.yaml"
 ```
 
+For KRD (Konflux Release Data) alerts:
+```
+make selective-check-and-test \
+  RULE_FILES="rhobs/alerting/konflux-release-data/my_alert.yaml" \
+  TEST_CASE_FILES="test/promql/tests/konflux-release-data/my_alert_test.yaml"
+```
+
 ### Alert convention checks
 ```
 make check-alert-conventions
@@ -35,6 +42,8 @@ Alert rules are evaluated by RHOBS (Red Hat Observability Service), not by in-cl
 - **Non-SLO alerts** are grouped by `alertname` and `cluster` (`group_by: [alertname, cluster]`). Multiple instances of the same alert on the same cluster are batched into a single Slack message with team routings preserved — e.g. if `PodNotReady` fires for 5 pods on the same cluster for multiple teams, they appear as one message containing several team-specific alerts.
 
 **Metric forwarding:** Because alerts are evaluated by RHOBS (not in-cluster Prometheus), any metric used in an alert must first be forwarded from Konflux clusters to RHOBS via [infra-deployments](https://github.com/redhat-appstudio/infra-deployments). An alert referencing a metric that isn't forwarded will silently never fire. See [adding-alert SOP](https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/adding-alert.md) for the full checklist.
+
+**Exception — KRD alerts:** Konflux Release Data runner and pipeline metrics are not forwarded via infra-deployments. They are scraped and forwarded by an OTEL Collector defined in [krd-monitoring](https://gitlab.cee.redhat.com/konflux/o11y/krd-monitoring). ArgoCD `argocd_app_info` metrics are forwarded via the standard Prometheus remote-write path in [app-interface](https://gitlab.cee.redhat.com/service/app-interface/-/blob/dabd5d7a2dc8cc229941b4669bb9f2fd4413f3d7/data/services/observability/cicd/saas/saas-observability-per-cluster.yaml#L457). See the [KRD monitoring SOP](https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/monitoring/konflux-release-data-monitoring.md) for full architecture and alert details.
 
 ## Deployment Model
 Changes are deployed into rhobs based on [references defined in app-interface](https://gitlab.cee.redhat.com/service/app-interface/-/blob/master/data/services/stonesoup/cicd/saas-rhtap-rules.yaml?ref_type=heads).
@@ -60,6 +69,8 @@ Example mappings:
 | `o11y`, `appstudio-grafana`, `monitoring-workload.*` | O11y |
 
 If a key doesn't match any mapping, the o11y team is notified as fallback. See the [alerting guide SOP](https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alerting_guide.md) for the full routing matrix.
+
+**KRD (Konflux Release Data) alerts** are routed by the `component` label with a `krd-` prefix into a separate `#konflux-releng-alerts` Slack channel. See the [KRD monitoring SOP](https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/monitoring/konflux-release-data-monitoring.md) for details.
 
 **Severity levels:**
 | Severity | Usage |
