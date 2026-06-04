@@ -16,8 +16,34 @@ endif
 .PHONY: all
 all: check-and-test check-alert-conventions sync_pipenv lint_yamls kustomize-build
 
+KUSTOMIZE_VERSION ?= v5.6.0
+
 kustomize:
-	curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash
+	@if command -v kustomize >/dev/null 2>&1; then \
+		echo "kustomize already installed: $$(kustomize version)"; \
+	elif [ -f ./kustomize ]; then \
+		echo "kustomize binary found in current directory"; \
+	else \
+		echo "Downloading kustomize $(KUSTOMIZE_VERSION)..."; \
+		download_ok=false; \
+		for i in 1 2 3; do \
+			if curl -fSL --retry 3 --retry-delay 5 \
+				"https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F$(KUSTOMIZE_VERSION)/kustomize_$(KUSTOMIZE_VERSION)_linux_amd64.tar.gz" \
+				-o kustomize.tar.gz; then \
+				download_ok=true; \
+				break; \
+			fi; \
+			echo "Download attempt $$i failed, retrying in 5s..."; \
+			sleep 5; \
+		done; \
+		if [ "$$download_ok" != "true" ]; then \
+			echo "ERROR: Failed to download kustomize after 3 attempts"; \
+			rm -f kustomize.tar.gz; \
+			exit 1; \
+		fi; \
+		tar xzf kustomize.tar.gz && rm -f kustomize.tar.gz; \
+		echo "kustomize $(KUSTOMIZE_VERSION) installed successfully"; \
+	fi
 
 .PHONY: check-and-test
 check-and-test:
