@@ -95,19 +95,30 @@ tests:
               alert_routing_key: krd-releng
               team: releng
 
+  # CPU spike lasting only 15 minutes then dropping — should NOT fire (for: 30m)
+  - interval: 1m
+    input_series:
+      - series: 'process_cpu_seconds_total{namespace="krd-gitlab-runner--pipeline", source_cluster="cluster03"}'
+        values: "0+30x15 450+12x20"
+
+    alert_rule_test:
+      - eval_time: 35m
+        alertname: KRDRunnerHighCPUUsage
+        exp_alerts: []
+
   # ==================== KRDRunnerJobFailureSpike ====================
   - interval: 1m
     input_series:
       # 20 failures in 15 minutes — should fire (threshold > 15)
       - series: 'gitlab_runner_failed_jobs_total{namespace="krd-gitlab-runner--pipeline", failure_reason="script_failure", source_cluster="cluster01"}'
-        values: "0+2x35"
+        values: "0+2x25"
 
       # Only 5 failures in 15 minutes — should NOT fire
       - series: 'gitlab_runner_failed_jobs_total{namespace="krd-gitlab-runner--pipeline", failure_reason="runner_system_failure", source_cluster="cluster01"}'
-        values: "0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 2 2 2 2 2 3 3 3 3 3 4 4 4 4 4 5 5 5 5 5"
+        values: "0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 2 2 2 2 2 3 3 3 3 3"
 
     alert_rule_test:
-      - eval_time: 30m
+      - eval_time: 20m
         alertname: KRDRunnerJobFailureSpike
         exp_alerts:
           - exp_labels:

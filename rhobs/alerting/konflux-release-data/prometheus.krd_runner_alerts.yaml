@@ -35,7 +35,7 @@ spec:
           expr: |
             process_resident_memory_bytes{
               namespace="krd-gitlab-runner--pipeline"
-            } > 545259520
+            } > 545259520 # 80% of 650Mi limit
           for: 30m
           labels:
             severity: warning
@@ -55,7 +55,7 @@ spec:
           expr: |
             rate(process_cpu_seconds_total{
               namespace="krd-gitlab-runner--pipeline"
-            }[5m]) > 0.48
+            }[5m]) > 0.48 # 80% of 600m limit
           for: 30m
           labels:
             severity: warning
@@ -79,7 +79,7 @@ spec:
             increase(gitlab_runner_failed_jobs_total{
               namespace="krd-gitlab-runner--pipeline"
             }[15m]) > 15
-          for: 15m
+          for: 5m
           labels:
             severity: warning
             slo: "false"

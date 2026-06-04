@@ -4,10 +4,7 @@ import glob
 import sys
 import yaml
 
-ALERT_DIRS = [
-    "rhobs/alerting/data_plane",
-    "rhobs/alerting/konflux-release-data",
-]
+ALERT_DIR = "rhobs/alerting"
 VALID_SEVERITIES = {"critical", "high", "warning", "info"}
 
 def check_rules(path):
@@ -32,13 +29,9 @@ def check_rules(path):
     return errors
 
 def main():
-    files = []
-    for alert_dir in ALERT_DIRS:
-        files.extend(glob.glob(f"{alert_dir}/**/*.yaml", recursive=True))
-        files.extend(glob.glob(f"{alert_dir}/*.yaml"))
-    files = sorted(set(files))
+    files = sorted(glob.glob(f"{ALERT_DIR}/**/*.yaml", recursive=True))
     if not files:
-        print(f"No alert files found in {ALERT_DIRS}")
+        print(f"No alert files found in {ALERT_DIR}/")
         sys.exit(1)
 
     all_errors = []
