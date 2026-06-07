@@ -28,14 +28,14 @@ tests:
 
   - interval: 1m
     input_series:
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-pre-merge-test", le="900", source_cluster="c1"}'
-        values: '0+0x20'
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-pre-merge-test", le="1000", source_cluster="c1"}'
-        values: '0+0x20'
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-pre-merge-test", le="+Inf", source_cluster="c1"}'
-        values: '0 10 20 30 40 50 60 70 80 90 100'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue",priority_class="konflux-pre-merge-test",le="900",source_cluster="c1"}'
+        values: '0+0x60'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue",priority_class="konflux-pre-merge-test",le="1000",source_cluster="c1"}'
+        values: '0+0x60'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue",priority_class="konflux-pre-merge-test",le="+Inf",source_cluster="c1"}'
+        values: '0+10x60'
     alert_rule_test:
-      - eval_time: 15m
+      - eval_time: 45m
         alertname: KueueHighAdmissionWaitTimePreMerge
         exp_alerts:
           - exp_labels:
@@ -72,7 +72,6 @@ tests:
               alert_routing_key: infra
               team: konflux-infra
 
-  # TektonKueuePodsCrashLoopBackOff - should fire: pod in CrashLoopBackOff for 3m
   - interval: 1m
     input_series:
       - series: 'kube_pod_container_status_waiting_reason{namespace="tekton-kueue", reason="CrashLoopBackOff", pod="tekton-kueue-controller-manager-abc123", source_cluster="c1"}'
@@ -96,7 +95,6 @@ tests:
               alert_routing_key: infra
               team: konflux-infra
 
-  # TektonKueuePodsCrashLoopBackOff - should NOT fire: no CrashLoopBackOff pods
   - interval: 1m
     input_series:
       - series: 'kube_pod_container_status_waiting_reason{namespace="tekton-kueue", reason="CrashLoopBackOff", pod="tekton-kueue-controller-manager-abc123", source_cluster="c1"}'
@@ -106,7 +104,6 @@ tests:
         alertname: TektonKueuePodsCrashLoopBackOff
         exp_alerts: []
 
-  # TektonKueueRolloutStuck - should fire: updated < desired for 20m
   - interval: 1m
     input_series:
       - series: 'kube_deployment_spec_replicas{namespace="tekton-kueue", deployment="tekton-kueue-controller-manager", source_cluster="c1"}'
@@ -130,7 +127,6 @@ tests:
               alert_routing_key: infra
               team: konflux-infra
 
-  # TektonKueueRolloutStuck - should NOT fire: updated == desired (healthy)
   - interval: 1m
     input_series:
       - series: 'kube_deployment_spec_replicas{namespace="tekton-kueue", deployment="tekton-kueue-controller-manager", source_cluster="c1"}'
@@ -142,7 +138,6 @@ tests:
         alertname: TektonKueueRolloutStuck
         exp_alerts: []
 
-  # TektonKueuePodStuckInPending - should fire: pod in Pending for 5m
   - interval: 1m
     input_series:
       - series: 'kube_pod_status_phase{namespace="tekton-kueue", phase="Pending", pod="tekton-kueue-controller-manager-abc123", source_cluster="c1"}'
@@ -164,7 +159,6 @@ tests:
               alert_routing_key: infra
               team: konflux-infra
 
-  # TektonKueuePodStuckInPending - should NOT fire: pod not in Pending
   - interval: 1m
     input_series:
       - series: 'kube_pod_status_phase{namespace="tekton-kueue", phase="Pending", pod="tekton-kueue-controller-manager-abc123", source_cluster="c1"}'
@@ -174,7 +168,6 @@ tests:
         alertname: TektonKueuePodStuckInPending
         exp_alerts: []
 
-  # TektonKueuePodStuckInPending - should NOT fire at 4m: for: 5m not yet satisfied
   - interval: 1m
     input_series:
       - series: 'kube_pod_status_phase{namespace="tekton-kueue", phase="Pending", pod="tekton-kueue-controller-manager-abc123", source_cluster="c1"}'
@@ -184,7 +177,6 @@ tests:
         alertname: TektonKueuePodStuckInPending
         exp_alerts: []
 
-  # TektonKueuePodStuckInCreation - should fire: container in ContainerCreating for 5m
   - interval: 1m
     input_series:
       - series: 'kube_pod_container_status_waiting_reason{namespace="tekton-kueue", reason="ContainerCreating", pod="tekton-kueue-controller-manager-abc123", container="manager", source_cluster="c1"}'
@@ -207,7 +199,6 @@ tests:
               alert_routing_key: infra
               team: konflux-infra
 
-  # TektonKueuePodStuckInCreation - should NOT fire: no containers in ContainerCreating
   - interval: 1m
     input_series:
       - series: 'kube_pod_container_status_waiting_reason{namespace="tekton-kueue", reason="ContainerCreating", pod="tekton-kueue-controller-manager-abc123", container="manager", source_cluster="c1"}'
@@ -217,7 +208,6 @@ tests:
         alertname: TektonKueuePodStuckInCreation
         exp_alerts: []
 
-  # TektonKueuePodOOMKilled - should fire: restart occurred and last terminated reason is OOMKilled
   - interval: 1m
     input_series:
       - series: 'kube_pod_container_status_restarts_total{namespace="tekton-kueue", pod="tekton-kueue-controller-manager-abc123", container="manager", source_cluster="c1"}'
@@ -242,7 +232,6 @@ tests:
               alert_routing_key: infra
               team: konflux-infra
 
-  # TektonKueuePodOOMKilled - should NOT fire: no restarts occurred
   - interval: 1m
     input_series:
       - series: 'kube_pod_container_status_restarts_total{namespace="tekton-kueue", pod="tekton-kueue-controller-manager-abc123", container="manager", source_cluster="c1"}'
@@ -254,7 +243,6 @@ tests:
         alertname: TektonKueuePodOOMKilled
         exp_alerts: []
 
-  # TektonKueueRolloutStuck - should NOT fire at 10m: condition true but for: 20m not yet satisfied
   - interval: 1m
     input_series:
       - series: 'kube_deployment_spec_replicas{namespace="tekton-kueue", deployment="tekton-kueue-controller-manager", source_cluster="c1"}'
