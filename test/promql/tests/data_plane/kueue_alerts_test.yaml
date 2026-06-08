@@ -3,6 +3,7 @@ rule_files:
   - 'prometheus.kueue_alerts.yaml'
 
 tests:
+  # KueueHighAdmissionWaitTimeMintmaker - should fire: 99th percentile wait time above 12h
   - interval: 1m
     input_series:
       - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-dependency-update", le="43200", source_cluster="c1"}'
@@ -26,16 +27,17 @@ tests:
               alert_routing_key: infra
               team: konflux-infra
 
+  # KueueHighAdmissionWaitTimePreMerge - should fire: 99th percentile wait time above 15m for 40m
   - interval: 1m
     input_series:
       - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-pre-merge-test", le="900", source_cluster="c1"}'
-        values: '0+0x20'
+        values: '0+0x60'
       - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-pre-merge-test", le="1000", source_cluster="c1"}'
-        values: '0+0x20'
+        values: '0+0x60'
       - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-pre-merge-test", le="+Inf", source_cluster="c1"}'
-        values: '0 10 20 30 40 50 60 70 80 90 100'
+        values: '0+10x60'
     alert_rule_test:
-      - eval_time: 15m
+      - eval_time: 45m
         alertname: KueueHighAdmissionWaitTimePreMerge
         exp_alerts:
           - exp_labels:
@@ -49,6 +51,21 @@ tests:
               alert_routing_key: infra
               team: konflux-infra
 
+  # KueueHighAdmissionWaitTimePreMerge - should NOT fire: eval time (35m) is less than 'for' duration (40m)
+  - interval: 1m
+    input_series:
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-pre-merge-test", le="900", source_cluster="c1"}'
+        values: '0+0x60'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-pre-merge-test", le="1000", source_cluster="c1"}'
+        values: '0+0x60'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-pre-merge-test", le="+Inf", source_cluster="c1"}'
+        values: '0+10x60'
+    alert_rule_test:
+      - eval_time: 35m
+        alertname: KueueHighAdmissionWaitTimePreMerge
+        exp_alerts: []
+
+  # KueueHighAdmissionWaitTimePostMerge - should fire: 99th percentile wait time above 15m
   - interval: 1m
     input_series:
       - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-post-merge-build", le="900", source_cluster="c1"}'
@@ -72,7 +89,7 @@ tests:
               alert_routing_key: infra
               team: konflux-infra
 
-  # TektonKueuePodsCrashLoopBackOff - should fire: pod in CrashLoopBackOff for 3m
+  # TektonKueuePodsCrashLoopBackOff - should fire: pod in CrashLoopBackOff
   - interval: 1m
     input_series:
       - series: 'kube_pod_container_status_waiting_reason{namespace="tekton-kueue", reason="CrashLoopBackOff", pod="tekton-kueue-controller-manager-abc123", source_cluster="c1"}'
@@ -96,7 +113,7 @@ tests:
               alert_routing_key: infra
               team: konflux-infra
 
-  # TektonKueuePodsCrashLoopBackOff - should NOT fire: no CrashLoopBackOff pods
+  # TektonKueuePodsCrashLoopBackOff - should NOT fire: pod not in CrashLoopBackOff
   - interval: 1m
     input_series:
       - series: 'kube_pod_container_status_waiting_reason{namespace="tekton-kueue", reason="CrashLoopBackOff", pod="tekton-kueue-controller-manager-abc123", source_cluster="c1"}'
@@ -106,7 +123,7 @@ tests:
         alertname: TektonKueuePodsCrashLoopBackOff
         exp_alerts: []
 
-  # TektonKueueRolloutStuck - should fire: updated < desired for 20m
+  # TektonKueueRolloutStuck - should fire: rollout stuck for 20m
   - interval: 1m
     input_series:
       - series: 'kube_deployment_spec_replicas{namespace="tekton-kueue", deployment="tekton-kueue-controller-manager", source_cluster="c1"}'
@@ -130,7 +147,7 @@ tests:
               alert_routing_key: infra
               team: konflux-infra
 
-  # TektonKueueRolloutStuck - should NOT fire: updated == desired (healthy)
+  # TektonKueueRolloutStuck - should NOT fire: replicas updated matches spec
   - interval: 1m
     input_series:
       - series: 'kube_deployment_spec_replicas{namespace="tekton-kueue", deployment="tekton-kueue-controller-manager", source_cluster="c1"}'
@@ -174,7 +191,7 @@ tests:
         alertname: TektonKueuePodStuckInPending
         exp_alerts: []
 
-  # TektonKueuePodStuckInPending - should NOT fire at 4m: for: 5m not yet satisfied
+  # TektonKueuePodStuckInPending - should NOT fire: eval time (4m) is less than 'for' duration (5m)
   - interval: 1m
     input_series:
       - series: 'kube_pod_status_phase{namespace="tekton-kueue", phase="Pending", pod="tekton-kueue-controller-manager-abc123", source_cluster="c1"}'
@@ -184,7 +201,7 @@ tests:
         alertname: TektonKueuePodStuckInPending
         exp_alerts: []
 
-  # TektonKueuePodStuckInCreation - should fire: container in ContainerCreating for 5m
+  # TektonKueuePodStuckInCreation - should fire: pod in ContainerCreating for 5m
   - interval: 1m
     input_series:
       - series: 'kube_pod_container_status_waiting_reason{namespace="tekton-kueue", reason="ContainerCreating", pod="tekton-kueue-controller-manager-abc123", container="manager", source_cluster="c1"}'
@@ -207,7 +224,7 @@ tests:
               alert_routing_key: infra
               team: konflux-infra
 
-  # TektonKueuePodStuckInCreation - should NOT fire: no containers in ContainerCreating
+  # TektonKueuePodStuckInCreation - should NOT fire: pod not in ContainerCreating
   - interval: 1m
     input_series:
       - series: 'kube_pod_container_status_waiting_reason{namespace="tekton-kueue", reason="ContainerCreating", pod="tekton-kueue-controller-manager-abc123", container="manager", source_cluster="c1"}'
@@ -217,7 +234,7 @@ tests:
         alertname: TektonKueuePodStuckInCreation
         exp_alerts: []
 
-  # TektonKueuePodOOMKilled - should fire: restart occurred and last terminated reason is OOMKilled
+  # TektonKueuePodOOMKilled - should fire: pod OOMKilled
   - interval: 1m
     input_series:
       - series: 'kube_pod_container_status_restarts_total{namespace="tekton-kueue", pod="tekton-kueue-controller-manager-abc123", container="manager", source_cluster="c1"}'
@@ -242,7 +259,7 @@ tests:
               alert_routing_key: infra
               team: konflux-infra
 
-  # TektonKueuePodOOMKilled - should NOT fire: no restarts occurred
+  # TektonKueuePodOOMKilled - should NOT fire: pod not OOMKilled
   - interval: 1m
     input_series:
       - series: 'kube_pod_container_status_restarts_total{namespace="tekton-kueue", pod="tekton-kueue-controller-manager-abc123", container="manager", source_cluster="c1"}'
@@ -254,7 +271,7 @@ tests:
         alertname: TektonKueuePodOOMKilled
         exp_alerts: []
 
-  # TektonKueueRolloutStuck - should NOT fire at 10m: condition true but for: 20m not yet satisfied
+  # TektonKueueRolloutStuck - should NOT fire: eval time (10m) is less than 'for' duration (20m)
   - interval: 1m
     input_series:
       - series: 'kube_deployment_spec_replicas{namespace="tekton-kueue", deployment="tekton-kueue-controller-manager", source_cluster="c1"}'
