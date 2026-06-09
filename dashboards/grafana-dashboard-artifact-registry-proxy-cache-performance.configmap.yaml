@@ -75,6 +75,7 @@ data:
                   "mode": "off"
                 }
               },
+              "decimals": 3,
               "mappings": [],
               "max": 100,
               "min": 0,
@@ -110,15 +111,17 @@ data:
               "sort": "none"
             }
           },
-          "pluginVersion": "11.6.3",
+          "pluginVersion": "11.6.11",
           "targets": [
             {
               "datasource": {
                 "type": "prometheus",
                 "uid": "${nginx_datasource}"
               },
-              "expr": "(sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", cache_status=\"HIT\"}[$interval])) / sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", cache_status=~\"HIT|MISS\"}[$interval]))) * 100",
-              "legendFormat": "{{source_cluster}} - Cache Hit Ratio",
+              "editorMode": "code",
+              "expr": "(sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", cache_status=\"HIT\"}[$interval])) / sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\"}[$interval]))) * 100",
+              "legendFormat": "Cache Hit Ratio",
+              "range": true,
               "refId": "A"
             }
           ],
@@ -173,7 +176,7 @@ data:
             "textMode": "auto",
             "wideLayout": true
           },
-          "pluginVersion": "11.6.3",
+          "pluginVersion": "11.6.11",
           "targets": [
             {
               "datasource": {
@@ -187,7 +190,7 @@ data:
               "refId": "A"
             }
           ],
-          "title": "Cache Hits/sec",
+          "title": "Current Cache Hits/sec",
           "type": "stat"
         },
         {
@@ -238,7 +241,7 @@ data:
             "textMode": "auto",
             "wideLayout": true
           },
-          "pluginVersion": "11.6.3",
+          "pluginVersion": "11.6.11",
           "targets": [
             {
               "datasource": {
@@ -252,7 +255,7 @@ data:
               "refId": "A"
             }
           ],
-          "title": "Cache Misses/sec",
+          "title": "Current Cache Misses/sec",
           "type": "stat"
         },
         {
@@ -266,6 +269,7 @@ data:
               "color": {
                 "mode": "thresholds"
               },
+              "decimals": 3,
               "mappings": [],
               "max": 100,
               "min": 0,
@@ -313,7 +317,7 @@ data:
             "textMode": "auto",
             "wideLayout": true
           },
-          "pluginVersion": "11.6.3",
+          "pluginVersion": "11.6.11",
           "targets": [
             {
               "datasource": {
@@ -327,7 +331,7 @@ data:
               "refId": "A"
             }
           ],
-          "title": "Upstream Load Reduction",
+          "title": "Current Upstream Load Reduction",
           "type": "stat"
         },
         {
@@ -471,7 +475,7 @@ data:
               "sort": "desc"
             }
           },
-          "pluginVersion": "11.6.3",
+          "pluginVersion": "11.6.11",
           "targets": [
             {
               "datasource": {
@@ -505,6 +509,7 @@ data:
                   "viz": false
                 }
               },
+              "decimals": 3,
               "mappings": []
             },
             "overrides": [
@@ -601,7 +606,7 @@ data:
               "sort": "none"
             }
           },
-          "pluginVersion": "11.6.3",
+          "pluginVersion": "11.6.11",
           "targets": [
             {
               "datasource": {
@@ -609,7 +614,7 @@ data:
                 "uid": "${nginx_datasource}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\"}[$interval])) by (cache_status)",
+              "expr": "sum(increase(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\"}[$__range])) by (cache_status)",
               "instant": true,
               "legendFormat": "{{cache_status}}",
               "refId": "A"
@@ -617,284 +622,6 @@ data:
           ],
           "title": "Cache Status Distribution",
           "type": "piechart"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${nginx_datasource}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 2,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              },
-              "unit": "s"
-            },
-            "overrides": [
-              {
-                "matcher": {
-                  "id": "byName",
-                  "options": "HIT (p95)"
-                },
-                "properties": [
-                  {
-                    "id": "color",
-                    "value": {
-                      "fixedColor": "green",
-                      "mode": "fixed"
-                    }
-                  }
-                ]
-              },
-              {
-                "matcher": {
-                  "id": "byName",
-                  "options": "MISS (p95)"
-                },
-                "properties": [
-                  {
-                    "id": "color",
-                    "value": {
-                      "fixedColor": "red",
-                      "mode": "fixed"
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 24,
-            "x": 0,
-            "y": 20
-          },
-          "id": 11,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "lastNotNull",
-                "max"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "multi",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${nginx_datasource}"
-              },
-              "editorMode": "code",
-              "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", cache_status=\"HIT\"}[$interval])) by (le))",
-              "legendFormat": "HIT (p95)",
-              "range": true,
-              "refId": "A"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${nginx_datasource}"
-              },
-              "editorMode": "code",
-              "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", cache_status=\"MISS\"}[$interval])) by (le))",
-              "legendFormat": "MISS (p95)",
-              "range": true,
-              "refId": "B"
-            }
-          ],
-          "title": "Response Time: Cache HIT vs MISS (p95)",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${nginx_datasource}"
-          },
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 2,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "never",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              },
-              "unit": "s"
-            },
-            "overrides": [
-              {
-                "matcher": {
-                  "id": "byName",
-                  "options": "HIT (p50)"
-                },
-                "properties": [
-                  {
-                    "id": "color",
-                    "value": {
-                      "fixedColor": "green",
-                      "mode": "fixed"
-                    }
-                  }
-                ]
-              },
-              {
-                "matcher": {
-                  "id": "byName",
-                  "options": "MISS (p50)"
-                },
-                "properties": [
-                  {
-                    "id": "color",
-                    "value": {
-                      "fixedColor": "red",
-                      "mode": "fixed"
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 24,
-            "x": 0,
-            "y": 28
-          },
-          "id": 12,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "lastNotNull",
-                "max"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "multi",
-              "sort": "none"
-            }
-          },
-          "pluginVersion": "11.6.3",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${nginx_datasource}"
-              },
-              "editorMode": "code",
-              "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", cache_status=\"HIT\"}[$interval])) by (le))",
-              "legendFormat": "HIT (p50)",
-              "range": true,
-              "refId": "A"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${nginx_datasource}"
-              },
-              "editorMode": "code",
-              "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", cache_status=\"MISS\"}[$interval])) by (le))",
-              "legendFormat": "MISS (p50)",
-              "range": true,
-              "refId": "B"
-            }
-          ],
-          "title": "Response Time: Cache HIT vs MISS (p50)",
-          "type": "timeseries"
         },
         {
           "datasource": {
@@ -956,7 +683,7 @@ data:
             "h": 6,
             "w": 8,
             "x": 0,
-            "y": 36
+            "y": 20
           },
           "id": 13,
           "options": {
@@ -975,7 +702,7 @@ data:
               "sort": "none"
             }
           },
-          "pluginVersion": "11.6.3",
+          "pluginVersion": "11.6.11",
           "targets": [
             {
               "datasource": {
@@ -1052,7 +779,7 @@ data:
             "h": 6,
             "w": 8,
             "x": 8,
-            "y": 36
+            "y": 20
           },
           "id": 14,
           "options": {
@@ -1071,7 +798,7 @@ data:
               "sort": "none"
             }
           },
-          "pluginVersion": "11.6.3",
+          "pluginVersion": "11.6.11",
           "targets": [
             {
               "datasource": {
@@ -1148,7 +875,7 @@ data:
             "h": 6,
             "w": 8,
             "x": 16,
-            "y": 36
+            "y": 20
           },
           "id": 15,
           "options": {
@@ -1167,7 +894,7 @@ data:
               "sort": "none"
             }
           },
-          "pluginVersion": "11.6.3",
+          "pluginVersion": "11.6.11",
           "targets": [
             {
               "datasource": {
@@ -1193,7 +920,8 @@ data:
           "fieldConfig": {
             "defaults": {
               "color": {
-                "mode": "palette-classic"
+                "fixedColor": "red",
+                "mode": "fixed"
               },
               "custom": {
                 "axisBorderShow": false,
@@ -1245,7 +973,7 @@ data:
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 42
+            "y": 26
           },
           "id": 17,
           "options": {
@@ -1265,7 +993,7 @@ data:
               "sort": "none"
             }
           },
-          "pluginVersion": "11.6.3",
+          "pluginVersion": "11.6.11",
           "targets": [
             {
               "datasource": {
@@ -1316,6 +1044,11 @@ data:
             "name": "interval",
             "options": [
               {
+                "selected": false,
+                "text": "1m",
+                "value": "1m"
+              },
+              {
                 "selected": true,
                 "text": "5m",
                 "value": "5m"
@@ -1351,7 +1084,7 @@ data:
                 "value": "1d"
               }
             ],
-            "query": "5m,15m,30m,1h,6h,12h,1d",
+            "query": "1m,5m,15m,30m,1h,6h,12h,1d",
             "refresh": 2,
             "type": "interval"
           },
@@ -1416,5 +1149,5 @@ data:
       "timezone": "",
       "title": "Artifact Registry Proxy Cache Performance",
       "uid": "artifact-registry-proxy-cache-perf",
-      "version": 3
+      "version": 4
     }
