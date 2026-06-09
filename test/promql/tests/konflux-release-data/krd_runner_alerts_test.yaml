@@ -20,9 +20,9 @@ tests:
               namespace: krd-gitlab-runner--pipeline
             exp_annotations:
               summary: >-
-                KRD GitLab Runner is down
+                KRD GitLab Runner is down in krd-gitlab-runner--pipeline
               description: >-
-                No metrics received from the GitLab runner in namespace krd-gitlab-runner--pipeline for more than 10 minutes. The runner pod may be absent, crash looping, or not ready.
+                No metrics received from the GitLab runner in krd-gitlab-runner--pipeline namespace for more than 10 minutes. The runner pod may be absent, crash looping, or not ready.
               alert_routing_key: krd-releng
               team: releng
 
@@ -106,20 +106,18 @@ tests:
         alertname: KRDRunnerHighCPUUsage
         exp_alerts: []
 
-  # ==================== KRDRunnerJobFailureSpike ====================
+  # ==================== KRDRunnerJobFailureRateHigh ====================
+  # 50% failure rate (5 failed out of 10 total) — should fire (threshold > 30%)
   - interval: 1m
     input_series:
-      # 20 failures in 15 minutes — should fire (threshold > 15)
       - series: 'gitlab_runner_failed_jobs_total{namespace="krd-gitlab-runner--pipeline", failure_reason="script_failure", source_cluster="cluster01"}'
+        values: "0+1x25"
+      - series: 'gitlab_runner_jobs_total{namespace="krd-gitlab-runner--pipeline", failure_reason="script_failure", source_cluster="cluster01"}'
         values: "0+2x25"
-
-      # Only 5 failures in 15 minutes — should NOT fire
-      - series: 'gitlab_runner_failed_jobs_total{namespace="krd-gitlab-runner--pipeline", failure_reason="runner_system_failure", source_cluster="cluster01"}'
-        values: "0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 2 2 2 2 2 3 3 3 3 3"
 
     alert_rule_test:
       - eval_time: 20m
-        alertname: KRDRunnerJobFailureSpike
+        alertname: KRDRunnerJobFailureRateHigh
         exp_alerts:
           - exp_labels:
               severity: warning
@@ -130,8 +128,34 @@ tests:
               source_cluster: cluster01
             exp_annotations:
               summary: >-
-                KRD GitLab Runner job failure spike.
+                KRD GitLab Runner job failure rate exceeds 30%.
               description: >-
-                More than 15 runner job failures in the last 15 minutes in krd-gitlab-runner--pipeline namespace. Failure reason: script_failure.
+                More than 30% of runner jobs have failed in the last 15 minutes in krd-gitlab-runner--pipeline namespace. Failure reason: script_failure.
               alert_routing_key: krd-releng
               team: releng
+
+  # 10% failure rate (1 failed out of 10 total) — should NOT fire
+  - interval: 1m
+    input_series:
+      - series: 'gitlab_runner_failed_jobs_total{namespace="krd-gitlab-runner--pipeline", failure_reason="script_failure", source_cluster="cluster02"}'
+        values: "0+1x25"
+      - series: 'gitlab_runner_jobs_total{namespace="krd-gitlab-runner--pipeline", failure_reason="script_failure", source_cluster="cluster02"}'
+        values: "0+10x25"
+
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: KRDRunnerJobFailureRateHigh
+        exp_alerts: []
+
+  # No jobs running (0 total) — should NOT fire
+  - interval: 1m
+    input_series:
+      - series: 'gitlab_runner_failed_jobs_total{namespace="krd-gitlab-runner--pipeline", failure_reason="script_failure", source_cluster="cluster03"}'
+        values: "0x25"
+      - series: 'gitlab_runner_jobs_total{namespace="krd-gitlab-runner--pipeline", failure_reason="script_failure", source_cluster="cluster03"}'
+        values: "0x25"
+
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: KRDRunnerJobFailureRateHigh
+        exp_alerts: []

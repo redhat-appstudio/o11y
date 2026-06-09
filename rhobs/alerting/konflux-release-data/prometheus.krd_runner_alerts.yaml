@@ -21,9 +21,9 @@ spec:
             component: krd-gitlab-runner
           annotations:
             summary: >-
-              KRD GitLab Runner is down
+              KRD GitLab Runner is down in {{ $labels.namespace }}
             description: >-
-              No metrics received from the GitLab runner in namespace krd-gitlab-runner--pipeline
+              No metrics received from the GitLab runner in {{ $labels.namespace }} namespace
               for more than 10 minutes. The runner pod may be absent, crash looping, or not ready.
             alert_routing_key: krd-releng
             team: releng
@@ -33,6 +33,7 @@ spec:
       rules:
         - alert: KRDRunnerHighMemoryUsage
           expr: |
+            # Limits need to be hardcoded for now as the values are not available in the metrics
             process_resident_memory_bytes{
               namespace="krd-gitlab-runner--pipeline"
             } > 545259520 # 80% of 650Mi limit
@@ -53,6 +54,7 @@ spec:
 
         - alert: KRDRunnerHighCPUUsage
           expr: |
+            # Limits need to be hardcoded for now as the values are not available in the metrics
             rate(process_cpu_seconds_total{
               namespace="krd-gitlab-runner--pipeline"
             }[5m]) > 0.48 # 80% of 600m limit
@@ -74,11 +76,15 @@ spec:
     - name: krd-runner-jobs
       interval: 1m
       rules:
-        - alert: KRDRunnerJobFailureSpike
+        - alert: KRDRunnerJobFailureRateHigh
           expr: |
             increase(gitlab_runner_failed_jobs_total{
               namespace="krd-gitlab-runner--pipeline"
-            }[15m]) > 15
+            }[15m])
+            / increase(gitlab_runner_jobs_total{
+              namespace="krd-gitlab-runner--pipeline"
+            }[15m])
+            > 0.3
           for: 5m
           labels:
             severity: warning
@@ -86,9 +92,9 @@ spec:
             component: krd-gitlab-runner
           annotations:
             summary: >-
-              KRD GitLab Runner job failure spike.
+              KRD GitLab Runner job failure rate exceeds 30%.
             description: >-
-              More than 15 runner job failures in the last 15 minutes in {{ $labels.namespace }} namespace.
-              Failure reason: {{ $labels.failure_reason }}.
+              More than 30% of runner jobs have failed in the last 15 minutes
+              in {{ $labels.namespace }} namespace. Failure reason: {{ $labels.failure_reason }}.
             alert_routing_key: krd-releng
             team: releng
