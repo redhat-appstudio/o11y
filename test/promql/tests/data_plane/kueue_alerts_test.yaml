@@ -69,13 +69,13 @@ tests:
   - interval: 1m
     input_series:
       - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-post-merge-build", le="900", source_cluster="c1"}'
-        values: '0+0x20'
+        values: '0+0x70'
       - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-post-merge-build", le="1000", source_cluster="c1"}'
-        values: '0+0x20'
+        values: '0+0x70'
       - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-post-merge-build", le="+Inf", source_cluster="c1"}'
-        values: '0 10 20 30 40 50 60 70 80 90 100'
+        values: '0+10x70'
     alert_rule_test:
-      - eval_time: 15m
+      - eval_time: 50m
         alertname: KueueHighAdmissionWaitTimePostMerge
         exp_alerts:
           - exp_labels:
