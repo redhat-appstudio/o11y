@@ -39,8 +39,8 @@ subjects:
     namespace: appstudio-exporters
 ---
 # Namespace discovery — exporter must list tenant namespaces via Kubernetes API.
-# Required by ka_exporter_multitenant.py's get_tenant_namespaces().
 # Scope: cluster-wide list of namespaces filtered by label konflux-ci.dev/type=tenant.
+# Only "list" permission is required (exporter uses List(), not Get()).
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -48,7 +48,7 @@ metadata:
 rules:
   - apiGroups: [""]
     resources: ["namespaces"]
-    verbs: ["get", "list"]
+    verbs: ["list"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

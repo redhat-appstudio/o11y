@@ -29,7 +29,8 @@ const (
 	defaultPort     = "9101"
 
 	// 30-day SLO rolling window configuration
-	seenPLRRetentionHours = 72 // 1.5× KA_WINDOW_HOURS to prevent boundary condition double-counting (see DEDUPLICATION-BOUNDARY-CONDITION.md)
+	// NOTE: seenPLRRetentionHours is now calculated dynamically in NewKAExporter()
+	// based on the actual query window (KA_WINDOW_HOURS + safety margin)
 
 	// To identify Tenant namespaces
 	tenantLabelKey   = "konflux-ci.dev/type"
@@ -113,8 +114,20 @@ type KAExporter struct {
 	// Collect() holds the read lock while emitting cached metric state — no I/O.
 	mu sync.RWMutex
 
-	// windowHours is the look-back window for KubeArchive queries
+	// windowHours is the base look-back window from KA_WINDOW_HOURS env var (e.g., 48)
 	windowHours int
+
+	// queryWindowHours is the actual query window used for KubeArchive API calls.
+	// Includes safety margin to catch long-running pipelines:
+	// queryWindowHours = windowHours + (windowHours / 2)
+	// Example: KA_WINDOW_HOURS=48 → queryWindowHours=72
+	queryWindowHours int
+
+	// dedupeRetentionHours is the retention for SeenKeys deduplication map.
+	// Must be > queryWindowHours to prevent double-counting.
+	// Calculated as: 1.5 × queryWindowHours
+	// Example: queryWindowHours=72 → dedupeRetentionHours=108
+	dedupeRetentionHours int
 
 	// maxConcurrent limits parallel KubeArchive API calls during collection
 	maxConcurrent int
@@ -179,6 +192,20 @@ func NewKAExporter() (*KAExporter, error) {
 			windowHours = parsed
 		}
 	}
+
+	// Calculate query window with safety margin to catch long-running pipelines.
+	// Safety margin = 50% of base window (e.g., 48h → 72h query window).
+	// This ensures pipelines taking up to queryWindowHours to complete are captured.
+	safetyMarginHours := windowHours / 2
+	queryWindowHours := windowHours + safetyMarginHours
+
+	// Dedupe retention must exceed query window to prevent boundary condition double-counting.
+	// Use 1.5× query window (not base window) for safety.
+	// Example: queryWindowHours=72 → dedupeRetentionHours=108
+	dedupeRetentionHours := int(float64(queryWindowHours) * 1.5)
+
+	log.Printf("Query window configuration: KA_WINDOW_HOURS=%d, safety_margin=%dh, query_window=%dh, dedupe_retention=%dh",
+		windowHours, safetyMarginHours, queryWindowHours, dedupeRetentionHours)
 
 	collectionTimeoutSecs := defaultCollectionTimeoutSecs
 	if v := strings.TrimSpace(os.Getenv(kaCollectionTimeoutSecsEnv)); v != "" {
@@ -263,6 +290,8 @@ func NewKAExporter() (*KAExporter, error) {
 		kaToken:              kaToken,
 		cluster:              cluster,
 		windowHours:          windowHours,
+		queryWindowHours:     queryWindowHours,
+		dedupeRetentionHours: dedupeRetentionHours,
 		maxConcurrent:        maxConcurrent,
 		scrapeTimeout:        time.Duration(collectionTimeoutSecs) * time.Second,
 		collectInterval:      time.Duration(collectIntervalSecs) * time.Second,

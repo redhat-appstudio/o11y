@@ -123,12 +123,13 @@ func (e *KAExporter) collectMetrics(ctx context.Context) error {
 		return nil
 	}
 
-	// since limits all KubeArchive list queries to the configured look-back window.
+	// since limits all KubeArchive list queries to the configured look-back window + safety margin.
 	// KubeArchive has no automatic retention — without this filter every scrape would
 	// scan 6+ months of history, causing excessive DB load and stale gauge values.
-	since := time.Now().UTC().Add(-time.Duration(e.windowHours) * time.Hour).Format(time.RFC3339)
-	log.Printf("Collecting metrics from KubeArchive (%d tenant namespace(s), window=%dh, since=%s, concurrency=%d)...",
-		len(namespaces), e.windowHours, since, e.maxConcurrent)
+	// queryWindowHours = KA_WINDOW_HOURS + safety margin (50%) to catch long-running pipelines.
+	since := time.Now().UTC().Add(-time.Duration(e.queryWindowHours) * time.Hour).Format(time.RFC3339)
+	log.Printf("Collecting metrics from KubeArchive (%d tenant namespace(s), base_window=%dh, query_window=%dh, since=%s, concurrency=%d)...",
+		len(namespaces), e.windowHours, e.queryWindowHours, since, e.maxConcurrent)
 
 	// Parallel Release fetching - maintains global catalog for correlation
 	releaseIdx := e.gatherAllReleasesParallel(ctx, namespaces, since, e.maxConcurrent)
@@ -285,8 +286,9 @@ func (e *KAExporter) gatherAllReleasesParallel(ctx context.Context, namespaces [
 
 // startRollingStoreMaintenance launches a background goroutine that prunes the
 // seen-key deduplication map once per hour, removing entries older than
-// seenPLRRetentionHours (72 h = 1.5× KA_WINDOW_HOURS). Without pruning, the
-// map would grow until all 48 h-old entries age out naturally, wasting ~1.5 MB.
+// dedupeRetentionHours (1.5× queryWindowHours). Without pruning, the map would
+// grow unbounded. Retention must exceed queryWindowHours to prevent boundary
+// condition double-counting when the same PLR appears in consecutive queries.
 func (e *KAExporter) startRollingStoreMaintenance(ctx context.Context) {
 	go func() {
 		ticker := time.NewTicker(time.Hour)
@@ -294,7 +296,7 @@ func (e *KAExporter) startRollingStoreMaintenance(ctx context.Context) {
 		for {
 			select {
 			case <-ticker.C:
-				e.rollingStore.PruneSeenKeys(seenPLRRetentionHours * time.Hour)
+				e.rollingStore.PruneSeenKeys(time.Duration(e.dedupeRetentionHours) * time.Hour)
 			case <-ctx.Done():
 				return
 			}
