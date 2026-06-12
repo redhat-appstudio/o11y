@@ -16,7 +16,7 @@ Exposes mean duration and success rate metrics over a rolling 30-day window usin
 | `KA_TOKEN` | Yes | — | Bearer token for KubeArchive API |
 | `CLUSTER_NAME` | No | `unknown` | Cluster name label on metrics |
 | `TENANT_NAMESPACE` | No | *(empty)* | Single-tenant mode (specific namespace); empty = multi-tenant (all namespaces with `konflux-ci.dev/type=tenant`) |
-| `KA_WINDOW_HOURS` | No | `48` | Look-back window for KubeArchive queries (48h covers weekends) |
+| `KA_WINDOW_HOURS` | No | `48` | Base look-back window for KubeArchive queries. **Actual query window = KA_WINDOW_HOURS + 50% safety margin** to capture long-running pipelines (e.g., 48h → 72h query). Default 48h covers weekends + typical pipeline durations. |
 | `KA_COLLECT_INTERVAL_SECONDS` | No | `300` | How often background collection refreshes metrics |
 | `KA_COLLECTION_TIMEOUT_SECONDS` | No | `120` | Collection timeout (must be < collect interval) |
 | `KA_MAX_CONCURRENT` | No | `10` | Max parallel KubeArchive API calls |

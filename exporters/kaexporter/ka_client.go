@@ -20,9 +20,18 @@ import (
 // retryableHTTP wraps HTTP requests with exponential backoff retry logic.
 // Retries on transient errors: network failures, 429 (rate limit), 5xx (server errors).
 // Does NOT retry on permanent errors: 4xx (except 429), context cancellation.
+//
+// IMPORTANT: Only supports requests without bodies (GET, HEAD, etc.).
+// Requests with bodies cannot be safely retried (body is consumed on first attempt).
 func (e *KAExporter) retryableHTTP(ctx context.Context, req *http.Request) (*http.Response, error) {
+	// Safety check: requests with bodies cannot be retried
+	if req.Body != nil && req.Body != http.NoBody {
+		return nil, fmt.Errorf("retryableHTTP does not support requests with bodies (body consumed on first attempt)")
+	}
+
 	var lastResp *http.Response
 	var lastErr error
+	var lastReason string // Preserve classification reason for final metrics
 
 	delay := e.retry.initialDelay
 
@@ -61,6 +70,8 @@ func (e *KAExporter) retryableHTTP(ctx context.Context, req *http.Request) (*htt
 
 		// Check if error/response is retryable
 		reason, retryable := classifyError(err, resp)
+		lastReason = reason // Preserve reason before draining response
+
 		if !retryable {
 			// Permanent error, don't retry
 			if resp != nil {
@@ -73,7 +84,7 @@ func (e *KAExporter) retryableHTTP(ctx context.Context, req *http.Request) (*htt
 		if resp != nil {
 			io.Copy(io.Discard, resp.Body) // Drain body
 			resp.Body.Close()
-			lastResp = nil // Don't return this response
+			lastResp = nil // Don't return this response (but lastReason is preserved)
 		}
 
 		// Track retry attempt
@@ -88,9 +99,8 @@ func (e *KAExporter) retryableHTTP(ctx context.Context, req *http.Request) (*htt
 		lastErr = err
 	}
 
-	// Max retries exhausted
-	reason, _ := classifyError(lastErr, lastResp)
-	e.retryExhaustedTotal.WithLabelValues(e.cluster, reason).Inc()
+	// Max retries exhausted - use preserved lastReason (not re-classify, which would return "unknown")
+	e.retryExhaustedTotal.WithLabelValues(e.cluster, lastReason).Inc()
 
 	if lastErr != nil {
 		return nil, fmt.Errorf("max retries (%d) exhausted: %w", e.retry.maxRetries, lastErr)
