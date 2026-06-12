@@ -1,0 +1,49 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-krd-monitoring-alerting
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: krd-monitoring
+      interval: 1m
+      rules:
+        - alert: KRDRunnerMetricsAbsent
+          expr: |
+            absent(up{
+              job="gitlab-runner",
+              namespace="krd-gitlab-runner--pipeline"
+            })
+          for: 10m
+          labels:
+            severity: high
+            slo: "false"
+            component: krd-monitoring
+          annotations:
+            summary: >-
+              KRD GitLab Runner metrics are absent in {{ $labels.namespace }}
+            description: >-
+              No metrics received from the GitLab runner in {{ $labels.namespace }} namespace for more than 10 minutes.
+            alert_routing_key: o11y
+            team: o11y
+
+        - alert: KRDPipelineExporterMetricsAbsent
+          expr: |
+            absent(up{
+              job="gitlab-ci-pipelines-exporter",
+              namespace="krd-gitlab-runner--pipeline"
+            })
+          for: 10m
+          labels:
+            severity: high
+            slo: "false"
+            component: krd-monitoring
+          annotations:
+            summary: >-
+              KRD pipeline exporter metrics are absent in {{ $labels.namespace }}
+            description: >-
+              No metrics received from the GitLab CI pipelines exporter in {{ $labels.namespace }} namespace
+              for more than 10 minutes.
+            alert_routing_key: o11y
+            team: o11y

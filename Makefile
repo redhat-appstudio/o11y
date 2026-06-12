@@ -22,6 +22,7 @@ kustomize:
 .PHONY: check-and-test
 check-and-test:
 	$(CMD) -t rhtap -d rhobs/alerting/data_plane -y -p --tests-dir test/promql/tests/data_plane
+	$(CMD) -t rhtap -d rhobs/alerting/konflux-release-data -y -p --tests-dir test/promql/tests/konflux-release-data
 	$(CMD) -t rhtap -d rhobs/recording -y -p --tests-dir test/promql/tests/recording
 
 .PHONY: check-alert-conventions
