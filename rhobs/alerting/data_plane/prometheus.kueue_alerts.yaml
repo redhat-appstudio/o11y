@@ -266,7 +266,7 @@ spec:
       expr: |
         histogram_quantile(0.99, sum(increase(kueue_admission_wait_time_seconds_bucket{
           cluster_queue="cluster-pipeline-queue",
-          priority_class!~"konflux-pre-merge-.*|konflux-post-merge-.*|konflux-dependency-update"
+          priority_class!~"konflux-pre-merge-.*|konflux-post-merge-.*|konflux-dependency-update|konflux-release|konflux-tenant-release"
         }[10m])) by (le, source_cluster)) > 7200
       for: 5m
       labels:
@@ -278,3 +278,20 @@ spec:
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
         alert_routing_key: infra
         team: konflux-infra
+
+    - alert: KueueHighAdmissionWaitTimeReleases
+      expr: |
+        histogram_quantile(0.99, sum(increase(kueue_admission_wait_time_seconds_bucket{
+          cluster_queue="cluster-pipeline-queue",
+          priority_class=~"konflux-release|konflux-tenant-release"
+        }[10m])) by (le, source_cluster)) > 4800
+      for: 20m
+      labels:
+        severity: critical
+        component: kueue
+        slo: "true"
+      annotations:
+        summary: "High admission wait time for Release workloads"
+        description: "99th percentile admission wait time for konflux and tenant release workloads is {{ $value | humanizeDuration }}, which is above 1.33 hours in cluster {{ $labels.source_cluster }}"
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
+        alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
