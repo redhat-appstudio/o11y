@@ -33,7 +33,7 @@ If it works in staging, it's good.
 A dashboard PR is ready to merge when:
 
 - [ ] Dashboard has been imported into staging Grafana and verified: panels load data, variables work, no "No data" on expected metrics
-- [ ] PR description includes a screenshot of the stage dashboard
+- [ ] PR description includes a screenshot or link to stage dashboard
 
 ## Architecture
 

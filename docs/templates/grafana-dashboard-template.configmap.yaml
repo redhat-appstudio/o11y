@@ -11,7 +11,7 @@ metadata:
     grafana_dashboard: "true"
   annotations:
     # [required] Grafana folder path. Must start with /grafana-dashboard-definitions/RHTAP
-    # Team-specific subfolders are allowed (e.g. /grafana-dashboard-definitions/RHTAP/Release-Service)
+    # [optional] Team-specific subfolders could be added (e.g. /grafana-dashboard-definitions/RHTAP/Release-Service)
     grafana-folder: /grafana-dashboard-definitions/RHTAP
 data:
   grafana-dashboard-<name>.json: |-
@@ -22,7 +22,7 @@ data:
       "templating": {
         "list": [
           {
-            "name": "Datasource",
+            "name": "datasource",
             "type": "datasource",
             "query": "prometheus",
             "regex": "/rhtap*/",
@@ -31,7 +31,7 @@ data:
           {
             "name": "cluster",
             "type": "query",
-            "datasource": { "type": "prometheus", "uid": "${Datasource}" },
+            "datasource": { "type": "prometheus", "uid": "${datasource}" },
             "definition": "label_values(source_cluster)",
             "includeAll": true,
             "multi": true,
@@ -43,9 +43,10 @@ data:
       "schemaVersion": 39,
       "version": 0
     }
+
 #
 # Key rules for new dashboards:
 # - "id" must be null — Grafana assigns instance-specific IDs on import; baked-in IDs create noisy diffs
 # - "uid" must be unique across all files in dashboards/ and ≤ 40 characters
-# - Do not hardcode Grafana-internal datasource UIDs in panels — use "${Datasource}" instead;
+# - Do not hardcode Grafana-internal datasource UIDs in panels — use "${datasource}" instead;
 #   hardcoded UIDs break when the datasource is recreated or the dashboard is imported elsewhere
