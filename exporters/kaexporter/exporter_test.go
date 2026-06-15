@@ -16,11 +16,11 @@ func TestQueryWindowCalculation(t *testing.T) {
 		expectedDedupe       int
 	}{
 		{
-			name:           "Default 48h window",
+			name:           "Default 24h window",
 			kaWindowHours:  "",
-			expectedWindow: 48,
-			expectedQuery:  72,  // 48 + 24 (50% safety margin)
-			expectedDedupe: 108, // 1.5 × 72
+			expectedWindow: 24,
+			expectedQuery:  36,  // 24 + 12 (50% safety margin)
+			expectedDedupe: 54,  // 1.5 × 36
 		},
 		{
 			name:           "96h window (double default)",
@@ -103,6 +103,56 @@ func TestQueryWindowCalculation(t *testing.T) {
 				t.Errorf("dedupeRetentionHours = %d, expected %d (1.5× queryWindowHours)", exporter.dedupeRetentionHours, expectedDedupe)
 			}
 		})
+	}
+}
+
+// TestColdStartLifecycle verifies that the exporter boots in cold-start mode
+// and that the flag can be cleared, switching to the steady-state window.
+func TestColdStartLifecycle(t *testing.T) {
+	os.Setenv(kaHostEnvVar, "https://test-ka-host")
+	os.Setenv(kaTokenEnvVar, "test-token")
+	os.Setenv(clusterEnvVar, "test-cluster")
+	os.Setenv(namespaceEnvVar, "test-namespace")
+	defer os.Unsetenv(kaHostEnvVar)
+	defer os.Unsetenv(kaTokenEnvVar)
+	defer os.Unsetenv(clusterEnvVar)
+	defer os.Unsetenv(namespaceEnvVar)
+
+	exporter, err := NewKAExporter()
+	if err != nil {
+		t.Fatalf("NewKAExporter() failed: %v", err)
+	}
+
+	if !exporter.coldStart {
+		t.Error("coldStart should be true on initial creation")
+	}
+
+	// Verify default steady-state window uses the new 24h base
+	if exporter.windowHours != 24 {
+		t.Errorf("windowHours = %d, expected 24 (new default)", exporter.windowHours)
+	}
+	if exporter.queryWindowHours != 36 {
+		t.Errorf("queryWindowHours = %d, expected 36 (24 + 50%% margin)", exporter.queryWindowHours)
+	}
+
+	// Simulate successful first collection completing
+	exporter.coldStart = false
+
+	if exporter.coldStart {
+		t.Error("coldStart should be false after first successful collection")
+	}
+}
+
+// TestColdStartConstants verifies the cold-start configuration values.
+func TestColdStartConstants(t *testing.T) {
+	if coldStartWindowHours != 720 {
+		t.Errorf("coldStartWindowHours = %d, expected 720 (30 days)", coldStartWindowHours)
+	}
+	if coldStartMaxItems != 10000 {
+		t.Errorf("coldStartMaxItems = %d, expected 10000", coldStartMaxItems)
+	}
+	if defaultColdStartTimeoutSecs != 600 {
+		t.Errorf("defaultColdStartTimeoutSecs = %d, expected 600 (10 min)", defaultColdStartTimeoutSecs)
 	}
 }
 

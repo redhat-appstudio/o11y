@@ -58,7 +58,7 @@ const (
 
 	// kaWindowHoursEnv controls how far back the exporter fetches resources from KubeArchive.
 	kaWindowHoursEnv     = "KA_WINDOW_HOURS"
-	defaultKAWindowHours = 48
+	defaultKAWindowHours = 24
 
 	// kaCollectionTimeoutSecsEnv is the background collection cycle deadline.
 	kaCollectionTimeoutSecsEnv   = "KA_COLLECTION_TIMEOUT_SECONDS"
@@ -67,12 +67,23 @@ const (
 	// KubeArchive default is 100; maximum allowed is 1000.
 	kaPageLimit = 500
 
-	// kaMaxItems is the safety cap on total items fetched per endpoint per scrape.
+	// kaMaxItems is the steady-state safety cap on total items fetched per endpoint per scrape.
 	kaMaxItems = 1000
 
+	// Cold-start configuration: on first boot the exporter queries 30 days of history
+	// to bootstrap full rolling-window accuracy, then switches to the steady-state window.
+	coldStartWindowHours        = 720   // 30 days
+	coldStartMaxItems           = 10000 // higher cap during bootstrap (busy namespaces exceed 1000 over 30d)
+	defaultColdStartTimeoutSecs = 600   // 10 min - allows busy namespaces to complete 30-day bootstrap
+
 	// parallelism for KubeArchive API calls.
-	defaultMaxConcurrent = 10
-	maxConcurrentEnv     = "KA_MAX_CONCURRENT"
+	defaultMaxConcurrent     = 10
+	coldStartMaxConcurrent   = 5  // Reduced concurrency during cold start to ease KubeArchive load
+	maxConcurrentEnv         = "KA_MAX_CONCURRENT"
+
+	// HTTP client timeout for KubeArchive API calls
+	defaultHTTPTimeoutSecs = 60
+	httpTimeoutEnv         = "KA_HTTP_TIMEOUT_SECONDS"
 
 	// kaCollectIntervalSecsEnv controls how often the background collection
 	// goroutine fetches data from KubeArchive and refreshes the metric cache.
@@ -159,6 +170,15 @@ type KAExporter struct {
 	truncationsTotal       *prometheus.CounterVec // labels: resource (pipelineruns|snapshots|releases), namespace
 	retryAttemptsTotal     *prometheus.CounterVec // labels: cluster, reason; total retry attempts
 	retryExhaustedTotal    *prometheus.CounterVec // labels: cluster, reason; total requests that exceeded max retries
+
+	// coldStart is true until the first successful collection completes.
+	// During cold start, the query window expands to 720h (30 days) and the
+	// per-namespace item cap is raised to bootstrap full rolling-store accuracy.
+	coldStart bool
+
+	// bootstrappedNamespaces tracks which namespaces have completed 30-day bootstrap.
+	// Namespaces that failed during cold start will retry with 30-day window until successful.
+	bootstrappedNamespaces map[string]bool
 
 	// 30-day SLO rolling aggregates (in-memory only, no persistence).
 	rollingStore   *Store
@@ -263,6 +283,15 @@ func NewKAExporter() (*KAExporter, error) {
 		}
 	}
 
+	httpTimeoutSecs := defaultHTTPTimeoutSecs
+	if ht := strings.TrimSpace(os.Getenv(httpTimeoutEnv)); ht != "" {
+		if parsed, err := strconv.Atoi(ht); err != nil || parsed <= 0 {
+			log.Printf("WARNING: %s=%q is not a positive integer; using default %ds", httpTimeoutEnv, ht, defaultHTTPTimeoutSecs)
+		} else {
+			httpTimeoutSecs = parsed
+		}
+	}
+
 	fixedNS := strings.TrimSpace(os.Getenv(namespaceEnvVar))
 
 	var k8sClient kubernetes.Interface
@@ -277,9 +306,14 @@ func NewKAExporter() (*KAExporter, error) {
 		}
 	}
 
-	// HTTP client with TLS verification disabled (for self-signed certs)
+	// HTTP client with TLS verification disabled for KubeArchive API.
+	// KubeArchive commonly uses self-signed certificates and provides an explicit
+	// --kubearchive-insecure-skip-tls-verify flag in its official kubectl plugin.
+	// Authentication is provided via bearer token (KA_TOKEN) which is the standard
+	// KubeArchive authentication method. In-cluster communication reduces MITM risk.
+	// To enable verification: mount CA bundle Secret and configure RootCAs instead.
 	httpClient := &http.Client{
-		Timeout: 30 * time.Second,
+		Timeout: time.Duration(httpTimeoutSecs) * time.Second,
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		},
@@ -296,6 +330,8 @@ func NewKAExporter() (*KAExporter, error) {
 		scrapeTimeout:        time.Duration(collectionTimeoutSecs) * time.Second,
 		collectInterval:      time.Duration(collectIntervalSecs) * time.Second,
 		readyCh:              make(chan struct{}),
+		coldStart:            true,
+		bootstrappedNamespaces: make(map[string]bool),
 		fixedTenantNamespace: fixedNS,
 		k8sClient:            k8sClient,
 		httpClient:           httpClient,

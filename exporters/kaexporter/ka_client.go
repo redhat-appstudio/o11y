@@ -192,7 +192,7 @@ func (e *KAExporter) fetchPage(ctx context.Context, pageURL string) ([]byte, int
 // limiting results to the configured look-back window (KA_WINDOW_HOURS).
 // KubeArchive returns items newest-first; callers may rely on this ordering.
 // fn receives the page slice and must not retain references beyond its return.
-func (e *KAExporter) streamPLRs(ctx context.Context, baseURL, since, namespace string, fn func(page []PipelineRun)) error {
+func (e *KAExporter) streamPLRs(ctx context.Context, baseURL, since, namespace string, maxItems int, fn func(page []PipelineRun)) error {
 	continueToken := ""
 	total := 0
 	for {
@@ -213,9 +213,9 @@ func (e *KAExporter) streamPLRs(ctx context.Context, baseURL, since, namespace s
 		}
 		fn(page.Items)
 		total += len(page.Items)
-		if total >= kaMaxItems {
-			log.Printf("WARNING: streamPLRs %s: reached kaMaxItems cap (%d); "+
-				"check KubeArchive retention — results may be incomplete", baseURL, kaMaxItems)
+		if total >= maxItems {
+			log.Printf("WARNING: streamPLRs %s: reached maxItems cap (%d); "+
+				"results may be incomplete", baseURL, maxItems)
 			e.truncationsTotal.WithLabelValues(e.cluster, "pipelineruns", namespace).Inc()
 			break
 		}
@@ -231,7 +231,7 @@ func (e *KAExporter) streamPLRs(ctx context.Context, baseURL, since, namespace s
 
 // fetchReleases fetches all Release CRs from a KubeArchive endpoint with pagination.
 // since limits results to the configured look-back window (KA_WINDOW_HOURS).
-func (e *KAExporter) fetchReleases(ctx context.Context, baseURL, since, namespace string) ([]Release, error) {
+func (e *KAExporter) fetchReleases(ctx context.Context, baseURL, since, namespace string, maxItems int) ([]Release, error) {
 	var all []Release
 	continueToken := ""
 	for {
@@ -251,9 +251,9 @@ func (e *KAExporter) fetchReleases(ctx context.Context, baseURL, since, namespac
 			return nil, err
 		}
 		all = append(all, page.Items...)
-		if len(all) >= kaMaxItems {
-			log.Printf("WARNING: fetchReleases %s: reached kaMaxItems cap (%d); "+
-				"check KubeArchive retention — results may be incomplete", baseURL, kaMaxItems)
+		if len(all) >= maxItems {
+			log.Printf("WARNING: fetchReleases %s: reached maxItems cap (%d); "+
+				"results may be incomplete", baseURL, maxItems)
 			e.truncationsTotal.WithLabelValues(e.cluster, "releases", namespace).Inc()
 			break
 		}

@@ -438,10 +438,38 @@ func newTestExporter(kaHost string, maxRetries int, initialDelay time.Duration) 
 	}
 }
 
+// TestContainsHelper verifies the contains() helper works correctly
+func TestContainsHelper(t *testing.T) {
+	tests := []struct {
+		s      string
+		substr string
+		want   bool
+	}{
+		{"max retries (3) exhausted", "max retries", true},
+		{"max retries (3) exhausted", "exhausted", true},
+		{"max retries (3) exhausted", "foobar", false}, // Regression: old logic returned true!
+		{"error: timeout", "timeout", true},
+		{"error: timeout", "network", false},
+		{"", "foo", false},
+		{"foo", "", false}, // Edge case: empty substr
+	}
+
+	for _, tt := range tests {
+		t.Run(fmt.Sprintf("%q contains %q", tt.s, tt.substr), func(t *testing.T) {
+			got := contains(tt.s, tt.substr)
+			if got != tt.want {
+				t.Errorf("contains(%q, %q) = %v, want %v", tt.s, tt.substr, got, tt.want)
+			}
+		})
+	}
+}
+
 // Helper: Check if string contains substring
 func contains(s, substr string) bool {
-	return len(s) > 0 && len(substr) > 0 && (s == substr || len(s) >= len(substr) && fmt.Sprintf("%s", s)[0:len(substr)] == substr || fmt.Sprintf("%s", s)[:] != "" && fmt.Sprintf("%s", s)[:] != substr && fmt.Sprintf("%s", s)[len(substr):] != "" && fmt.Sprintf("%s", s)[len(s)-len(substr):] == substr || fmt.Sprintf("%s", s)[:] != "" && fmt.Sprintf("%s", s)[:] != substr && len(s) > len(substr))
-	// Simplified: just check if substr is in s
+	if len(substr) == 0 {
+		return false // Empty substring never matches
+	}
+	// Simple substring search
 	for i := 0; i <= len(s)-len(substr); i++ {
 		if s[i:i+len(substr)] == substr {
 			return true
