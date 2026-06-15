@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/url"
 	"sort"
 	"strings"
 	"sync"
@@ -82,12 +83,17 @@ func (e *KAExporter) Start(ctx context.Context) {
 func (e *KAExporter) runCollection() {
 	start := time.Now()
 
-	// Hard deadline for the entire KubeArchive fetch. Cancels all in-flight
-	// HTTP requests if KubeArchive is slow or a namespace hangs.
-	ctx, cancel := context.WithTimeout(context.Background(), e.scrapeTimeout)
+	// On cold start use a longer timeout (5 min) to accommodate the 30-day bootstrap.
+	// Measured cold-start duration is ~95s; 300s gives 3× safety margin.
+	timeout := e.scrapeTimeout
+	if e.coldStart {
+		timeout = time.Duration(defaultColdStartTimeoutSecs) * time.Second
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	// Fetch data from KubeArchive WITHOUT holding lock (30-60s operation).
+	// Fetch data from KubeArchive WITHOUT holding lock.
 	// RollingStore is thread-safe with its own internal mutex.
 	err := e.collectMetrics(ctx)
 
@@ -106,6 +112,12 @@ func (e *KAExporter) runCollection() {
 		e.buildSLO.updateGauges(e.rollingStore)
 		e.integrationSLO.updateGauges(e.rollingStore)
 		e.releaseSLO.updateGauges(e.rollingStore)
+
+		if e.coldStart {
+			log.Printf("Cold start complete: 30-day bootstrap finished in %.1fs, switching to steady-state window (%dh)",
+				time.Since(start).Seconds(), e.queryWindowHours)
+			e.coldStart = false
+		}
 	}
 	e.scrapeDurationGauge.Set(time.Since(start).Seconds())
 }
@@ -123,16 +135,49 @@ func (e *KAExporter) collectMetrics(ctx context.Context) error {
 		return nil
 	}
 
-	// since limits all KubeArchive list queries to the configured look-back window + safety margin.
-	// KubeArchive has no automatic retention — without this filter every scrape would
-	// scan 6+ months of history, causing excessive DB load and stale gauge values.
-	// queryWindowHours = KA_WINDOW_HOURS + safety margin (50%) to catch long-running pipelines.
-	since := time.Now().UTC().Add(-time.Duration(e.queryWindowHours) * time.Hour).Format(time.RFC3339)
-	log.Printf("Collecting metrics from KubeArchive (%d tenant namespace(s), base_window=%dh, query_window=%dh, since=%s, concurrency=%d)...",
-		len(namespaces), e.windowHours, e.queryWindowHours, since, e.maxConcurrent)
+	// Determine concurrency: lower during initial cold start to ease KubeArchive load
+	concurrency := e.maxConcurrent
+	if e.coldStart {
+		concurrency = coldStartMaxConcurrent
+	}
+
+	// Count how many namespaces need bootstrap (for logging)
+	e.mu.RLock()
+	var needsBootstrap int
+	for _, ns := range namespaces {
+		if !e.bootstrappedNamespaces[ns] {
+			needsBootstrap++
+		}
+	}
+	e.mu.RUnlock()
+
+	if e.coldStart {
+		log.Printf("COLD START: bootstrapping 30-day rolling store (%d tenant namespace(s), %d need bootstrap, concurrency=%d, releases=30d)...",
+			len(namespaces), needsBootstrap, concurrency)
+	} else if needsBootstrap > 0 {
+		log.Printf("Collecting metrics from KubeArchive (%d tenant namespace(s), %d need 30d bootstrap, concurrency=%d, releases=30d)...",
+			len(namespaces), needsBootstrap, concurrency)
+	} else {
+		log.Printf("Collecting metrics from KubeArchive (%d tenant namespace(s), query_window=%dh, concurrency=%d, releases=%dh)...",
+			len(namespaces), e.queryWindowHours, concurrency, e.queryWindowHours)
+	}
+
+	// Per-namespace window selection will happen inside goroutines based on bootstrappedNamespaces map
+
+	// For release fetching, use 30d window if ANY namespace still needs bootstrap.
+	// Releases may live in different namespaces (managed release namespaces), and the
+	// release catalog is global and used for build→release correlation across all namespaces.
+	// Continue querying 30 days of releases until ALL namespaces are fully bootstrapped.
+	releaseWindowHours := e.queryWindowHours
+	releaseMaxItems := kaMaxItems
+	if e.coldStart || needsBootstrap > 0 {
+		releaseWindowHours = coldStartWindowHours
+		releaseMaxItems = coldStartMaxItems
+	}
+	releaseSince := time.Now().UTC().Add(-time.Duration(releaseWindowHours) * time.Hour).Format(time.RFC3339)
 
 	// Parallel Release fetching - maintains global catalog for correlation
-	releaseIdx := e.gatherAllReleasesParallel(ctx, namespaces, since, e.maxConcurrent)
+	releaseIdx := e.gatherAllReleasesParallel(ctx, namespaces, releaseSince, concurrency, releaseMaxItems)
 	log.Printf("Loaded %d Release CR(s) across tenant namespaces for correlation", len(releaseIdx.store))
 
 	// Parallel namespace collection with streaming PLRs/Snapshots
@@ -144,7 +189,7 @@ func (e *KAExporter) collectMetrics(ctx context.Context) error {
 	}
 
 	results := make(chan nsResult, len(namespaces))
-	sem := make(chan struct{}, e.maxConcurrent)
+	sem := make(chan struct{}, concurrency)
 	var wg sync.WaitGroup
 
 	for _, ns := range namespaces {
@@ -154,7 +199,41 @@ func (e *KAExporter) collectMetrics(ctx context.Context) error {
 			sem <- struct{}{}
 			defer func() { <-sem }()
 
-			b, t, err := e.collectNamespace(ctx, ns, since)
+			// Per-namespace bootstrap check: use 30-day window if not yet bootstrapped
+			e.mu.RLock()
+			bootstrapped := e.bootstrappedNamespaces[ns]
+			e.mu.RUnlock()
+
+			var windowHours int
+			var maxItems int
+			var nsCtx context.Context
+			var nsCancel context.CancelFunc
+
+			if !bootstrapped {
+				windowHours = coldStartWindowHours // 720h (30 days)
+				maxItems = coldStartMaxItems       // 10,000
+				// Give each non-bootstrapped namespace its own independent 10-minute timeout
+				// so they don't share the global timeout budget
+				nsCtx, nsCancel = context.WithTimeout(context.Background(), time.Duration(defaultColdStartTimeoutSecs)*time.Second)
+				defer nsCancel()
+			} else {
+				windowHours = e.queryWindowHours // 36h (steady state with safety margin)
+				maxItems = kaMaxItems            // 1,000
+				// Bootstrapped namespaces share the parent context (global timeout)
+				nsCtx = ctx
+			}
+
+			since := time.Now().UTC().Add(-time.Duration(windowHours) * time.Hour).Format(time.RFC3339)
+			b, t, err := e.collectNamespace(nsCtx, ns, since, maxItems)
+
+			// Mark namespace as bootstrapped on first successful collection
+			if err == nil && !bootstrapped {
+				e.mu.Lock()
+				e.bootstrappedNamespaces[ns] = true
+				e.mu.Unlock()
+				log.Printf("namespace %q: 30-day bootstrap complete (%d builds, %d tests)", ns, b, t)
+			}
+
 			results <- nsResult{namespace: ns, buildCount: b, testCount: t, err: err}
 		}(ns)
 	}
@@ -239,7 +318,7 @@ func (e *KAExporter) tenantNamespaces(ctx context.Context) ([]string, error) {
 // and returns a *releaseIndex for O(1) build-PLR → Release correlation. The full catalog
 // must be assembled before namespace processing begins because releases may arrive weeks
 // after builds and may live in dedicated release namespaces.
-func (e *KAExporter) gatherAllReleasesParallel(ctx context.Context, namespaces []string, since string, maxConcurrent int) *releaseIndex {
+func (e *KAExporter) gatherAllReleasesParallel(ctx context.Context, namespaces []string, since string, maxConcurrent, maxItems int) *releaseIndex {
 	type fetchResult struct {
 		namespace string
 		releases  []Release
@@ -257,8 +336,8 @@ func (e *KAExporter) gatherAllReleasesParallel(ctx context.Context, namespaces [
 			sem <- struct{}{}
 			defer func() { <-sem }()
 
-			releasesURL := fmt.Sprintf("%s/apis/appstudio.redhat.com/v1alpha1/namespaces/%s/releases", e.kaHost, ns)
-			items, err := e.fetchReleases(ctx, releasesURL, since, ns)
+			releasesURL := fmt.Sprintf("%s/apis/appstudio.redhat.com/v1alpha1/namespaces/%s/releases", e.kaHost, url.PathEscape(ns))
+			items, err := e.fetchReleases(ctx, releasesURL, since, ns, maxItems)
 			results <- fetchResult{namespace: ns, releases: items, err: err}
 		}(ns)
 	}
@@ -306,10 +385,10 @@ func (e *KAExporter) startRollingStoreMaintenance(ctx context.Context) {
 
 // collectNamespace scrapes PLRs for one tenant namespace and records observations
 // into the 30-day rolling store. Resources are streamed page-by-page to bound memory usage.
-func (e *KAExporter) collectNamespace(ctx context.Context, tenantNS string, since string) (buildCount, testCount int, err error) {
+func (e *KAExporter) collectNamespace(ctx context.Context, tenantNS string, since string, maxItems int) (buildCount, testCount int, err error) {
 
-	plrURL := fmt.Sprintf("%s/apis/tekton.dev/v1/namespaces/%s/pipelineruns", e.kaHost, tenantNS)
-	streamErr := e.streamPLRs(ctx, plrURL, since, tenantNS, func(page []PipelineRun) {
+	plrURL := fmt.Sprintf("%s/apis/tekton.dev/v1/namespaces/%s/pipelineruns", e.kaHost, url.PathEscape(tenantNS))
+	streamErr := e.streamPLRs(ctx, plrURL, since, tenantNS, maxItems, func(page []PipelineRun) {
 		for i := range page {
 			plr := &page[i]
 			switch getLabel(*plr, labelPipelinesType, "") {

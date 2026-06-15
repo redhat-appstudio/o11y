@@ -16,10 +16,11 @@ Exposes mean duration and success rate metrics over a rolling 30-day window usin
 | `KA_TOKEN` | Yes | — | Bearer token for KubeArchive API |
 | `CLUSTER_NAME` | No | `unknown` | Cluster name label on metrics |
 | `TENANT_NAMESPACE` | No | *(empty)* | Single-tenant mode (specific namespace); empty = multi-tenant (all namespaces with `konflux-ci.dev/type=tenant`) |
-| `KA_WINDOW_HOURS` | No | `48` | Base look-back window for KubeArchive queries. **Actual query window = KA_WINDOW_HOURS + 50% safety margin** to capture long-running pipelines (e.g., 48h → 72h query). Default 48h covers weekends + typical pipeline durations. |
+| `KA_WINDOW_HOURS` | No | `24` | Base look-back window for KubeArchive queries in steady-state mode. **Actual query window = KA_WINDOW_HOURS + 50% safety margin** to capture long-running pipelines (e.g., 24h → 36h query). On first boot (cold start), queries 720h (30 days) to bootstrap full rolling window. Per-namespace: non-bootstrapped namespaces continue using 30d window until successful. |
 | `KA_COLLECT_INTERVAL_SECONDS` | No | `300` | How often background collection refreshes metrics |
-| `KA_COLLECTION_TIMEOUT_SECONDS` | No | `120` | Collection timeout (must be < collect interval) |
-| `KA_MAX_CONCURRENT` | No | `10` | Max parallel KubeArchive API calls |
+| `KA_COLLECTION_TIMEOUT_SECONDS` | No | `120` | Collection timeout (must be < collect interval). **Cold start override**: Initial bootstrap uses 600s (10 min) timeout to allow busy namespaces to complete 30-day queries. |
+| `KA_MAX_CONCURRENT` | No | `10` | Max parallel KubeArchive API calls during steady-state. **Cold start override**: Initial bootstrap uses concurrency=5 to reduce KubeArchive load. |
+| `KA_HTTP_TIMEOUT_SECONDS` | No | `60` | HTTP client timeout for individual KubeArchive API requests |
 | `KA_MAX_RETRIES` | No | `3` | Max retries for failed KubeArchive calls |
 | `EXPORTER_PORT` | No | `9101` | HTTP listen port |
 
@@ -148,9 +149,11 @@ oc apply -k config/exporters/monitoring/ka/base/
 - Background collection interval (`KA_COLLECT_INTERVAL_SECONDS`) should match Prometheus scrape interval (default: 300s)
 
 **Startup behavior**:
-- First collection runs synchronously before `/metrics` endpoint opens (~30s)
-- Metrics populate from in-memory rolling store as data is collected
-- Pod restart clears all metrics (30-day window rebuilds incrementally from KubeArchive)
+- **Cold start (first boot)**: Queries 720h (30 days) per namespace with 10-minute timeout and reduced concurrency (5) to bootstrap full rolling store before `/metrics` opens. Expected duration: 8-10 minutes for clusters with 50+ tenant namespaces.
+- **Per-namespace bootstrap**: Each namespace tracked independently with its own 10-minute timeout context (non-bootstrapped namespaces don't share timeout budget). Namespaces that timeout during cold start automatically retry with 30-day window and fresh 10-minute timeout on subsequent scrapes until successful.
+- **Steady-state**: After bootstrap, queries 36h window (24h base + 50% safety margin) every 5 minutes using shared global timeout
+- **Automatic recovery**: Failed namespaces don't block successful ones; each eventually achieves full 30-day accuracy
+- Pod restart triggers cold start again (in-memory store is not persisted)
 
 HTTP server starts only after first collection completes.
 
@@ -161,4 +164,6 @@ HTTP server starts only after first collection completes.
 | Path | Description |
 |------|-------------|
 | `/metrics` | Prometheus metrics (instant read from cached state) |
-| `/health` | Liveness check (always returns `200 OK`) |
+| `/health` | Liveness check (always returns `200 OK`) — deprecated, use `/healthz` |
+| `/healthz` | Liveness check (always returns `200 OK`) |
+| `/readyz` | Readiness check (returns `503` if last successful scrape is stale) |
