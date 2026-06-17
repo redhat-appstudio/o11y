@@ -10,6 +10,7 @@ import (
 type BuildSLO30d struct {
 	mean30d        *prometheus.GaugeVec
 	successRate30d *prometheus.GaugeVec
+	totalCount30d  *prometheus.GaugeVec
 }
 
 // newBuildSLO30d initializes build 30d SLO metrics
@@ -26,6 +27,13 @@ func newBuildSLO30d() *BuildSLO30d {
 			prometheus.GaugeOpts{
 				Name: "konflux_build_success_rate_30d",
 				Help: "Build success rate over the past 30 days (Succeeded / total completed).",
+			},
+			[]string{"cluster", "namespace", "application", "component", "build_type", "event_type"},
+		),
+		totalCount30d: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Name: "konflux_build_total_count_30d",
+				Help: "Total count of completed builds over the past 30 days (successful + failed).",
 			},
 			[]string{"cluster", "namespace", "application", "component", "build_type", "event_type"},
 		),
@@ -52,16 +60,17 @@ func (m *BuildSLO30d) recordObservation(
 	}
 
 	// Extract build-specific labels
-	buildType := getLabel(plr, labelBuildType, "unknown")
 	eventType := getLabel(plr, labelEventType, "unknown")
+	pipelineName := getLabel(plr, labelTektonPipeline, "")
+	buildType := extractBuildType(pipelineName)
 
 	ls := LabelSet{
 		Cluster:     cluster,
 		Namespace:   namespace,
 		Application: application,
 		Component:   component,
-		BuildType:   buildType,
 		EventType:   eventType,
+		BuildType:   buildType,
 	}
 
 	store.RecordObservation(
@@ -78,6 +87,7 @@ func (m *BuildSLO30d) recordObservation(
 func (m *BuildSLO30d) updateGauges(store *Store) {
 	m.mean30d.Reset()
 	m.successRate30d.Reset()
+	m.totalCount30d.Reset()
 
 	store.ForEachWindow(metricBuildDuration, func(ls LabelSet, window *MetricWindow) {
 		if window.TotalCount() == 0 {
@@ -86,6 +96,7 @@ func (m *BuildSLO30d) updateGauges(store *Store) {
 		labels := []string{ls.Cluster, ls.Namespace, ls.Application, ls.Component, ls.BuildType, ls.EventType}
 		m.mean30d.WithLabelValues(labels...).Set(window.ComputeSuccessMean())
 		m.successRate30d.WithLabelValues(labels...).Set(window.ComputeSuccessRate())
+		m.totalCount30d.WithLabelValues(labels...).Set(float64(window.ComputeTotalCount()))
 	})
 }
 
@@ -93,10 +104,12 @@ func (m *BuildSLO30d) updateGauges(store *Store) {
 func (m *BuildSLO30d) Describe(ch chan<- *prometheus.Desc) {
 	m.mean30d.Describe(ch)
 	m.successRate30d.Describe(ch)
+	m.totalCount30d.Describe(ch)
 }
 
 // Collect implements prometheus.Collector
 func (m *BuildSLO30d) Collect(ch chan<- prometheus.Metric) {
 	m.mean30d.Collect(ch)
 	m.successRate30d.Collect(ch)
+	m.totalCount30d.Collect(ch)
 }

@@ -10,6 +10,7 @@ import (
 type IntegrationSLO30d struct {
 	mean30d        *prometheus.GaugeVec
 	successRate30d *prometheus.GaugeVec
+	totalCount30d  *prometheus.GaugeVec
 }
 
 // newIntegrationSLO30d initializes integration 30d SLO metrics
@@ -20,14 +21,21 @@ func newIntegrationSLO30d() *IntegrationSLO30d {
 				Name: "konflux_integration_mean_duration_30d_seconds",
 				Help: "Mean integration test duration over the past 30 days for successful tests only (completion-time based).",
 			},
-			[]string{"cluster", "namespace", "application", "component", "scenario", "optional", "test_type"},
+			[]string{"cluster", "namespace", "application", "component", "scenario", "optional", "test_type", "event_type"},
 		),
 		successRate30d: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: "konflux_integration_success_rate_30d",
 				Help: "Integration test success rate over the past 30 days (Succeeded / total completed).",
 			},
-			[]string{"cluster", "namespace", "application", "component", "scenario", "optional", "test_type"},
+			[]string{"cluster", "namespace", "application", "component", "scenario", "optional", "test_type", "event_type"},
+		),
+		totalCount30d: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Name: "konflux_integration_total_count_30d",
+				Help: "Total count of completed integration tests over the past 30 days (successful + failed). Includes both integration and EC test types.",
+			},
+			[]string{"cluster", "namespace", "application", "component", "scenario", "optional", "test_type", "event_type"},
 		),
 	}
 }
@@ -64,6 +72,9 @@ func (m *IntegrationSLO30d) recordObservation(
 		testType = "ec"
 	}
 
+	// Extract event type from test PipelineRun
+	eventType := getLabel(plr, labelTestEventType, "unknown")
+
 	ls := LabelSet{
 		Cluster:     cluster,
 		Namespace:   namespace,
@@ -72,6 +83,7 @@ func (m *IntegrationSLO30d) recordObservation(
 		Scenario:    scenario,
 		Optional:    optional,
 		TestType:    testType,
+		EventType:   eventType,
 	}
 
 	store.RecordObservation(
@@ -88,14 +100,16 @@ func (m *IntegrationSLO30d) recordObservation(
 func (m *IntegrationSLO30d) updateGauges(store *Store) {
 	m.mean30d.Reset()
 	m.successRate30d.Reset()
+	m.totalCount30d.Reset()
 
 	store.ForEachWindow(metricIntegrationDuration, func(ls LabelSet, window *MetricWindow) {
 		if window.TotalCount() == 0 {
 			return // no data in window — don't emit, don't misfire alerts
 		}
-		labels := []string{ls.Cluster, ls.Namespace, ls.Application, ls.Component, ls.Scenario, ls.Optional, ls.TestType}
+		labels := []string{ls.Cluster, ls.Namespace, ls.Application, ls.Component, ls.Scenario, ls.Optional, ls.TestType, ls.EventType}
 		m.mean30d.WithLabelValues(labels...).Set(window.ComputeSuccessMean())
 		m.successRate30d.WithLabelValues(labels...).Set(window.ComputeSuccessRate())
+		m.totalCount30d.WithLabelValues(labels...).Set(float64(window.ComputeTotalCount()))
 	})
 }
 
@@ -103,10 +117,12 @@ func (m *IntegrationSLO30d) updateGauges(store *Store) {
 func (m *IntegrationSLO30d) Describe(ch chan<- *prometheus.Desc) {
 	m.mean30d.Describe(ch)
 	m.successRate30d.Describe(ch)
+	m.totalCount30d.Describe(ch)
 }
 
 // Collect implements prometheus.Collector
 func (m *IntegrationSLO30d) Collect(ch chan<- prometheus.Metric) {
 	m.mean30d.Collect(ch)
 	m.successRate30d.Collect(ch)
+	m.totalCount30d.Collect(ch)
 }

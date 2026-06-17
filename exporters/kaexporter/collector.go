@@ -113,9 +113,9 @@ func (e *KAExporter) runCollection() {
 		e.integrationSLO.updateGauges(e.rollingStore)
 		e.releaseSLO.updateGauges(e.rollingStore)
 
+		// coldStart flag now managed per-namespace; check if all namespaces are bootstrapped
 		if e.coldStart {
-			log.Printf("Cold start complete: 30-day bootstrap finished in %.1fs, switching to steady-state window (%dh)",
-				time.Since(start).Seconds(), e.queryWindowHours)
+			log.Printf("First collection complete in %.1fs", time.Since(start).Seconds())
 			e.coldStart = false
 		}
 	}

@@ -9,19 +9,22 @@ import (
 
 // LabelSet identifies a metric label combination.
 // Scenario is optional (empty for builds/releases, populated for integration/EC tests).
-// BuildType and EventType are optional (populated for builds only).
+// EventType is optional (populated for builds, integration tests, and releases).
+// BuildType is optional (populated for builds only, derived from tekton.dev/pipeline label).
 // Optional is optional (populated for integration tests only, indicates if test can fail without blocking release).
 // TestType is optional (empty for builds/releases, "integration" or "ec" for tests).
+// Automated is optional (populated for releases only, "true" if automated, "false" if manual).
 type LabelSet struct {
 	Cluster     string `json:"cluster"`
 	Namespace   string `json:"namespace"`
 	Application string `json:"application"`
 	Component   string `json:"component"`
 	Scenario    string `json:"scenario,omitempty"`   // Empty for builds/releases, populated for integration/EC
-	BuildType   string `json:"build_type,omitempty"` // Empty for non-builds, populated for builds (e.g., "docker-build", "build-rpm-package")
-	EventType   string `json:"event_type,omitempty"` // Empty for non-builds, populated for builds (e.g., "push", "Merge_Request", "retest-comment")
-	Optional    string `json:"optional,omitempty"`   // Empty for non-integration-tests, "true" if test is optional (can fail without blocking release)
-	TestType    string `json:"test_type,omitempty"`  // Empty for builds/releases, "integration" or "ec" for test PLRs
+	EventType   string `json:"event_type,omitempty"`  // Populated for builds, integration tests, and releases (e.g., "push", "Merge_Request", "incoming")
+	BuildType   string `json:"build_type,omitempty"`  // Empty for non-builds, populated for builds (e.g., "container", "fbc", "rpm", "bundle", "standard", "custom")
+	Optional    string `json:"optional,omitempty"`    // Empty for non-integration-tests, "true" if test is optional (can fail without blocking release)
+	TestType    string `json:"test_type,omitempty"`   // Empty for builds/releases, "integration" or "ec" for test PLRs
+	Automated   string `json:"automated,omitempty"`   // Empty for builds/tests, "true" if release is automated, "false" if manual
 }
 
 func (l LabelSet) String() string {
@@ -34,17 +37,20 @@ func (l LabelSet) String() string {
 	if l.Scenario != "" {
 		parts = append(parts, fmt.Sprintf("scenario=%s", l.Scenario))
 	}
-	if l.BuildType != "" {
-		parts = append(parts, fmt.Sprintf("build_type=%s", l.BuildType))
-	}
 	if l.EventType != "" {
 		parts = append(parts, fmt.Sprintf("event_type=%s", l.EventType))
+	}
+	if l.BuildType != "" {
+		parts = append(parts, fmt.Sprintf("build_type=%s", l.BuildType))
 	}
 	if l.Optional != "" {
 		parts = append(parts, fmt.Sprintf("optional=%s", l.Optional))
 	}
 	if l.TestType != "" {
 		parts = append(parts, fmt.Sprintf("test_type=%s", l.TestType))
+	}
+	if l.Automated != "" {
+		parts = append(parts, fmt.Sprintf("automated=%s", l.Automated))
 	}
 	return strings.Join(parts, ",")
 }
@@ -163,6 +169,20 @@ func (w *MetricWindow) ComputeSuccessRate() float64 {
 		return 0
 	}
 	return float64(success) / float64(count)
+}
+
+// ComputeTotalCount returns the total Count across all buckets.
+// Skips stale buckets (older than 30 days from today).
+func (w *MetricWindow) ComputeTotalCount() int64 {
+	cutoff := time.Now().UTC().AddDate(0, 0, -30).Format("2006-01-02")
+	var count int64
+	for i := range w.Buckets {
+		if w.Buckets[i].Day == "" || w.Buckets[i].Day <= cutoff {
+			continue
+		}
+		count += w.Buckets[i].Count
+	}
+	return count
 }
 
 // TotalCount returns the total count across all FRESH buckets (within 30 days).
