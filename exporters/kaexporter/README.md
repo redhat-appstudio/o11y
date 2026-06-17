@@ -14,102 +14,70 @@ Exposes mean duration and success rate metrics over a rolling 30-day window usin
 |----------|----------|---------|-------------|
 | `KA_HOST` | Yes | — | KubeArchive API base URL |
 | `KA_TOKEN` | Yes | — | Bearer token for KubeArchive API |
-| `CLUSTER_NAME` | No | `unknown` | Cluster name label on metrics |
-| `TENANT_NAMESPACE` | No | *(empty)* | Single-tenant mode (specific namespace); empty = multi-tenant (all namespaces with `konflux-ci.dev/type=tenant`) |
-| `KA_WINDOW_HOURS` | No | `24` | Base look-back window for KubeArchive queries in steady-state mode. **Actual query window = KA_WINDOW_HOURS + 50% safety margin** to capture long-running pipelines (e.g., 24h → 36h query). On first boot (cold start), queries 720h (30 days) to bootstrap full rolling window. Per-namespace: non-bootstrapped namespaces continue using 30d window until successful. |
-| `KA_COLLECT_INTERVAL_SECONDS` | No | `300` | How often background collection refreshes metrics |
-| `KA_COLLECTION_TIMEOUT_SECONDS` | No | `120` | Collection timeout (must be < collect interval). **Cold start override**: Initial bootstrap uses 600s (10 min) timeout to allow busy namespaces to complete 30-day queries. |
-| `KA_MAX_CONCURRENT` | No | `10` | Max parallel KubeArchive API calls during steady-state. **Cold start override**: Initial bootstrap uses concurrency=5 to reduce KubeArchive load. |
-| `KA_HTTP_TIMEOUT_SECONDS` | No | `60` | HTTP client timeout for individual KubeArchive API requests |
-| `KA_MAX_RETRIES` | No | `3` | Max retries for failed KubeArchive calls |
-| `EXPORTER_PORT` | No | `9101` | HTTP listen port |
+| `CLUSTER_NAME` | No | `unknown` | Cluster name label applied to all metrics |
+| `TENANT_NAMESPACE` | No | *(empty)* | Restrict scraping to a specific namespace. Empty = multi-tenant mode (discovers all namespaces with `konflux-ci.dev/type=tenant`) |
+| `KA_WINDOW_HOURS` | No | `24` | Steady-state look-back window. A 50% safety margin is added internally (e.g., 24h → 36h actual query) to capture long-running pipelines. Only applies after cold start. |
+| `KA_COLLECT_INTERVAL_SECONDS` | No | `300` | How often (seconds) background collection refreshes metrics. Should match the Prometheus scrape interval. |
+| `KA_COLLECTION_TIMEOUT_SECONDS` | No | `120` | Per-cycle deadline for steady-state collections. Must be less than `KA_COLLECT_INTERVAL_SECONDS`. |
+| `KA_MAX_CONCURRENT` | No | `10` | Max parallel KubeArchive API calls per steady-state cycle. |
+| `KA_HTTP_TIMEOUT_SECONDS` | No | `60` | Per-request HTTP timeout for KubeArchive API calls. |
+| `KA_MAX_RETRIES` | No | `3` | Max retries per failed KubeArchive request (exponential backoff). |
+| `KA_INITIAL_RETRY_DELAY_MS` | No | `100` | Initial retry delay in milliseconds. |
+| `KA_MAX_RETRY_DELAY_MS` | No | `5000` | Maximum retry delay cap in milliseconds. |
+| `EXPORTER_PORT` | No | `9101` | HTTP listen port. |
+
+### Cold start behavior
+
+On first boot, the exporter automatically bootstraps the full 30-day rolling window before serving metrics. This phase uses hardcoded settings independent of the env vars above:
+
+| Setting | Cold start value | Steady-state value |
+|---------|-----------------|-------------------|
+| Query window | 720h (30 days) | `KA_WINDOW_HOURS` + 50% |
+| Collection timeout | 600s | `KA_COLLECTION_TIMEOUT_SECONDS` |
+| Concurrency | 5 | `KA_MAX_CONCURRENT` |
+| Per-namespace item cap | 10,000 | 1,000 |
+
+After the first successful collection, the exporter switches to steady-state settings permanently (until next restart). `/metrics` is not served until cold start completes.
 
 ---
 
 ## Metrics
 
-All metrics are **Gauges** computed from an in-memory rolling store of daily aggregated buckets (30 days).
+All metrics are **Gauges** over a rolling 30-day window of daily aggregated buckets.
 
-### Build Metrics
-**Labels**: `{cluster, namespace, application, component, build_type, event_type}`
-- `build_type`: Build pipeline type (e.g., "docker-build", "build-rpm-package", "multi-arch-build-pipeline")
-- `event_type`: PipelinesAsCode event type (e.g., "push", "Merge_Request", "retest-comment", "retest-all-comment")
+| Metric | Phase | Labels |
+|--------|-------|--------|
+| `konflux_build_mean_duration_30d_seconds` | build | `cluster, namespace, application, component, build_type, event_type` |
+| `konflux_build_success_rate_30d` | build | `cluster, namespace, application, component, build_type, event_type` |
+| `konflux_build_total_count_30d` | build | `cluster, namespace, application, component, build_type, event_type` |
+| `konflux_integration_mean_duration_30d_seconds` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type` |
+| `konflux_integration_success_rate_30d` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type` |
+| `konflux_integration_total_count_30d` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type` |
+| `konflux_release_cr_mean_duration_30d_seconds` | release | `cluster, namespace, application, component, event_type, automated` |
+| `konflux_release_cr_success_rate_30d` | release | `cluster, namespace, application, component, event_type, automated` |
+| `konflux_release_cr_total_count_30d` | release | `cluster, namespace, application, component, event_type, automated` |
 
-| Metric | Description |
-|--------|-------------|
-| `konflux_build_mean_duration_30d_seconds` | Mean build duration (30d) — **successful builds only** |
-| `konflux_build_success_rate_30d` | Build success rate (30d) |
+**Label key** (phase-specific labels only; `cluster`, `namespace`, `application`, `component`, `event_type` are common to all):
 
-### Integration Test Metrics
-**Labels**: `{cluster, namespace, application, component, scenario, optional, test_type}`
-- `scenario`: Test scenario name (e.g., "containers-hummingbird-conforma", "containers-hummingbird-k8s-test")
-- `optional`: "true" if test can fail without blocking release, "false" if required to pass
-- `test_type`: "ec" for Enterprise Contract validation, "integration" for regular integration tests
-
-| Metric | Description |
-|--------|-------------|
-| `konflux_integration_mean_duration_30d_seconds` | Mean integration test duration (30d) per scenario — **successful tests only** |
-| `konflux_integration_success_rate_30d` | Integration test success rate (30d) per scenario |
-
-### Release Metrics
-**Labels**: `{cluster, namespace, application, component}`
-
-| Metric | Description |
-|--------|-------------|
-| `konflux_release_mean_duration_30d_seconds` | Mean release duration (30d) — **successful releases only** |
-| `konflux_release_success_rate_30d` | Release success rate (30d) |
+| Label | Source | Values |
+|-------|--------|--------|
+| `build_type` | `tekton.dev/pipeline` label | `docker-builds`, `docker-multi-arch-builds`, `bundle-builds`, `operator-builds`, `operator-bundle-builds`, `fbc-builds`, `rpm-builds`, `standard-builds`, `custom-builds` |
+| `event_type` | `pipelinesascode.tekton.dev/event-type` (builds) / `pac.test.appstudio.openshift.io/event-type` (tests, releases) | `push`, `pull_request`, `incoming`, `retest-comment`, `retest-all-comment` |
+| `scenario` | `test.appstudio.openshift.io/scenario` | Integration test scenario name |
+| `optional` | `test.appstudio.openshift.io/optional` | `true` (non-blocking), `false` (required) |
+| `test_type` | Derived from pipeline labels | `ec` (Enterprise Contract), `integration` |
+| `automated` | `release.appstudio.openshift.io/automated` | `true`, `false` |
 
 **Self-monitoring**:
-| Metric | Description |
-|--------|-------------|
-| `konflux_ka_exporter_scrape_errors_total{cluster, phase}` | Scrape errors by phase |
-| `konflux_ka_exporter_last_scrape_success_timestamp_seconds` | Last successful scrape (unix timestamp) |
-| `konflux_ka_exporter_scrape_duration_seconds` | Collection cycle duration |
-| `konflux_ka_exporter_truncations_total{cluster, resource, namespace}` | KubeArchive fetch truncations |
-| `konflux_ka_exporter_retry_attempts_total{cluster, reason}` | Retry attempts by reason |
-| `konflux_ka_exporter_retry_exhausted_total{cluster, reason}` | Failed requests after max retries |
 
-**Example queries**:
-```promql
-# Components with build success rate < 90%
-konflux_build_success_rate_30d < 0.90
-
-# Top 5 slowest builds
-topk(5, konflux_build_mean_duration_30d_seconds)
-
-# Build success rate for Merge_Request events (PR builds)
-konflux_build_success_rate_30d{event_type="Merge_Request"}
-
-# Build success rate for RPM package builds
-konflux_build_success_rate_30d{build_type="build-rpm-package"}
-
-# Retry success rate: retest-comment vs retest-all-comment
-avg(konflux_build_success_rate_30d{event_type="retest-comment"}) vs 
-avg(konflux_build_success_rate_30d{event_type="retest-all-comment"})
-
-# Enterprise Contract (EC) success rate (all EC tests)
-konflux_integration_success_rate_30d{test_type="ec"}
-
-# EC success rate for specific scenario
-konflux_integration_success_rate_30d{test_type="ec", scenario=~".*-conforma"}
-
-# Regular integration tests (non-EC)
-konflux_integration_success_rate_30d{test_type="integration"}
-
-# Optional test performance (can fail without blocking release)
-konflux_integration_success_rate_30d{optional="true"}
-
-# Required test performance (must pass to release)
-konflux_integration_success_rate_30d{optional="false"}
-
-# Top 5 slowest integration test scenarios
-topk(5, konflux_integration_mean_duration_30d_seconds)
-
-# Compare EC vs integration test success rates
-avg(konflux_integration_success_rate_30d{test_type="ec"}) vs
-avg(konflux_integration_success_rate_30d{test_type="integration"})
-```
-
+| Metric | Labels | Description |
+|--------|--------|-------------|
+| `konflux_ka_exporter_scrape_errors_total` | `cluster, phase` | Scrape errors by phase |
+| `konflux_ka_exporter_last_scrape_success_timestamp_seconds` | `cluster` | Unix timestamp of last successful scrape |
+| `konflux_ka_exporter_scrape_duration_seconds` | `cluster` | Collection cycle duration |
+| `konflux_ka_exporter_truncations_total` | `cluster, resource, namespace` | KubeArchive fetch truncations (item cap hit) |
+| `konflux_ka_exporter_retry_attempts_total` | `cluster, reason` | Retry attempts by reason |
+| `konflux_ka_exporter_retry_exhausted_total` | `cluster, reason` | Requests exhausted after max retries |
 
 ---
 
@@ -145,17 +113,8 @@ oc apply -k config/exporters/monitoring/ka/base/
 ```
 
 **Deployment requirements**:
-- Environment variables (see above table)
-- Background collection interval (`KA_COLLECT_INTERVAL_SECONDS`) should match Prometheus scrape interval (default: 300s)
-
-**Startup behavior**:
-- **Cold start (first boot)**: Queries 720h (30 days) per namespace with 10-minute timeout and reduced concurrency (5) to bootstrap full rolling store before `/metrics` opens. Expected duration: 8-10 minutes for clusters with 50+ tenant namespaces.
-- **Per-namespace bootstrap**: Each namespace tracked independently with its own 10-minute timeout context (non-bootstrapped namespaces don't share timeout budget). Namespaces that timeout during cold start automatically retry with 30-day window and fresh 10-minute timeout on subsequent scrapes until successful.
-- **Steady-state**: After bootstrap, queries 36h window (24h base + 50% safety margin) every 5 minutes using shared global timeout
-- **Automatic recovery**: Failed namespaces don't block successful ones; each eventually achieves full 30-day accuracy
-- Pod restart triggers cold start again (in-memory store is not persisted)
-
-HTTP server starts only after first collection completes.
+- `KA_HOST` and `KA_TOKEN` must be set (see table above)
+- `KA_COLLECT_INTERVAL_SECONDS` should match the Prometheus scrape interval
 
 ---
 

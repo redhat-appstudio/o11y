@@ -36,25 +36,26 @@ const (
 	tenantLabelKey   = "konflux-ci.dev/type"
 	tenantLabelValue = "tenant"
 
-	// Correlation keys
+	// Build and Integration PipelineRun
 	labelBuildPipelineRun = "appstudio.openshift.io/build-pipelinerun"
 	labelAppStudioApp     = "appstudio.openshift.io/application"
 	labelAppStudioComp    = "appstudio.openshift.io/component"
 	labelTestScenario     = "test.appstudio.openshift.io/scenario"
-	labelTestOptional     = "test.appstudio.openshift.io/optional" // "true" if test can fail without blocking release
-	labelBuildType        = "build.appstudio.redhat.com/pipeline"  // Build pipeline type (e.g., "docker-build", "build-rpm-package")
-	labelEventType        = "pipelinesascode.tekton.dev/event-type" // Event type (e.g., "push", "Merge_Request", "retest-comment")
+	labelTestOptional     = "test.appstudio.openshift.io/optional"    // "true" if test can fail without blocking release
+	labelEventType        = "pipelinesascode.tekton.dev/event-type"   // Event type for builds
+	labelTestEventType    = "pac.test.appstudio.openshift.io/event-type" // Event type for integration tests
 	// Used as an annotation on the build PLR after Snapshot creation; also a label on test and releae PLRs.
 	labelOrAnnotationSnapshot = "appstudio.openshift.io/snapshot"
 
 	// Release PipelineRun
 	labelAppStudioService          = "appstudio.openshift.io/service"
-	valueAppStudioServiceRelease   = "release"
 	labelPipelinesType             = "pipelines.appstudio.openshift.io/type"
-	valuePipelinesTypeManaged      = "managed"
 	labelReleaseApplicationNS      = "release.appstudio.openshift.io/namespace"
 	labelTektonPipeline            = "tekton.dev/pipeline"
-	managedReleasePLRNamespacesEnv = "MANAGED_RELEASE_PLR_NAMESPACES"
+
+	// Release CR labels
+	labelReleaseEventType = "pac.test.appstudio.openshift.io/event-type" // Event type inherited from build (e.g., "push", "incoming")
+	labelReleaseAutomated = "release.appstudio.openshift.io/automated"   // "true" for automated releases, "false" for manual
 
 	// kaWindowHoursEnv controls how far back the exporter fetches resources from KubeArchive.
 	kaWindowHoursEnv     = "KA_WINDOW_HOURS"
