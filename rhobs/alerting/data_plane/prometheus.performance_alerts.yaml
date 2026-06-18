@@ -26,8 +26,8 @@ spec:
 
         - alert: EtcdCommitLatency
           expr: |
-            avg_over_time(histogram_quantile(0.99, rate(etcd_disk_backend_commit_duration_seconds_bucket{source_cluster!=""}[2m]))[10m:]) > 0.04
-          for: 10m
+            avg_over_time(histogram_quantile(0.99, rate(etcd_disk_backend_commit_duration_seconds_bucket{source_cluster!=""}[2m]))[15m:]) > 0.04
+          for: 15m
           labels:
             severity: warning
             component: etcd
@@ -35,7 +35,7 @@ spec:
             summary: >-
               ETCD slow writes observed.
             description: >-
-              10 minutes avg. 99th etcd commit latency on {{$labels.pod}} higher than 40ms in cluster {{ $labels.source_cluster }}.
+              15 minutes avg. 99th etcd commit latency on {{$labels.pod}} higher than 40ms in cluster {{ $labels.source_cluster }}.
             alert_routing_key: perfandscale
 
         - alert: EtcdProposalFailures
