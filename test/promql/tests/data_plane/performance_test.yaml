@@ -43,13 +43,13 @@ tests:
     input_series:
       # Average commit latency higher than 40ms, so it will be alerted.
       - series: 'etcd_disk_backend_commit_duration_seconds_bucket{le="0.05", pod="etcd-pod-1", source_cluster="cluster01"}'
-        values: '0+0.01x15'
+        values: '0+0.01x30'
 
       - series: 'etcd_disk_backend_commit_duration_seconds_bucket{le="+Inf", pod="etcd-pod-1", source_cluster="cluster01"}'
-        values: '0+0.5x15'
+        values: '0+0.5x30'
 
     alert_rule_test:
-      - eval_time: 15m
+      - eval_time: 30m
         alertname: EtcdCommitLatency
         exp_alerts:
           - exp_labels:
@@ -59,7 +59,7 @@ tests:
               source_cluster: cluster01
             exp_annotations:
               summary: "ETCD slow writes observed."
-              description: "10 minutes avg. 99th etcd commit latency on etcd-pod-1 higher than 40ms in cluster cluster01."
+              description: "15 minutes avg. 99th etcd commit latency on etcd-pod-1 higher than 40ms in cluster cluster01."
               alert_routing_key: perfandscale
 
   - interval: 1m
