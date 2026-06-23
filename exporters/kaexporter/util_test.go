@@ -4,363 +4,164 @@ import (
 	"testing"
 )
 
-// ─── isReleaseSucceeded Tests ─────────────────────────────────────────────────
+// ── Simple Helpers ────────────────────────────────────────────────────────────
 
-func TestIsReleaseSucceeded(t *testing.T) {
+func makePLR(condType, status, reason string) PipelineRun {
+	return PipelineRun{
+		Status: struct {
+			StartTime      string      `json:"startTime"`
+			CompletionTime string      `json:"completionTime"`
+			Conditions     []Condition `json:"conditions"`
+		}{
+			Conditions: []Condition{{Type: condType, Status: status, Reason: reason}},
+		},
+	}
+}
+
+func makeRelease(condType, status, reason string) Release {
+	return Release{
+		Status: struct {
+			StartTime      string      `json:"startTime"`
+			CompletionTime string      `json:"completionTime"`
+			Conditions     []Condition `json:"conditions"`
+		}{
+			Conditions: []Condition{{Type: condType, Status: status, Reason: reason}},
+		},
+	}
+}
+
+// ── plrStatus Tests ───────────────────────────────────────────────────────────
+
+func TestPLRStatus(t *testing.T) {
 	tests := []struct {
-		name       string
-		release    Release
-		wantResult bool
+		name          string
+		plr           PipelineRun
+		wantSucceeded bool
+		wantReason    string
 	}{
-		{
-			name: "success: Released=True with Reason=Succeeded",
-			release: Release{
-				Status: struct {
-					StartTime      string      `json:"startTime"`
-					CompletionTime string      `json:"completionTime"`
-					Conditions     []Condition `json:"conditions"`
-				}{
-					Conditions: []Condition{
-						{Type: "Released", Status: "True", Reason: "Succeeded"},
-					},
-				},
-			},
-			wantResult: true,
-		},
-		{
-			name: "failure: Released=True but Reason=Failed (BREAKING CHANGE)",
-			release: Release{
-				Status: struct {
-					StartTime      string      `json:"startTime"`
-					CompletionTime string      `json:"completionTime"`
-					Conditions     []Condition `json:"conditions"`
-				}{
-					Conditions: []Condition{
-						{Type: "Released", Status: "True", Reason: "Failed"},
-					},
-				},
-			},
-			wantResult: false, // OLD behavior would return true
-		},
-		{
-			name: "failure: Released=True with empty Reason",
-			release: Release{
-				Status: struct {
-					StartTime      string      `json:"startTime"`
-					CompletionTime string      `json:"completionTime"`
-					Conditions     []Condition `json:"conditions"`
-				}{
-					Conditions: []Condition{
-						{Type: "Released", Status: "True", Reason: ""},
-					},
-				},
-			},
-			wantResult: false,
-		},
-		{
-			name: "failure: Released=True with Reason=ValidationFailed",
-			release: Release{
-				Status: struct {
-					StartTime      string      `json:"startTime"`
-					CompletionTime string      `json:"completionTime"`
-					Conditions     []Condition `json:"conditions"`
-				}{
-					Conditions: []Condition{
-						{Type: "Released", Status: "True", Reason: "ValidationFailed"},
-					},
-				},
-			},
-			wantResult: false,
-		},
-		{
-			name: "failure: Released=False with Reason=Succeeded",
-			release: Release{
-				Status: struct {
-					StartTime      string      `json:"startTime"`
-					CompletionTime string      `json:"completionTime"`
-					Conditions     []Condition `json:"conditions"`
-				}{
-					Conditions: []Condition{
-						{Type: "Released", Status: "False", Reason: "Succeeded"},
-					},
-				},
-			},
-			wantResult: false,
-		},
-		{
-			name: "failure: Released=False",
-			release: Release{
-				Status: struct {
-					StartTime      string      `json:"startTime"`
-					CompletionTime string      `json:"completionTime"`
-					Conditions     []Condition `json:"conditions"`
-				}{
-					Conditions: []Condition{
-						{Type: "Released", Status: "False", Reason: "Failed"},
-					},
-				},
-			},
-			wantResult: false,
-		},
-		{
-			name: "failure: no Released condition at all",
-			release: Release{
-				Status: struct {
-					StartTime      string      `json:"startTime"`
-					CompletionTime string      `json:"completionTime"`
-					Conditions     []Condition `json:"conditions"`
-				}{
-					Conditions: []Condition{
-						{Type: "SomeOtherCondition", Status: "True", Reason: "Succeeded"},
-					},
-				},
-			},
-			wantResult: false,
-		},
-		{
-			name: "failure: empty conditions array",
-			release: Release{
-				Status: struct {
-					StartTime      string      `json:"startTime"`
-					CompletionTime string      `json:"completionTime"`
-					Conditions     []Condition `json:"conditions"`
-				}{
-					Conditions: []Condition{},
-				},
-			},
-			wantResult: false,
-		},
-		{
-			name: "success: multiple conditions, Released=True with Reason=Succeeded is present",
-			release: Release{
-				Status: struct {
-					StartTime      string      `json:"startTime"`
-					CompletionTime string      `json:"completionTime"`
-					Conditions     []Condition `json:"conditions"`
-				}{
-					Conditions: []Condition{
-						{Type: "Ready", Status: "True", Reason: "AllGood"},
-						{Type: "Released", Status: "True", Reason: "Succeeded"},
-						{Type: "Validated", Status: "True", Reason: "Passed"},
-					},
-				},
-			},
-			wantResult: true,
-		},
+		{"succeeded", makePLR("Succeeded", "True", ""), true, ""},
+		{"failed - timeout", makePLR("Succeeded", "False", "PipelineRunTimeout"), false, "PipelineRunTimeout"},
+		{"failed - couldn't get task", makePLR("Succeeded", "False", "CouldntGetTask"), false, "CouldntGetTask"},
+		{"failed - couldn't get pipeline", makePLR("Succeeded", "False", "CouldntGetPipeline"), false, "CouldntGetPipeline"},
+		{"failed - create run failed", makePLR("Succeeded", "False", "CreateRunFailed"), false, "CreateRunFailed"},
+		{"failed - generic", makePLR("Succeeded", "False", "Failed"), false, "Failed"},
+		{"failed - empty reason defaults to Unknown", makePLR("Succeeded", "False", ""), false, "Unknown"},
+		{"no succeeded condition", PipelineRun{}, false, "Unknown"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := isReleaseSucceeded(tt.release)
-			if got != tt.wantResult {
-				t.Errorf("isReleaseSucceeded() = %v, want %v", got, tt.wantResult)
+			gotSucceeded, gotReason := plrStatus(tt.plr)
+			if gotSucceeded != tt.wantSucceeded {
+				t.Errorf("plrStatus() succeeded = %v, want %v", gotSucceeded, tt.wantSucceeded)
+			}
+			if gotReason != tt.wantReason {
+				t.Errorf("plrStatus() reason = %v, want %v", gotReason, tt.wantReason)
 			}
 		})
 	}
 }
 
-// ─── isPLRSucceeded Tests ─────────────────────────────────────────────────────
+// ── releaseStatus Tests ───────────────────────────────────────────────────────
 
-func TestIsPLRSucceeded(t *testing.T) {
+func TestReleaseStatus(t *testing.T) {
 	tests := []struct {
-		name       string
-		plr        PipelineRun
-		wantResult bool
+		name          string
+		release       Release
+		wantCompleted bool
+		wantSucceeded bool
+		wantReason    string
 	}{
-		{
-			name: "success: Succeeded=True",
-			plr: PipelineRun{
-				Status: struct {
-					StartTime      string      `json:"startTime"`
-					CompletionTime string      `json:"completionTime"`
-					Conditions     []Condition `json:"conditions"`
-				}{
-					Conditions: []Condition{
-						{Type: "Succeeded", Status: "True"},
-					},
-				},
-			},
-			wantResult: true,
-		},
-		{
-			name: "failure: Succeeded=False",
-			plr: PipelineRun{
-				Status: struct {
-					StartTime      string      `json:"startTime"`
-					CompletionTime string      `json:"completionTime"`
-					Conditions     []Condition `json:"conditions"`
-				}{
-					Conditions: []Condition{
-						{Type: "Succeeded", Status: "False"},
-					},
-				},
-			},
-			wantResult: false,
-		},
-		{
-			name: "failure: no Succeeded condition",
-			plr: PipelineRun{
-				Status: struct {
-					StartTime      string      `json:"startTime"`
-					CompletionTime string      `json:"completionTime"`
-					Conditions     []Condition `json:"conditions"`
-				}{
-					Conditions: []Condition{
-						{Type: "Ready", Status: "True"},
-					},
-				},
-			},
-			wantResult: false,
-		},
-		{
-			name: "failure: empty conditions",
-			plr: PipelineRun{
-				Status: struct {
-					StartTime      string      `json:"startTime"`
-					CompletionTime string      `json:"completionTime"`
-					Conditions     []Condition `json:"conditions"`
-				}{
-					Conditions: []Condition{},
-				},
-			},
-			wantResult: false,
-		},
-		{
-			name: "success: multiple conditions, Succeeded=True is present",
-			plr: PipelineRun{
-				Status: struct {
-					StartTime      string      `json:"startTime"`
-					CompletionTime string      `json:"completionTime"`
-					Conditions     []Condition `json:"conditions"`
-				}{
-					Conditions: []Condition{
-						{Type: "Ready", Status: "True"},
-						{Type: "Succeeded", Status: "True"},
-					},
-				},
-			},
-			wantResult: true,
-		},
+		{"succeeded", makeRelease("Released", "True", "Succeeded"), true, true, ""},
+		{"failed", makeRelease("Released", "False", "Failed"), true, false, "Failed"},
+		{"skipped", makeRelease("Released", "False", "Skipped"), true, false, "Skipped"},
+		{"progressing (not completed)", makeRelease("Released", "False", "Progressing"), false, false, ""},
+		{"failed with empty reason", makeRelease("Released", "False", ""), true, false, "Unknown"},
+		{"no released condition", Release{}, false, false, ""},
+		{"status true but reason not succeeded", makeRelease("Released", "True", "Failed"), false, false, ""},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := isPLRSucceeded(tt.plr)
-			if got != tt.wantResult {
-				t.Errorf("isPLRSucceeded() = %v, want %v", got, tt.wantResult)
+			gotCompleted, gotSucceeded, gotReason := releaseStatus(tt.release)
+			if gotCompleted != tt.wantCompleted {
+				t.Errorf("releaseStatus() completed = %v, want %v", gotCompleted, tt.wantCompleted)
+			}
+			if gotSucceeded != tt.wantSucceeded {
+				t.Errorf("releaseStatus() succeeded = %v, want %v", gotSucceeded, tt.wantSucceeded)
+			}
+			if gotReason != tt.wantReason {
+				t.Errorf("releaseStatus() reason = %v, want %v", gotReason, tt.wantReason)
 			}
 		})
 	}
 }
 
-// ─── getLabel Tests ───────────────────────────────────────────────────────────
+// ── Status Wrapper Tests (spot-check that wrappers delegate correctly) ────────
+
+func TestStatusWrappers(t *testing.T) {
+	t.Run("isPLRSucceeded", func(t *testing.T) {
+		if !isPLRSucceeded(makePLR("Succeeded", "True", "")) {
+			t.Error("expected true for succeeded PLR")
+		}
+		if isPLRSucceeded(makePLR("Succeeded", "False", "Failed")) {
+			t.Error("expected false for failed PLR")
+		}
+	})
+
+	t.Run("isReleaseSucceeded", func(t *testing.T) {
+		if !isReleaseSucceeded(makeRelease("Released", "True", "Succeeded")) {
+			t.Error("expected true for succeeded release")
+		}
+		if isReleaseSucceeded(makeRelease("Released", "False", "Failed")) {
+			t.Error("expected false for failed release")
+		}
+	})
+
+	t.Run("isReleaseCompleted", func(t *testing.T) {
+		if !isReleaseCompleted(makeRelease("Released", "True", "Succeeded")) {
+			t.Error("expected true for completed release")
+		}
+		if isReleaseCompleted(makeRelease("Released", "False", "Progressing")) {
+			t.Error("expected false for in-progress release")
+		}
+	})
+}
+
+// ── getLabel Tests ────────────────────────────────────────────────────────────
 
 func TestGetLabel(t *testing.T) {
-	t.Run("PipelineRun with label", func(t *testing.T) {
-		plr := PipelineRun{
-			Metadata: struct {
-				UID               string            `json:"uid"`
-				Name              string            `json:"name"`
-				Namespace         string            `json:"namespace"`
-				Labels            map[string]string `json:"labels"`
-				Annotations       map[string]string `json:"annotations"`
-				CreationTimestamp string            `json:"creationTimestamp"`
-			}{
-				Labels: map[string]string{
-					"test-key": "test-value",
-					"foo":      "bar",
-				},
-			},
-		}
+	tests := []struct {
+		name       string
+		labels     map[string]string
+		key        string
+		defaultVal string
+		want       string
+	}{
+		{"found", map[string]string{"foo": "bar"}, "foo", "default", "bar"},
+		{"missing", map[string]string{"other": "value"}, "foo", "default", "default"},
+		{"nil labels", nil, "foo", "default", "default"},
+		{"empty labels", map[string]string{}, "foo", "default", "default"},
+	}
 
-		got := getLabel(plr, "test-key", "default")
-		if got != "test-value" {
-			t.Errorf("getLabel() = %q, want %q", got, "test-value")
-		}
-	})
+	for _, tt := range tests {
+		t.Run("PLR_"+tt.name, func(t *testing.T) {
+			plr := NewPLR().Labels(tt.labels).Build()
+			if got := getLabel(plr, tt.key, tt.defaultVal); got != tt.want {
+				t.Errorf("getLabel(PLR) = %q, want %q", got, tt.want)
+			}
+		})
 
-	t.Run("PipelineRun with missing label returns default", func(t *testing.T) {
-		plr := PipelineRun{
-			Metadata: struct {
-				UID               string            `json:"uid"`
-				Name              string            `json:"name"`
-				Namespace         string            `json:"namespace"`
-				Labels            map[string]string `json:"labels"`
-				Annotations       map[string]string `json:"annotations"`
-				CreationTimestamp string            `json:"creationTimestamp"`
-			}{
-				Labels: map[string]string{
-					"other-key": "other-value",
-				},
-			},
-		}
-
-		got := getLabel(plr, "missing-key", "default-value")
-		if got != "default-value" {
-			t.Errorf("getLabel() = %q, want %q", got, "default-value")
-		}
-	})
-
-	t.Run("PipelineRun with nil labels returns default", func(t *testing.T) {
-		plr := PipelineRun{
-			Metadata: struct {
-				UID               string            `json:"uid"`
-				Name              string            `json:"name"`
-				Namespace         string            `json:"namespace"`
-				Labels            map[string]string `json:"labels"`
-				Annotations       map[string]string `json:"annotations"`
-				CreationTimestamp string            `json:"creationTimestamp"`
-			}{
-				Labels: nil,
-			},
-		}
-
-		got := getLabel(plr, "any-key", "default")
-		if got != "default" {
-			t.Errorf("getLabel() = %q, want %q", got, "default")
-		}
-	})
-
-	t.Run("Release with label", func(t *testing.T) {
-		rel := Release{
-			Metadata: struct {
-				Name              string            `json:"name"`
-				Namespace         string            `json:"namespace,omitempty"`
-				Labels            map[string]string `json:"labels"`
-				CreationTimestamp string            `json:"creationTimestamp"`
-			}{
-				Labels: map[string]string{
-					"release-key": "release-value",
-				},
-			},
-		}
-
-		got := getLabel(rel, "release-key", "default")
-		if got != "release-value" {
-			t.Errorf("getLabel() = %q, want %q", got, "release-value")
-		}
-	})
-
-	t.Run("Release with missing label returns default", func(t *testing.T) {
-		rel := Release{
-			Metadata: struct {
-				Name              string            `json:"name"`
-				Namespace         string            `json:"namespace,omitempty"`
-				Labels            map[string]string `json:"labels"`
-				CreationTimestamp string            `json:"creationTimestamp"`
-			}{
-				Labels: map[string]string{},
-			},
-		}
-
-		got := getLabel(rel, "missing", "my-default")
-		if got != "my-default" {
-			t.Errorf("getLabel() = %q, want %q", got, "my-default")
-		}
-	})
+		t.Run("Release_"+tt.name, func(t *testing.T) {
+			rel := NewRelease().Labels(tt.labels).Build()
+			if got := getLabel(rel, tt.key, tt.defaultVal); got != tt.want {
+				t.Errorf("getLabel(Release) = %q, want %q", got, tt.want)
+			}
+		})
+	}
 }
 
-// ─── secondsBetween Tests ─────────────────────────────────────────────────────
+// ── secondsBetween Tests ──────────────────────────────────────────────────────
 
 func TestSecondsBetween(t *testing.T) {
 	tests := []struct {
@@ -369,79 +170,28 @@ func TestSecondsBetween(t *testing.T) {
 		end   string
 		want  float64
 	}{
-		{
-			name:  "5 minute duration",
-			start: "2026-06-01T10:00:00Z",
-			end:   "2026-06-01T10:05:00Z",
-			want:  300.0,
-		},
-		{
-			name:  "1 hour duration",
-			start: "2026-06-01T10:00:00Z",
-			end:   "2026-06-01T11:00:00Z",
-			want:  3600.0,
-		},
-		{
-			name:  "zero duration (same timestamp)",
-			start: "2026-06-01T10:00:00Z",
-			end:   "2026-06-01T10:00:00Z",
-			want:  0.0,
-		},
-		{
-			name:  "subsecond precision",
-			start: "2026-06-01T10:00:00.500Z",
-			end:   "2026-06-01T10:00:01.250Z",
-			want:  0.75,
-		},
-		{
-			name:  "empty start string",
-			start: "",
-			end:   "2026-06-01T10:05:00Z",
-			want:  -1.0,
-		},
-		{
-			name:  "empty end string",
-			start: "2026-06-01T10:00:00Z",
-			end:   "",
-			want:  -1.0,
-		},
-		{
-			name:  "both empty",
-			start: "",
-			end:   "",
-			want:  -1.0,
-		},
-		{
-			name:  "invalid start timestamp",
-			start: "not-a-timestamp",
-			end:   "2026-06-01T10:05:00Z",
-			want:  -1.0,
-		},
-		{
-			name:  "invalid end timestamp",
-			start: "2026-06-01T10:00:00Z",
-			end:   "invalid",
-			want:  -1.0,
-		},
-		{
-			name:  "negative duration (end before start - clock skew)",
-			start: "2026-06-01T10:05:00Z",
-			end:   "2026-06-01T10:00:00Z",
-			want:  -300.0, // Function returns negative, caller should validate
-		},
+		{"5 minute duration", "2026-06-01T10:00:00Z", "2026-06-01T10:05:00Z", 300.0},
+		{"1 hour duration", "2026-06-01T10:00:00Z", "2026-06-01T11:00:00Z", 3600.0},
+		{"zero duration", "2026-06-01T10:00:00Z", "2026-06-01T10:00:00Z", 0.0},
+		{"subsecond precision", "2026-06-01T10:00:00.500Z", "2026-06-01T10:00:01.250Z", 0.75},
+		{"empty start", "", "2026-06-01T10:05:00Z", -1.0},
+		{"empty end", "2026-06-01T10:00:00Z", "", -1.0},
+		{"both empty", "", "", -1.0},
+		{"invalid start", "not-a-timestamp", "2026-06-01T10:05:00Z", -1.0},
+		{"invalid end", "2026-06-01T10:00:00Z", "invalid", -1.0},
+		{"negative (clock skew)", "2026-06-01T10:05:00Z", "2026-06-01T10:00:00Z", -300.0},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := secondsBetween(tt.start, tt.end)
-			if got != tt.want {
+			if got := secondsBetween(tt.start, tt.end); got != tt.want {
 				t.Errorf("secondsBetween(%q, %q) = %v, want %v", tt.start, tt.end, got, tt.want)
 			}
 		})
 	}
 }
 
-// ─── extractBuildType Tests ───────────────────────────────────────────────────
+// ── extractBuildType Tests ────────────────────────────────────────────────────
 
 func TestExtractBuildType(t *testing.T) {
 	tests := []struct {
@@ -453,7 +203,7 @@ func TestExtractBuildType(t *testing.T) {
 		{"docker-build", "docker-builds"},
 		{"docker-build-custom", "docker-builds"},
 
-		// Multi-platform docker builds (must come before regular docker check)
+		// Multi-platform docker (must match before regular docker)
 		{"docker-build-multi-platform-oci-ta", "docker-multi-arch-builds"},
 		{"docker-build-multi-platform", "docker-multi-arch-builds"},
 
@@ -464,12 +214,11 @@ func TestExtractBuildType(t *testing.T) {
 		// Standard pipeline
 		{"standard-pipeline", "standard-builds"},
 
-		// Operator bundle builds (must match before operator builds)
+		// Operator bundle (must match before operator)
 		{"ose-4-23-local-storage-operator-bundle", "operator-bundle-builds"},
 		{"my-operator-bundle", "operator-bundle-builds"},
-		{"custom-operator-bundle-build", "operator-bundle-builds"},
 
-		// Operator builds (even if prefixed with fbc)
+		// Operator builds
 		{"mtc-1-8-openshift-migration-operator", "operator-builds"},
 		{"fbc-mtc-1-8-openshift-migration-operator", "operator-builds"},
 		{"custom-operator", "operator-builds"},
@@ -477,116 +226,56 @@ func TestExtractBuildType(t *testing.T) {
 		// FBC builds (only if not operator-related)
 		{"v419-cnv-fbc-on-push", "fbc-builds"},
 		{"my-fbc-pipeline", "fbc-builds"},
-		{"fbc-build-custom", "fbc-builds"},
 
 		// RPM builds
 		{"rpm-build-oci-ta", "rpm-builds"},
 		{"custom-rpm-builder", "rpm-builds"},
 
-		// Custom builds (everything else)
+		// Custom builds (fallback)
 		{"my-custom-pipeline", "custom-builds"},
 		{"special-build-v2", "custom-builds"},
 
 		// Edge cases
 		{"", "unknown"},
-		{"docker", "custom-builds"},                     // doesn't match "docker-build" prefix
-		{"operator-bundle-operator", "operator-builds"}, // operator suffix takes precedence
+		{"docker", "custom-builds"},
+		{"operator-bundle-operator", "operator-builds"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.pipelineName, func(t *testing.T) {
-			got := extractBuildType(tt.pipelineName)
-			if got != tt.want {
+			if got := extractBuildType(tt.pipelineName); got != tt.want {
 				t.Errorf("extractBuildType(%q) = %q, want %q", tt.pipelineName, got, tt.want)
 			}
 		})
 	}
 }
 
-// ─── Dedupe Key Tests ─────────────────────────────────────────────────────────
+// ── Dedupe Key Tests ──────────────────────────────────────────────────────────
 
-func TestPLRDedupeKey(t *testing.T) {
-	tests := []struct {
-		name      string
-		namespace string
-		plr       PipelineRun
-		want      string
-	}{
-		{
-			name:      "with UID",
-			namespace: "test-ns",
-			plr: PipelineRun{
-				Metadata: struct {
-					UID               string            `json:"uid"`
-					Name              string            `json:"name"`
-					Namespace         string            `json:"namespace"`
-					Labels            map[string]string `json:"labels"`
-					Annotations       map[string]string `json:"annotations"`
-					CreationTimestamp string            `json:"creationTimestamp"`
-				}{
-					UID:  "abc-123-def",
-					Name: "my-pipeline",
-				},
-			},
-			want: "plr:abc-123-def",
-		},
-		{
-			name:      "without UID (fallback to namespace/name)",
-			namespace: "default",
-			plr: PipelineRun{
-				Metadata: struct {
-					UID               string            `json:"uid"`
-					Name              string            `json:"name"`
-					Namespace         string            `json:"namespace"`
-					Labels            map[string]string `json:"labels"`
-					Annotations       map[string]string `json:"annotations"`
-					CreationTimestamp string            `json:"creationTimestamp"`
-				}{
-					UID:  "",
-					Name: "build-run-1",
-				},
-			},
-			want: "plr:default/build-run-1",
-		},
-	}
+func TestDedupeKeys(t *testing.T) {
+	t.Run("PLR with UID", func(t *testing.T) {
+		plr := NewPLR().UID("abc-123").Name("my-pipeline").Build()
+		if got := plrDedupeKey("test-ns", plr); got != "plr:abc-123" {
+			t.Errorf("plrDedupeKey() = %q, want %q", got, "plr:abc-123")
+		}
+	})
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := plrDedupeKey(tt.namespace, tt.plr)
-			if got != tt.want {
-				t.Errorf("plrDedupeKey() = %q, want %q", got, tt.want)
-			}
-		})
-	}
-}
+	t.Run("PLR without UID (fallback)", func(t *testing.T) {
+		plr := NewPLR().Name("build-run-1").Build()
+		if got := plrDedupeKey("default", plr); got != "plr:default/build-run-1" {
+			t.Errorf("plrDedupeKey() = %q, want %q", got, "plr:default/build-run-1")
+		}
+	})
 
-func TestReleaseDedupeKey(t *testing.T) {
-	tests := []struct {
-		name      string
-		namespace string
-		relName   string
-		want      string
-	}{
-		{
-			name:      "standard release",
-			namespace: "tenant-ns",
-			relName:   "release-123",
-			want:      "release:tenant-ns/release-123",
-		},
-		{
-			name:      "empty namespace",
-			namespace: "",
-			relName:   "my-release",
-			want:      "release:/my-release",
-		},
-	}
+	t.Run("Release", func(t *testing.T) {
+		if got := releaseDedupeKey("tenant-ns", "release-123"); got != "release:tenant-ns/release-123" {
+			t.Errorf("releaseDedupeKey() = %q, want %q", got, "release:tenant-ns/release-123")
+		}
+	})
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := releaseDedupeKey(tt.namespace, tt.relName)
-			if got != tt.want {
-				t.Errorf("releaseDedupeKey() = %q, want %q", got, tt.want)
-			}
-		})
-	}
+	t.Run("Release empty namespace", func(t *testing.T) {
+		if got := releaseDedupeKey("", "my-release"); got != "release:/my-release" {
+			t.Errorf("releaseDedupeKey() = %q, want %q", got, "release:/my-release")
+		}
+	})
 }

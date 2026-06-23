@@ -51,13 +51,10 @@ func main() {
 		promhttp.HandlerOpts{
 			EnableOpenMetrics: true,
 			Registry:          reg,
-			// MaxRequestsInFlight removed: Collect() now performs no I/O, so
-			// concurrent scrapes are safe and the 503 band-aid is unnecessary.
 		},
 	))
 	// /healthz — liveness: the process is alive and the HTTP server is responsive.
 	// Kubernetes restarts the pod only when this fails, so it is intentionally
-	// unconditional — a temporarily-degraded exporter should not be restarted.
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, "OK")

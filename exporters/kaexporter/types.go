@@ -41,6 +41,10 @@ type Release struct {
 		Labels            map[string]string `json:"labels"`
 		CreationTimestamp string            `json:"creationTimestamp"`
 	} `json:"metadata"`
+	Spec struct {
+        ReleasePlan string `json:"releasePlan"`
+        Snapshot    string `json:"snapshot"`
+    } `json:"spec"`
 	Status struct {
 		StartTime      string      `json:"startTime"`
 		CompletionTime string      `json:"completionTime"`
@@ -55,6 +59,11 @@ type Condition struct {
 	LastTransitionTime string `json:"lastTransitionTime,omitempty"`
 	Message            string `json:"message,omitempty"`
 }
+type releaseIntentKey struct {
+    Namespace   string
+    Snapshot    string
+    ReleasePlan string
+}
 
 // ── In-memory indexes ─────────────────────────────────────────────────────────
 
@@ -64,41 +73,34 @@ type releaseEntry struct {
 	crNamespace string
 }
 
-// releaseIndex is a dual-keyed lookup for build-PLR → Release correlation.
-// TODO: need to implement the correlation mechanism
+// releaseIndex stores Release CRs for metric collection and retry analysis.
 type releaseIndex struct {
-	store      []releaseEntry
-	byBuildPLR map[string]int
-	bySnapshot map[string]int
+	store []releaseEntry
 }
 
 // newReleaseIndex returns an empty releaseIndex ready to receive releases.
 func newReleaseIndex() *releaseIndex {
-	return &releaseIndex{
-		byBuildPLR: make(map[string]int),
-		bySnapshot: make(map[string]int),
+	return &releaseIndex{}
+}
+
+func resolveSnapshot(r Release) string {
+	if snap := getLabel(r, labelReleaseSnapshot, ""); snap != "" {
+		return snap
 	}
+	return r.Spec.Snapshot
+}
+
+func resolveReleasePlan(r Release) string {
+	return r.Spec.ReleasePlan
 }
 
 // addReleases copies releases from a namespace into the index.
 func (idx *releaseIndex) addReleases(ns string, releases []Release) {
 	for _, r := range releases {
-		i := len(idx.store)
 		crNS := r.Metadata.Namespace
 		if crNS == "" {
 			crNS = ns
 		}
 		idx.store = append(idx.store, releaseEntry{Release: r, crNamespace: crNS})
-
-		// Primary key: build-pipelinerun label — overwrite so the latest release wins.
-		if bplr := getLabel(r, labelBuildPipelineRun, ""); bplr != "" {
-			idx.byBuildPLR[bplr] = i
-		}
-		// Fallback key: snapshot label — keep the first to avoid overwriting with retries.
-		if snap := getLabel(r, "release.appstudio.openshift.io/snapshot", ""); snap != "" {
-			if _, exists := idx.bySnapshot[snap]; !exists {
-				idx.bySnapshot[snap] = i
-			}
-		}
 	}
 }

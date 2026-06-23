@@ -55,7 +55,11 @@ func (e *KAExporter) Collect(ch chan<- prometheus.Metric) {
 // Start runs the background metric collection loop. It performs one initial
 // collection synchronously so that metrics are populated before /metrics is
 // served, closes readyCh to signal readiness, then ticks every collectInterval
-// until ctx is cancelled. Intended to be called in a goroutine from main().
+// until ctx is cancelled.
+//
+// IMPORTANT: runCollection() must ONLY be called from this single goroutine.
+// The coldStart flag is read without mutex protection, which is safe only because
+// this method guarantees serial execution.
 func (e *KAExporter) Start(ctx context.Context) {
 	log.Printf("Starting background collection (interval=%s, collection-timeout=%s)",
 		e.collectInterval, e.scrapeTimeout)
@@ -95,7 +99,7 @@ func (e *KAExporter) runCollection() {
 
 	// Fetch data from KubeArchive WITHOUT holding lock.
 	// RollingStore is thread-safe with its own internal mutex.
-	err := e.collectMetrics(ctx)
+	releaseIdx, err := e.collectMetrics(ctx)
 
 	// Acquire write lock ONLY for gauge updates (1-5ms operation).
 	// This prevents Prometheus scrapes from blocking during KubeArchive HTTP fetches.
@@ -111,7 +115,7 @@ func (e *KAExporter) runCollection() {
 		e.lastScrapeSuccessAt.Store(now)
 		e.buildSLO.updateGauges(e.rollingStore)
 		e.integrationSLO.updateGauges(e.rollingStore)
-		e.releaseSLO.updateGauges(e.rollingStore)
+		e.releaseSLO.updateGauges(e.rollingStore, e.cluster, releaseIdx)
 
 		// coldStart flag now managed per-namespace; check if all namespaces are bootstrapped
 		if e.coldStart {
@@ -125,15 +129,28 @@ func (e *KAExporter) runCollection() {
 // ── Collection orchestration ──────────────────────────────────────────────────
 
 // collectMetrics fetches data from KubeArchive for every tenant namespace and populates metrics.
-func (e *KAExporter) collectMetrics(ctx context.Context) error {
+func (e *KAExporter) collectMetrics(ctx context.Context) (*releaseIndex, error) {
 	namespaces, err := e.tenantNamespaces(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if len(namespaces) == 0 {
 		log.Printf("No tenant namespaces to scrape (label %s=%s)", tenantLabelKey, tenantLabelValue)
-		return nil
+		return nil, nil
 	}
+
+	// Prune bootstrapStates for decommissioned namespaces to avoid wasted gap-fill attempts
+	e.mu.Lock()
+	nsSet := make(map[string]bool, len(namespaces))
+	for _, ns := range namespaces {
+		nsSet[ns] = true
+	}
+	for ns := range e.bootstrapStates {
+		if !nsSet[ns] {
+			delete(e.bootstrapStates, ns)
+		}
+	}
+	e.mu.Unlock()
 
 	// Determine concurrency: lower during initial cold start to ease KubeArchive load
 	concurrency := e.maxConcurrent
@@ -167,7 +184,7 @@ func (e *KAExporter) collectMetrics(ctx context.Context) error {
 
 	// For release fetching, use 30d window if ANY namespace still needs bootstrap.
 	// Releases may live in different namespaces (managed release namespaces), and the
-	// release catalog is global and used for build→release correlation across all namespaces.
+	// release catalog is global for metric collection and retry analysis across all namespaces.
 	// Continue querying 30 days of releases until ALL namespaces are fully bootstrapped.
 	releaseWindowHours := e.queryWindowHours
 	releaseMaxItems := kaMaxItems
@@ -177,9 +194,9 @@ func (e *KAExporter) collectMetrics(ctx context.Context) error {
 	}
 	releaseSince := time.Now().UTC().Add(-time.Duration(releaseWindowHours) * time.Hour).Format(time.RFC3339)
 
-	// Parallel Release fetching - maintains global catalog for correlation
+	// Parallel Release fetching - maintains global catalog for metric collection
 	releaseIdx := e.gatherAllReleasesParallel(ctx, namespaces, releaseSince, concurrency, releaseMaxItems)
-	log.Printf("Loaded %d Release CR(s) across tenant namespaces for correlation", len(releaseIdx.store))
+	log.Printf("Loaded %d Release CR(s) across tenant namespaces", len(releaseIdx.store))
 
 	// Parallel namespace collection with streaming PLRs/Snapshots
 	type nsResult struct {
@@ -218,7 +235,7 @@ func (e *KAExporter) collectMetrics(ctx context.Context) error {
 				maxItems = coldStartMaxItems       // 10,000
 				// Give each non-bootstrapped namespace its own independent 10-minute timeout
 				// so they don't share the global timeout budget
-				nsCtx, nsCancel = context.WithTimeout(context.Background(), time.Duration(defaultColdStartTimeoutSecs)*time.Second)
+				nsCtx, nsCancel = context.WithTimeout(ctx, time.Duration(defaultColdStartTimeoutSecs)*time.Second)
 				defer nsCancel()
 			} else {
 				windowHours = e.queryWindowHours // 36h (steady state with safety margin)
@@ -311,7 +328,7 @@ func (e *KAExporter) collectMetrics(ctx context.Context) error {
 					defer func() { <-gapSem }() // Release
 
 					// Use cold-start per-namespace timeout for gap-fill queries (30-day window)
-					gapCtx, cancel := context.WithTimeout(context.Background(), time.Duration(defaultColdStartTimeoutSecs)*time.Second)
+					gapCtx, cancel := context.WithTimeout(ctx, time.Duration(defaultColdStartTimeoutSecs)*time.Second)
 					defer cancel()
 
 					e.fillNamespaceGap(gapCtx, namespace)
@@ -325,7 +342,7 @@ func (e *KAExporter) collectMetrics(ctx context.Context) error {
 	log.Printf("Metrics collected: %d build PLRs, %d test PLRs (%d/%d tenant namespaces scraped successfully); %d releases indexed",
 		totalBuild, totalTest, nsOK, len(namespaces), len(releaseIdx.store))
 
-	return nil
+	return releaseIdx, nil
 }
 
 // tenantNamespaces returns either fixed namespace(s) or all namespaces labeled as
@@ -406,7 +423,7 @@ func filterManagedTenants(namespaces []string) []string {
 }
 
 // gatherAllReleasesParallel fetches Release CRs from every tenant namespace in parallel
-// and returns a *releaseIndex build-PLR → Release correlation. The full catalog
+// and returns a *releaseIndex for metric collection and retry analysis. The full catalog
 // must be assembled before namespace processing begins because releases may arrive weeks
 // after builds and may live in dedicated release namespaces.
 func (e *KAExporter) gatherAllReleasesParallel(ctx context.Context, namespaces []string, since string, maxConcurrent, maxItems int) *releaseIndex {

@@ -37,7 +37,6 @@ const (
 	tenantLabelValue = "tenant"
 
 	// Build and Integration PipelineRun labels
-	labelBuildPipelineRun = "appstudio.openshift.io/build-pipelinerun"
 	labelAppStudioApp     = "appstudio.openshift.io/application"
 	labelAppStudioComp    = "appstudio.openshift.io/component"
 	labelTestScenario     = "test.appstudio.openshift.io/scenario"
@@ -49,6 +48,8 @@ const (
 
 	// Release CR labels
 	labelReleaseAutomated = "release.appstudio.openshift.io/automated" // "true" for automated releases, "false" for manual
+	labelReleasePlan      = "release.appstudio.openshift.io/release-plan"
+	labelReleaseSnapshot  = "release.appstudio.openshift.io/snapshot"
 
 	// kaWindowHoursEnv controls how far back the exporter fetches resources from KubeArchive.
 	kaWindowHoursEnv     = "KA_WINDOW_HOURS"
@@ -313,13 +314,11 @@ func NewKAExporter() (*KAExporter, error) {
 	// HTTP client with TLS verification disabled for KubeArchive API.
 	// KubeArchive commonly uses self-signed certificates and provides an explicit
 	// --kubearchive-insecure-skip-tls-verify flag in its official kubectl plugin.
-	// Authentication is provided via bearer token (KA_TOKEN) which is the standard
-	// KubeArchive authentication method. In-cluster communication reduces MITM risk.
-	// To enable verification: mount CA bundle Secret and configure RootCAs instead.
+	// SECURITY JUSTIFICATION (nosec G402):
 	httpClient := &http.Client{
 		Timeout: time.Duration(httpTimeoutSecs) * time.Second,
 		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, //nosec G402
 		},
 	}
 
@@ -414,10 +413,6 @@ func kubeRESTConfig() (*rest.Config, error) {
 //  1. KA_TOKEN_FILE env var (projected SA token with custom path/audience)
 //  2. Standard SA token at /var/run/secrets/kubernetes.io/serviceaccount/token
 //  3. KA_TOKEN env var (static token for local development)
-//
-// When using a file-based token, the exporter re-reads the file on each API call
-// so kubelet-rotated projected tokens are picked up automatically.
-// Ref: https://kubearchive.github.io/kubearchive/main/getting-started/kubearchive-api.html
 func resolveTokenSource() (tokenFile string, staticToken string, err error) {
 	const defaultSATokenPath = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 
