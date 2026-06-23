@@ -1,6 +1,7 @@
 package main
 
 import (
+	"sort"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -8,34 +9,21 @@ import (
 
 // ReleaseSLO30d manages 30-day SLO metrics for releases
 type ReleaseSLO30d struct {
-	mean30d        *prometheus.GaugeVec
-	successRate30d *prometheus.GaugeVec
-	totalCount30d  *prometheus.GaugeVec
+	SLOGaugeSet
+	retryCount30d *prometheus.GaugeVec
 }
 
 // newReleaseSLO30d initializes release 30d SLO metrics
 func newReleaseSLO30d() *ReleaseSLO30d {
+	labels := []string{"cluster", "namespace", "application", "component", "automated"}
 	return &ReleaseSLO30d{
-		mean30d: prometheus.NewGaugeVec(
+		SLOGaugeSet: newSLOGaugeSet("konflux_release_cr", "Release CR", labels),
+		retryCount30d: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
-				Name: "konflux_release_cr_mean_duration_30d_seconds",
-				Help: "Mean Release CR duration over the past 30 days for successful releases only (completion-time based).",
+				Name: "konflux_release_cr_retry_count_30d",
+				Help: "Number of retries for this release intent (snapshot + releasePlan) over the past 30 days. 0 = original succeeded without retries.",
 			},
-			[]string{"cluster", "namespace", "application", "component", "event_type", "automated"},
-		),
-		successRate30d: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "konflux_release_cr_success_rate_30d",
-				Help: "Release CR success rate over the past 30 days (Released=True / total completed).",
-			},
-			[]string{"cluster", "namespace", "application", "component", "event_type", "automated"},
-		),
-		totalCount30d: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Name: "konflux_release_cr_total_count_30d",
-				Help: "Total count of completed Release CRs over the past 30 days (successful + failed).",
-			},
-			[]string{"cluster", "namespace", "application", "component", "event_type", "automated"},
+			[]string{"cluster", "namespace", "snapshot", "release_plan", "final_status"},
 		),
 	}
 }
@@ -46,25 +34,28 @@ func (m *ReleaseSLO30d) recordObservation(
 	cluster, namespace, application, component string,
 	rel Release,
 ) {
+	// Excludes in-progress releases (Status="False" + Reason="Progressing")
+	completed, succeeded, failureReason := releaseStatus(rel)
+
+	if !completed {
+		return // Skip in-progress releases
+	}
+
 	if rel.Status.CompletionTime == "" {
-		return
+		return // Additional safety check
 	}
 
 	completionTime, err := time.Parse(time.RFC3339, rel.Status.CompletionTime)
 	if err != nil {
 		return
 	}
-	start := rel.Status.StartTime
-	if start == "" {
-		start = rel.Metadata.CreationTimestamp
-	}
-	duration := secondsBetween(start, rel.Status.CompletionTime)
+	duration := secondsBetween(rel.Status.StartTime, rel.Status.CompletionTime)
 	if duration < 0 {
 		return
 	}
+	waitTime := secondsBetween(rel.Metadata.CreationTimestamp, rel.Status.StartTime)
 
-	// Extract event_type and automated labels
-	eventType := getLabel(rel, labelPACEventType, "unknown")
+	// Extract automated label
 	automated := getLabel(rel, labelReleaseAutomated, "unknown")
 
 	ls := LabelSet{
@@ -72,7 +63,6 @@ func (m *ReleaseSLO30d) recordObservation(
 		Namespace:   namespace,
 		Application: application,
 		Component:   component,
-		EventType:   eventType,
 		Automated:   automated,
 	}
 
@@ -87,7 +77,9 @@ func (m *ReleaseSLO30d) recordObservation(
 		completionTime,
 		ls,
 		duration,
-		isReleaseSucceeded(rel),
+		waitTime,
+		succeeded,
+		failureReason,
 	)
 }
 
@@ -112,34 +104,134 @@ func (m *ReleaseSLO30d) recordAllFromIndex(
 	}
 }
 
-// updateGauges reads from the rolling store and updates the 30d SLO gauges
-func (m *ReleaseSLO30d) updateGauges(store *Store) {
-	m.mean30d.Reset()
-	m.successRate30d.Reset()
-	m.totalCount30d.Reset()
+// releaseIntentGroup represents all Release CRs for a single intent (snapshot + releasePlan)
+type releaseIntentGroup struct {
+	Intent      releaseIntentKey
+	Releases    []Release
+	RetryCount  int
+	FinalStatus string
+}
 
-	store.ForEachWindow(metricReleaseDuration, func(ls LabelSet, window *MetricWindow) {
-		totalCount := window.ComputeTotalCount()
-		if totalCount == 0 {
-			return // no data in window — don't emit, don't misfire alerts
-		}
-		labels := []string{ls.Cluster, ls.Namespace, ls.Application, ls.Component, ls.EventType, ls.Automated}
-		m.mean30d.WithLabelValues(labels...).Set(window.ComputeSuccessMean())
-		m.successRate30d.WithLabelValues(labels...).Set(window.ComputeSuccessRate())
-		m.totalCount30d.WithLabelValues(labels...).Set(float64(totalCount))
+// sortReleasesByTimestamp sorts releases by creation timestamp (ascending)
+func sortReleasesByTimestamp(releases []Release) {
+	sort.Slice(releases, func(i, j int) bool {
+		ti, _ := time.Parse(time.RFC3339, releases[i].Metadata.CreationTimestamp)
+		tj, _ := time.Parse(time.RFC3339, releases[j].Metadata.CreationTimestamp)
+		return ti.Before(tj)
 	})
+}
+
+// buildReleaseIntentGroups groups releases by (namespace, snapshot, releasePlan) and computes retry counts
+func (m *ReleaseSLO30d) buildReleaseIntentGroups(releaseIdx *releaseIndex) map[releaseIntentKey]*releaseIntentGroup {
+	groups := make(map[releaseIntentKey]*releaseIntentGroup)
+
+	// Group releases by intent
+	for i := range releaseIdx.store {
+		entry := &releaseIdx.store[i]
+		rel := entry.Release
+
+		// Extract intent key
+		snapshot := resolveSnapshot(rel)
+		plan := resolveReleasePlan(rel)
+		namespace := entry.crNamespace
+		if namespace == "" {
+			namespace = rel.Metadata.Namespace
+		}
+
+		// Skip if missing intent data
+		if snapshot == "" || plan == "" {
+			continue
+		}
+
+		intent := releaseIntentKey{
+			Namespace:   namespace,
+			Snapshot:    snapshot,
+			ReleasePlan: plan,
+		}
+
+		// Create or append to group
+		if groups[intent] == nil {
+			groups[intent] = &releaseIntentGroup{
+				Intent:   intent,
+				Releases: []Release{},
+			}
+		}
+		groups[intent].Releases = append(groups[intent].Releases, rel)
+	}
+
+	// 30-day cutoff for retry metrics (align with rolling window)
+	cutoff := time.Now().UTC().AddDate(0, 0, -30)
+
+	// Process each group: sort and calculate retry count
+	for intent, group := range groups {
+		// Sort by creation timestamp
+		sortReleasesByTimestamp(group.Releases)
+
+		// Skip groups where most recent release completed >30 days ago
+		if len(group.Releases) > 0 {
+			mostRecent := group.Releases[len(group.Releases)-1]
+			if mostRecent.Status.CompletionTime != "" {
+				completionTime, err := time.Parse(time.RFC3339, mostRecent.Status.CompletionTime)
+				if err == nil && completionTime.Before(cutoff) {
+					delete(groups, intent)
+					continue
+				}
+			}
+		}
+
+		// Calculate retry count
+		group.RetryCount = len(group.Releases) - 1
+
+		// Determine final status (most recent attempt)
+		if len(group.Releases) > 0 {
+			mostRecent := group.Releases[len(group.Releases)-1]
+			completed, succeeded, failureReason := releaseStatus(mostRecent)
+			if !completed {
+				group.FinalStatus = "InProgress"
+			} else if succeeded {
+				group.FinalStatus = "Succeeded"
+			} else if failureReason != "" {
+				group.FinalStatus = "Failed"
+			} else {
+				group.FinalStatus = "Unknown"
+			}
+		}
+	}
+
+	return groups
+}
+
+// updateGauges reads from the rolling store and updates the 30d SLO gauges
+func (m *ReleaseSLO30d) updateGauges(store *Store, cluster string, releaseIdx *releaseIndex) {
+	m.SLOGaugeSet.UpdateFromStore(store, metricReleaseDuration, func(ls LabelSet) []string {
+		return []string{ls.Cluster, ls.Namespace, ls.Application, ls.Component, ls.Automated}
+	})
+
+	// Release-specific: retry count metrics
+	m.retryCount30d.Reset()
+	if releaseIdx != nil {
+		intentGroups := m.buildReleaseIntentGroups(releaseIdx)
+		for _, group := range intentGroups {
+			labels := []string{
+				cluster,
+				group.Intent.Namespace,
+				group.Intent.Snapshot,
+				group.Intent.ReleasePlan,
+				group.FinalStatus,
+			}
+			m.retryCount30d.WithLabelValues(labels...).Set(float64(group.RetryCount))
+		}
+	}
 }
 
 // Describe implements prometheus.Collector
 func (m *ReleaseSLO30d) Describe(ch chan<- *prometheus.Desc) {
-	m.mean30d.Describe(ch)
-	m.successRate30d.Describe(ch)
-	m.totalCount30d.Describe(ch)
+	m.SLOGaugeSet.Describe(ch)
+	m.retryCount30d.Describe(ch)
 }
 
 // Collect implements prometheus.Collector
 func (m *ReleaseSLO30d) Collect(ch chan<- prometheus.Metric) {
-	m.mean30d.Collect(ch)
-	m.successRate30d.Collect(ch)
-	m.totalCount30d.Collect(ch)
+	m.SLOGaugeSet.Collect(ch)
+	m.retryCount30d.Collect(ch)
 }

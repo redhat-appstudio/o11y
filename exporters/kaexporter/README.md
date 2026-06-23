@@ -45,28 +45,69 @@ After the first successful collection, the exporter switches to steady-state set
 
 All metrics are **Gauges** over a rolling 30-day window of daily aggregated buckets.
 
+### SLO Metrics (30-day rolling window)
+
 | Metric | Phase | Labels |
 |--------|-------|--------|
 | `konflux_build_mean_duration_30d_seconds` | build | `cluster, namespace, application, component, build_type, event_type` |
+| `konflux_build_mean_wait_30d_seconds` | build | `cluster, namespace, application, component, build_type, event_type` |
 | `konflux_build_success_rate_30d` | build | `cluster, namespace, application, component, build_type, event_type` |
+| `konflux_build_failure_rate_30d` | build | `cluster, namespace, application, component, build_type, event_type` |
 | `konflux_build_total_count_30d` | build | `cluster, namespace, application, component, build_type, event_type` |
+| `konflux_build_failure_count_30d` | build | `cluster, namespace, application, component, build_type, event_type, reason` |
 | `konflux_integration_mean_duration_30d_seconds` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type` |
+| `konflux_integration_mean_wait_30d_seconds` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type` |
 | `konflux_integration_success_rate_30d` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type` |
+| `konflux_integration_failure_rate_30d` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type` |
 | `konflux_integration_total_count_30d` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type` |
-| `konflux_release_cr_mean_duration_30d_seconds` | release | `cluster, namespace, application, component, event_type, automated` |
-| `konflux_release_cr_success_rate_30d` | release | `cluster, namespace, application, component, event_type, automated` |
-| `konflux_release_cr_total_count_30d` | release | `cluster, namespace, application, component, event_type, automated` |
+| `konflux_integration_failure_count_30d` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type, reason` |
+| `konflux_release_cr_mean_duration_30d_seconds` | release | `cluster, namespace, application, component, automated` |
+| `konflux_release_cr_mean_wait_30d_seconds` | release | `cluster, namespace, application, component, automated` |
+| `konflux_release_cr_success_rate_30d` | release | `cluster, namespace, application, component, automated` |
+| `konflux_release_cr_failure_rate_30d` | release | `cluster, namespace, application, component, automated` |
+| `konflux_release_cr_total_count_30d` | release | `cluster, namespace, application, component, automated` |
+| `konflux_release_cr_failure_count_30d` | release | `cluster, namespace, application, component, automated, reason` |
+| `konflux_release_retry_count_30d` | release | `cluster, namespace, snapshot, release_plan, final_status` |
 
-**Label key** (phase-specific labels only; `cluster`, `namespace`, `application`, `component`, `event_type` are common to all):
+**Metric definitions**:
+- **Duration metrics** (`mean_duration_30d_seconds`): Mean execution time for successful workloads (startTime to completionTime for PipelineRuns; startTime to completionTime for Releases)
+- **Wait metrics** (`mean_wait_30d_seconds`): Mean waiting time before execution starts (creationTimestamp to startTime). Useful for identifying scheduling delays and resource constraints.
+- **Success rate** (`success_rate_30d`): Ratio of successful workloads to total completed (0.0 to 1.0)
+- **Error rate** (`failure_rate_30d`): Ratio of failed workloads to total completed (0.0 to 1.0). Inverse of success rate.
+- **Total count** (`total_count_30d`): Count of all completed workloads (successful + failed) in the rolling window
+- **Failure count** (`failure_count_30d`): Count of failed workloads, broken down by failure reason. Useful for root cause analysis.
+- **Retry count** (`konflux_release_retry_count_30d`): Number of retries for each release intent (snapshot + releasePlan combination). Value is the count of additional attempts beyond the original (0 = no retries, 1 = one retry, etc.). Grouped by intent rather than individual Release CR to track how many times a specific release was retried.
 
-| Label | Source | Values |
-|-------|--------|--------|
-| `build_type` | `tekton.dev/pipeline` label | `docker-builds`, `docker-multi-arch-builds`, `bundle-builds`, `operator-builds`, `operator-bundle-builds`, `fbc-builds`, `rpm-builds`, `standard-builds`, `custom-builds` |
-| `event_type` | `pipelinesascode.tekton.dev/event-type` (builds) / `pac.test.appstudio.openshift.io/event-type` (tests, releases) | `push`, `pull_request`, `incoming`, `retest-comment`, `retest-all-comment` |
-| `scenario` | `test.appstudio.openshift.io/scenario` | Integration test scenario name |
-| `optional` | `test.appstudio.openshift.io/optional` | `true` (non-blocking), `false` (required) |
-| `test_type` | Derived from pipeline labels | `ec` (Enterprise Contract), `integration` |
-| `automated` | `release.appstudio.openshift.io/automated` | `true`, `false` |
+**Failure Reasons**:
+
+For PipelineRuns (builds and integration tests):
+- `CouldntGetPipeline` - Failed to fetch pipeline definition
+- `CouldntGetTask` - Failed to fetch task definition
+- `CreateRunFailed` - Pipeline run creation failed
+- `PipelineRunTimeout` - Execution exceeded timeout
+- `Failed` - Generic pipeline failure
+- `Unknown` - Failure with no reason specified
+
+For Releases:
+- `Failed` - Release failed
+- `Skipped` - Release was skipped
+- `Unknown` - Failure with no reason specified
+
+**Note**: Releases with `Status="False"` and `Reason="Progressing"` are excluded from all metrics (not counted in total, success, or failure) as they represent in-progress releases, not completed ones.
+
+**Label key** (phase-specific labels only; `cluster`, `namespace`, `application`, `component` are common to all):
+
+| Label | Source | Values | Applies to |
+|-------|--------|--------|------------|
+| `build_type` | `tekton.dev/pipeline` label | `docker-builds`, `docker-multi-arch-builds`, `bundle-builds`, `operator-builds`, `operator-bundle-builds`, `fbc-builds`, `rpm-builds`, `standard-builds`, `custom-builds` | build only |
+| `event_type` | `pipelinesascode.tekton.dev/event-type` (builds) / `pac.test.appstudio.openshift.io/event-type` (integration) | `push`, `pull_request`, `incoming`, `retest-comment`, `retest-all-comment` | build, integration only |
+| `scenario` | `test.appstudio.openshift.io/scenario` | Integration test scenario name | integration only |
+| `optional` | `test.appstudio.openshift.io/optional` | `true` (non-blocking), `false` (required) | integration only |
+| `test_type` | Derived from pipeline labels | `ec` (Enterprise Contract), `integration` | integration only |
+| `automated` | `release.appstudio.openshift.io/automated` | `true`, `false` | release only |
+| `snapshot` | `release.appstudio.openshift.io/snapshot` label or `spec.snapshot` field | Snapshot name | release (retry count only) |
+| `release_plan` | `spec.releasePlan` field | Release plan name | release (retry count only) |
+| `final_status` | Derived from most recent attempt | `Succeeded`, `Failed`, `Unknown` | release (retry count only) |
 
 **Self-monitoring**:
 
@@ -104,25 +145,10 @@ go test -mod=mod -count=1 ./exporters/kaexporter/...
 
 ---
 
-## Deploy
-
-Manifests: `config/exporters/monitoring/kaexporter/base/`
-
-```bash
-oc apply -k config/exporters/monitoring/kaexporter/base/
-```
-
-**Deployment requirements**:
-- `KA_HOST` and `KA_TOKEN` must be set (see table above)
-- `KA_COLLECT_INTERVAL_SECONDS` should match the Prometheus scrape interval
-
----
-
 ## Endpoints
 
 | Path | Description |
 |------|-------------|
 | `/metrics` | Prometheus metrics (instant read from cached state) |
-| `/health` | Liveness check (always returns `200 OK`) — deprecated, use `/healthz` |
 | `/healthz` | Liveness check (always returns `200 OK`) |
 | `/readyz` | Readiness check (returns `503` if last successful scrape is stale) |
