@@ -64,7 +64,7 @@ func (m *ReleaseSLO30d) recordObservation(
 	}
 
 	// Extract event_type and automated labels
-	eventType := getLabel(rel, labelReleaseEventType, "unknown")
+	eventType := getLabel(rel, labelPACEventType, "unknown")
 	automated := getLabel(rel, labelReleaseAutomated, "unknown")
 
 	ls := LabelSet{
@@ -119,13 +119,14 @@ func (m *ReleaseSLO30d) updateGauges(store *Store) {
 	m.totalCount30d.Reset()
 
 	store.ForEachWindow(metricReleaseDuration, func(ls LabelSet, window *MetricWindow) {
-		if window.TotalCount() == 0 {
+		totalCount := window.ComputeTotalCount()
+		if totalCount == 0 {
 			return // no data in window — don't emit, don't misfire alerts
 		}
 		labels := []string{ls.Cluster, ls.Namespace, ls.Application, ls.Component, ls.EventType, ls.Automated}
 		m.mean30d.WithLabelValues(labels...).Set(window.ComputeSuccessMean())
 		m.successRate30d.WithLabelValues(labels...).Set(window.ComputeSuccessRate())
-		m.totalCount30d.WithLabelValues(labels...).Set(float64(window.ComputeTotalCount()))
+		m.totalCount30d.WithLabelValues(labels...).Set(float64(totalCount))
 	})
 }
 

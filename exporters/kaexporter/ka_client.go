@@ -17,26 +17,19 @@ import (
 
 // ── Retry logic with exponential backoff ─────────────────────────────────────
 
-// retryableHTTP wraps HTTP requests with exponential backoff retry logic.
-// Retries on transient errors: network failures, 429 (rate limit), 5xx (server errors).
-// Does NOT retry on permanent errors: 4xx (except 429), context cancellation.
-//
-// IMPORTANT: Only supports requests without bodies (GET, HEAD, etc.).
-// Requests with bodies cannot be safely retried (body is consumed on first attempt).
+// retryableHTTP retries transient errors (network, 429, 5xx) with exponential backoff.
+// Only supports requests without bodies (GET, HEAD).
 func (e *KAExporter) retryableHTTP(ctx context.Context, req *http.Request) (*http.Response, error) {
-	// Safety check: requests with bodies cannot be retried
 	if req.Body != nil && req.Body != http.NoBody {
 		return nil, fmt.Errorf("retryableHTTP does not support requests with bodies (body consumed on first attempt)")
 	}
 
-	var lastResp *http.Response
 	var lastErr error
-	var lastReason string // Preserve classification reason for final metrics
+	var lastReason string // for final metrics
 
 	delay := e.retry.initialDelay
 
 	for attempt := 0; attempt <= e.retry.maxRetries; attempt++ {
-		// Apply exponential backoff delay (skip on first attempt)
 		if attempt > 0 {
 			// Add jitter (±25%) to prevent thundering herd
 			jitter := time.Duration(rand.Int63n(int64(delay) / 2))
@@ -48,7 +41,6 @@ func (e *KAExporter) retryableHTTP(ctx context.Context, req *http.Request) (*htt
 				return nil, fmt.Errorf("context cancelled during retry backoff: %w", ctx.Err())
 			}
 
-			// Exponential backoff: multiply delay for next iteration
 			delay = time.Duration(float64(delay) * e.retry.multiplier)
 			if delay > e.retry.maxDelay {
 				delay = e.retry.maxDelay
@@ -63,14 +55,13 @@ func (e *KAExporter) retryableHTTP(ctx context.Context, req *http.Request) (*htt
 			return resp, nil
 		}
 
-		// Non-retryable 4xx errors (except 429 rate limit)
 		if err == nil && resp.StatusCode >= 400 && resp.StatusCode < 500 && resp.StatusCode != 429 {
 			return resp, nil // Return immediately, caller will handle
 		}
 
 		// Check if error/response is retryable
 		reason, retryable := classifyError(err, resp)
-		lastReason = reason // Preserve reason before draining response
+		lastReason = reason
 
 		if !retryable {
 			// Permanent error, don't retry
@@ -80,17 +71,14 @@ func (e *KAExporter) retryableHTTP(ctx context.Context, req *http.Request) (*htt
 			return nil, err
 		}
 
-		// Close response body before retry (prevent leak)
+		// Drain and close body before retry
 		if resp != nil {
 			io.Copy(io.Discard, resp.Body) // Drain body
 			resp.Body.Close()
-			lastResp = nil // Don't return this response (but lastReason is preserved)
 		}
 
-		// Track retry attempt
 		e.retryAttemptsTotal.WithLabelValues(e.cluster, reason).Inc()
 
-		// Log retry (only after first failure)
 		if attempt < e.retry.maxRetries {
 			log.Printf("KubeArchive API retry %d/%d for %s: %s (delay: %v)",
 				attempt+1, e.retry.maxRetries, req.URL.Path, reason, delay)
@@ -104,9 +92,6 @@ func (e *KAExporter) retryableHTTP(ctx context.Context, req *http.Request) (*htt
 
 	if lastErr != nil {
 		return nil, fmt.Errorf("max retries (%d) exhausted: %w", e.retry.maxRetries, lastErr)
-	}
-	if lastResp != nil {
-		return lastResp, fmt.Errorf("max retries (%d) exhausted, status: %d", e.retry.maxRetries, lastResp.StatusCode)
 	}
 	return nil, fmt.Errorf("max retries (%d) exhausted", e.retry.maxRetries)
 }
@@ -151,8 +136,9 @@ func classifyError(err error, resp *http.Response) (string, bool) {
 	return "unknown", false
 }
 
-// pageURL appends pagination parameters and an optional creation-timestamp filter to base.
-func pageURL(base, continueToken, since string) (string, error) {
+// pageURL appends pagination parameters and optional creation-timestamp filters to base.
+// since sets creationTimestampAfter, until sets creationTimestampBefore (for gap-filling).
+func pageURL(base, continueToken, since, until string) (string, error) {
 	u, err := url.Parse(base)
 	if err != nil {
 		return "", err
@@ -165,6 +151,9 @@ func pageURL(base, continueToken, since string) (string, error) {
 	if since != "" {
 		q.Set("creationTimestampAfter", since)
 	}
+	if until != "" {
+		q.Set("creationTimestampBefore", until)
+	}
 	u.RawQuery = q.Encode()
 	return u.String(), nil
 }
@@ -175,7 +164,12 @@ func (e *KAExporter) fetchPage(ctx context.Context, pageURL string) ([]byte, int
 	if err != nil {
 		return nil, 0, err
 	}
-	req.Header.Set("Authorization", "Bearer "+e.kaToken)
+
+	token, err := e.bearerToken()
+	if err != nil {
+		return nil, 0, err
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
 
 	resp, err := e.retryableHTTP(ctx, req)
 	if err != nil {
@@ -187,79 +181,150 @@ func (e *KAExporter) fetchPage(ctx context.Context, pageURL string) ([]byte, int
 	return body, resp.StatusCode, err
 }
 
+// bearerToken returns the current KubeArchive bearer token.
+// If kaTokenFile is set, re-reads on each call to support kubelet-rotated projected tokens.
+// Otherwise returns the static kaToken value.
+func (e *KAExporter) bearerToken() (string, error) {
+	if e.kaTokenFile != "" {
+		return readTokenFromFile(e.kaTokenFile)
+	}
+	return e.kaToken, nil
+}
+
 // streamPLRs fetches PipelineRuns page-by-page, calling fn once per page.
-// since is an RFC3339 timestamp passed as creationTimestampAfter to KubeArchive,
-// limiting results to the configured look-back window (KA_WINDOW_HOURS).
-// KubeArchive returns items newest-first; callers may rely on this ordering.
-// fn receives the page slice and must not retain references beyond its return.
-func (e *KAExporter) streamPLRs(ctx context.Context, baseURL, since, namespace string, maxItems int, fn func(page []PipelineRun)) error {
+// since/until are RFC3339 timestamps for creationTimestampAfter/Before filters.
+// KubeArchive returns items newest-first
+// oldestCreationTimestamp is the Metadata.CreationTimestamp of the last item seen.
+func (e *KAExporter) streamPLRs(ctx context.Context, baseURL, since, until, namespace string, maxItems int, fn func(page []PipelineRun)) (bool, string, error) {
 	continueToken := ""
 	total := 0
+	var oldestCreationTS string // Track oldest item's creation timestamp
+	wasTruncated := false
+
 	for {
-		u, err := pageURL(baseURL, continueToken, since)
+		u, err := pageURL(baseURL, continueToken, since, until)
 		if err != nil {
-			return err
+			return false, "", fmt.Errorf("build page URL for %s: %w", baseURL, err)
 		}
 		body, status, err := e.fetchPage(ctx, u)
 		if err != nil {
-			return err
+			return false, "", fmt.Errorf("fetch page from %s: %w", baseURL, err)
 		}
 		if status != http.StatusOK {
-			return fmt.Errorf("API returned status %d: %s", status, string(body))
+			msg := string(body)
+			if len(msg) > 1024 {
+				msg = msg[:1024] + "..."
+			}
+			return false, "", fmt.Errorf("API returned status %d: %s", status, msg)
 		}
 		var page ListResponse
 		if err := json.Unmarshal(body, &page); err != nil {
-			return err
+			return false, "", fmt.Errorf("unmarshal PLR page from %s: %w", baseURL, err)
 		}
-		fn(page.Items)
-		total += len(page.Items)
-		if total >= maxItems {
-			log.Printf("WARNING: streamPLRs %s: reached maxItems cap (%d); "+
-				"results may be incomplete", baseURL, maxItems)
+
+		remaining := maxItems - total
+		if remaining <= 0 {
+			// Scenario 1: Boundary hit - fetched page but already at cap
+			log.Printf("WARNING: streamPLRs %s: reached maxItems cap (%d) on boundary; stopping",
+				baseURL, maxItems)
 			e.truncationsTotal.WithLabelValues(e.cluster, "pipelineruns", namespace).Inc()
+			wasTruncated = true
 			break
 		}
+
+		items := page.Items
+		truncated := false
+
+		if len(items) > remaining {
+			items = items[:remaining]
+			truncated = true
+		}
+
+		// Track oldest creation timestamp before processing
+		if len(items) > 0 {
+			oldestCreationTS = items[len(items)-1].Metadata.CreationTimestamp
+		}
+
+		fn(items)
+		total += len(items)
+
+		if truncated {
+			// Scenario 2: Partial page - processed some, dropped rest
+			log.Printf("WARNING: streamPLRs %s: reached maxItems cap (%d); processed partial page (%d/%d items)",
+				baseURL, maxItems, remaining, len(page.Items))
+			e.truncationsTotal.WithLabelValues(e.cluster, "pipelineruns", namespace).Inc()
+			wasTruncated = true
+			break
+		}
+
 		if page.Metadata.Continue == "" {
 			break
 		}
+
 		continueToken = page.Metadata.Continue
 		log.Printf("streamPLRs %s: processed %d items, continuing (token len=%d)",
 			baseURL, total, len(continueToken))
 	}
-	return nil
+	return wasTruncated, oldestCreationTS, nil
 }
 
 // fetchReleases fetches all Release CRs from a KubeArchive endpoint with pagination.
-// since limits results to the configured look-back window (KA_WINDOW_HOURS).
+// since limits results to the configured look-back window.
 func (e *KAExporter) fetchReleases(ctx context.Context, baseURL, since, namespace string, maxItems int) ([]Release, error) {
 	var all []Release
 	continueToken := ""
 	for {
-		u, err := pageURL(baseURL, continueToken, since)
+		u, err := pageURL(baseURL, continueToken, since, "")
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("build page URL for %s: %w", baseURL, err)
 		}
 		body, status, err := e.fetchPage(ctx, u)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("fetch page from %s: %w", baseURL, err)
 		}
 		if status != http.StatusOK {
-			return nil, fmt.Errorf("API returned status %d: %s", status, string(body))
+			msg := string(body)
+			if len(msg) > 1024 {
+				msg = msg[:1024] + "..."
+			}
+			return nil, fmt.Errorf("API returned status %d: %s", status, msg)
 		}
 		var page ReleaseListResponse
 		if err := json.Unmarshal(body, &page); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("unmarshal Release page from %s: %w", baseURL, err)
 		}
-		all = append(all, page.Items...)
-		if len(all) >= maxItems {
-			log.Printf("WARNING: fetchReleases %s: reached maxItems cap (%d); "+
-				"results may be incomplete", baseURL, maxItems)
+
+		remaining := maxItems - len(all)
+		if remaining <= 0 {
+			// Scenario 1: Boundary hit - fetched page but already at cap
+			log.Printf("WARNING: fetchReleases %s: reached maxItems cap (%d) on boundary; stopping",
+				baseURL, maxItems)
 			e.truncationsTotal.WithLabelValues(e.cluster, "releases", namespace).Inc()
 			break
 		}
+
+		items := page.Items
+		truncated := false
+
+		if len(items) > remaining {
+			items = items[:remaining]
+			truncated = true
+		}
+
+		all = append(all, items...)
+
+		if truncated {
+			// Scenario 2: Partial page - appended some, dropped rest
+			log.Printf("WARNING: fetchReleases %s: reached maxItems cap (%d); processed partial page (%d/%d items)",
+				baseURL, maxItems, remaining, len(page.Items))
+			e.truncationsTotal.WithLabelValues(e.cluster, "releases", namespace).Inc()
+			break
+		}
+
 		if page.Metadata.Continue == "" {
 			break
 		}
+
 		continueToken = page.Metadata.Continue
 		log.Printf("fetchReleases %s: fetched %d items so far, continuing (token len=%d)",
 			baseURL, len(all), len(continueToken))

@@ -7,24 +7,18 @@ import (
 	"time"
 )
 
-// LabelSet identifies a metric label combination.
-// Scenario is optional (empty for builds/releases, populated for integration/EC tests).
-// EventType is optional (populated for builds, integration tests, and releases).
-// BuildType is optional (populated for builds only, derived from tekton.dev/pipeline label).
-// Optional is optional (populated for integration tests only, indicates if test can fail without blocking release).
-// TestType is optional (empty for builds/releases, "integration" or "ec" for tests).
-// Automated is optional (populated for releases only, "true" if automated, "false" if manual).
+// LabelSet identifies a metric label combination (see field comments for optionality).
 type LabelSet struct {
 	Cluster     string `json:"cluster"`
 	Namespace   string `json:"namespace"`
 	Application string `json:"application"`
 	Component   string `json:"component"`
-	Scenario    string `json:"scenario,omitempty"`   // Empty for builds/releases, populated for integration/EC
-	EventType   string `json:"event_type,omitempty"`  // Populated for builds, integration tests, and releases (e.g., "push", "Merge_Request", "incoming")
-	BuildType   string `json:"build_type,omitempty"`  // Empty for non-builds, populated for builds (e.g., "container", "fbc", "rpm", "bundle", "standard", "custom")
-	Optional    string `json:"optional,omitempty"`    // Empty for non-integration-tests, "true" if test is optional (can fail without blocking release)
-	TestType    string `json:"test_type,omitempty"`   // Empty for builds/releases, "integration" or "ec" for test PLRs
-	Automated   string `json:"automated,omitempty"`   // Empty for builds/tests, "true" if release is automated, "false" if manual
+	Scenario    string `json:"scenario,omitempty"`   // integration tests
+	EventType   string `json:"event_type,omitempty"` // builds, integration tests, and releases
+	BuildType   string `json:"build_type,omitempty"` // builds
+	Optional    string `json:"optional,omitempty"`   // integration tests
+	TestType    string `json:"test_type,omitempty"`  // integration tests
+	Automated   string `json:"automated,omitempty"`  // "true" if release is automated, "false" if manual
 }
 
 func (l LabelSet) String() string {
@@ -58,10 +52,9 @@ func (l LabelSet) String() string {
 // DailyBucket holds per-day aggregates for one label set.
 type DailyBucket struct {
 	Day               string  `json:"day"`
-	SumSeconds        float64 `json:"sum_seconds"`         // Total duration sum (all completed PLRs)
-	Count             int64   `json:"count"`               // Total count (all completed PLRs)
-	SuccessCount      int64   `json:"success_count"`       // Count of successful PLRs only
-	SuccessSumSeconds float64 `json:"success_sum_seconds"` // Duration sum of successful PLRs only
+	Count             int64   `json:"count"`               // All completed PLRs
+	SuccessCount      int64   `json:"success_count"`       // Count of successful PLRs
+	SuccessSumSeconds float64 `json:"success_sum_seconds"` // Duration sum of successful PLRs
 }
 
 // MetricWindow is a fixed 30-day circular buffer indexed by day offset.
@@ -84,8 +77,7 @@ func NewStore() *Store {
 	}
 }
 
-// RecordObservation adds one completed workload to the bucket for completionTime's UTC day.
-// Returns false if dedupeKey was already recorded (cross-scrape duplicate).
+// RecordObservation adds one observation to its day bucket.
 func (s *Store) RecordObservation(
 	metricName, dedupeKey string,
 	completionTime time.Time,
@@ -115,16 +107,14 @@ func (s *Store) RecordObservation(
 	window := s.getOrCreateLocked(metricName, labelSet)
 	bucket := &window.Buckets[29-dayOffset]
 
-	// Bug fix: Reset stale bucket slot before reuse
-	today := bucketDay.Format("2006-01-02")
-	if bucket.Day != "" && bucket.Day != today {
+	completionDay := bucketDay.Format("2006-01-02")
+	if bucket.Day != "" && bucket.Day != completionDay {
 		*bucket = DailyBucket{} // Clear stale 30-day-old data
 	}
 	if bucket.Day == "" {
-		bucket.Day = today
+		bucket.Day = completionDay
 	}
 
-	bucket.SumSeconds += durationSeconds
 	bucket.Count++
 	if succeeded {
 		bucket.SuccessCount++
@@ -135,7 +125,6 @@ func (s *Store) RecordObservation(
 
 // ComputeSuccessMean returns the mean duration for successful PLRs only.
 // Skips stale buckets (older than 30 days from today).
-// This is the metric used for SLO reporting.
 func (w *MetricWindow) ComputeSuccessMean() float64 {
 	cutoff := time.Now().UTC().AddDate(0, 0, -30).Format("2006-01-02")
 	var sum float64
@@ -171,29 +160,14 @@ func (w *MetricWindow) ComputeSuccessRate() float64 {
 	return float64(success) / float64(count)
 }
 
-// ComputeTotalCount returns the total Count across all buckets.
-// Skips stale buckets (older than 30 days from today).
+// ComputeTotalCount returns the total Count across all fresh buckets (within 30 days).
+// Used for both empty window detection and total_count_30d gauge.
 func (w *MetricWindow) ComputeTotalCount() int64 {
 	cutoff := time.Now().UTC().AddDate(0, 0, -30).Format("2006-01-02")
 	var count int64
 	for i := range w.Buckets {
 		if w.Buckets[i].Day == "" || w.Buckets[i].Day <= cutoff {
 			continue
-		}
-		count += w.Buckets[i].Count
-	}
-	return count
-}
-
-// TotalCount returns the total count across all FRESH buckets (within 30 days).
-// Used to detect empty windows (no data to emit).
-// Skips stale buckets using the same cutoff logic as ComputeMean/ComputeSuccessRate.
-func (w *MetricWindow) TotalCount() int64 {
-	cutoff := time.Now().UTC().AddDate(0, 0, -30).Format("2006-01-02")
-	var count int64
-	for i := range w.Buckets {
-		if w.Buckets[i].Day == "" || w.Buckets[i].Day <= cutoff {
-			continue // Skip empty or stale buckets
 		}
 		count += w.Buckets[i].Count
 	}

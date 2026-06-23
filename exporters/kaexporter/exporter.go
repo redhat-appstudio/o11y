@@ -36,26 +36,19 @@ const (
 	tenantLabelKey   = "konflux-ci.dev/type"
 	tenantLabelValue = "tenant"
 
-	// Build and Integration PipelineRun
+	// Build and Integration PipelineRun labels
 	labelBuildPipelineRun = "appstudio.openshift.io/build-pipelinerun"
 	labelAppStudioApp     = "appstudio.openshift.io/application"
 	labelAppStudioComp    = "appstudio.openshift.io/component"
 	labelTestScenario     = "test.appstudio.openshift.io/scenario"
-	labelTestOptional     = "test.appstudio.openshift.io/optional"    // "true" if test can fail without blocking release
-	labelEventType        = "pipelinesascode.tekton.dev/event-type"   // Event type for builds
-	labelTestEventType    = "pac.test.appstudio.openshift.io/event-type" // Event type for integration tests
-	// Used as an annotation on the build PLR after Snapshot creation; also a label on test and releae PLRs.
-	labelOrAnnotationSnapshot = "appstudio.openshift.io/snapshot"
-
-	// Release PipelineRun
-	labelAppStudioService          = "appstudio.openshift.io/service"
-	labelPipelinesType             = "pipelines.appstudio.openshift.io/type"
-	labelReleaseApplicationNS      = "release.appstudio.openshift.io/namespace"
-	labelTektonPipeline            = "tekton.dev/pipeline"
+	labelTestOptional     = "test.appstudio.openshift.io/optional"         // "true" if test can fail without blocking release
+	labelEventType        = "pipelinesascode.tekton.dev/event-type"        // Event type for builds
+	labelPACEventType     = "pac.test.appstudio.openshift.io/event-type"   // Shared PAC event type label, used by both integration tests and releases
+	labelPipelinesType    = "pipelines.appstudio.openshift.io/type"
+	labelTektonPipeline   = "tekton.dev/pipeline"
 
 	// Release CR labels
-	labelReleaseEventType = "pac.test.appstudio.openshift.io/event-type" // Event type inherited from build (e.g., "push", "incoming")
-	labelReleaseAutomated = "release.appstudio.openshift.io/automated"   // "true" for automated releases, "false" for manual
+	labelReleaseAutomated = "release.appstudio.openshift.io/automated"     // "true" for automated releases, "false" for manual
 
 	// kaWindowHoursEnv controls how far back the exporter fetches resources from KubeArchive.
 	kaWindowHoursEnv     = "KA_WINDOW_HOURS"
@@ -116,23 +109,20 @@ type retryConfig struct {
 
 // KAExporter collects metrics from KubeArchive
 type KAExporter struct {
-	kaHost     string
-	kaToken    string
-	cluster    string
-	httpClient *http.Client
+	kaHost      string
+	kaToken     string // Static token (local dev only; empty when using file-based token)
+	kaTokenFile string // Path to projected SA token file (re-read on each request for rotation)
+	cluster     string
+	httpClient  *http.Client
 
 	// mu guards the Reset()+Set() sequence in runCollection() from concurrent Collect() reads.
 	// runCollection() holds the write lock for the entire gauge reset+populate cycle.
 	// Collect() holds the read lock while emitting cached metric state — no I/O.
 	mu sync.RWMutex
 
-	// windowHours is the base look-back window from KA_WINDOW_HOURS env var (e.g., 48)
-	windowHours int
-
 	// queryWindowHours is the actual query window used for KubeArchive API calls.
-	// Includes safety margin to catch long-running pipelines:
-	// queryWindowHours = windowHours + (windowHours / 2)
-	// Example: KA_WINDOW_HOURS=48 → queryWindowHours=72
+	// Computed from KA_WINDOW_HOURS env var with 50% safety margin.
+	// Example: KA_WINDOW_HOURS=24 → queryWindowHours=36 (24 + 12)
 	queryWindowHours int
 
 	// dedupeRetentionHours is the retention for SeenKeys deduplication map.
@@ -195,9 +185,9 @@ func NewKAExporter() (*KAExporter, error) {
 		return nil, fmt.Errorf("missing required environment variable: %s", kaHostEnvVar)
 	}
 
-	kaToken := os.Getenv(kaTokenEnvVar)
-	if kaToken == "" {
-		return nil, fmt.Errorf("missing required environment variable: %s", kaTokenEnvVar)
+	kaTokenFile, kaToken, err := resolveTokenSource()
+	if err != nil {
+		return nil, err
 	}
 
 	cluster := os.Getenv(clusterEnvVar)
@@ -225,7 +215,7 @@ func NewKAExporter() (*KAExporter, error) {
 	// Example: queryWindowHours=72 → dedupeRetentionHours=108
 	dedupeRetentionHours := int(float64(queryWindowHours) * 1.5)
 
-	log.Printf("Query window configuration: KA_WINDOW_HOURS=%d, safety_margin=%dh, query_window=%dh, dedupe_retention=%dh",
+	log.Printf("Query window configuration: base_window=%dh, safety_margin=%dh, query_window=%dh, dedupe_retention=%dh",
 		windowHours, safetyMarginHours, queryWindowHours, dedupeRetentionHours)
 
 	collectionTimeoutSecs := defaultCollectionTimeoutSecs
@@ -323,8 +313,8 @@ func NewKAExporter() (*KAExporter, error) {
 	e := &KAExporter{
 		kaHost:               kaHost,
 		kaToken:              kaToken,
+		kaTokenFile:          kaTokenFile,
 		cluster:              cluster,
-		windowHours:          windowHours,
 		queryWindowHours:     queryWindowHours,
 		dedupeRetentionHours: dedupeRetentionHours,
 		maxConcurrent:        maxConcurrent,
@@ -403,4 +393,48 @@ func kubeRESTConfig() (*rest.Config, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, &clientcmd.ConfigOverrides{})
 	return kubeConfig.ClientConfig()
+}
+
+// resolveTokenSource determines the KubeArchive API token source at startup.
+// Returns the file path to read tokens from, or empty string if using static env var.
+// Priority:
+//  1. KA_TOKEN_FILE env var (projected SA token with custom path/audience)
+//  2. Standard SA token at /var/run/secrets/kubernetes.io/serviceaccount/token
+//  3. KA_TOKEN env var (static token for local development)
+//
+// When using a file-based token, the exporter re-reads the file on each API call
+// so kubelet-rotated projected tokens are picked up automatically.
+// Ref: https://kubearchive.github.io/kubearchive/main/getting-started/kubearchive-api.html
+func resolveTokenSource() (tokenFile string, staticToken string, err error) {
+	const defaultSATokenPath = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+
+	if f := strings.TrimSpace(os.Getenv("KA_TOKEN_FILE")); f != "" {
+		if _, statErr := os.Stat(f); statErr == nil {
+			log.Printf("Using projected token file %s for KubeArchive API authentication", f)
+			return f, "", nil
+		}
+		return "", "", fmt.Errorf("KA_TOKEN_FILE=%q specified but file does not exist", f)
+	}
+
+	if _, statErr := os.Stat(defaultSATokenPath); statErr == nil {
+		log.Printf("Using ServiceAccount token from %s for KubeArchive API authentication", defaultSATokenPath)
+		return defaultSATokenPath, "", nil
+	}
+
+	if token := os.Getenv(kaTokenEnvVar); token != "" {
+		log.Printf("Using KA_TOKEN environment variable for KubeArchive API authentication (local dev mode)")
+		return "", token, nil
+	}
+
+	return "", "", fmt.Errorf("no KubeArchive API token found: set KA_TOKEN_FILE, mount SA token, or set %s", kaTokenEnvVar)
+}
+
+// readTokenFromFile reads and trims a bearer token from the given path.
+// Called on each API request to pick up kubelet-rotated projected tokens.
+func readTokenFromFile(path string) (string, error) {
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("read token file %s: %w", path, err)
+	}
+	return strings.TrimSpace(string(b)), nil
 }

@@ -64,8 +64,6 @@ func (m *IntegrationSLO30d) recordObservation(
 	optional := getLabel(plr, labelTestOptional, "false")
 
 	// Detect Enterprise Contract (EC) vs regular integration tests.
-	// EC tests have tekton.dev/pipeline=enterprise-contract.
-	// Both EC and integration tests have type=test, so we must check the pipeline name.
 	pipelineName := getLabel(plr, labelTektonPipeline, "")
 	testType := "integration"
 	if pipelineName == "enterprise-contract" {
@@ -73,7 +71,7 @@ func (m *IntegrationSLO30d) recordObservation(
 	}
 
 	// Extract event type from test PipelineRun
-	eventType := getLabel(plr, labelTestEventType, "unknown")
+	eventType := getLabel(plr, labelPACEventType, "unknown")
 
 	ls := LabelSet{
 		Cluster:     cluster,
@@ -103,13 +101,14 @@ func (m *IntegrationSLO30d) updateGauges(store *Store) {
 	m.totalCount30d.Reset()
 
 	store.ForEachWindow(metricIntegrationDuration, func(ls LabelSet, window *MetricWindow) {
-		if window.TotalCount() == 0 {
+		totalCount := window.ComputeTotalCount()
+		if totalCount == 0 {
 			return // no data in window — don't emit, don't misfire alerts
 		}
 		labels := []string{ls.Cluster, ls.Namespace, ls.Application, ls.Component, ls.Scenario, ls.Optional, ls.TestType, ls.EventType}
 		m.mean30d.WithLabelValues(labels...).Set(window.ComputeSuccessMean())
 		m.successRate30d.WithLabelValues(labels...).Set(window.ComputeSuccessRate())
-		m.totalCount30d.WithLabelValues(labels...).Set(float64(window.ComputeTotalCount()))
+		m.totalCount30d.WithLabelValues(labels...).Set(float64(totalCount))
 	})
 }
 
