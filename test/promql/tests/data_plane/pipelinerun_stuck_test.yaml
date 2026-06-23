@@ -159,10 +159,61 @@ tests:
               team: integration
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/plr_stuck_with_integration_finalizer.md
 
-  # Test 6: Release finalizer — stuck PipelineRun fires alert
+  # Test 6: Release finalizer — 1 stuck PipelineRun for >30m, count below threshold, no alert
   - interval: 1m
     input_series:
-      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-stuck", namespace="tenant-ns", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]"}
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-stuck", namespace="tenant-ns", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '1+0x50'
+
+    alert_rule_test:
+      - eval_time: 45m
+        alertname: PipelineRunStuckWithReleaseFinalizer
+        exp_alerts: []
+
+  # Test 6b: Release finalizer — 21 stuck PipelineRuns for >30m, alert fires with count=21
+  - interval: 1m
+    input_series:
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-stuck-1", namespace="tenant-ns-1", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-stuck-2", namespace="tenant-ns-2", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-stuck-3", namespace="tenant-ns-3", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-stuck-4", namespace="tenant-ns-4", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-stuck-5", namespace="tenant-ns-5", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-stuck-6", namespace="tenant-ns-6", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-stuck-7", namespace="tenant-ns-7", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-stuck-8", namespace="tenant-ns-8", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-stuck-9", namespace="tenant-ns-9", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-stuck-10", namespace="tenant-ns-10", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-stuck-11", namespace="tenant-ns-11", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-stuck-12", namespace="tenant-ns-12", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-stuck-13", namespace="tenant-ns-13", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-stuck-14", namespace="tenant-ns-14", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-stuck-15", namespace="tenant-ns-15", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-stuck-16", namespace="tenant-ns-16", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-stuck-17", namespace="tenant-ns-17", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-stuck-18", namespace="tenant-ns-18", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-stuck-19", namespace="tenant-ns-19", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-stuck-20", namespace="tenant-ns-20", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-stuck-21", namespace="tenant-ns-21", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
         values: '1+0x50'
 
     alert_rule_test:
@@ -173,15 +224,71 @@ tests:
               severity: warning
               component: release-service
               slo: "false"
-              pipelinerun: pr-release-stuck
-              namespace: tenant-ns
-              pipeline: fbc-release
-              finalizers: "[appstudio.redhat.com/release-finalizer]"
+              source_cluster: c1
             exp_annotations:
-              summary: "PipelineRun pr-release-stuck stuck with Release Service finalizer in namespace tenant-ns"
-              description: "PipelineRun pr-release-stuck (pipeline: fbc-release) in namespace tenant-ns has had deletionTimestamp set for more than 30 minutes and still has finalizers: [appstudio.redhat.com/release-finalizer]."
+              summary: "21 PipelineRun(s) on c1 stuck with Release Service finalizer"
+              description: "21 PipelineRun(s) on c1 have had deletionTimestamp set for more than 30 minutes and still have the release-service finalizer."
               alert_routing_key: release
               team: release
+
+  # Test 6c: Release finalizer — 25 PipelineRuns stuck less than 30 minutes ago, no alert
+  - interval: 1m
+    input_series:
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-recent-1", namespace="tenant-ns", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '600+0x20'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-recent-2", namespace="tenant-ns", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '600+0x20'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-recent-3", namespace="tenant-ns", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '600+0x20'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-recent-4", namespace="tenant-ns", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '600+0x20'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-recent-5", namespace="tenant-ns", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '600+0x20'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-recent-6", namespace="tenant-ns", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '600+0x20'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-recent-7", namespace="tenant-ns", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '600+0x20'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-recent-8", namespace="tenant-ns", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '600+0x20'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-recent-9", namespace="tenant-ns", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '600+0x20'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-recent-10", namespace="tenant-ns", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '600+0x20'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-recent-11", namespace="tenant-ns", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '600+0x20'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-recent-12", namespace="tenant-ns", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '600+0x20'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-recent-13", namespace="tenant-ns", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '600+0x20'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-recent-14", namespace="tenant-ns", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '600+0x20'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-recent-15", namespace="tenant-ns", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '600+0x20'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-recent-16", namespace="tenant-ns", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '600+0x20'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-recent-17", namespace="tenant-ns", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '600+0x20'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-recent-18", namespace="tenant-ns", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '600+0x20'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-recent-19", namespace="tenant-ns", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '600+0x20'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-recent-20", namespace="tenant-ns", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '600+0x20'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-recent-21", namespace="tenant-ns", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '600+0x20'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-recent-22", namespace="tenant-ns", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '600+0x20'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-recent-23", namespace="tenant-ns", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '600+0x20'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-recent-24", namespace="tenant-ns", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '600+0x20'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-release-recent-25", namespace="tenant-ns", pipeline="fbc-release", finalizers="[appstudio.redhat.com/release-finalizer]", source_cluster="c1"}
+        values: '600+0x20'
+
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: PipelineRunStuckWithReleaseFinalizer
+        exp_alerts: []
 
   # Test 7: Multiple finalizers — fires alerts for each matching finalizer
   - interval: 1m
@@ -224,20 +331,7 @@ tests:
               team: pipelines
       - eval_time: 45m
         alertname: PipelineRunStuckWithReleaseFinalizer
-        exp_alerts:
-          - exp_labels:
-              severity: warning
-              component: release-service
-              slo: "false"
-              pipelinerun: pr-multi-stuck
-              namespace: tenant-ns
-              pipeline: rh-advisories
-              finalizers: "[appstudio.redhat.com/release-finalizer results.tekton.dev/pipelinerun chains.tekton.dev/pipelinerun]"
-            exp_annotations:
-              summary: "PipelineRun pr-multi-stuck stuck with Release Service finalizer in namespace tenant-ns"
-              description: "PipelineRun pr-multi-stuck (pipeline: rh-advisories) in namespace tenant-ns has had deletionTimestamp set for more than 30 minutes and still has finalizers: [appstudio.redhat.com/release-finalizer results.tekton.dev/pipelinerun chains.tekton.dev/pipelinerun]."
-              alert_routing_key: release
-              team: release
+        exp_alerts: []
 
   # Test 8: deletionTimestamp is 0 (not deleted) — no alert
   - interval: 1m

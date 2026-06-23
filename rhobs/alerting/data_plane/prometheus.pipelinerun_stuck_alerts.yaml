@@ -97,20 +97,24 @@ spec:
 
     - alert: PipelineRunStuckWithReleaseFinalizer
       expr: |
-        kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{
-          finalizers=~".*appstudio.redhat.com/release-finalizer.*",
-        } > 0
-        and
-        (time() - kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{
-          finalizers=~".*appstudio.redhat.com/release-finalizer.*",
-        }) > 1800
+        count by (source_cluster) (
+          kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{
+            finalizers=~".*appstudio.redhat.com/release-finalizer.*",
+          } > 0
+          and
+          (
+            time() - kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{
+              finalizers=~".*appstudio.redhat.com/release-finalizer.*",
+            }
+          ) > 1800
+        ) > 20
       for: 10m
       labels:
         severity: warning
         component: release-service
         slo: "false"
       annotations:
-        summary: "PipelineRun {{ $labels.pipelinerun }} stuck with Release Service finalizer in namespace {{ $labels.namespace }}"
-        description: "PipelineRun {{ $labels.pipelinerun }} (pipeline: {{ $labels.pipeline }}) in namespace {{ $labels.namespace }} has had deletionTimestamp set for more than 30 minutes and still has finalizers: {{ $labels.finalizers }}."
+        summary: "{{ $value }} PipelineRun(s) on {{ $labels.source_cluster }} stuck with Release Service finalizer"
+        description: "{{ $value }} PipelineRun(s) on {{ $labels.source_cluster }} have had deletionTimestamp set for more than 30 minutes and still have the release-service finalizer."
         alert_routing_key: release
         team: release
