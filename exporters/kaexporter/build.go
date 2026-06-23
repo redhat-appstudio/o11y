@@ -90,13 +90,14 @@ func (m *BuildSLO30d) updateGauges(store *Store) {
 	m.totalCount30d.Reset()
 
 	store.ForEachWindow(metricBuildDuration, func(ls LabelSet, window *MetricWindow) {
-		if window.TotalCount() == 0 {
-			return // no data in window — don't emit, don't misfire alerts
+		totalCount := window.ComputeTotalCount()
+		if totalCount == 0 {
+			return
 		}
 		labels := []string{ls.Cluster, ls.Namespace, ls.Application, ls.Component, ls.BuildType, ls.EventType}
 		m.mean30d.WithLabelValues(labels...).Set(window.ComputeSuccessMean())
 		m.successRate30d.WithLabelValues(labels...).Set(window.ComputeSuccessRate())
-		m.totalCount30d.WithLabelValues(labels...).Set(float64(window.ComputeTotalCount()))
+		m.totalCount30d.WithLabelValues(labels...).Set(float64(totalCount))
 	})
 }
 

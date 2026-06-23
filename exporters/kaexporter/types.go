@@ -65,6 +65,7 @@ type releaseEntry struct {
 }
 
 // releaseIndex is a dual-keyed lookup for build-PLR → Release correlation.
+// TODO: need to implement the correlation mechanism
 type releaseIndex struct {
 	store      []releaseEntry
 	byBuildPLR map[string]int
