@@ -145,7 +145,8 @@ func (e *KAExporter) collectMetrics(ctx context.Context) error {
 	e.mu.RLock()
 	var needsBootstrap int
 	for _, ns := range namespaces {
-		if !e.bootstrappedNamespaces[ns] {
+		state := e.bootstrapStates[ns]
+		if state == nil || !state.Bootstrapped {
 			needsBootstrap++
 		}
 	}
@@ -182,10 +183,12 @@ func (e *KAExporter) collectMetrics(ctx context.Context) error {
 
 	// Parallel namespace collection with streaming PLRs/Snapshots
 	type nsResult struct {
-		namespace  string
-		buildCount int
-		testCount  int
-		err        error
+		namespace        string
+		buildCount       int
+		testCount        int
+		wasTruncated     bool
+		oldestCreationTS string
+		err              error
 	}
 
 	results := make(chan nsResult, len(namespaces))
@@ -201,7 +204,8 @@ func (e *KAExporter) collectMetrics(ctx context.Context) error {
 
 			// Per-namespace bootstrap check: use 30-day window if not yet bootstrapped
 			e.mu.RLock()
-			bootstrapped := e.bootstrappedNamespaces[ns]
+			state := e.bootstrapStates[ns]
+			bootstrapped := state != nil && state.Bootstrapped
 			e.mu.RUnlock()
 
 			var windowHours int
@@ -224,17 +228,39 @@ func (e *KAExporter) collectMetrics(ctx context.Context) error {
 			}
 
 			since := time.Now().UTC().Add(-time.Duration(windowHours) * time.Hour).Format(time.RFC3339)
-			b, t, err := e.collectNamespace(nsCtx, ns, since, maxItems)
+			b, t, wasTrunc, oldestTS, err := e.collectNamespace(nsCtx, ns, since, "", maxItems)
 
-			// Mark namespace as bootstrapped on first successful collection
-			if err == nil && !bootstrapped {
+			// Track bootstrap state
+			if err == nil {
 				e.mu.Lock()
-				e.bootstrappedNamespaces[ns] = true
+				if e.bootstrapStates[ns] == nil {
+					e.bootstrapStates[ns] = &nsBootstrapState{}
+				}
+				if !bootstrapped {
+					if !wasTrunc {
+						// Bootstrap complete: full 30-day fetch succeeded
+						e.bootstrapStates[ns].Bootstrapped = true
+						e.bootstrapStates[ns].OldestSeenCreationTS = ""
+						e.bootstrapStates[ns].GapAttempts = 0
+						log.Printf("namespace %q: 30-day bootstrap complete (%d builds, %d tests)", ns, b, t)
+					} else {
+						// Bootstrap truncated: track gap for later filling
+						e.bootstrapStates[ns].OldestSeenCreationTS = oldestTS
+						log.Printf("namespace %q: 30-day bootstrap TRUNCATED (%d builds, %d tests, oldest=%s)",
+							ns, b, t, oldestTS)
+					}
+				}
 				e.mu.Unlock()
-				log.Printf("namespace %q: 30-day bootstrap complete (%d builds, %d tests)", ns, b, t)
 			}
 
-			results <- nsResult{namespace: ns, buildCount: b, testCount: t, err: err}
+			results <- nsResult{
+				namespace:        ns,
+				buildCount:       b,
+				testCount:        t,
+				wasTruncated:     wasTrunc,
+				oldestCreationTS: oldestTS,
+				err:              err,
+			}
 		}(ns)
 	}
 
@@ -259,6 +285,42 @@ func (e *KAExporter) collectMetrics(ctx context.Context) error {
 
 	// Record all release observations into 30d SLO store
 	e.releaseSLO.recordAllFromIndex(e.rollingStore, e.cluster, releaseIdx)
+
+	// Gap-fill pass: fill truncated namespaces in parallel (post-steady-state)
+	// Only run gap-fill if main collection had some successes (avoid piling on during KubeArchive outages)
+	if !e.coldStart && nsOK > 0 {
+		e.mu.RLock()
+		var gapFillNeeded []string
+		for ns, state := range e.bootstrapStates {
+			if !state.Bootstrapped && state.OldestSeenCreationTS != "" && state.GapAttempts < maxGapFillAttempts {
+				gapFillNeeded = append(gapFillNeeded, ns)
+			}
+		}
+		e.mu.RUnlock()
+
+		if len(gapFillNeeded) > 0 {
+			var gapWg sync.WaitGroup
+			gapSem := make(chan struct{}, concurrency)
+
+			for _, ns := range gapFillNeeded {
+				gapWg.Add(1)
+
+				go func(namespace string) {
+					defer gapWg.Done()
+					gapSem <- struct{}{}        // Acquire inside goroutine for parallel launch
+					defer func() { <-gapSem }() // Release
+
+					// Use cold-start per-namespace timeout for gap-fill queries (30-day window)
+					gapCtx, cancel := context.WithTimeout(context.Background(), time.Duration(defaultColdStartTimeoutSecs)*time.Second)
+					defer cancel()
+
+					e.fillNamespaceGap(gapCtx, namespace)
+				}(ns)
+			}
+
+			gapWg.Wait()
+		}
+	}
 
 	log.Printf("Metrics collected: %d build PLRs, %d test PLRs (%d/%d tenant namespaces scraped successfully); %d releases indexed",
 		totalBuild, totalTest, nsOK, len(namespaces), len(releaseIdx.store))
@@ -311,11 +373,40 @@ func (e *KAExporter) tenantNamespaces(ctx context.Context) ([]string, error) {
 	}
 
 	sort.Strings(names)
-	return names, nil
+
+	// Filter out managed tenants that should not be scraped.
+	// rhtap-releng-tenant is a special managed tenant with different SLO expectations.
+	filtered := filterManagedTenants(names)
+	if len(filtered) < len(names) {
+		excluded := len(names) - len(filtered)
+		log.Printf("Filtered out %d managed tenant namespace(s) from scraping", excluded)
+	}
+
+	return filtered, nil
+}
+
+// filterManagedTenants removes namespaces that should not be scraped.
+// Excludes:
+//   - rhtap-releng-tenant: special managed tenant with separate monitoring
+//   - managed-*: other managed tenant namespaces
+func filterManagedTenants(namespaces []string) []string {
+	var result []string
+	for _, ns := range namespaces {
+		// Exact match: rhtap-releng-tenant
+		if ns == "rhtap-releng-tenant" {
+			continue
+		}
+		// Prefix match: managed-*
+		if strings.HasPrefix(ns, "managed-") {
+			continue
+		}
+		result = append(result, ns)
+	}
+	return result
 }
 
 // gatherAllReleasesParallel fetches Release CRs from every tenant namespace in parallel
-// and returns a *releaseIndex for O(1) build-PLR → Release correlation. The full catalog
+// and returns a *releaseIndex build-PLR → Release correlation. The full catalog
 // must be assembled before namespace processing begins because releases may arrive weeks
 // after builds and may live in dedicated release namespaces.
 func (e *KAExporter) gatherAllReleasesParallel(ctx context.Context, namespaces []string, since string, maxConcurrent, maxItems int) *releaseIndex {
@@ -385,10 +476,12 @@ func (e *KAExporter) startRollingStoreMaintenance(ctx context.Context) {
 
 // collectNamespace scrapes PLRs for one tenant namespace and records observations
 // into the 30-day rolling store. Resources are streamed page-by-page to bound memory usage.
-func (e *KAExporter) collectNamespace(ctx context.Context, tenantNS string, since string, maxItems int) (buildCount, testCount int, err error) {
+// since/until are RFC3339 timestamps for creationTimestampAfter/Before filters (until="" for no upper bound).
+// Returns (buildCount, testCount, wasTruncated, oldestCreationTimestamp, error).
+func (e *KAExporter) collectNamespace(ctx context.Context, tenantNS, since, until string, maxItems int) (buildCount, testCount int, wasTruncated bool, oldestCreationTimestamp string, err error) {
 
 	plrURL := fmt.Sprintf("%s/apis/tekton.dev/v1/namespaces/%s/pipelineruns", e.kaHost, url.PathEscape(tenantNS))
-	streamErr := e.streamPLRs(ctx, plrURL, since, tenantNS, maxItems, func(page []PipelineRun) {
+	wasTrunc, oldestTS, streamErr := e.streamPLRs(ctx, plrURL, since, until, tenantNS, maxItems, func(page []PipelineRun) {
 		for i := range page {
 			plr := &page[i]
 			switch getLabel(*plr, labelPipelinesType, "") {
@@ -415,8 +508,61 @@ func (e *KAExporter) collectNamespace(ctx context.Context, tenantNS string, sinc
 		}
 	})
 	if streamErr != nil {
-		return buildCount, testCount, fmt.Errorf("stream pipelineruns: %w", streamErr)
+		return buildCount, testCount, false, "", fmt.Errorf("stream pipelineruns: %w", streamErr)
 	}
 
-	return buildCount, testCount, nil
+	return buildCount, testCount, wasTrunc, oldestTS, nil
+}
+
+// fillNamespaceGap attempts to fill the bootstrap gap for a truncated namespace.
+// Queries the time range between [30d ago ... OldestSeenCreationTS] to fetch items
+// that were dropped during the initial cold-start truncation.
+func (e *KAExporter) fillNamespaceGap(ctx context.Context, namespace string) {
+	e.mu.RLock()
+	state := e.bootstrapStates[namespace]
+	if state == nil || state.Bootstrapped || state.OldestSeenCreationTS == "" {
+		e.mu.RUnlock()
+		return
+	}
+	gapSince := time.Now().UTC().Add(-coldStartWindowHours * time.Hour).Format(time.RFC3339)
+	gapUntil := state.OldestSeenCreationTS
+	attemptNum := state.GapAttempts + 1
+	e.mu.RUnlock()
+
+	log.Printf("namespace %q: gap-fill attempt %d/%d (window: %s to %s)",
+		namespace, attemptNum, maxGapFillAttempts, gapSince, gapUntil)
+
+	buildCnt, testCnt, wasTrunc, oldestTS, err := e.collectNamespace(
+		ctx, namespace, gapSince, gapUntil, coldStartMaxItems,
+	)
+
+	e.mu.Lock()
+	defer e.mu.Unlock()
+
+	// Re-read state under write lock (may have changed between read and write lock)
+	updatedState := e.bootstrapStates[namespace]
+	if updatedState == nil {
+		return // State was removed (unlikely but defensive)
+	}
+
+	if err != nil {
+		log.Printf("namespace %q: gap-fill failed: %v", namespace, err)
+		updatedState.GapAttempts++ // Count failures toward limit
+		return
+	}
+
+	if !wasTrunc {
+		// Gap filled successfully!
+		updatedState.Bootstrapped = true
+		updatedState.OldestSeenCreationTS = ""
+		updatedState.GapAttempts = 0
+		log.Printf("namespace %q: bootstrap COMPLETE (%d builds, %d tests fetched in gap-fill)",
+			namespace, buildCnt, testCnt)
+	} else {
+		// Gap is still >10K, narrow the window further
+		updatedState.OldestSeenCreationTS = oldestTS
+		updatedState.GapAttempts++
+		log.Printf("namespace %q: gap-fill incomplete (%d builds, %d tests, still truncated, oldest now %s)",
+			namespace, buildCnt, testCnt, oldestTS)
+	}
 }

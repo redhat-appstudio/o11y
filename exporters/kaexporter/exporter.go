@@ -41,14 +41,14 @@ const (
 	labelAppStudioApp     = "appstudio.openshift.io/application"
 	labelAppStudioComp    = "appstudio.openshift.io/component"
 	labelTestScenario     = "test.appstudio.openshift.io/scenario"
-	labelTestOptional     = "test.appstudio.openshift.io/optional"         // "true" if test can fail without blocking release
-	labelEventType        = "pipelinesascode.tekton.dev/event-type"        // Event type for builds
-	labelPACEventType     = "pac.test.appstudio.openshift.io/event-type"   // Shared PAC event type label, used by both integration tests and releases
+	labelTestOptional     = "test.appstudio.openshift.io/optional"       // "true" if test can fail without blocking release
+	labelEventType        = "pipelinesascode.tekton.dev/event-type"      // Event type for builds
+	labelPACEventType     = "pac.test.appstudio.openshift.io/event-type" // Shared PAC event type label, used by both integration tests and releases
 	labelPipelinesType    = "pipelines.appstudio.openshift.io/type"
 	labelTektonPipeline   = "tekton.dev/pipeline"
 
 	// Release CR labels
-	labelReleaseAutomated = "release.appstudio.openshift.io/automated"     // "true" for automated releases, "false" for manual
+	labelReleaseAutomated = "release.appstudio.openshift.io/automated" // "true" for automated releases, "false" for manual
 
 	// kaWindowHoursEnv controls how far back the exporter fetches resources from KubeArchive.
 	kaWindowHoursEnv     = "KA_WINDOW_HOURS"
@@ -71,9 +71,9 @@ const (
 	defaultColdStartTimeoutSecs = 600   // 10 min - allows busy namespaces to complete 30-day bootstrap
 
 	// parallelism for KubeArchive API calls.
-	defaultMaxConcurrent     = 10
-	coldStartMaxConcurrent   = 5  // Reduced concurrency during cold start to ease KubeArchive load
-	maxConcurrentEnv         = "KA_MAX_CONCURRENT"
+	defaultMaxConcurrent   = 10
+	coldStartMaxConcurrent = 5 // Reduced concurrency during cold start to ease KubeArchive load
+	maxConcurrentEnv       = "KA_MAX_CONCURRENT"
 
 	// HTTP client timeout for KubeArchive API calls
 	defaultHTTPTimeoutSecs = 60
@@ -86,14 +86,27 @@ const (
 	defaultCollectIntervalSeconds = 300
 
 	// Retry configuration for KubeArchive API calls
-	kaMaxRetriesEnv         = "KA_MAX_RETRIES"
-	defaultMaxRetries       = 3
-	kaInitialRetryDelayEnv  = "KA_INITIAL_RETRY_DELAY_MS"
+	kaMaxRetriesEnv          = "KA_MAX_RETRIES"
+	defaultMaxRetries        = 3
+	kaInitialRetryDelayEnv   = "KA_INITIAL_RETRY_DELAY_MS"
 	defaultInitialRetryDelay = 100 // milliseconds
-	kaMaxRetryDelayEnv      = "KA_MAX_RETRY_DELAY_MS"
-	defaultMaxRetryDelay    = 5000 // milliseconds
-	retryBackoffMultiplier  = 2.0
+	kaMaxRetryDelayEnv       = "KA_MAX_RETRY_DELAY_MS"
+	defaultMaxRetryDelay     = 5000 // milliseconds
+	retryBackoffMultiplier   = 2.0
+
+	// maxGapFillAttempts limits gap-fill retries for truncated namespaces.
+	// With coldStartMaxItems=10,000, this allows up to 50,000 PLRs to be covered.
+	maxGapFillAttempts = 5
 )
+
+// ── Bootstrap state tracking ─────────────────────────────────────────────────
+
+// nsBootstrapState tracks 30-day bootstrap progress for one namespace.
+type nsBootstrapState struct {
+	Bootstrapped         bool   // true when namespace has complete 30-day data
+	OldestSeenCreationTS string // RFC3339 timestamp of oldest item seen (empty = no gap)
+	GapAttempts          int    // number of gap-fill attempts (prevent infinite retry)
+}
 
 // ── Retry configuration ───────────────────────────────────────────────────────
 
@@ -167,9 +180,9 @@ type KAExporter struct {
 	// per-namespace item cap is raised to bootstrap full rolling-store accuracy.
 	coldStart bool
 
-	// bootstrappedNamespaces tracks which namespaces have completed 30-day bootstrap.
-	// Namespaces that failed during cold start will retry with 30-day window until successful.
-	bootstrappedNamespaces map[string]bool
+	// bootstrapStates tracks which namespaces have completed 30-day bootstrap.
+	// Namespaces that were truncated during cold start will be gap-filled progressively.
+	bootstrapStates map[string]*nsBootstrapState
 
 	// 30-day SLO rolling aggregates (in-memory only, no persistence).
 	rollingStore   *Store
@@ -322,7 +335,7 @@ func NewKAExporter() (*KAExporter, error) {
 		collectInterval:      time.Duration(collectIntervalSecs) * time.Second,
 		readyCh:              make(chan struct{}),
 		coldStart:            true,
-		bootstrappedNamespaces: make(map[string]bool),
+		bootstrapStates:      make(map[string]*nsBootstrapState),
 		fixedTenantNamespace: fixedNS,
 		k8sClient:            k8sClient,
 		httpClient:           httpClient,
