@@ -1,0 +1,170 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: konflux-o11y-exporters
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec: {}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kaexporter-sa
+  namespace: konflux-o11y-exporters
+---
+# kube-rbac-proxy ClusterRole — required to perform TokenReview / SubjectAccessReview
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kube-rbac-proxy-ka
+rules:
+  - apiGroups: ["authentication.k8s.io"]
+    resources: ["tokenreviews"]
+    verbs: ["create"]
+  - apiGroups: ["authorization.k8s.io"]
+    resources: ["subjectaccessreviews"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kube-rbac-proxy-ka-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kube-rbac-proxy-ka
+subjects:
+  - kind: ServiceAccount
+    name: kaexporter-sa
+    namespace: konflux-o11y-exporters
+---
+# Namespace discovery — exporter must list tenant namespaces via Kubernetes API.
+# Scope: cluster-wide list of namespaces filtered by label konflux-ci.dev/type=tenant.
+# Only "list" permission is required (exporter uses List(), not Get()).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kaexporter-namespace-reader
+rules:
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kaexporter-namespace-reader-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kaexporter-namespace-reader
+subjects:
+  - kind: ServiceAccount
+    name: kaexporter-sa
+    namespace: konflux-o11y-exporters
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ka-kubearchive-credentials
+  namespace: konflux-o11y-exporters
+type: Opaque
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kaexporter-service
+  namespace: konflux-o11y-exporters
+  labels:
+    app: kaexporter
+spec:
+  ports:
+    - name: https
+      port: 8443
+      targetPort: https
+  selector:
+    app: kaexporter
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kaexporter-deployment
+  namespace: konflux-o11y-exporters
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kaexporter
+  template:
+    metadata:
+      labels:
+        app: kaexporter
+    spec:
+      serviceAccountName: kaexporter-sa
+      containers:
+        - name: kube-rbac-proxy
+          image: quay.io/brancz/kube-rbac-proxy:v0.14.0
+          args:
+            - "--secure-listen-address=0.0.0.0:8443"
+            - "--upstream=http://127.0.0.1:9101/"
+            - "--logtostderr=true"
+            - "--v=3"
+          ports:
+            - containerPort: 8443
+              name: https
+          resources:
+            limits:
+              cpu: 50m
+              memory: 64Mi
+            requests:
+              cpu: 20m
+              memory: 32Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+
+        - name: exporters
+          image: exporter:latest
+          args: ["kaexporter"]
+          ports:
+            - containerPort: 9101
+              name: http-metrics
+          env:
+            - name: KA_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: ka-kubearchive-credentials
+                  key: ka-host
+            - name: KA_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: ka-kubearchive-credentials
+                  key: ka-token
+            - name: EXPORTER_PORT
+              value: "9101"
+            - name: KA_COLLECTION_TIMEOUT_SECONDS
+              value: "160"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http-metrics
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http-metrics
+            initialDelaySeconds: 5
+            periodSeconds: 15
+          resources:
+            limits:
+              cpu: 800m
+              memory: 1Gi
+            requests:
+              cpu: 500m
+              memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true

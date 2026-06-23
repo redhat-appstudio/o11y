@@ -106,10 +106,10 @@ go test -mod=mod -count=1 ./exporters/kaexporter/...
 
 ## Deploy
 
-Manifests: `config/exporters/monitoring/ka/base/`
+Manifests: `config/exporters/monitoring/kaexporter/base/`
 
 ```bash
-oc apply -k config/exporters/monitoring/ka/base/
+oc apply -k config/exporters/monitoring/kaexporter/base/
 ```
 
 **Deployment requirements**:
