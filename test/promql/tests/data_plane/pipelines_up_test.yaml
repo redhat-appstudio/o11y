@@ -27,10 +27,6 @@ tests:
         values: '1 1 1 1 1'
       - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-chains-controller", source_cluster="c_down"}'
         values: '1 1 1 1 1'
-      - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-events-controller", source_cluster="c_up"}'
-        values: '1 1 1 1 1'
-      - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-events-controller", source_cluster="c_down"}'
-        values: '1 1 1 1 1'
       - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-operator-proxy-webhook", source_cluster="c_up"}'
         values: '1 1 1 1 1'
       - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-operator-proxy-webhook", source_cluster="c_down"}'
@@ -84,9 +80,6 @@ tests:
         alertname: TektonChainsControllerDown
         exp_alerts: []
       - eval_time: 5m
-        alertname: TektonEventsControllerDown
-        exp_alerts: []
-      - eval_time: 5m
         alertname: TektonOperatorProxyWebhookDown
         exp_alerts: []
       - eval_time: 5m
@@ -129,10 +122,6 @@ tests:
       - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-chains-controller", check="replicas-available", source_cluster="c_up"}'
         values: '1 1 1 1 1'
       - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-chains-controller", check="replicas-available", source_cluster="c_down"}'
-        values: '0 0 0 0 0'
-      - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-events-controller", check="replicas-available", source_cluster="c_up"}'
-        values: '1 1 1 1 1'
-      - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-events-controller", check="replicas-available", source_cluster="c_down"}'
         values: '0 0 0 0 0'
       - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-operator-proxy-webhook", check="replicas-available", source_cluster="c_up"}'
         values: '1 1 1 1 1'
@@ -257,23 +246,6 @@ tests:
               description: >
                 The Tekton Chains controller pod has been down for 5min in cluster c_down
               alert_team_handle: <!subteam^S04PYECHCCU>
-              team: pipelines
-              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
-      - eval_time: 5m
-        alertname: TektonEventsControllerDown
-        exp_alerts:
-          - exp_labels:
-              severity: high
-              check: replicas-available
-              namespace: openshift-pipelines
-              service: tekton-events-controller
-              source_cluster: c_down
-              component: tekton-pipelines
-            exp_annotations:
-              summary: Tekton Events controller is down in cluster c_down
-              description: >
-                The Tekton Events controller pod has been down for 5min in cluster c_down
-              alert_routing_key: <!subteam^S04PYECHCCU>
               team: pipelines
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
       - eval_time: 5m

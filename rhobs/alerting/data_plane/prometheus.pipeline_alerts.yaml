@@ -120,28 +120,6 @@ spec:
           alert_team_handle: <!subteam^S04PYECHCCU>
           team: pipelines
           runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
-    - name: tekton-events-controller-availability
-      interval: 1m
-      rules:
-      - alert: TektonEventsControllerDown
-        expr: |
-          konflux_up{
-            namespace="openshift-pipelines",
-            check="replicas-available",
-            service="tekton-events-controller",
-          } != 1
-        for: 5m
-        labels:
-          severity: high
-          component: tekton-pipelines
-        annotations:
-          summary: >-
-            Tekton Events controller is down in cluster {{ $labels.source_cluster }}
-          description: >
-            The Tekton Events controller pod has been down for 5min in cluster {{ $labels.source_cluster }}
-          alert_routing_key: <!subteam^S04PYECHCCU>
-          team: pipelines
-          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
     - name: tekton-operator-proxy-webhook-availability
       interval: 1m
       rules:
