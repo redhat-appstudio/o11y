@@ -28,7 +28,7 @@ Exposes mean duration and success rate metrics over a rolling 30-day window usin
 
 ### Cold start behavior
 
-On first boot, the exporter automatically bootstraps the full 30-day rolling window before serving metrics. This phase uses hardcoded settings independent of the env vars above:
+On first boot, the exporter queries **720 hours (30 days)** of historical data to populate the full rolling window before serving metrics.
 
 | Setting | Cold start value | Steady-state value |
 |---------|-----------------|-------------------|
@@ -37,7 +37,7 @@ On first boot, the exporter automatically bootstraps the full 30-day rolling win
 | Concurrency | 5 | `KA_MAX_CONCURRENT` |
 | Per-namespace item cap | 10,000 | 1,000 |
 
-After the first successful collection, the exporter switches to steady-state settings permanently (until next restart). `/metrics` is not served until cold start completes.
+**Note:** `/metrics` endpoint is not served until cold start completes (~90-120 seconds). For architectural details on why this is necessary, see [DESIGN.md](DESIGN.md#1-cold-start-bootstrapping).
 
 ---
 
@@ -70,7 +70,7 @@ All metrics are **Gauges** over a rolling 30-day window of daily aggregated buck
 | `konflux_release_cr_total_count_30d` | release | `cluster, namespace, application, component, automated` |
 | `konflux_release_cr_success_count_30d` | release | `cluster, namespace, application, component, automated` |
 | `konflux_release_cr_failure_count_30d` | release | `cluster, namespace, application, component, automated, reason` |
-| `konflux_release_retry_count_30d` | release | `cluster, namespace, snapshot, release_plan, final_status` |
+| `konflux_release_cr_retry_count_30d` | release | `cluster, namespace, snapshot, release_plan, final_status` |
 
 **Metric definitions**:
 - **Duration metrics** (`mean_duration_30d_seconds`): Mean execution time for successful workloads (startTime to completionTime for PipelineRuns; startTime to completionTime for Releases)
@@ -80,7 +80,7 @@ All metrics are **Gauges** over a rolling 30-day window of daily aggregated buck
 - **Total count** (`total_count_30d`): Count of all completed workloads (successful + failed) in the rolling window
 - **Success count** (`success_count_30d`): Count of successful workloads in the rolling window. Enables correct volume-weighted aggregation across dimensions: `sum(success_count) / sum(total_count)`.
 - **Failure count** (`failure_count_30d`): Count of failed workloads, broken down by failure reason. Useful for root cause analysis.
-- **Retry count** (`konflux_release_retry_count_30d`): Number of retries for each release intent (snapshot + releasePlan combination). Value is the count of additional attempts beyond the original (0 = no retries, 1 = one retry, etc.). Grouped by intent rather than individual Release CR to track how many times a specific release was retried.
+- **Retry count** (`konflux_release_cr_retry_count_30d`): Number of retries for each release intent (snapshot + releasePlan combination). Value is the count of additional attempts beyond the original (0 = no retries, 1 = one retry, etc.). Grouped by intent rather than individual Release CR to track how many times a specific release was retried.
 
 **Failure Reasons**:
 
@@ -156,3 +156,32 @@ go test -mod=mod -count=1 ./exporters/kaexporter/...
 | `/metrics` | Prometheus metrics (instant read from cached state) |
 | `/healthz` | Liveness check (always returns `200 OK`) |
 | `/readyz` | Readiness check (returns `503` if last successful scrape is stale) |
+
+---
+
+## Troubleshooting
+
+**Metrics not appearing after startup:**
+- Check `/readyz` endpoint - it returns `503` until cold start completes (~90-120s)
+- Check logs for `First collection complete in X.Xs` message
+
+**Stale metrics (readiness probe failing):**
+- Check `konflux_ka_exporter_scrape_errors_total` for collection errors
+- Check `konflux_ka_exporter_last_scrape_success_timestamp_seconds` to see when last successful collection occurred
+- Verify KubeArchive API is reachable and token is valid
+
+**High truncation counts:**
+- Monitor `konflux_ka_exporter_truncations_total{resource="pipelineruns"}`
+- Namespaces with >10,000 PLRs in 30 days will truncate
+- Gap-filling mechanism automatically retries (see [DESIGN.md](DESIGN.md#2-gap-filling-for-busy-namespaces))
+
+**Memory usage growing:**
+- Expected memory: ~50-100 MB depending on label cardinality
+- Check number of unique label combinations (namespaces × applications × components)
+- Consider filtering to specific namespaces via `TENANT_NAMESPACE`
+
+---
+
+## Architecture
+
+For detailed architecture decisions, internal implementation details, and design rationale, see [DESIGN.md](DESIGN.md).
