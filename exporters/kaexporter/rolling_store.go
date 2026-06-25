@@ -305,12 +305,13 @@ func (s *Store) getOrCreateLocked(metricName string, labelSet LabelSet) *MetricW
 // build, integration, and release metrics. Domain-specific modules embed
 // this struct and add their own record logic + any extra gauges.
 type SLOGaugeSet struct {
-	mean30d         *prometheus.GaugeVec
-	meanWait30d     *prometheus.GaugeVec
-	successRate30d  *prometheus.GaugeVec
-	totalCount30d   *prometheus.GaugeVec
-	failureRate30d  *prometheus.GaugeVec
-	failureCount30d *prometheus.GaugeVec
+	mean30d          *prometheus.GaugeVec
+	meanWait30d      *prometheus.GaugeVec
+	successRate30d   *prometheus.GaugeVec
+	totalCount30d    *prometheus.GaugeVec
+	successCount30d  *prometheus.GaugeVec
+	failureRate30d   *prometheus.GaugeVec
+	failureCount30d  *prometheus.GaugeVec
 }
 
 // newSLOGaugeSet creates the common gauge set. The failureCount gauge
@@ -337,6 +338,10 @@ func newSLOGaugeSet(prefix, helpContext string, labels []string) SLOGaugeSet {
 			Name: prefix + "_total_count_30d",
 			Help: fmt.Sprintf("Total count of completed %s over the past 30 days (successful + failed).", helpContext),
 		}, labels),
+		successCount30d: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: prefix + "_success_count_30d",
+			Help: fmt.Sprintf("Count of successful %s over the past 30 days. Use for volume-weighted aggregation: sum(success_count) / sum(total_count).", helpContext),
+		}, labels),
 		failureRate30d: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: prefix + "_failure_rate_30d",
 			Help: fmt.Sprintf("%s failure rate over the past 30 days (FailureCount / TotalCount).", helpContext),
@@ -355,6 +360,7 @@ func (s *SLOGaugeSet) UpdateFromStore(store *Store, metricName string, labelExtr
 	s.meanWait30d.Reset()
 	s.successRate30d.Reset()
 	s.totalCount30d.Reset()
+	s.successCount30d.Reset()
 	s.failureRate30d.Reset()
 	s.failureCount30d.Reset()
 
@@ -366,11 +372,14 @@ func (s *SLOGaugeSet) UpdateFromStore(store *Store, metricName string, labelExtr
 
 		labels := labelExtractor(ls)
 
+		successCount := window.ComputeSuccessCount()
+
 		s.totalCount30d.WithLabelValues(labels...).Set(float64(totalCount))
+		s.successCount30d.WithLabelValues(labels...).Set(float64(successCount))
 		s.successRate30d.WithLabelValues(labels...).Set(window.ComputeSuccessRate())
 		s.failureRate30d.WithLabelValues(labels...).Set(window.ComputeFailureRate())
 
-		if window.ComputeSuccessCount() > 0 {
+		if successCount > 0 {
 			s.mean30d.WithLabelValues(labels...).Set(window.ComputeSuccessMean())
 			s.meanWait30d.WithLabelValues(labels...).Set(window.ComputeWaitMean())
 		}
@@ -390,6 +399,7 @@ func (s *SLOGaugeSet) Describe(ch chan<- *prometheus.Desc) {
 	s.meanWait30d.Describe(ch)
 	s.successRate30d.Describe(ch)
 	s.totalCount30d.Describe(ch)
+	s.successCount30d.Describe(ch)
 	s.failureRate30d.Describe(ch)
 	s.failureCount30d.Describe(ch)
 }
@@ -400,6 +410,7 @@ func (s *SLOGaugeSet) Collect(ch chan<- prometheus.Metric) {
 	s.meanWait30d.Collect(ch)
 	s.successRate30d.Collect(ch)
 	s.totalCount30d.Collect(ch)
+	s.successCount30d.Collect(ch)
 	s.failureRate30d.Collect(ch)
 	s.failureCount30d.Collect(ch)
 }
