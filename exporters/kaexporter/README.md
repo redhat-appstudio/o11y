@@ -54,18 +54,21 @@ All metrics are **Gauges** over a rolling 30-day window of daily aggregated buck
 | `konflux_build_success_rate_30d` | build | `cluster, namespace, application, component, build_type, event_type` |
 | `konflux_build_failure_rate_30d` | build | `cluster, namespace, application, component, build_type, event_type` |
 | `konflux_build_total_count_30d` | build | `cluster, namespace, application, component, build_type, event_type` |
+| `konflux_build_success_count_30d` | build | `cluster, namespace, application, component, build_type, event_type` |
 | `konflux_build_failure_count_30d` | build | `cluster, namespace, application, component, build_type, event_type, reason` |
 | `konflux_integration_mean_duration_30d_seconds` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type` |
 | `konflux_integration_mean_wait_30d_seconds` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type` |
 | `konflux_integration_success_rate_30d` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type` |
 | `konflux_integration_failure_rate_30d` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type` |
 | `konflux_integration_total_count_30d` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type` |
+| `konflux_integration_success_count_30d` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type` |
 | `konflux_integration_failure_count_30d` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type, reason` |
 | `konflux_release_cr_mean_duration_30d_seconds` | release | `cluster, namespace, application, component, automated` |
 | `konflux_release_cr_mean_wait_30d_seconds` | release | `cluster, namespace, application, component, automated` |
 | `konflux_release_cr_success_rate_30d` | release | `cluster, namespace, application, component, automated` |
 | `konflux_release_cr_failure_rate_30d` | release | `cluster, namespace, application, component, automated` |
 | `konflux_release_cr_total_count_30d` | release | `cluster, namespace, application, component, automated` |
+| `konflux_release_cr_success_count_30d` | release | `cluster, namespace, application, component, automated` |
 | `konflux_release_cr_failure_count_30d` | release | `cluster, namespace, application, component, automated, reason` |
 | `konflux_release_retry_count_30d` | release | `cluster, namespace, snapshot, release_plan, final_status` |
 
@@ -75,6 +78,7 @@ All metrics are **Gauges** over a rolling 30-day window of daily aggregated buck
 - **Success rate** (`success_rate_30d`): Ratio of successful workloads to total completed (0.0 to 1.0)
 - **Error rate** (`failure_rate_30d`): Ratio of failed workloads to total completed (0.0 to 1.0). Inverse of success rate.
 - **Total count** (`total_count_30d`): Count of all completed workloads (successful + failed) in the rolling window
+- **Success count** (`success_count_30d`): Count of successful workloads in the rolling window. Enables correct volume-weighted aggregation across dimensions: `sum(success_count) / sum(total_count)`.
 - **Failure count** (`failure_count_30d`): Count of failed workloads, broken down by failure reason. Useful for root cause analysis.
 - **Retry count** (`konflux_release_retry_count_30d`): Number of retries for each release intent (snapshot + releasePlan combination). Value is the count of additional attempts beyond the original (0 = no retries, 1 = one retry, etc.). Grouped by intent rather than individual Release CR to track how many times a specific release was retried.
 
