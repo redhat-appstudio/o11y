@@ -59,21 +59,16 @@ type Condition struct {
 	LastTransitionTime string `json:"lastTransitionTime,omitempty"`
 	Message            string `json:"message,omitempty"`
 }
-type releaseIntentKey struct {
-    Namespace   string
-    Snapshot    string
-    ReleasePlan string
-}
 
 // ── In-memory indexes ─────────────────────────────────────────────────────────
 
-// releaseEntry is a Release CR plus the namespace it was listed
+// releaseEntry is a Release CR plus the namespace it was listed from.
 type releaseEntry struct {
 	Release
 	crNamespace string
 }
 
-// releaseIndex stores Release CRs for metric collection and retry analysis.
+// releaseIndex stores Release CRs for metric collection.
 type releaseIndex struct {
 	store []releaseEntry
 }
@@ -81,17 +76,6 @@ type releaseIndex struct {
 // newReleaseIndex returns an empty releaseIndex ready to receive releases.
 func newReleaseIndex() *releaseIndex {
 	return &releaseIndex{}
-}
-
-func resolveSnapshot(r Release) string {
-	if snap := getLabel(r, labelReleaseSnapshot, ""); snap != "" {
-		return snap
-	}
-	return r.Spec.Snapshot
-}
-
-func resolveReleasePlan(r Release) string {
-	return r.Spec.ReleasePlan
 }
 
 // addReleases copies releases from a namespace into the index.

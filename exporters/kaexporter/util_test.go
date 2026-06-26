@@ -78,6 +78,10 @@ func TestReleaseStatus(t *testing.T) {
 		{"progressing (not completed)", makeRelease("Released", "False", "Progressing"), false, false, ""},
 		{"failed with empty reason", makeRelease("Released", "False", ""), true, false, "Unknown"},
 		{"no released condition", Release{}, false, false, ""},
+		// Status=True with Reason != "Succeeded" is treated as incomplete (not counted).
+		// The Release controller sets Status=True ONLY with Reason=Succeeded on genuine
+		// completion. Any other Reason with Status=True is a transient or malformed state
+		// that should not be recorded as either success or failure.
 		{"status true but reason not succeeded", makeRelease("Released", "True", "Failed"), false, false, ""},
 	}
 

@@ -63,14 +63,13 @@ All metrics are **Gauges** over a rolling 30-day window of daily aggregated buck
 | `konflux_integration_total_count_30d` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type` |
 | `konflux_integration_success_count_30d` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type` |
 | `konflux_integration_failure_count_30d` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type, reason` |
-| `konflux_release_cr_mean_duration_30d_seconds` | release | `cluster, namespace, application, component, automated` |
-| `konflux_release_cr_mean_wait_30d_seconds` | release | `cluster, namespace, application, component, automated` |
-| `konflux_release_cr_success_rate_30d` | release | `cluster, namespace, application, component, automated` |
-| `konflux_release_cr_failure_rate_30d` | release | `cluster, namespace, application, component, automated` |
-| `konflux_release_cr_total_count_30d` | release | `cluster, namespace, application, component, automated` |
-| `konflux_release_cr_success_count_30d` | release | `cluster, namespace, application, component, automated` |
-| `konflux_release_cr_failure_count_30d` | release | `cluster, namespace, application, component, automated, reason` |
-| `konflux_release_cr_retry_count_30d` | release | `cluster, namespace, snapshot, release_plan, final_status` |
+| `konflux_release_cr_mean_duration_30d_seconds` | release | `cluster, namespace, application, component, automated, event_type` |
+| `konflux_release_cr_mean_wait_30d_seconds` | release | `cluster, namespace, application, component, automated, event_type` |
+| `konflux_release_cr_success_rate_30d` | release | `cluster, namespace, application, component, automated, event_type` |
+| `konflux_release_cr_failure_rate_30d` | release | `cluster, namespace, application, component, automated, event_type` |
+| `konflux_release_cr_total_count_30d` | release | `cluster, namespace, application, component, automated, event_type` |
+| `konflux_release_cr_success_count_30d` | release | `cluster, namespace, application, component, automated, event_type` |
+| `konflux_release_cr_failure_count_30d` | release | `cluster, namespace, application, component, automated, event_type, reason` |
 
 **Metric definitions**:
 - **Duration metrics** (`mean_duration_30d_seconds`): Mean execution time for successful workloads (startTime to completionTime for PipelineRuns; startTime to completionTime for Releases)
@@ -80,7 +79,6 @@ All metrics are **Gauges** over a rolling 30-day window of daily aggregated buck
 - **Total count** (`total_count_30d`): Count of all completed workloads (successful + failed) in the rolling window
 - **Success count** (`success_count_30d`): Count of successful workloads in the rolling window. Enables correct volume-weighted aggregation across dimensions: `sum(success_count) / sum(total_count)`.
 - **Failure count** (`failure_count_30d`): Count of failed workloads, broken down by failure reason. Useful for root cause analysis.
-- **Retry count** (`konflux_release_cr_retry_count_30d`): Number of retries for each release intent (snapshot + releasePlan combination). Value is the count of additional attempts beyond the original (0 = no retries, 1 = one retry, etc.). Grouped by intent rather than individual Release CR to track how many times a specific release was retried.
 
 **Failure Reasons**:
 
@@ -104,14 +102,11 @@ For Releases:
 | Label | Source | Values | Applies to |
 |-------|--------|--------|------------|
 | `build_type` | `tekton.dev/pipeline` label | `docker-builds`, `docker-multi-arch-builds`, `bundle-builds`, `operator-builds`, `operator-bundle-builds`, `fbc-builds`, `rpm-builds`, `standard-builds`, `custom-builds` | build only |
-| `event_type` | `pipelinesascode.tekton.dev/event-type` (builds) / `pac.test.appstudio.openshift.io/event-type` (integration) | `push`, `pull_request`, `incoming`, `retest-comment`, `retest-all-comment` | build, integration only |
+| `event_type` | `pipelinesascode.tekton.dev/event-type` (builds) / `pac.test.appstudio.openshift.io/event-type` (integration, release) | `push`, `pull_request`, `incoming`, `retest-comment`, `retest-all-comment` | build, integration, release |
 | `scenario` | `test.appstudio.openshift.io/scenario` | Integration test scenario name | integration only |
 | `optional` | `test.appstudio.openshift.io/optional` | `true` (non-blocking), `false` (required) | integration only |
 | `test_type` | Derived from pipeline labels | `ec` (Enterprise Contract), `integration` | integration only |
 | `automated` | `release.appstudio.openshift.io/automated` | `true`, `false` | release only |
-| `snapshot` | `release.appstudio.openshift.io/snapshot` label or `spec.snapshot` field | Snapshot name | release (retry count only) |
-| `release_plan` | `spec.releasePlan` field | Release plan name | release (retry count only) |
-| `final_status` | Derived from most recent attempt | `Succeeded`, `Failed`, `Unknown` | release (retry count only) |
 
 **Self-monitoring**:
 
