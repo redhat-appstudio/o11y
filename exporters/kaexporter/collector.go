@@ -99,7 +99,7 @@ func (e *KAExporter) runCollection() {
 
 	// Fetch data from KubeArchive WITHOUT holding lock.
 	// RollingStore is thread-safe with its own internal mutex.
-	releaseIdx, err := e.collectMetrics(ctx)
+	_, err := e.collectMetrics(ctx)
 
 	// Acquire write lock ONLY for gauge updates (1-5ms operation).
 	// This prevents Prometheus scrapes from blocking during KubeArchive HTTP fetches.
@@ -115,7 +115,7 @@ func (e *KAExporter) runCollection() {
 		e.lastScrapeSuccessAt.Store(now)
 		e.buildSLO.updateGauges(e.rollingStore)
 		e.integrationSLO.updateGauges(e.rollingStore)
-		e.releaseSLO.updateGauges(e.rollingStore, e.cluster, releaseIdx)
+		e.releaseSLO.updateGauges(e.rollingStore)
 
 		// coldStart flag now managed per-namespace; check if all namespaces are bootstrapped
 		if e.coldStart {
@@ -233,10 +233,13 @@ func (e *KAExporter) collectMetrics(ctx context.Context) (*releaseIndex, error) 
 			if !bootstrapped {
 				windowHours = coldStartWindowHours // 720h (30 days)
 				maxItems = coldStartMaxItems       // 10,000
-				// Give each non-bootstrapped namespace its own independent 10-minute timeout
-				// so they don't share the global timeout budget
-				nsCtx, nsCancel = context.WithTimeout(ctx, time.Duration(defaultColdStartTimeoutSecs)*time.Second)
+				// Give each non-bootstrapped namespace its own independent 10-minute timeout.
+				// Derive from Background() to get full 600s independent of the 120s steady-state
+				// collection timeout, but use AfterFunc to ensure SIGTERM cancels immediately.
+				nsCtx, nsCancel = context.WithTimeout(context.Background(), time.Duration(defaultColdStartTimeoutSecs)*time.Second)
 				defer nsCancel()
+				stop := context.AfterFunc(ctx, nsCancel) // Cancel nsCtx when ctx is cancelled
+				defer stop()
 			} else {
 				windowHours = e.queryWindowHours // 36h (steady state with safety margin)
 				maxItems = kaMaxItems            // 1,000
@@ -327,9 +330,13 @@ func (e *KAExporter) collectMetrics(ctx context.Context) (*releaseIndex, error) 
 					gapSem <- struct{}{}        // Acquire inside goroutine for parallel launch
 					defer func() { <-gapSem }() // Release
 
-					// Use cold-start per-namespace timeout for gap-fill queries (30-day window)
-					gapCtx, cancel := context.WithTimeout(ctx, time.Duration(defaultColdStartTimeoutSecs)*time.Second)
+					// Use cold-start per-namespace timeout for gap-fill queries (30-day window).
+					// Derive from Background() to get full 600s independent of the 120s steady-state
+					// collection timeout, but use AfterFunc to ensure SIGTERM cancels immediately.
+					gapCtx, cancel := context.WithTimeout(context.Background(), time.Duration(defaultColdStartTimeoutSecs)*time.Second)
 					defer cancel()
+					stop := context.AfterFunc(ctx, cancel) // Cancel gapCtx when ctx is cancelled
+					defer stop()
 
 					e.fillNamespaceGap(gapCtx, namespace)
 				}(ns)

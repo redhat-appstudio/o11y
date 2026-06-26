@@ -127,6 +127,7 @@ func TestReleaseRecordObservation(t *testing.T) {
 		release       Release
 		wantRecorded  bool
 		wantAutomated string
+		wantEventType string
 		wantSucceeded bool
 	}{
 		{
@@ -134,21 +135,56 @@ func TestReleaseRecordObservation(t *testing.T) {
 			release: NewRelease().Name("release-1").
 				Times("2026-06-01T10:00:00Z", "2026-06-01T10:00:00Z", "2026-06-01T10:15:00Z").
 				App("my-app").Component("my-comp").PACEventType("push").Automated(true).Succeeded().Build(),
-			wantRecorded: true, wantAutomated: "true", wantSucceeded: true,
+			wantRecorded: true, wantAutomated: "true", wantEventType: "push", wantSucceeded: true,
 		},
 		{
 			name: "manual release (missing automated label)",
 			release: NewRelease().Name("manual-release").
 				Times("2026-06-01T11:00:00Z", "2026-06-01T11:01:00Z", "2026-06-01T11:20:00Z").
 				App("my-app").Component("my-comp").PACEventType("incoming").Succeeded().Build(),
-			wantRecorded: true, wantAutomated: "unknown", wantSucceeded: true,
+			wantRecorded: true, wantAutomated: "unknown", wantEventType: "incoming", wantSucceeded: true,
 		},
 		{
 			name: "failed release",
 			release: NewRelease().Name("failed-release").
 				Times("2026-06-01T12:00:00Z", "2026-06-01T12:00:30Z", "2026-06-01T12:05:00Z").
 				App("my-app").Component("my-comp").PACEventType("push").Automated(false).Failed("Failed").Build(),
-			wantRecorded: true, wantAutomated: "false", wantSucceeded: false,
+			wantRecorded: true, wantAutomated: "false", wantEventType: "push", wantSucceeded: false,
+		},
+		{
+			name: "release without event type defaults to unknown",
+			release: NewRelease().Name("my-release-abc12").
+				Times("2026-06-01T14:00:00Z", "2026-06-01T14:00:30Z", "2026-06-01T14:10:00Z").
+				App("my-app").Component("my-comp").Automated(true).Succeeded().Build(),
+			wantRecorded: true, wantAutomated: "true", wantEventType: "unknown", wantSucceeded: true,
+		},
+		{
+			name: "rerun release name (-rerun-) gets kaexporter-rerun",
+			release: NewRelease().Name("my-release-rerun-abc12").
+				Times("2026-06-01T15:00:00Z", "2026-06-01T15:00:30Z", "2026-06-01T15:10:00Z").
+				App("my-app").Component("my-comp").Automated(true).Succeeded().Build(),
+			wantRecorded: true, wantAutomated: "true", wantEventType: "kaexporter-rerun", wantSucceeded: true,
+		},
+		{
+			name: "retry release name (-retry-) gets kaexporter-rerun",
+			release: NewRelease().Name("my-release-retry-xyz99").
+				Times("2026-06-01T16:00:00Z", "2026-06-01T16:00:30Z", "2026-06-01T16:10:00Z").
+				App("my-app").Component("my-comp").Automated(true).Succeeded().Build(),
+			wantRecorded: true, wantAutomated: "true", wantEventType: "kaexporter-rerun", wantSucceeded: true,
+		},
+		{
+			name: "rr release name (-rr-) gets kaexporter-rerun",
+			release: NewRelease().Name("my-release-rr-def45").
+				Times("2026-06-01T17:00:00Z", "2026-06-01T17:00:30Z", "2026-06-01T17:10:00Z").
+				App("my-app").Component("my-comp").Automated(true).Succeeded().Build(),
+			wantRecorded: true, wantAutomated: "true", wantEventType: "kaexporter-rerun", wantSucceeded: true,
+		},
+		{
+			name: "rerun name with PAC label uses PAC label value",
+			release: NewRelease().Name("my-release-rerun-abc12").
+				Times("2026-06-01T18:00:00Z", "2026-06-01T18:00:30Z", "2026-06-01T18:10:00Z").
+				App("my-app").Component("my-comp").PACEventType("push").Automated(true).Succeeded().Build(),
+			wantRecorded: true, wantAutomated: "true", wantEventType: "push", wantSucceeded: true,
 		},
 		{
 			name: "incomplete release (no completion time)",
@@ -170,6 +206,7 @@ func TestReleaseRecordObservation(t *testing.T) {
 				recorded = true
 				if tt.wantRecorded {
 					assertEqual(t, "Automated", ls.Automated, tt.wantAutomated)
+					assertEqual(t, "EventType", ls.EventType, tt.wantEventType)
 					if tt.wantSucceeded {
 						assertFloat(t, "SuccessRate", window.ComputeSuccessRate(), 1.0)
 					} else {
@@ -229,7 +266,7 @@ func TestUpdateGauges(t *testing.T) {
 		store := NewStore()
 		newBuildSLO30d().updateGauges(store)
 		newIntegrationSLO30d().updateGauges(store)
-		newReleaseSLO30d().updateGauges(store, "test-cluster", nil)
+		newReleaseSLO30d().updateGauges(store)
 	})
 
 	t.Run("with data", func(t *testing.T) {
@@ -425,77 +462,6 @@ func TestQueueTimeMetrics(t *testing.T) {
 		})
 		if recorded {
 			t.Error("Release with missing startTime should be rejected")
-		}
-	})
-}
-
-// ── Retry Count Tests ─────────────────────────────────────────────────────────
-
-func TestRetryCountBehavior(t *testing.T) {
-	t.Run("30-day boundary excludes stale groups", func(t *testing.T) {
-		slo := newReleaseSLO30d()
-		releaseIdx := newReleaseIndex()
-
-		// Stale release (31 days old) - should be excluded
-		stale := NewRelease().Name("stale-release").Namespace("test-ns").
-			CreatedAt(daysAgo(31)).CompletedAt(daysAgo(31)).
-			Snapshot("snapshot-1").ReleasePlan("plan-a").Succeeded().Build()
-
-		// Fresh releases (29 days old) with retry
-		fresh1 := NewRelease().Name("fresh-1").Namespace("test-ns").
-			CreatedAt(daysAgo(29)).CompletedAt(daysAgo(29)).
-			Snapshot("snapshot-2").ReleasePlan("plan-b").Failed("Failed").Build()
-		fresh2 := NewRelease().Name("fresh-2").Namespace("test-ns").
-			CreatedAt(daysAgo(28)).CompletedAt(daysAgo(28)).
-			Snapshot("snapshot-2").ReleasePlan("plan-b").Succeeded().Build()
-
-		releaseIdx.addReleases("test-ns", []Release{stale, fresh1, fresh2})
-		groups := slo.buildReleaseIntentGroups(releaseIdx)
-
-		assertEqual(t, "group count", len(groups), 1)
-		for _, g := range groups {
-			assertEqual(t, "Snapshot", g.Intent.Snapshot, "snapshot-2")
-			assertEqual(t, "RetryCount", g.RetryCount, 1)
-			assertEqual(t, "FinalStatus", g.FinalStatus, "Succeeded")
-		}
-	})
-
-	t.Run("in-progress release shows InProgress status", func(t *testing.T) {
-		slo := newReleaseSLO30d()
-		releaseIdx := newReleaseIndex()
-
-		failed := NewRelease().Name("release-1").Namespace("test-ns").
-			CreatedAt(daysAgo(2)).CompletedAt(daysAgo(2)).
-			Snapshot("snapshot-x").ReleasePlan("plan-x").Failed("Failed").Build()
-		inProgress := NewRelease().Name("release-2").Namespace("test-ns").
-			CreatedAt(daysAgo(1)).StartedAt(daysAgo(1)).
-			Snapshot("snapshot-x").ReleasePlan("plan-x").Progressing().Build()
-
-		releaseIdx.addReleases("test-ns", []Release{failed, inProgress})
-		groups := slo.buildReleaseIntentGroups(releaseIdx)
-
-		assertEqual(t, "group count", len(groups), 1)
-		for _, g := range groups {
-			assertEqual(t, "FinalStatus", g.FinalStatus, "InProgress")
-			assertEqual(t, "RetryCount", g.RetryCount, 1)
-		}
-	})
-
-	t.Run("unknown status when reason is empty", func(t *testing.T) {
-		slo := newReleaseSLO30d()
-		releaseIdx := newReleaseIndex()
-
-		unknown := NewRelease().Name("unknown-release").Namespace("test-ns").
-			CreatedAt(daysAgo(1)).CompletedAt(daysAgo(1)).
-			Snapshot("snapshot-y").ReleasePlan("plan-y").
-			Condition("Released", "False", "").Build()
-
-		releaseIdx.addReleases("test-ns", []Release{unknown})
-		groups := slo.buildReleaseIntentGroups(releaseIdx)
-
-		assertEqual(t, "group count", len(groups), 1)
-		for _, g := range groups {
-			assertEqual(t, "FinalStatus", g.FinalStatus, "Failed")
 		}
 	})
 }
