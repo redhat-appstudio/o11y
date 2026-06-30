@@ -14,7 +14,8 @@ spec:
             last_over_time(
               argocd_app_info{
                 health_status="Degraded",
-                namespace=~"konflux-tenants-config|konflux-tenants-config-stage"
+                namespace=~"konflux-tenants-config|konflux-tenants-config-stage",
+                dest_namespace=~"releng-dev-tenant|releng-dev-tools-tenant|releng-integration-tenant|releng-test-product-tenant|ibm-asmw-releng-tenant|rhtap-releng-tenant"
               }[2m]
             ) == 1
           for: 10m
@@ -37,7 +38,8 @@ spec:
               argocd_app_info{
                 health_status="Healthy",
                 sync_status="OutOfSync",
-                namespace=~"konflux-tenants-config|konflux-tenants-config-stage"
+                namespace=~"konflux-tenants-config|konflux-tenants-config-stage",
+                dest_namespace=~"releng-dev-tenant|releng-dev-tools-tenant|releng-integration-tenant|releng-test-product-tenant|ibm-asmw-releng-tenant|rhtap-releng-tenant"
               }[2m]
             ) == 1
           for: 10m
@@ -59,7 +61,8 @@ spec:
             last_over_time(
               argocd_app_info{
                 health_status=~"Missing|Unknown",
-                namespace=~"konflux-tenants-config|konflux-tenants-config-stage"
+                namespace=~"konflux-tenants-config|konflux-tenants-config-stage",
+                dest_namespace=~"releng-dev-tenant|releng-dev-tools-tenant|releng-integration-tenant|releng-test-product-tenant|ibm-asmw-releng-tenant|rhtap-releng-tenant"
               }[2m]
             ) == 1
           for: 10m
