@@ -2,13 +2,13 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   creationTimestamp: null
-  name: grafana-dashboard-kanary-signal.configmap
+  name: grafana-dashboard-kanary-signal-v1.configmap
   labels:
     grafana_dashboard: "true"
   annotations:
     grafana-folder: /grafana-dashboard-definitions/RHTAP
 data:
-  kanary-signal-dashboard.json: |-
+  kanary-signal-v1-dashboard.json: |-
     {
       "annotations": {
         "list": [
@@ -29,7 +29,7 @@ data:
       "editable": true,
       "fiscalYearStartMonth": 0,
       "graphTooltip": 0,
-      "id": 1009521,
+      "id": null,
       "links": [],
       "panels": [
         {
@@ -42,7 +42,7 @@ data:
           },
           "id": 6,
           "panels": [],
-          "title": "Kanary Signals",
+          "title": "Kanary Signals V1",
           "type": "row"
         },
         {
@@ -114,7 +114,7 @@ data:
             "textMode": "auto",
             "wideLayout": true
           },
-          "pluginVersion": "11.6.3",
+          "pluginVersion": "11.6.11",
           "targets": [
             {
               "datasource": {
@@ -123,7 +123,7 @@ data:
               },
               "disableTextWrap": false,
               "editorMode": "code",
-              "expr": "min by (tested_cluster) (kanary_up{tested_cluster=~\"${kanary_clusters}\", type=~\"${kanary_type}\"})",
+              "expr": "min by (tested_cluster) (kanary_up{tested_cluster=~\"${kanary_clusters}\", type=~\"${kanary_type}\", namespace=\"konflux-otel\"})",
               "fullMetaSearch": false,
               "includeNullMetadata": true,
               "instant": false,
@@ -205,7 +205,7 @@ data:
             "textMode": "auto",
             "wideLayout": true
           },
-          "pluginVersion": "11.6.3",
+          "pluginVersion": "11.6.11",
           "targets": [
             {
               "datasource": {
@@ -214,7 +214,7 @@ data:
               },
               "disableTextWrap": false,
               "editorMode": "code",
-              "expr": "max by (tested_cluster) (kanary_error{tested_cluster=~\"${kanary_clusters}\", type=~\"${kanary_type}\"})",
+              "expr": "max by (tested_cluster) (kanary_error{tested_cluster=~\"${kanary_clusters}\", type=~\"${kanary_type}\", namespace=\"konflux-otel\"})",
               "fullMetaSearch": false,
               "includeNullMetadata": true,
               "instant": false,
@@ -228,12 +228,83 @@ data:
           "type": "stat"
         },
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${kanary_datasource}"
+          },
+          "description": "Minutes since last push of the kanary result",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 30
+                  }
+                ]
+              },
+              "unit": "m"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 24,
+            "x": 0,
+            "y": 16
+          },
+          "id": 11,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.6.11",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${kanary_datasource}"
+              },
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "min by (tested_cluster, type) (\n  (\n    time() - kanary_last_push_timestamp{tested_cluster=~\"${kanary_clusters}\", type=~\"${kanary_type}\", namespace=\"konflux-otel\"}\n  ) / 60\n)",
+              "instant": false,
+              "legendFormat": "{{tested_cluster}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "Kanary last push time",
+          "type": "stat"
+        },
+        {
           "collapsed": false,
           "gridPos": {
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 16
+            "y": 24
           },
           "id": 7,
           "panels": [],
@@ -272,7 +343,7 @@ data:
             "h": 7,
             "w": 24,
             "x": 0,
-            "y": 17
+            "y": 25
           },
           "id": 3,
           "options": {
@@ -290,7 +361,7 @@ data:
             "showThresholdMarkers": true,
             "sizing": "auto"
           },
-          "pluginVersion": "11.6.3",
+          "pluginVersion": "11.6.11",
           "targets": [
             {
               "datasource": {
@@ -300,7 +371,7 @@ data:
               "disableTextWrap": false,
               "editorMode": "code",
               "exemplar": false,
-              "expr": "avg by (tested_cluster) (avg_over_time(kanary_up{tested_cluster=~\"${kanary_clusters}\", type=~\"${kanary_type}\"}[$__range]))",
+              "expr": "avg by (tested_cluster) (avg_over_time(kanary_up{tested_cluster=~\"${kanary_clusters}\", type=~\"${kanary_type}\", namespace=\"konflux-otel\"}[$__range]))",
               "fullMetaSearch": false,
               "includeNullMetadata": true,
               "instant": false,
@@ -345,7 +416,7 @@ data:
             "h": 10,
             "w": 12,
             "x": 0,
-            "y": 24
+            "y": 32
           },
           "id": 5,
           "options": {
@@ -363,7 +434,7 @@ data:
             "showThresholdMarkers": true,
             "sizing": "auto"
           },
-          "pluginVersion": "11.6.3",
+          "pluginVersion": "11.6.11",
           "targets": [
             {
               "datasource": {
@@ -373,7 +444,7 @@ data:
               "disableTextWrap": false,
               "editorMode": "code",
               "exemplar": false,
-              "expr": "avg by (tested_cluster, reason) (avg_over_time(kanary_error{tested_cluster=~\"${kanary_clusters}\", type=~\"${kanary_type}\"}[$__range]))",
+              "expr": "avg by (tested_cluster, reason) (avg_over_time(kanary_error{tested_cluster=~\"${kanary_clusters}\", type=~\"${kanary_type}\", namespace=\"konflux-otel\"}[$__range]))",
               "fullMetaSearch": false,
               "includeNullMetadata": true,
               "instant": false,
@@ -425,7 +496,7 @@ data:
             "h": 10,
             "w": 12,
             "x": 12,
-            "y": 24
+            "y": 32
           },
           "id": 2,
           "options": {
@@ -440,7 +511,7 @@ data:
             },
             "showHeader": true
           },
-          "pluginVersion": "11.6.3",
+          "pluginVersion": "11.6.11",
           "targets": [
             {
               "datasource": {
@@ -450,7 +521,7 @@ data:
               "disableTextWrap": false,
               "editorMode": "code",
               "exemplar": false,
-              "expr": "max by (tested_cluster, reason) (kanary_error{tested_cluster=~\"${kanary_clusters}\", type=~\"${kanary_type}\"})",
+              "expr": "max by (tested_cluster, reason) (kanary_error{tested_cluster=~\"${kanary_clusters}\", type=~\"${kanary_type}\", namespace=\"konflux-otel\"})",
               "format": "table",
               "fullMetaSearch": false,
               "includeNullMetadata": true,
@@ -503,7 +574,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 34
+            "y": 42
           },
           "id": 10,
           "panels": [],
@@ -520,7 +591,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 35
+            "y": 43
           },
           "id": 8,
           "options": {
@@ -543,7 +614,7 @@ data:
             },
             "viewMode": "list"
           },
-          "pluginVersion": "11.6.3",
+          "pluginVersion": "11.6.11",
           "title": "Kanary Critical Alerts",
           "type": "alertlist"
         },
@@ -557,7 +628,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 35
+            "y": 43
           },
           "id": 9,
           "options": {
@@ -580,7 +651,7 @@ data:
             },
             "viewMode": "list"
           },
-          "pluginVersion": "11.6.3",
+          "pluginVersion": "11.6.11",
           "title": "Kanary Warning Alerts",
           "type": "alertlist"
         }
@@ -668,7 +739,7 @@ data:
       },
       "timepicker": {},
       "timezone": "browser",
-      "title": "Kanary Signal Dashboard",
-      "uid": "eeoimpx3yutq9f",
-      "version": 7
+      "title": "Kanary Signal V1 Dashboard",
+      "uid": "kanary-signals-v1",
+      "version": 9
     }
