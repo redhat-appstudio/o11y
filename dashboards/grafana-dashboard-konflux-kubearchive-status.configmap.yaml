@@ -103,7 +103,7 @@ data:
                     "uid": "${Datasource}"
                   },
                   "editorMode": "code",
-                  "expr": "1 - (\n  sum(http_server_request_duration_bucket{source_cluster=~\"$cluster\", exported_job=\"kubearchive.sink\", le=\"100\", http_route!~\"(/livez|/readyz)\"})\n  /\n  sum(http_server_request_duration_bucket{source_cluster=~\"$cluster\", exported_job=\"kubearchive.sink\", le=\"+Inf\", http_route!~\"(/livez|/readyz)\"})\n)",
+                  "expr": "sum(rate(http_server_request_duration_bucket{source_cluster=~\"$cluster\", exported_job=\"kubearchive.sink\", le=\"100\", http_route!~\"(/livez|/readyz)\"}[$__rate_interval])) / sum(rate(http_server_request_duration_bucket{source_cluster=~\"$cluster\", exported_job=\"kubearchive.sink\", le=\"+Inf\", http_route!~\"(/livez|/readyz)\"}[$__rate_interval]))",
                   "legendFormat": "KubeArchive Sink",
                   "range": true,
                   "refId": "A"
@@ -114,7 +114,7 @@ data:
                     "uid": "${Datasource}"
                   },
                   "editorMode": "code",
-                  "expr": "1 - (\n  sum(http_server_request_duration_bucket{source_cluster=~\"$cluster\", exported_job=\"kubearchive.api\", le=\"100\", http_route!~\"(/livez|/readyz)\"})\n  /\n  sum(http_server_request_duration_bucket{source_cluster=~\"$cluster\", exported_job=\"kubearchive.api\", le=\"+Inf\", http_route!~\"(/livez|/readyz)\"})\n)",
+                  "expr": "sum(rate(http_server_request_duration_bucket{source_cluster=~\"$cluster\", exported_job=\"kubearchive.api\", le=\"100\", http_route!~\"(/livez|/readyz)\"}[$__rate_interval])) / sum(rate(http_server_request_duration_bucket{source_cluster=~\"$cluster\", exported_job=\"kubearchive.api\", le=\"+Inf\", http_route!~\"(/livez|/readyz)\"}[$__rate_interval]))",
                   "hide": false,
                   "legendFormat": "KubeArchive API",
                   "range": true,
@@ -438,8 +438,6 @@ data:
                   },
                   "fieldMinMax": false,
                   "mappings": [],
-                  "max": 1,
-                  "min": 0,
                   "thresholds": {
                     "mode": "absolute",
                     "steps": [
@@ -496,7 +494,7 @@ data:
                     "uid": "${Datasource}"
                   },
                   "editorMode": "code",
-                  "expr": "sum(increase(kubearchive_cloudevents{source_cluster=~\"$cluster\"}[$__rate_interval])) \nor on() vector(0)\n- \n(sum(increase(kubearchive_cloudevents{source_cluster=~\"$cluster\"}[$__rate_interval] offset 1h)) \nor on() vector(0))",
+                  "expr": "sum(increase(kubearchive_cloudevents{source_cluster=~\"$cluster\"}[1h])) \nor on() vector(0)\n- \n(sum(increase(kubearchive_cloudevents{source_cluster=~\"$cluster\"}[1h] offset 1h)) \nor on() vector(0))",
                   "legendFormat": "__auto",
                   "range": true,
                   "refId": "A"
@@ -869,7 +867,80 @@ data:
                   },
                   "unit": "bytes"
                 },
-                "overrides": []
+                "overrides": [
+                  {
+                    "matcher": {
+                      "id": "byRegexp",
+                      "options": "/.*Memory/"
+                    },
+                    "properties": [
+                      {
+                        "id": "unit",
+                        "value": "decbytes"
+                      },
+                      {
+                        "id": "custom.axisPlacement",
+                        "value": "left"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byRegexp",
+                      "options": "/.*CPU/"
+                    },
+                    "properties": [
+                      {
+                        "id": "unit",
+                        "value": "none"
+                      },
+                      {
+                        "id": "custom.axisPlacement",
+                        "value": "right"
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byRegexp",
+                      "options": "/.*Limits/"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.lineStyle",
+                        "value": {
+                          "dash": [
+                            10,
+                            10
+                          ],
+                          "fill": "dash"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byRegexp",
+                      "options": "/.*Requests/"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.lineStyle",
+                        "value": {
+                          "dash": [
+                            0,
+                            10
+                          ],
+                          "fill": "dot"
+                        }
+                      },
+                      {
+                        "id": "custom.lineWidth",
+                        "value": 4
+                      }
+                    ]
+                  }
+                ]
               },
               "gridPos": {
                 "h": 11,
@@ -966,83 +1037,9 @@ data:
                         "value": 80
                       }
                     ]
-                  },
-                  "unit": "bytes"
-                },
-                "overrides": [
-                  {
-                    "matcher": {
-                      "id": "byRegexp",
-                      "options": "/.*Memory/"
-                    },
-                    "properties": [
-                      {
-                        "id": "unit",
-                        "value": "decbytes"
-                      },
-                      {
-                        "id": "custom.axisPlacement",
-                        "value": "left"
-                      }
-                    ]
-                  },
-                  {
-                    "matcher": {
-                      "id": "byRegexp",
-                      "options": "/.*CPU/"
-                    },
-                    "properties": [
-                      {
-                        "id": "unit",
-                        "value": "none"
-                      },
-                      {
-                        "id": "custom.axisPlacement",
-                        "value": "right"
-                      }
-                    ]
-                  },
-                  {
-                    "matcher": {
-                      "id": "byRegexp",
-                      "options": "/.*Limits/"
-                    },
-                    "properties": [
-                      {
-                        "id": "custom.lineStyle",
-                        "value": {
-                          "dash": [
-                            10,
-                            10
-                          ],
-                          "fill": "dash"
-                        }
-                      }
-                    ]
-                  },
-                  {
-                    "matcher": {
-                      "id": "byRegexp",
-                      "options": "/.*Requests/"
-                    },
-                    "properties": [
-                      {
-                        "id": "custom.lineStyle",
-                        "value": {
-                          "dash": [
-                            0,
-                            10
-                          ],
-                          "fill": "dot"
-                        }
-                      },
-                      {
-                        "id": "custom.lineWidth",
-                        "value": 4
-                      }
-                    ]
                   }
-                ]
+                },
+                "overrides": []
               },
               "gridPos": {
                 "h": 16,
@@ -1162,8 +1159,7 @@ data:
                         "value": 80
                       }
                     ]
-                  },
-                  "unit": "bytes"
+                  }
                 },
                 "overrides": []
               },
@@ -1403,7 +1399,7 @@ data:
                     "uid": "${Datasource}"
                   },
                   "editorMode": "code",
-                  "expr": "sum by (source_cluster) (increase(kubearchive_cloudevents{source_cluster=~\"$cluster\", resource_type=\"tekton.dev/v1/PipelineRun\", result=\"insert\"}[1h]))",
+                  "expr": "sum by (source_cluster) (increase(kubearchive_cloudevents{source_cluster=~\"$cluster\", resource_type=\"tekton.dev/v1/PipelineRun\", event_type=~\".*insert.*\"}[1h]))",
                   "hide": false,
                   "instant": false,
                   "interval": "1h",
