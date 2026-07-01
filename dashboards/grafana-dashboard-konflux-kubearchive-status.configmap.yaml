@@ -28,7 +28,7 @@ data:
       "editable": true,
       "fiscalYearStartMonth": 0,
       "graphTooltip": 0,
-      "id": 1103336,
+      "id": null,
       "links": [],
       "panels": [
         {
@@ -103,7 +103,7 @@ data:
                     "uid": "${Datasource}"
                   },
                   "editorMode": "code",
-                  "expr": "1 - (\n  sum(http_server_request_duration_bucket{source_cluster=~\"$cluster\", exported_job=\"kubearchive.sink\", le=\"100\", http_route!~\"(/livez|/readyz)\"})\n  /\n  sum(http_server_request_duration_bucket{source_cluster=~\"$cluster\", exported_job=\"kubearchive.sink\", http_route!~\"(/livez|/readyz)\"})\n)",
+                  "expr": "1 - (\n  sum(http_server_request_duration_bucket{source_cluster=~\"$cluster\", exported_job=\"kubearchive.sink\", le=\"100\", http_route!~\"(/livez|/readyz)\"})\n  /\n  sum(http_server_request_duration_bucket{source_cluster=~\"$cluster\", exported_job=\"kubearchive.sink\", le=\"+Inf\", http_route!~\"(/livez|/readyz)\"})\n)",
                   "legendFormat": "KubeArchive Sink",
                   "range": true,
                   "refId": "A"
@@ -114,7 +114,7 @@ data:
                     "uid": "${Datasource}"
                   },
                   "editorMode": "code",
-                  "expr": "1 - (\n  sum(http_server_request_duration_bucket{source_cluster=~\"$cluster\", exported_job=\"kubearchive.api\", le=\"100\", http_route!~\"(/livez|/readyz)\"})\n  /\n  sum(http_server_request_duration_bucket{source_cluster=~\"$cluster\", exported_job=\"kubearchive.api\", http_route!~\"(/livez|/readyz)\"})\n)",
+                  "expr": "1 - (\n  sum(http_server_request_duration_bucket{source_cluster=~\"$cluster\", exported_job=\"kubearchive.api\", le=\"100\", http_route!~\"(/livez|/readyz)\"})\n  /\n  sum(http_server_request_duration_bucket{source_cluster=~\"$cluster\", exported_job=\"kubearchive.api\", le=\"+Inf\", http_route!~\"(/livez|/readyz)\"})\n)",
                   "hide": false,
                   "legendFormat": "KubeArchive API",
                   "range": true,
@@ -138,7 +138,7 @@ data:
                   },
                   "fieldMinMax": false,
                   "mappings": [],
-                  "max": 1,
+                  "max": 100,
                   "min": 0,
                   "thresholds": {
                     "mode": "absolute",
@@ -214,7 +214,7 @@ data:
                   },
                   "fieldMinMax": false,
                   "mappings": [],
-                  "max": 1,
+                  "max": 100,
                   "min": 0,
                   "thresholds": {
                     "mode": "absolute",
@@ -617,7 +617,7 @@ data:
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "P22466E8E7855F1E0"
+                "uid": "${Datasource}"
               },
               "fieldConfig": {
                 "defaults": {
@@ -698,7 +698,7 @@ data:
                 {
                   "datasource": {
                     "type": "prometheus",
-                    "uid": "P22466E8E7855F1E0"
+                    "uid": "${Datasource}"
                   },
                   "disableTextWrap": false,
                   "editorMode": "code",
@@ -1403,7 +1403,7 @@ data:
                     "uid": "${Datasource}"
                   },
                   "editorMode": "code",
-                  "expr": "sum by (source_cluster) (increase(kubearchive_cloudevents_total{source_cluster=~\"$cluster\", resource_type=\"tekton.dev/v1/PipelineRun\", result=\"insert\"}[1h]))",
+                  "expr": "sum by (source_cluster) (increase(kubearchive_cloudevents{source_cluster=~\"$cluster\", resource_type=\"tekton.dev/v1/PipelineRun\", result=\"insert\"}[1h]))",
                   "hide": false,
                   "instant": false,
                   "interval": "1h",
@@ -2437,8 +2437,7 @@ data:
                         "value": 80
                       }
                     ]
-                  },
-                  "unit": "none"
+                  }
                 },
                 "overrides": []
               },
@@ -3063,101 +3062,6 @@ data:
               },
               "gridPos": {
                 "h": 13,
-                "w": 12,
-                "x": 0,
-                "y": 18
-              },
-              "id": 52,
-              "options": {
-                "legend": {
-                  "calcs": [],
-                  "displayMode": "list",
-                  "placement": "bottom",
-                  "showLegend": true
-                },
-                "tooltip": {
-                  "hideZeros": false,
-                  "mode": "single",
-                  "sort": "none"
-                }
-              },
-              "pluginVersion": "11.6.11",
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "${Datasource}"
-                  },
-                  "editorMode": "code",
-                  "expr": "sum by (source_cluster, phase) (kube_pod_status_phase{namespace=~\"$namespace\", source_cluster=~\"$cluster\", phase=~\"Failed\"})",
-                  "legendFormat": "{{source_cluster}} - {{phase}}",
-                  "range": true,
-                  "refId": "A"
-                }
-              ],
-              "title": "KubeArchive pod status phase on Timeline phase=\"Failed\" $cluster",
-              "transparent": true,
-              "type": "timeseries"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${Datasource}"
-              },
-              "description": "\"Monitors the aggregate CPU usage of the product-kubearchive-logging namespace in real-time. This visualization tracks workload patterns and performance peaks, providing immediate visibility into resource consumption relative to the 80% utilization threshold.\"",
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "palette-classic"
-                  },
-                  "custom": {
-                    "axisBorderShow": false,
-                    "axisCenteredZero": false,
-                    "axisColorMode": "text",
-                    "axisLabel": "",
-                    "axisPlacement": "auto",
-                    "barAlignment": 0,
-                    "barWidthFactor": 0.6,
-                    "drawStyle": "line",
-                    "fillOpacity": 0,
-                    "gradientMode": "none",
-                    "hideFrom": {
-                      "legend": false,
-                      "tooltip": false,
-                      "viz": false
-                    },
-                    "insertNulls": false,
-                    "lineInterpolation": "linear",
-                    "lineWidth": 1,
-                    "pointSize": 5,
-                    "scaleDistribution": {
-                      "type": "linear"
-                    },
-                    "showPoints": "auto",
-                    "spanNulls": false,
-                    "stacking": {
-                      "group": "A",
-                      "mode": "none"
-                    },
-                    "thresholdsStyle": {
-                      "mode": "off"
-                    }
-                  },
-                  "decimals": 0,
-                  "mappings": [],
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green"
-                      }
-                    ]
-                  }
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 13,
                 "w": 11,
                 "x": 12,
                 "y": 18
@@ -3628,8 +3532,9 @@ data:
         "list": [
           {
             "current": {
-              "text": "rhtap-observatorium-production",
-              "value": "P22466E8E7855F1E0"
+              "selected": false,
+              "text": "",
+              "value": ""
             },
             "label": "Prometheus",
             "name": "Datasource",
@@ -3730,7 +3635,7 @@ data:
       },
       "timepicker": {},
       "timezone": "UTC",
-      "title": "KubeArchive Status-1",
-      "uid": "beqtfn88x35kwf--",
+      "title": "KubeArchive Status",
+      "uid": "beqtfn88x35kwf",
       "version": 212
     }
