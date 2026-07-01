@@ -20,21 +20,21 @@ func TestBuildRecordObservation(t *testing.T) {
 		{
 			name: "successful docker build",
 			plr: NewPLR().UID("build-123").
-				Times("2026-06-01T10:00:00Z", "2026-06-01T10:00:30Z", "2026-06-01T10:05:00Z").
+				Times(secondsAgo(3600), secondsAgo(3570), secondsAgo(3300)).
 				Pipeline("docker-build-oci-ta").EventType("push").Succeeded().Build(),
 			wantRecorded: true, wantBuildType: "docker-builds", wantEventType: "push", wantSucceeded: true,
 		},
 		{
 			name: "failed build with missing event type",
 			plr: NewPLR().UID("build-fail").
-				Times("2026-06-01T11:00:00Z", "2026-06-01T11:00:10Z", "2026-06-01T11:03:00Z").
+				Times(secondsAgo(3600), secondsAgo(3590), secondsAgo(3420)).
 				Pipeline("bundle-build-oci-ta").Failed("").Build(),
 			wantRecorded: true, wantBuildType: "bundle-builds", wantEventType: "unknown", wantSucceeded: false,
 		},
 		{
 			name: "incomplete build (no completion time)",
 			plr: NewPLR().UID("build-running").
-				CreatedAt("2026-06-01T12:00:00Z").
+				CreatedAt(secondsAgo(3600)).
 				Pipeline("docker-build").EventType("pull_request").Build(),
 			wantRecorded: false,
 		},
@@ -79,21 +79,21 @@ func TestIntegrationRecordObservation(t *testing.T) {
 		{
 			name: "required integration test (optional defaults to false)",
 			plr: NewPLR().UID("test-123").
-				Times("2026-06-01T10:00:00Z", "2026-06-01T10:00:15Z", "2026-06-01T10:10:00Z").
+				Times(secondsAgo(3600), secondsAgo(3585), secondsAgo(3000)).
 				Pipeline("custom-integration").TestScenario("scenario-1").PACEventType("push").Succeeded().Build(),
 			wantRecorded: true, wantTestType: "integration", wantOptional: "false", wantEventType: "push",
 		},
 		{
 			name: "optional test",
 			plr: NewPLR().UID("test-optional").
-				Times("2026-06-01T11:00:00Z", "2026-06-01T11:00:20Z", "2026-06-01T11:05:00Z").
+				Times(secondsAgo(3600), secondsAgo(3580), secondsAgo(3300)).
 				Pipeline("tmt-integration").TestScenario("scenario-2").Optional(true).PACEventType("pull_request").Failed("").Build(),
 			wantRecorded: true, wantTestType: "integration", wantOptional: "true", wantEventType: "pull_request",
 		},
 		{
 			name: "EC test",
 			plr: NewPLR().UID("test-ec").
-				Times("2026-06-01T12:00:00Z", "2026-06-01T12:00:05Z", "2026-06-01T12:02:00Z").
+				Times(secondsAgo(3600), secondsAgo(3595), secondsAgo(3480)).
 				Pipeline("enterprise-contract").TestScenario("ec-scan").PACEventType("push").Succeeded().Build(),
 			wantRecorded: true, wantTestType: "ec", wantOptional: "false", wantEventType: "push",
 		},
@@ -133,63 +133,63 @@ func TestReleaseRecordObservation(t *testing.T) {
 		{
 			name: "automated push release",
 			release: NewRelease().Name("release-1").
-				Times("2026-06-01T10:00:00Z", "2026-06-01T10:00:00Z", "2026-06-01T10:15:00Z").
+				Times(secondsAgo(3600), secondsAgo(3600), secondsAgo(2700)).
 				App("my-app").Component("my-comp").PACEventType("push").Automated(true).Succeeded().Build(),
 			wantRecorded: true, wantAutomated: "true", wantEventType: "push", wantSucceeded: true,
 		},
 		{
 			name: "manual release (missing automated label)",
 			release: NewRelease().Name("manual-release").
-				Times("2026-06-01T11:00:00Z", "2026-06-01T11:01:00Z", "2026-06-01T11:20:00Z").
+				Times(secondsAgo(3600), secondsAgo(3540), secondsAgo(2400)).
 				App("my-app").Component("my-comp").PACEventType("incoming").Succeeded().Build(),
 			wantRecorded: true, wantAutomated: "unknown", wantEventType: "incoming", wantSucceeded: true,
 		},
 		{
 			name: "failed release",
 			release: NewRelease().Name("failed-release").
-				Times("2026-06-01T12:00:00Z", "2026-06-01T12:00:30Z", "2026-06-01T12:05:00Z").
+				Times(secondsAgo(3600), secondsAgo(3570), secondsAgo(3300)).
 				App("my-app").Component("my-comp").PACEventType("push").Automated(false).Failed("Failed").Build(),
 			wantRecorded: true, wantAutomated: "false", wantEventType: "push", wantSucceeded: false,
 		},
 		{
 			name: "release without event type defaults to unknown",
 			release: NewRelease().Name("my-release-abc12").
-				Times("2026-06-01T14:00:00Z", "2026-06-01T14:00:30Z", "2026-06-01T14:10:00Z").
+				Times(secondsAgo(3600), secondsAgo(3570), secondsAgo(3000)).
 				App("my-app").Component("my-comp").Automated(true).Succeeded().Build(),
 			wantRecorded: true, wantAutomated: "true", wantEventType: "unknown", wantSucceeded: true,
 		},
 		{
 			name: "rerun release name (-rerun-) gets kaexporter-rerun",
 			release: NewRelease().Name("my-release-rerun-abc12").
-				Times("2026-06-01T15:00:00Z", "2026-06-01T15:00:30Z", "2026-06-01T15:10:00Z").
+				Times(secondsAgo(3600), secondsAgo(3570), secondsAgo(3000)).
 				App("my-app").Component("my-comp").Automated(true).Succeeded().Build(),
 			wantRecorded: true, wantAutomated: "true", wantEventType: "kaexporter-rerun", wantSucceeded: true,
 		},
 		{
 			name: "retry release name (-retry-) gets kaexporter-rerun",
 			release: NewRelease().Name("my-release-retry-xyz99").
-				Times("2026-06-01T16:00:00Z", "2026-06-01T16:00:30Z", "2026-06-01T16:10:00Z").
+				Times(secondsAgo(3600), secondsAgo(3570), secondsAgo(3000)).
 				App("my-app").Component("my-comp").Automated(true).Succeeded().Build(),
 			wantRecorded: true, wantAutomated: "true", wantEventType: "kaexporter-rerun", wantSucceeded: true,
 		},
 		{
 			name: "rr release name (-rr-) gets kaexporter-rerun",
 			release: NewRelease().Name("my-release-rr-def45").
-				Times("2026-06-01T17:00:00Z", "2026-06-01T17:00:30Z", "2026-06-01T17:10:00Z").
+				Times(secondsAgo(3600), secondsAgo(3570), secondsAgo(3000)).
 				App("my-app").Component("my-comp").Automated(true).Succeeded().Build(),
 			wantRecorded: true, wantAutomated: "true", wantEventType: "kaexporter-rerun", wantSucceeded: true,
 		},
 		{
 			name: "rerun name with PAC label uses PAC label value",
 			release: NewRelease().Name("my-release-rerun-abc12").
-				Times("2026-06-01T18:00:00Z", "2026-06-01T18:00:30Z", "2026-06-01T18:10:00Z").
+				Times(secondsAgo(3600), secondsAgo(3570), secondsAgo(3000)).
 				App("my-app").Component("my-comp").PACEventType("push").Automated(true).Succeeded().Build(),
 			wantRecorded: true, wantAutomated: "true", wantEventType: "push", wantSucceeded: true,
 		},
 		{
 			name: "incomplete release (no completion time)",
 			release: NewRelease().Name("running-release").
-				CreatedAt("2026-06-01T13:00:00Z").
+				CreatedAt(secondsAgo(3600)).
 				App("my-app").Component("my-comp").PACEventType("push").Automated(true).Build(),
 			wantRecorded: false,
 		},
@@ -226,8 +226,8 @@ func TestEdgeCases(t *testing.T) {
 		store := NewStore()
 		slo := newBuildSLO30d()
 		plr := NewPLR().UID("bad-time").
-			CreatedAt("2026-06-01T10:00:00Z").
-			CompletedAt("2026-06-01T09:55:00Z"). // Before creation
+			CreatedAt(secondsAgo(3600)).
+			CompletedAt(secondsAgo(3900)). // Before creation
 			Pipeline("docker-build").Succeeded().Build()
 
 		slo.recordObservation(store, "test-cluster", "test-ns", "app", "comp", plr)
@@ -245,7 +245,7 @@ func TestEdgeCases(t *testing.T) {
 		store := NewStore()
 		slo := newBuildSLO30d()
 		plr := NewPLR().UID("same-build").
-			Times("2026-06-01T10:00:00Z", "2026-06-01T10:00:10Z", "2026-06-01T10:05:00Z").
+			Times(secondsAgo(3600), secondsAgo(3590), secondsAgo(3300)).
 			Pipeline("docker-build").Succeeded().Build()
 
 		slo.recordObservation(store, "cluster", "ns", "app", "comp", plr)
@@ -339,7 +339,7 @@ func TestQueueTimeMetrics(t *testing.T) {
 		store := NewStore()
 		slo := newBuildSLO30d()
 		plr := NewPLR().UID("wait-test-1").
-			Times("2026-06-01T10:00:00Z", "2026-06-01T10:02:30Z", "2026-06-01T10:07:30Z").
+			Times(secondsAgo(3600), secondsAgo(3450), secondsAgo(3150)).
 			Pipeline("docker-build").Succeeded().Build()
 
 		slo.recordObservation(store, "test-cluster", "test-ns", "test-app", "test-comp", plr)
@@ -353,8 +353,8 @@ func TestQueueTimeMetrics(t *testing.T) {
 		store := NewStore()
 		slo := newBuildSLO30d()
 		plr := NewPLR().UID("wait-test-2").
-			CreatedAt("2026-06-01T10:00:00Z").
-			CompletedAt("2026-06-01T10:05:00Z").
+			CreatedAt(secondsAgo(3600)).
+			CompletedAt(secondsAgo(3300)).
 			Pipeline("docker-build").Succeeded().Build()
 
 		slo.recordObservation(store, "test-cluster", "test-ns", "test-app", "test-comp", plr)
@@ -372,7 +372,7 @@ func TestQueueTimeMetrics(t *testing.T) {
 		store := NewStore()
 		slo := newBuildSLO30d()
 		plr := NewPLR().UID("wait-test-3").
-			Times("2026-06-01T10:00:00Z", "2026-06-01T10:00:00Z", "2026-06-01T10:05:00Z").
+			Times(secondsAgo(3600), secondsAgo(3600), secondsAgo(3300)).
 			Pipeline("docker-build").Succeeded().Build()
 
 		slo.recordObservation(store, "test-cluster", "test-ns", "test-app", "test-comp", plr)
@@ -436,7 +436,7 @@ func TestQueueTimeMetrics(t *testing.T) {
 		store := NewStore()
 		slo := newReleaseSLO30d()
 		release := NewRelease().Name("release-wait-test").
-			Times("2026-06-01T10:00:00Z", "2026-06-01T10:05:00Z", "2026-06-01T10:15:00Z").
+			Times(secondsAgo(3600), secondsAgo(3300), secondsAgo(2700)).
 			App("app").Component("comp").PACEventType("push").Automated(true).Succeeded().Build()
 
 		slo.recordObservation(store, "test-cluster", "test-ns", "app", "comp", release)
@@ -450,8 +450,8 @@ func TestQueueTimeMetrics(t *testing.T) {
 		store := NewStore()
 		slo := newReleaseSLO30d()
 		release := NewRelease().Name("release-no-start").
-			CreatedAt("2026-06-01T10:00:00Z").
-			CompletedAt("2026-06-01T10:15:00Z").
+			CreatedAt(secondsAgo(3600)).
+			CompletedAt(secondsAgo(2700)).
 			App("app").Component("comp").PACEventType("push").Automated(true).Succeeded().Build()
 
 		slo.recordObservation(store, "test-cluster", "test-ns", "app", "comp", release)

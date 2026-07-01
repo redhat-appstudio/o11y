@@ -269,6 +269,10 @@ func hoursAgo(hours int) string {
 	return time.Now().UTC().Add(-time.Duration(hours) * time.Hour).Format(time.RFC3339)
 }
 
+func secondsAgo(s int) string {
+	return time.Now().UTC().Add(-time.Duration(s) * time.Second).Format(time.RFC3339)
+}
+
 // ── Mock HTTP Helpers ─────────────────────────────────────────────────────────
 
 type mockRoundTripper struct {
