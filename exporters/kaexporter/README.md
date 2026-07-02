@@ -35,7 +35,7 @@ On first boot, the exporter queries **720 hours (30 days)** of historical data t
 | Query window | 720h (30 days) | `KA_WINDOW_HOURS` + 50% |
 | Collection timeout | 600s | `KA_COLLECTION_TIMEOUT_SECONDS` |
 | Concurrency | 5 | `KA_MAX_CONCURRENT` |
-| Per-namespace item cap | 10,000 | 1,000 |
+| Per-namespace item cap | 10,000 | 1,500 |
 
 **Note:** `/metrics` endpoint is not served until cold start completes (~90-120 seconds). For architectural details on why this is necessary, see [DESIGN.md](DESIGN.md#1-cold-start-bootstrapping).
 

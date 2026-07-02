@@ -63,12 +63,12 @@ const (
 	kaPageLimit = 500
 
 	// kaMaxItems is the steady-state safety cap on total items fetched per endpoint per scrape.
-	kaMaxItems = 1000
+	kaMaxItems = 1500
 
 	// Cold-start configuration: on first boot the exporter queries 30 days of history
 	// to bootstrap full rolling-window accuracy, then switches to the steady-state window.
 	coldStartWindowHours        = 720   // 30 days
-	coldStartMaxItems           = 10000 // higher cap during bootstrap (busy namespaces exceed 1000 over 30d)
+	coldStartMaxItems           = 10000 // higher cap during bootstrap (busy namespaces exceed 1500 over 30d)
 	defaultColdStartTimeoutSecs = 600   // 10 min - allows busy namespaces to complete 30-day bootstrap
 
 	// parallelism for KubeArchive API calls.

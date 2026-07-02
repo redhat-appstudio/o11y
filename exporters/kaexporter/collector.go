@@ -242,7 +242,7 @@ func (e *KAExporter) collectMetrics(ctx context.Context) (*releaseIndex, error) 
 				defer stop()
 			} else {
 				windowHours = e.queryWindowHours // 36h (steady state with safety margin)
-				maxItems = kaMaxItems            // 1,000
+				maxItems = kaMaxItems
 				// Bootstrapped namespaces share the parent context (global timeout)
 				nsCtx = ctx
 			}
