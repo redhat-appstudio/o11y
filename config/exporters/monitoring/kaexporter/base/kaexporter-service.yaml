@@ -143,6 +143,12 @@ spec:
               value: "9101"
             - name: KA_COLLECTION_TIMEOUT_SECONDS
               value: "160"
+          startupProbe:
+            httpGet:
+              path: /healthz
+              port: http-metrics
+            periodSeconds: 5
+            failureThreshold: 180
           livenessProbe:
             httpGet:
               path: /healthz
