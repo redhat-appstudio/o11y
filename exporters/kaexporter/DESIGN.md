@@ -42,7 +42,7 @@ Steady State Settings:
 - Query window: 36h (24h base + 50% safety margin)
 - Collection timeout: 120s (2 minutes)
 - Concurrency: 10 parallel requests
-- Per-namespace item cap: 1,000
+- Per-namespace item cap: 1,500
 ```
 
 **Why 36h for steady state?**
