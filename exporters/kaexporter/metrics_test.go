@@ -54,9 +54,9 @@ func TestBuildRecordObservation(t *testing.T) {
 					assertEqual(t, "EventType", ls.EventType, tt.wantEventType)
 					assertEqual(t, "TotalCount", window.ComputeTotalCount(), int64(1))
 					if tt.wantSucceeded {
-						assertFloat(t, "SuccessRate", window.ComputeSuccessRate(), 1.0)
+						assertEqual(t, "SuccessCount", window.ComputeSuccessCount(), int64(1))
 					} else {
-						assertFloat(t, "SuccessRate", window.ComputeSuccessRate(), 0.0)
+						assertEqual(t, "SuccessCount", window.ComputeSuccessCount(), int64(0))
 					}
 				}
 			})
@@ -208,9 +208,9 @@ func TestReleaseRecordObservation(t *testing.T) {
 					assertEqual(t, "Automated", ls.Automated, tt.wantAutomated)
 					assertEqual(t, "EventType", ls.EventType, tt.wantEventType)
 					if tt.wantSucceeded {
-						assertFloat(t, "SuccessRate", window.ComputeSuccessRate(), 1.0)
+						assertEqual(t, "SuccessCount", window.ComputeSuccessCount(), int64(1))
 					} else {
-						assertFloat(t, "SuccessRate", window.ComputeSuccessRate(), 0.0)
+						assertEqual(t, "SuccessCount", window.ComputeSuccessCount(), int64(0))
 					}
 				}
 			})
@@ -294,12 +294,13 @@ func TestUpdateGauges(t *testing.T) {
 		metricCount := 0
 		store.ForEachWindow(metricBuildDuration, func(ls LabelSet, window *MetricWindow) {
 			metricCount++
-			if window.ComputeTotalCount() == 0 {
+			totalCount := window.ComputeTotalCount()
+			if totalCount == 0 {
 				t.Error("TotalCount should not be 0")
 			}
-			sr := window.ComputeSuccessRate()
-			if sr < 0 || sr > 1 {
-				t.Errorf("SuccessRate %f out of range [0, 1]", sr)
+			successCount := window.ComputeSuccessCount()
+			if successCount < 0 || successCount > totalCount {
+				t.Errorf("SuccessCount %d out of valid range [0, %d]", successCount, totalCount)
 			}
 		})
 		if metricCount == 0 {
@@ -326,8 +327,6 @@ func TestUpdateGauges(t *testing.T) {
 		store.ForEachWindow(metricBuildDuration, func(ls LabelSet, window *MetricWindow) {
 			assertEqual(t, "TotalCount", window.ComputeTotalCount(), int64(5))
 			assertEqual(t, "SuccessCount", window.ComputeSuccessCount(), int64(0))
-			assertFloat(t, "SuccessRate", window.ComputeSuccessRate(), 0.0)
-			assertFloat(t, "FailureRate", window.ComputeFailureRate(), 1.0)
 		})
 	})
 }
@@ -518,7 +517,8 @@ func TestStoreCleanup(t *testing.T) {
 		store.ForEachWindow(metricBuildDuration, func(ls LabelSet, window *MetricWindow) {
 			assertFloat(t, "SuccessMean", window.ComputeSuccessMean(), 150.0)
 			assertFloat(t, "WaitMean", window.ComputeWaitMean(), 4.0)
-			assertFloat(t, "SuccessRate", window.ComputeSuccessRate(), 1.0)
+			assertEqual(t, "SuccessCount", window.ComputeSuccessCount(), int64(2))
+			assertEqual(t, "TotalCount", window.ComputeTotalCount(), int64(2))
 		})
 	})
 

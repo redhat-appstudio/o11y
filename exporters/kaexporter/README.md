@@ -49,36 +49,32 @@ All metrics are **Gauges** over a rolling 30-day window of daily aggregated buck
 
 | Metric | Phase | Labels |
 |--------|-------|--------|
-| `konflux_build_mean_duration_30d_seconds` | build | `cluster, namespace, application, component, build_type, event_type` |
-| `konflux_build_mean_wait_30d_seconds` | build | `cluster, namespace, application, component, build_type, event_type` |
-| `konflux_build_success_rate_30d` | build | `cluster, namespace, application, component, build_type, event_type` |
-| `konflux_build_failure_rate_30d` | build | `cluster, namespace, application, component, build_type, event_type` |
+| `konflux_build_mean_duration_seconds_30d` | build | `cluster, namespace, application, component, build_type, event_type` |
+| `konflux_build_mean_wait_seconds_30d` | build | `cluster, namespace, application, component, build_type, event_type` |
 | `konflux_build_total_count_30d` | build | `cluster, namespace, application, component, build_type, event_type` |
 | `konflux_build_success_count_30d` | build | `cluster, namespace, application, component, build_type, event_type` |
 | `konflux_build_failure_count_30d` | build | `cluster, namespace, application, component, build_type, event_type, reason` |
-| `konflux_integration_mean_duration_30d_seconds` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type` |
-| `konflux_integration_mean_wait_30d_seconds` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type` |
-| `konflux_integration_success_rate_30d` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type` |
-| `konflux_integration_failure_rate_30d` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type` |
+| `konflux_integration_mean_duration_seconds_30d` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type` |
+| `konflux_integration_mean_wait_seconds_30d` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type` |
 | `konflux_integration_total_count_30d` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type` |
 | `konflux_integration_success_count_30d` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type` |
 | `konflux_integration_failure_count_30d` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type, reason` |
-| `konflux_release_cr_mean_duration_30d_seconds` | release | `cluster, namespace, application, component, automated, event_type` |
-| `konflux_release_cr_mean_wait_30d_seconds` | release | `cluster, namespace, application, component, automated, event_type` |
-| `konflux_release_cr_success_rate_30d` | release | `cluster, namespace, application, component, automated, event_type` |
-| `konflux_release_cr_failure_rate_30d` | release | `cluster, namespace, application, component, automated, event_type` |
+| `konflux_release_cr_mean_duration_seconds_30d` | release | `cluster, namespace, application, component, automated, event_type` |
+| `konflux_release_cr_mean_wait_seconds_30d` | release | `cluster, namespace, application, component, automated, event_type` |
 | `konflux_release_cr_total_count_30d` | release | `cluster, namespace, application, component, automated, event_type` |
 | `konflux_release_cr_success_count_30d` | release | `cluster, namespace, application, component, automated, event_type` |
 | `konflux_release_cr_failure_count_30d` | release | `cluster, namespace, application, component, automated, event_type, reason` |
 
 **Metric definitions**:
-- **Duration metrics** (`mean_duration_30d_seconds`): Mean execution time for successful workloads (startTime to completionTime for PipelineRuns; startTime to completionTime for Releases)
-- **Wait metrics** (`mean_wait_30d_seconds`): Mean waiting time before execution starts (creationTimestamp to startTime). Useful for identifying scheduling delays and resource constraints.
-- **Success rate** (`success_rate_30d`): Ratio of successful workloads to total completed (0.0 to 1.0)
-- **Error rate** (`failure_rate_30d`): Ratio of failed workloads to total completed (0.0 to 1.0). Inverse of success rate.
+- **Duration metrics** (`mean_duration_seconds_30d`): Mean execution time for **successful workloads only** (startTime to completionTime for PipelineRuns; startTime to completionTime for Releases). Failed workloads are excluded from this average.
+- **Wait metrics** (`mean_wait_seconds_30d`): Mean waiting time before execution starts (creationTimestamp to startTime) for **successful workloads only**. Useful for identifying scheduling delays and resource constraints. Failed workloads are excluded from this average.
 - **Total count** (`total_count_30d`): Count of all completed workloads (successful + failed) in the rolling window
 - **Success count** (`success_count_30d`): Count of successful workloads in the rolling window. Enables correct volume-weighted aggregation across dimensions: `sum(success_count) / sum(total_count)`.
 - **Failure count** (`failure_count_30d`): Count of failed workloads, broken down by failure reason. Useful for root cause analysis.
+
+**Derived metrics** (can be computed from the above):
+- **Success rate**: `success_count_30d / total_count_30d` (or 0 when total_count_30d == 0)
+- **Failure rate**: `(total_count_30d - success_count_30d) / total_count_30d` or `1 - success_rate`
 
 **Failure Reasons**:
 
