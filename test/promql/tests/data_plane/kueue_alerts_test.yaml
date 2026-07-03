@@ -6,9 +6,9 @@ tests:
   # KueueHighAdmissionWaitTimeMintmaker - should fire: 99th percentile wait time above 12h
   - interval: 1m
     input_series:
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-dependency-update", le="43200", source_cluster="c1"}'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-dependency-update", le="43200.0", source_cluster="c1"}'
         values: '0+0x20'
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-dependency-update", le="50400", source_cluster="c1"}'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-dependency-update", le="50400.0", source_cluster="c1"}'
         values: '0+0x20'
       - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-dependency-update", le="+Inf", source_cluster="c1"}'
         values: '0 10 20 30 40 50 60 70 80 90 100 110 120 130 140'
@@ -30,9 +30,9 @@ tests:
   # KueueHighAdmissionWaitTimePreMerge - should fire: 99th percentile wait time above 15m for 40m
   - interval: 1m
     input_series:
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-pre-merge-test", le="900", source_cluster="c1"}'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-pre-merge-test", le="900.0", source_cluster="c1"}'
         values: '0+0x60'
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-pre-merge-test", le="1000", source_cluster="c1"}'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-pre-merge-test", le="1000.0", source_cluster="c1"}'
         values: '0+0x60'
       - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-pre-merge-test", le="+Inf", source_cluster="c1"}'
         values: '0+10x60'
@@ -54,9 +54,9 @@ tests:
   # KueueHighAdmissionWaitTimePreMerge - should NOT fire: eval time (35m) is less than 'for' duration (40m)
   - interval: 1m
     input_series:
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-pre-merge-test", le="900", source_cluster="c1"}'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-pre-merge-test", le="900.0", source_cluster="c1"}'
         values: '0+0x60'
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-pre-merge-test", le="1000", source_cluster="c1"}'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-pre-merge-test", le="1000.0", source_cluster="c1"}'
         values: '0+0x60'
       - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-pre-merge-test", le="+Inf", source_cluster="c1"}'
         values: '0+10x60'
@@ -68,9 +68,9 @@ tests:
   # KueueHighAdmissionWaitTimePostMerge - should fire: 99th percentile wait time above 15m for 45m
   - interval: 1m
     input_series:
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-post-merge-build", le="900", source_cluster="c1"}'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-post-merge-build", le="900.0", source_cluster="c1"}'
         values: '0+0x70'
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-post-merge-build", le="1000", source_cluster="c1"}'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-post-merge-build", le="1000.0", source_cluster="c1"}'
         values: '0+0x70'
       - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-post-merge-build", le="+Inf", source_cluster="c1"}'
         values: '0+10x70'
@@ -92,9 +92,9 @@ tests:
   # KueueHighAdmissionWaitTimePostMerge - should NOT fire: eval time (40m) is less than 'for' duration (45m)
   - interval: 1m
     input_series:
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-post-merge-build", le="900", source_cluster="c1"}'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-post-merge-build", le="900.0", source_cluster="c1"}'
         values: '0+0x70'
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-post-merge-build", le="1000", source_cluster="c1"}'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-post-merge-build", le="1000.0", source_cluster="c1"}'
         values: '0+0x70'
       - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-post-merge-build", le="+Inf", source_cluster="c1"}'
         values: '0+10x70'
@@ -300,9 +300,9 @@ tests:
   # KueueHighAdmissionWaitTimeReleases - should fire: 99th percentile wait time above 1.33h (4800s) for 20m
   - interval: 1m
     input_series:
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-release", le="4800", source_cluster="c1"}'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-release", le="4800.0", source_cluster="c1"}'
         values: '0+0x30'
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-release", le="5000", source_cluster="c1"}'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-release", le="5000.0", source_cluster="c1"}'
         values: '0+0x30'
       - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-release", le="+Inf", source_cluster="c1"}'
         values: '0+10x30'
@@ -324,9 +324,9 @@ tests:
   # KueueHighAdmissionWaitTimeReleases - should NOT fire: eval time (15m) is less than 'for' duration (20m)
   - interval: 1m
     input_series:
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-tenant-release", le="4800", source_cluster="c1"}'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-tenant-release", le="4800.0", source_cluster="c1"}'
         values: '0+0x30'
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-tenant-release", le="5000", source_cluster="c1"}'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-tenant-release", le="5000.0", source_cluster="c1"}'
         values: '0+0x30'
       - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-tenant-release", le="+Inf", source_cluster="c1"}'
         values: '0+10x30'
@@ -338,9 +338,9 @@ tests:
   # KueueHighAdmissionWaitTimeReleases - should NOT fire: wait time below threshold (4800s)
   - interval: 1m
     input_series:
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-release", le="4000", source_cluster="c1"}'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-release", le="4000.0", source_cluster="c1"}'
         values: '0+0x30'
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-release", le="4800", source_cluster="c1"}'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-release", le="4800.0", source_cluster="c1"}'
         values: '0+0x30'
       - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-release", le="+Inf", source_cluster="c1"}'
         values: '0+10x30'

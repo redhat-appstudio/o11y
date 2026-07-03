@@ -58,7 +58,7 @@ spec:
     - alert: KonfluxAPIServerLatencyWarning
       expr: |
         (
-          sum by (source_cluster) (rate(apiserver_request_duration_seconds_bucket{le="1", verb!~"WATCH|LIST"}[5m]))
+          sum by (source_cluster) (rate(apiserver_request_duration_seconds_bucket{le="1.0", verb!~"WATCH|LIST"}[5m]))
           /
           sum by (source_cluster) (rate(apiserver_request_duration_seconds_count{verb!~"WATCH|LIST"}[5m]))
         ) < 0.99
@@ -76,14 +76,14 @@ spec:
     - alert: KonfluxAPIServerLatencySLOCritical
       expr: |
         (
-          sum by (source_cluster) (rate(apiserver_request_duration_seconds_bucket{le="1", verb!~"WATCH|LIST"}[1h]))
+          sum by (source_cluster) (rate(apiserver_request_duration_seconds_bucket{le="1.0", verb!~"WATCH|LIST"}[1h]))
           /
           sum by (source_cluster) (rate(apiserver_request_duration_seconds_count{verb!~"WATCH|LIST"}[1h]))
           < 0.95
         )
         and
         (
-          sum by (source_cluster) (rate(apiserver_request_duration_seconds_bucket{le="1", verb!~"WATCH|LIST"}[5m]))
+          sum by (source_cluster) (rate(apiserver_request_duration_seconds_bucket{le="1.0", verb!~"WATCH|LIST"}[5m]))
           /
           sum by (source_cluster) (rate(apiserver_request_duration_seconds_count{verb!~"WATCH|LIST"}[5m]))
           < 0.95

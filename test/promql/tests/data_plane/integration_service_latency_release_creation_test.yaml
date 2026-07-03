@@ -7,13 +7,13 @@ tests:
   - interval: 1m
     input_series:
       # Simulating data from Cluster 1 (crosses the 10% threshold)
-      - series: 'integration_svc_release_latency_seconds_bucket{le="10", source_cluster="cluster01"}'
+      - series: 'integration_svc_release_latency_seconds_bucket{le="10.0", source_cluster="cluster01"}'
         values: '0+10x15'  # 10 requests took less than 10s
       - series: 'integration_svc_release_latency_seconds_bucket{le="+Inf", source_cluster="cluster01"}'
         values: '0+100x15'  # 100 total occurrences in cluster01
 
       # Simulating data from Cluster 2 (does not cross the 10% threshold)
-      - series: 'integration_svc_release_latency_seconds_bucket{le="10", source_cluster="cluster02"}'
+      - series: 'integration_svc_release_latency_seconds_bucket{le="10.0", source_cluster="cluster02"}'
         values: '0+90x15'  # 90 requests took less than 10s
       - series: 'integration_svc_release_latency_seconds_bucket{le="+Inf", source_cluster="cluster02"}'
         values: '0+100x15'  # 100 total occurrences in cluster02
@@ -43,13 +43,13 @@ tests:
   - interval: 1m
     input_series:
       # Simulating data from Cluster 1 (crosses the 10% threshold)
-      - series: 'integration_svc_release_latency_seconds_bucket{le="10", source_cluster="cluster01"}'
+      - series: 'integration_svc_release_latency_seconds_bucket{le="10.0", source_cluster="cluster01"}'
         values: '0+5x15'  # 5 requests took less than 10s
       - series: 'integration_svc_release_latency_seconds_bucket{le="+Inf", source_cluster="cluster01"}'
         values: '0+100x15'  # 100 total occurrences in cluster01
 
       # Simulating data from Cluster 2 (also crosses the 10% threshold)
-      - series: 'integration_svc_release_latency_seconds_bucket{le="10", source_cluster="cluster02"}'
+      - series: 'integration_svc_release_latency_seconds_bucket{le="10.0", source_cluster="cluster02"}'
         values: '0+5x15'  # 5 requests took less than 10s
       - series: 'integration_svc_release_latency_seconds_bucket{le="+Inf", source_cluster="cluster02"}'
         values: '0+100x15'  # 100 total occurrences in cluster02
@@ -94,13 +94,13 @@ tests:
   - interval: 1m
     input_series:
       # Simulating data from Cluster 1 (does not cross the 10% threshold)
-      - series: 'integration_svc_release_latency_seconds_bucket{le="10", source_cluster="cluster01"}'
+      - series: 'integration_svc_release_latency_seconds_bucket{le="10.0", source_cluster="cluster01"}'
         values: '0+95x15'  # 95 requests took less than 10s
       - series: 'integration_svc_release_latency_seconds_bucket{le="+Inf", source_cluster="cluster01"}'
         values: '0+100x15'  # 100 total occurrences in cluster01
 
       # Simulating data from Cluster 2 (does not cross the 10% threshold)
-      - series: 'integration_svc_release_latency_seconds_bucket{le="10", source_cluster="cluster02"}'
+      - series: 'integration_svc_release_latency_seconds_bucket{le="10.0", source_cluster="cluster02"}'
         values: '0+95x15'  # 95 requests took less than 10s
       - series: 'integration_svc_release_latency_seconds_bucket{le="+Inf", source_cluster="cluster02"}'
         values: '0+100x15'  # 100 total occurrences in cluster02
