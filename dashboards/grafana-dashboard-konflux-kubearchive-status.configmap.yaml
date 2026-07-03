@@ -103,7 +103,7 @@ data:
                     "uid": "${Datasource}"
                   },
                   "editorMode": "code",
-                  "expr": "1 - (sum(http_server_request_duration_bucket{source_cluster=~\"$cluster\", exported_job=\"kubearchive.sink\", le=\"100\", http_route!~\"(/livez|/readyz)\"}) / sum(http_server_request_duration_bucket{source_cluster=~\"$cluster\", exported_job=\"kubearchive.sink\", http_route!~\"(/livez|/readyz)\"}))",
+                  "expr": "1 - (sum(http_server_request_duration_bucket{source_cluster=~\"$cluster\", exported_job=\"kubearchive.sink\", le=\"100.0\", http_route!~\"(/livez|/readyz)\"}) / sum(http_server_request_duration_bucket{source_cluster=~\"$cluster\", exported_job=\"kubearchive.sink\", http_route!~\"(/livez|/readyz)\"}))",
                   "legendFormat": "KubeArchive Sink",
                   "range": true,
                   "refId": "A"
@@ -114,7 +114,7 @@ data:
                     "uid": "${Datasource}"
                   },
                   "editorMode": "code",
-                  "expr": "1 - (sum(http_server_request_duration_bucket{source_cluster=~\"$cluster\", exported_job=\"kubearchive.api\", le=\"100\", http_route!~\"(/livez|/readyz)\"}) / sum(http_server_request_duration_bucket{source_cluster=~\"$cluster\", exported_job=\"kubearchive.api\", http_route!~\"(/livez|/readyz)\"}))",
+                  "expr": "1 - (sum(http_server_request_duration_bucket{source_cluster=~\"$cluster\", exported_job=\"kubearchive.api\", le=\"100.0\", http_route!~\"(/livez|/readyz)\"}) / sum(http_server_request_duration_bucket{source_cluster=~\"$cluster\", exported_job=\"kubearchive.api\", http_route!~\"(/livez|/readyz)\"}))",
                   "hide": false,
                   "legendFormat": "KubeArchive API",
                   "range": true,
@@ -190,7 +190,7 @@ data:
                     "uid": "${Datasource}"
                   },
                   "editorMode": "code",
-                  "expr": "clamp_max((sum by (source_cluster) (rate(db_sql_latency_bucket{source_cluster=~\"$cluster\", exported_job=\"kubearchive.api\", le=\"10\"}[5m])) / sum by (source_cluster) (rate(db_sql_latency_bucket{source_cluster=~\"$cluster\", exported_job=\"kubearchive.api\", le=\"+Inf\"}[5m]))) * 100, 100)",
+                  "expr": "clamp_max((sum by (source_cluster) (rate(db_sql_latency_bucket{source_cluster=~\"$cluster\", exported_job=\"kubearchive.api\", le=\"10.0\"}[5m])) / sum by (source_cluster) (rate(db_sql_latency_bucket{source_cluster=~\"$cluster\", exported_job=\"kubearchive.api\", le=\"+Inf\"}[5m]))) * 100, 100)",
                   "hide": false,
                   "legendFormat": "__auto",
                   "range": true,
@@ -267,7 +267,7 @@ data:
                     "uid": "${Datasource}"
                   },
                   "editorMode": "code",
-                  "expr": "clamp_max((sum by (source_cluster) (rate(db_sql_latency_bucket{source_cluster=~\"$cluster\", exported_job=\"kubearchive.sink\", le=\"10\"}[5m])) / sum by (source_cluster) (rate(db_sql_latency_bucket{source_cluster=~\"$cluster\", exported_job=\"kubearchive.sink\", le=\"+Inf\"}[5m]))) * 100, 100)",
+                  "expr": "clamp_max((sum by (source_cluster) (rate(db_sql_latency_bucket{source_cluster=~\"$cluster\", exported_job=\"kubearchive.sink\", le=\"10.0\"}[5m])) / sum by (source_cluster) (rate(db_sql_latency_bucket{source_cluster=~\"$cluster\", exported_job=\"kubearchive.sink\", le=\"+Inf\"}[5m]))) * 100, 100)",
                   "legendFormat": "__auto",
                   "range": true,
                   "refId": "A"
@@ -1860,7 +1860,7 @@ data:
                     "uid": "${Datasource}"
                   },
                   "editorMode": "code",
-                  "expr": "clamp_max(\n  (sum by (source_cluster) (rate(db_sql_latency_bucket{source_cluster=~\"$cluster\", le=\"10\"}[5m]))\n  / \n  sum by (source_cluster) (rate(db_sql_latency_bucket{source_cluster=~\"$cluster\", le=\"+Inf\"}[5m]))) * 100,\n  100\n)",
+                  "expr": "clamp_max(\n  (sum by (source_cluster) (rate(db_sql_latency_bucket{source_cluster=~\"$cluster\", le=\"10.0\"}[5m]))\n  / \n  sum by (source_cluster) (rate(db_sql_latency_bucket{source_cluster=~\"$cluster\", le=\"+Inf\"}[5m]))) * 100,\n  100\n)",
                   "legendFormat": "{{ source_cluster }} - {{ status }} - {{ exported_job }}",
                   "range": true,
                   "refId": "A"
