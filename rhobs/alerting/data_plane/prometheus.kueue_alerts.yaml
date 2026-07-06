@@ -96,7 +96,6 @@ spec:
       annotations:
         summary: "Tekton Kueue pod is stuck in Pending: {{ $labels.pod }}"
         description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} has been in Pending state for more than 5 minutes. This may indicate a scheduling issue, resource constraint, or unresolvable volume."
-        # runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueuePodStuckInPending.md
         alert_routing_key: infra
         team: konflux-infra
 
@@ -113,7 +112,6 @@ spec:
       annotations:
         summary: "Tekton Kueue pod is stuck in ContainerCreating: {{ $labels.pod }}"
         description: "Container {{ $labels.container }} in pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} is stuck in ContainerCreating for more than 5 minutes. This typically points to infrastructure issues like Volume/Storage mounting failures or Network attachment delays."
-        # runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueuePodStuckInCreation.md
         alert_routing_key: infra
         team: konflux-infra
 
@@ -135,7 +133,6 @@ spec:
       annotations:
         summary: "Tekton Kueue pod was OOMKilled: {{ $labels.pod }}"
         description: "Container {{ $labels.container }} in pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} was terminated due to OOM. Memory limits may need to be increased in the deployment spec."
-        # runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueuePodOOMKilled.md
         alert_routing_key: infra
         team: konflux-infra
 
@@ -258,23 +255,6 @@ spec:
       annotations:
         summary: "High admission wait time for Mintmaker"
         description: "99th percentile admission wait time for Mintmaker is {{ $value | humanizeDuration }}, which is above 12 hours in cluster {{ $labels.source_cluster }}"
-        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
-        alert_routing_key: infra
-        team: konflux-infra
-
-    - alert: KueueHighAdmissionWaitTimeDefault
-      expr: |
-        histogram_quantile(0.99, sum(increase(kueue_admission_wait_time_seconds_bucket{
-          cluster_queue="cluster-pipeline-queue",
-          priority_class!~"konflux-pre-merge-.*|konflux-post-merge-.*|konflux-dependency-update|konflux-release|konflux-tenant-release"
-        }[10m])) by (le, source_cluster)) > 7200
-      for: 5m
-      labels:
-        severity: warning
-        component: kueue
-      annotations:
-        summary: "High admission wait time for other workloads"
-        description: "99th percentile admission wait time for other workloads is {{ $value | humanizeDuration }}, which is above 2 hours in cluster {{ $labels.source_cluster }}"
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
         alert_routing_key: infra
         team: konflux-infra
