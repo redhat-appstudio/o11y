@@ -132,9 +132,11 @@ spec:
     rules:
     - alert: KonfluxUIUpstream502
       expr: |
+        # threshold of 0.05/s (~1 error per 20s) filters brief rolling-deploy bursts
+        # while catching sustained upstream failures within the 2m pending period
         sum by (source_cluster) (
           rate(nginx_otel_http_request_errors_total{namespace="konflux-ui", status="502"}[2m])
-        ) > 0
+        ) > 0.05
       for: 2m
       labels:
         severity: critical
