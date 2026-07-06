@@ -126,3 +126,28 @@ spec:
         alert_routing_key: <!subteam^S06V06A36F5>
         team: spre
         runbook_url: null
+
+  - name: konflux-ui-upstream-502
+    interval: 1m
+    rules:
+    - alert: KonfluxUIUpstream502
+      expr: |
+        sum by (source_cluster) (
+          rate(nginx_otel_http_request_errors_total{namespace="konflux-ui", status="502"}[5m])
+        ) > 0
+      for: 2m
+      labels:
+        severity: critical
+        slo: "true"
+        component: konflux-ui
+      annotations:
+        summary: >-
+          Konflux UI proxy returning 502 errors in cluster {{ $labels.source_cluster }}
+        description: >
+          The Konflux UI nginx proxy has been returning 502 errors for 2min in cluster
+          {{ $labels.source_cluster }}, indicating an upstream backend (e.g. namespace-lister)
+          is down or unreachable.
+        alert_team_handle: <!subteam^S04HY632621>
+        team: konflux-ui
+        # runbook_url: TODO create upstream-502 SOP in sop/konflux-ui/sre/
+        runbook_url: null

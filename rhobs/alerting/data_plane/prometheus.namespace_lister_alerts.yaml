@@ -60,3 +60,22 @@ spec:
         alert_team_handle: <!subteam^S05Q1P4Q2TG>
         team: konflux-infra
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/namespace-lister/README.md
+
+    - alert: NamespaceListerNotServingRequests
+      expr: |
+        sum by (source_cluster, pod) (rate(namespace_lister_api_counter[5m])) > 0
+        unless
+        sum by (source_cluster, pod) (rate(namespace_lister_api_counter{code=~"2.."}[5m])) > 0
+      for: 5m
+      labels:
+        severity: warning
+        component: namespace-lister
+      annotations:
+        summary: >-
+          namespace-lister is receiving requests but returning no successful responses in cluster {{ $labels.source_cluster }}
+        description: >
+          namespace-lister pod '{{ $labels.pod }}' on cluster '{{ $labels.source_cluster }}'
+          is receiving requests but returning no 2xx responses.
+        alert_routing_key: <!subteam^S06G3MJT516>
+        team: workspaces
+        runbook_url: null
