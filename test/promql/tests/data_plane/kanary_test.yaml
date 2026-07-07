@@ -11,7 +11,7 @@ tests:
       - series: 'kanary_up{namespace="konflux-otel", tested_cluster="stone-prod-p01", type="container-single-arch"}'
         values: '1x5 0x36'
 
-      # Prod cluster: kanary_up goes to 0 but recovers, should trigger then resolve
+      # Prod cluster: kanary_up goes to 0 but recovers, should NOT trigger (recovers before for duration)
       - series: 'kanary_up{namespace="konflux-otel", tested_cluster="kflux-prd-rh02", type="container-single-arch"}'
         values: '1x5 0x2 1x34'
 
@@ -44,7 +44,7 @@ tests:
       - series: 'kanary_error{namespace="konflux-otel", tested_cluster="kflux-ocp-p01", reason="infrastructure", type="container-single-arch"}'
         values: '0x5 1x36'
 
-      # Prod cluster: infrastructure error recovers, should trigger then resolve
+      # Prod cluster: infrastructure error recovers, should NOT trigger (recovers before for duration)
       - series: 'kanary_error{namespace="konflux-otel", tested_cluster="kflux-prd-rh03", reason="infrastructure", type="container-multi-arch"}'
         values: '0x5 1x2 0x34'
 
