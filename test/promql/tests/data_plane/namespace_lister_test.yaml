@@ -150,3 +150,64 @@ tests:
             alert_team_handle: <!subteam^S05Q1P4Q2TG>
             team: konflux-infra
             runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/namespace-lister/README.md
+
+# namespace-lister serving only errors - should fire
+- interval: 1m
+  input_series:
+  - series: 'namespace_lister_api_counter{source_cluster="c1", code="500", pod="pod-1"}'
+    values: '0+1x15'
+
+  alert_rule_test:
+  - eval_time: 8m
+    alertname: NamespaceListerNotServingRequests
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        component: namespace-lister
+        source_cluster: c1
+        pod: pod-1
+      exp_annotations:
+        summary: namespace-lister is receiving requests but returning no successful responses in cluster c1
+        description: >
+          namespace-lister pod 'pod-1' on cluster 'c1'
+          is receiving requests but returning no 2xx responses.
+        alert_routing_key: <!subteam^S06G3MJT516>
+        team: workspaces
+        runbook_url: null
+
+# namespace-lister serving mix of 200 and 500 - should not fire
+- interval: 1m
+  input_series:
+  - series: 'namespace_lister_api_counter{source_cluster="c2", code="200", pod="pod-2"}'
+    values: '0+10x15'
+  - series: 'namespace_lister_api_counter{source_cluster="c2", code="500", pod="pod-2"}'
+    values: '0+1x15'
+
+  alert_rule_test:
+  - eval_time: 8m
+    alertname: NamespaceListerNotServingRequests
+    exp_alerts: []
+
+# namespace-lister serving equal rates of 2xx and 5xx - should not fire (any nonzero 2xx suppresses the alert)
+- interval: 1m
+  input_series:
+  - series: 'namespace_lister_api_counter{source_cluster="c4", code="200", pod="pod-4"}'
+    values: '0+1x15'
+  - series: 'namespace_lister_api_counter{source_cluster="c4", code="500", pod="pod-4"}'
+    values: '0+1x15'
+
+  alert_rule_test:
+  - eval_time: 8m
+    alertname: NamespaceListerNotServingRequests
+    exp_alerts: []
+
+# namespace-lister idle, no incoming traffic - should not fire
+- interval: 1m
+  input_series:
+  - series: 'namespace_lister_api_counter{source_cluster="c3", code="200", pod="pod-3"}'
+    values: '5x15'
+
+  alert_rule_test:
+  - eval_time: 8m
+    alertname: NamespaceListerNotServingRequests
+    exp_alerts: []
