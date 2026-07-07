@@ -132,8 +132,13 @@ spec:
     rules:
     - alert: KonfluxUIUpstream502
       expr: |
+        # Uses raw metric (not the existing recording rule) because the recording rule drops
+        # the namespace label, which would cause false positives from other namespaces.
+        # rate[2m] matches the for: 2m pending period intentionally: a wider window (e.g. [5m])
+        # would allow a brief burst to keep the rate positive long enough to satisfy the
+        # pending period without sustained errors actually occurring.
         # threshold of 0.05/s (~1 error per 20s) filters brief rolling-deploy bursts
-        # while catching sustained upstream failures within the 2m pending period
+        # while catching sustained upstream failures within the 2m pending period.
         sum by (source_cluster) (
           rate(nginx_otel_http_request_errors_total{namespace="konflux-ui", status="502"}[2m])
         ) > 0.05
@@ -151,5 +156,4 @@ spec:
           is down or unreachable.
         alert_team_handle: <!subteam^S04HY632621>
         team: konflux-ui
-        # runbook_url: TODO create upstream-502 SOP in sop/konflux-ui/sre/
-        runbook_url: null
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/konflux-ui/sre/upstream-502.md

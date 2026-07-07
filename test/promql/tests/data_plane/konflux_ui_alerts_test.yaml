@@ -264,6 +264,9 @@ tests:
       # Only 404s, no 502s - should not fire
       - series: 'nginx_otel_http_request_errors_total{namespace="konflux-ui", status="404", source_cluster="c_upstream_ok", job="proxy"}'
         values: '0+10x10'
+      # Brief 502 burst during rolling deploy then stops - should not fire
+      - series: 'nginx_otel_http_request_errors_total{namespace="konflux-ui", status="502", source_cluster="c_upstream_burst", job="proxy"}'
+        values: '0 1 2 2 2 2 2 2 2 2'
 
     alert_rule_test:
       - eval_time: 3m
@@ -282,4 +285,22 @@ tests:
                 is down or unreachable.
               alert_team_handle: <!subteam^S04HY632621>
               team: konflux-ui
-              runbook_url: null
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/konflux-ui/sre/upstream-502.md
+      # Brief burst should not fire after it ends
+      - eval_time: 5m
+        alertname: KonfluxUIUpstream502
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              component: konflux-ui
+              slo: "true"
+              source_cluster: c_upstream_502
+            exp_annotations:
+              summary: Konflux UI proxy returning 502 errors in cluster c_upstream_502
+              description: >
+                The Konflux UI nginx proxy has been returning 502 errors for 2min in cluster
+                c_upstream_502, indicating an upstream backend (e.g. namespace-lister)
+                is down or unreachable.
+              alert_team_handle: <!subteam^S04HY632621>
+              team: konflux-ui
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/konflux-ui/sre/upstream-502.md

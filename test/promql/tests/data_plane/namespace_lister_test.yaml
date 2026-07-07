@@ -188,6 +188,19 @@ tests:
     alertname: NamespaceListerNotServingRequests
     exp_alerts: []
 
+# namespace-lister serving equal rates of 2xx and 5xx - should not fire (any nonzero 2xx suppresses the alert)
+- interval: 1m
+  input_series:
+  - series: 'namespace_lister_api_counter{source_cluster="c4", code="200", pod="pod-4"}'
+    values: '0+1x15'
+  - series: 'namespace_lister_api_counter{source_cluster="c4", code="500", pod="pod-4"}'
+    values: '0+1x15'
+
+  alert_rule_test:
+  - eval_time: 8m
+    alertname: NamespaceListerNotServingRequests
+    exp_alerts: []
+
 # namespace-lister idle, no incoming traffic - should not fire
 - interval: 1m
   input_series:
