@@ -9,19 +9,19 @@ tests:
       # --- KanarySignalTriggered Test Cases ---
       # Prod cluster: kanary_up goes to 0 and stays, should trigger alert
       - series: 'kanary_up{namespace="konflux-otel", tested_cluster="stone-prod-p01", type="container-single-arch"}'
-        values: '1x5 0x35'
+        values: '1x5 0x36'
 
       # Prod cluster: kanary_up goes to 0 but recovers, should trigger then resolve
       - series: 'kanary_up{namespace="konflux-otel", tested_cluster="kflux-prd-rh02", type="container-single-arch"}'
-        values: '1x5 0x2 1x33'
+        values: '1x5 0x2 1x34'
 
       # Staging cluster: should NOT trigger (not in cluster list)
       - series: 'kanary_up{namespace="konflux-otel", tested_cluster="stone-stage-p01", type="container-single-arch"}'
-        values: '1x5 0x35'
+        values: '1x5 0x36'
 
     alert_rule_test:
       - alertname: KanarySignalTriggered
-        eval_time: 35m
+        eval_time: 36m
         exp_alerts:
           - exp_labels:
               severity: high
@@ -42,15 +42,15 @@ tests:
       # --- KanaryInfrastructureError Test Cases ---
       # Prod cluster: infrastructure error stays, should trigger alert
       - series: 'kanary_error{namespace="konflux-otel", tested_cluster="kflux-ocp-p01", reason="infrastructure", type="container-single-arch"}'
-        values: '0x5 1x35'
+        values: '0x5 1x36'
 
       # Prod cluster: infrastructure error recovers, should trigger then resolve
       - series: 'kanary_error{namespace="konflux-otel", tested_cluster="kflux-prd-rh03", reason="infrastructure", type="container-multi-arch"}'
-        values: '0x5 1x2 0x33'
+        values: '0x5 1x2 0x34'
 
     alert_rule_test:
       - alertname: KanaryInfrastructureError
-        eval_time: 35m
+        eval_time: 36m
         exp_alerts:
           - exp_labels:
               component: kanary
