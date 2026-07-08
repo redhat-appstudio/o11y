@@ -8,78 +8,47 @@ spec:
   groups:
   - name: kanary_alerts
     interval: 1m
-    rules: []
-    # Temporarily disabled - kanary alerts are noisy (PVO11Y-5288)
-    # - alert: KanarySignalTriggered
-    #   # For slo alerts only use production metrics (tested_cluster) that are exported from a
-    #   # production cluster (source_clusterj) by the kanary exporter.
-    #   # We have a stage and production exporter, and both are pushing metrics for all konflux clusters to
-    #   # their respective datasource ('rhtap-observatorium-stage' and 'rhtap-observatorium-prod').
-    #   expr: kanary_up{tested_cluster=~".*prod.*", source_cluster=~".*prod.*"} == 0
-    #   for: 1s
-    #   labels:
-    #     severity: high
-    #     # slo: "true" # Disabled until we can have more actionable information to support this
-    #     slo: "false"
-    #     component: kanary
-    #   annotations:
-    #     alert_routing_key: o11y
-    #     # alert_team_handle: '<!subteam^S06V06A36F5>'
-    #     team: o11y
-    #     summary: "Kanary signal for {{ $labels.type }} artifacts has been triggered for cluster {{ $labels.tested_cluster }}"
-    #     description: "The e2e load tests for {{ $labels.type }} artifacts failed multiple times in a row for cluster {{ $labels.tested_cluster }}"
-    #     runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-kanary.md
-    #
-    # - alert: KanaryDBError
-    #   expr: kanary_error{reason="db_error"} == 1
-    #   for: 1s
-    #   labels:
-    #     severity: warning
-    #     slo: "false"
-    #     component: kanary
-    #   annotations:
-    #     team: o11y
-    #     alert_routing_key: o11y
-    #     summary: "Kanary signal processing for {{ $labels.type }} artifacts failed due to a database error on cluster {{ $labels.tested_cluster }}"
-    #     description: "Encountered a database error while processing the kanary signal for {{ $labels.type }} artifacts for cluster {{ $labels.tested_cluster }}"
-    #
-    # - alert: KanaryMissingTestResults
-    #   expr: kanary_error{reason="no_test_results"} == 1
-    #   for: 1s
-    #   labels:
-    #     severity: warning
-    #     slo: "false"
-    #     component: kanary
-    #   annotations:
-    #     team: o11y
-    #     alert_routing_key: o11y
-    #     summary: "Missing recent e2e results for {{ $labels.type }} artifacts for cluster {{ $labels.tested_cluster }}"
-    #     description: "Could not find any recent e2e load test results for {{ $labels.type }} artifacts for cluster {{ $labels.tested_cluster }}."
-    #
-    # - alert: KanaryExporterDown
-    #   expr: up{job="kanary-exporter-service"} == 0
-    #   for: 5m
-    #   labels:
-    #     severity: warning
-    #     slo: "false"
-    #     component: kanary
-    #   annotations:
-    #     team: o11y
-    #     alert_routing_key: o11y
-    #     summary: "Kanary Exporter is down in {{ $labels.source_cluster }}"
-    #     description: "Prometheus is unable to scrape metrics from the Kanary Exporter running in {{ $labels.source_cluster }}."
-    #
-    # - alert: KanaryAbsentExporterMetrics
-    #   # Consideration: the value returned by absent() does not return the source_cluster label.
-    #   # The environment can only be determined by looking at the source alertmanager in the alert's slack message.
-    #   expr: absent(up{job="kanary-exporter-service"}) == 1
-    #   for: 5m
-    #   labels:
-    #     severity: warning
-    #     slo: "false"
-    #     component: kanary
-    #   annotations:
-    #     team: o11y
-    #     alert_routing_key: o11y
-    #     summary: "Kanary Exporter metrics are absent"
-    #     description: "Metrics from the Kanary Exporter are absent."
+    rules:
+    # Kanary V1 alerts (metrics pushed via OTEL to konflux-otel namespace)
+    # Note: KanarySignalTriggered should be promoted to slo: "true" once confirmed stable
+    - alert: KanarySignalTriggered
+      expr: kanary_up{namespace="konflux-otel", tested_cluster=~"stone-prod-p01|stone-prod-p02|stone-prd-rh01|kflux-ocp-p01|kflux-prd-rh02|kflux-prd-rh03|kflux-rhel-p01|kflux-fedora-01"} == 0
+      for: 30m
+      labels:
+        severity: high
+        slo: "false"
+        component: kanary
+      annotations:
+        alert_routing_key: o11y
+        team: o11y
+        summary: "Kanary signal for {{ $labels.type }} artifacts has been triggered for cluster {{ $labels.tested_cluster }}"
+        description: "The e2e load tests for {{ $labels.type }} artifacts failed multiple times in a row for cluster {{ $labels.tested_cluster }}"
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-kanary.md
+
+    - alert: KanaryInfrastructureError
+      expr: kanary_error{namespace="konflux-otel", reason="infrastructure", tested_cluster=~"stone-prod-p01|stone-prod-p02|stone-prd-rh01|kflux-ocp-p01|kflux-prd-rh02|kflux-prd-rh03|kflux-rhel-p01|kflux-fedora-01"} == 1
+      for: 30m
+      labels:
+        severity: warning
+        slo: "false"
+        component: kanary
+      annotations:
+        alert_routing_key: o11y
+        team: o11y
+        summary: "Kanary infrastructure error for {{ $labels.type }} artifacts on cluster {{ $labels.tested_cluster }}"
+        description: "An infrastructure error prevented the kanary signal from properly measuring {{ $labels.type }} artifacts for cluster {{ $labels.tested_cluster }}"
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-kanary.md
+
+    - alert: KanaryStaleMetrics
+      expr: (time() - kanary_last_push_timestamp{namespace="konflux-otel", tested_cluster=~"stone-prod-p01|stone-prod-p02|stone-prd-rh01|kflux-ocp-p01|kflux-prd-rh02|kflux-prd-rh03|kflux-rhel-p01|kflux-fedora-01"}) > 3600
+      for: 5m
+      labels:
+        severity: warning
+        slo: "false"
+        component: kanary
+      annotations:
+        alert_routing_key: o11y
+        team: o11y
+        summary: "Kanary metrics for {{ $labels.type }} artifacts are stale on cluster {{ $labels.tested_cluster }}"
+        description: "No kanary metrics have been pushed for {{ $labels.type }} artifacts on cluster {{ $labels.tested_cluster }} for more than 1 hour. Cronjobs run every 30 minutes."
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-kanary.md
