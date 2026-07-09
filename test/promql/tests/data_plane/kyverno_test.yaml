@@ -4,7 +4,7 @@ rule_files:
   - prometheus.kyverno_alerts.yaml
 
 tests:
-# --- alerts for kyverno pods failures ---
+  # --- alerts for kyverno pods failures ---
 
   # Scenario 1: Deployment is continuously down for 3 minutes, alert should fire.
   - interval: 1m
@@ -37,6 +37,7 @@ tests:
               team: konflux-infra
               alert_team_handle: <!subteam^S05Q1P4Q2TG>
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/kyverno/sre/kyverno_admission_controller_sop.md
+
   # Scenario 2: Deployment is down for less than 3 minutes, alert should NOT fire.
   - interval: 1m
     input_series:
@@ -52,7 +53,7 @@ tests:
         alertname: KyvernoDeploymentDown
         exp_alerts: []
 
-# --- alerts for kyverno controller requeue errors ---
+  # --- alerts for kyverno controller requeue errors ---
 
   # Scenario 1: Kyverno controller is continuously experiencing requeue errors for 3 minutes, alert should fire.
   - interval: 1m
@@ -81,6 +82,7 @@ tests:
       - eval_time: 5m
         alertname: KyvernoControllerRequeueErrors
         exp_alerts: []
+
   # Scenario 2: Kyverno controller is experiencing requeue errors for less than 3 minutes, alert should NOT fire.
   - interval: 1m
     input_series:
@@ -94,45 +96,22 @@ tests:
         alertname: KyvernoControllerRequeueErrors
         exp_alerts: []
 
-# --- alerts for kyverno policy failures ---
+  # --- alerts for kyverno policy failures ---
 
-  # Scenario 1: Kyverno policies are failing or erroring out more often than usual for 3 minutes, alert should fire.
+  # Scenario 1: Kyverno policies are failing or erroring out more often than usual for 15 minutes, alert should fire.
   - interval: 1m
     input_series:
       - series: 'kyverno_policy_results_total{policy_name="propagate-cost-management-labels",  rule_name="autogen-propagate-existing-cost-center-from-namespace", rule_result="error", instance="10.128.10.157:8000", source_cluster="stone-stg-rh01"}'
-        values: '0 10 35 70 105 120 120 135 160 180 191'
+        values: '0 60 120 180 240 300 360 420 480 540 600 660 720 780 840 900 960 1020 1080 1140 1200'
     alert_rule_test:
-      - eval_time: 2m
-        alertname: KyvernoPolicyFailures
-        exp_alerts: []
-      - eval_time: 4m
-        alertname: KyvernoPolicyFailures
-        exp_alerts: []
       - eval_time: 5m
         alertname: KyvernoPolicyFailures
-        exp_alerts:
-          - exp_labels:
-              severity: warning
-              slo: "false"
-              component: kyverno
-              policy_name: propagate-cost-management-labels
-              rule_name: autogen-propagate-existing-cost-center-from-namespace
-              instance: "10.128.10.157:8000"
-              source_cluster: stone-stg-rh01
-              rule_result: error
-            exp_annotations:
-              summary: Kyverno policies are failing or erroring out more often than usual.
-              description: "Kyverno policy 'propagate-cost-management-labels' with rule 'autogen-propagate-existing-cost-center-from-namespace' is encountering internal errors during evaluation or rejecting resources on instance '10.128.10.157:8000' on cluster 'stone-stg-rh01'."
-              team: konflux-infra
-              alert_routing_key: infra
-              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/kyverno/sre/kyverno_policy_failures_sop.md
-      - eval_time: 6m
+        exp_alerts: []
+      - eval_time: 15m
         alertname: KyvernoPolicyFailures
         exp_alerts: []
-      - eval_time: 9m
-        alertname: KyvernoPolicyFailures
-        exp_alerts: []
-      - eval_time: 10m
+      # Only after 16 minutes should the alert start firing (due to the for: 15m duration)
+      - eval_time: 16m
         alertname: KyvernoPolicyFailures
         exp_alerts:
           - exp_labels:
@@ -150,15 +129,16 @@ tests:
               team: konflux-infra
               alert_routing_key: infra
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/kyverno/sre/kyverno_policy_failures_sop.md
-  # Scenario 2: Kyverno policies are failing or erroring out for less than 3 minutes, alert should NOT fire.
+
+  # Scenario 2: Kyverno policies are failing or erroring out for less than 15 minutes, alert should NOT fire.
   - interval: 1m
     input_series:
       - series: 'kyverno_policy_results_total{policy_name="propagate-cost-management-labels", policy_rule="autogen-propagate-existing-cost-center-from-namespace", rule_result="error", instance="10.128.10.157:8000", source_cluster="stone-stg-rh01"}'
-        values: '10 20 30 40 50 60'
+        values: '10 20 30 40 50 60 70 80 90 100'
     alert_rule_test:
-      - eval_time: 2m
+      - eval_time: 5m
         alertname: KyvernoPolicyFailures
         exp_alerts: []
-      - eval_time: 4m
+      - eval_time: 15m
         alertname: KyvernoPolicyFailures
         exp_alerts: []
