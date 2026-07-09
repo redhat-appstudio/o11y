@@ -15,7 +15,7 @@ This document explains the architectural decisions, implementation details, and 
 
 **Key Design Goals:**
 - Achieve 30-day SLO accuracy from the moment the exporter starts (cold-start bootstrapping)
-- Work within KubeArchive's 10,000-item pagination limit
+- Handle high-volume namespaces with up to 30,000 items per 30-day window
 - Handle multi-tenant environments with hundreds of namespaces
 - Minimize memory footprint and query load on KubeArchive
 - Maintain thread-safe concurrent collection without blocking Prometheus scrapes
@@ -34,9 +34,9 @@ This document explains the architectural decisions, implementation details, and 
 ```
 Cold Start Settings:
 - Query window: 720h (30 days)
-- Collection timeout: 600s (10 minutes)
+- Collection timeout: 1,800s (30 minutes)
 - Concurrency: 5 parallel requests
-- Per-namespace item cap: 10,000
+- Per-namespace item cap: 30,000
 
 Steady State Settings:
 - Query window: 36h (24h base + 50% safety margin)
@@ -52,37 +52,23 @@ Steady State Settings:
 
 **Trade-offs:**
 - **Pro:** Metrics are immediately accurate; no warm-up period
-- **Pro:** Pod restarts don't leave SLO gaps (cold start rebuilds state in ~95 seconds)
-- **Con:** Longer startup time (~95s vs instant)
+- **Pro:** Pod restarts don't leave SLO gaps (cold start rebuilds state in 10-15 minutes)
+- **Con:** Longer startup time (10-15min vs instant)
 - **Con:** Higher KubeArchive load during cold start (mitigated by reduced concurrency)
 
 ---
 
 ### 2. Gap-Filling for Busy Namespaces
 
-**Problem:** Namespaces with >10,000 PipelineRuns in 30 days hit KubeArchive's pagination limit during cold start, resulting in truncated data.
+**Problem:** Namespaces with >30,000 PipelineRuns in 30 days hit the cold-start item cap, resulting in truncated data.
 
 **Solution:** Progressive gap-filling mechanism that retries truncated namespaces with narrower time windows.
 
 **How It Works:**
-1. During cold start, if a namespace hits the 10K limit, mark it as "truncated" and record the oldest fetched timestamp
+1. During cold start, if a namespace hits the 30K limit, mark it as "truncated" and record the oldest fetched timestamp
 2. Schedule a background gap-fill attempt with a narrower time window (query older data before the truncation point)
-3. Limit gap-fill to **5 attempts per namespace** to prevent infinite retries
+3. Limit gap-fill to **5 attempts per namespace** to prevent infinite retries (total coverage up to 150K items)
 4. Track gap-fill attempts and exhaustion via Prometheus counters
-
-**Example:**
-```
-Initial query: 2026-05-25 → 2026-06-25 (30 days)
-  Result: Truncated at 10K items, oldest timestamp = 2026-06-10
-
-Gap-fill attempt #1: 2026-05-25 → 2026-06-10
-  Result: Truncated at 10K items, oldest timestamp = 2026-05-28
-
-Gap-fill attempt #2: 2026-05-25 → 2026-05-28
-  Result: Success, 3,500 items fetched
-
-Total coverage: ~13,500 items across 30 days
-```
 
 **Trade-offs:**
 - **Pro:** Captures more data for busy namespaces (instead of dropping 30-day history)
@@ -229,19 +215,19 @@ Typical deployment (500 label combinations):
 
 ---
 
-### 2. KubeArchive Item Cap (10,000 per query)
+### 2. Cold Start Item Cap (30,000 per query)
 
-**Limitation:** Busy namespaces with >10,000 PLRs in 30 days will be truncated during cold start.
+**Limitation:** Extremely busy namespaces with >30,000 PLRs in 30 days will be truncated during cold start.
 
 **Mitigations:**
-- Gap-fill mechanism retries with narrower time windows
+- Gap-fill mechanism retries with narrower time windows (up to 5 attempts = 150K total coverage)
 - Truncation metrics track occurrences: `kaexporter_truncations_total{resource="pipelineruns"}`
 - Per-namespace bootstrap state prevents repeated failures
 
 **When This Happens:**
 - Typical namespace: ~100-500 PLRs/day → no issue
-- Busy namespace: >300 PLRs/day → may hit 10K limit over 30 days
-- Very busy namespace: >500 PLRs/day → gap-fill may also truncate
+- Busy namespace: 500-1,000 PLRs/day → may hit 30K limit over 30 days
+- Very busy namespace: >1,000 PLRs/day → gap-fill may also truncate (uses additional 5 attempts)
 
 ---
 
@@ -252,7 +238,7 @@ Typical deployment (500 label combinations):
 **Why:** Stateless design (no PVC, no external storage).
 
 **Mitigations:**
-- Cold start rebuilds state in ~95 seconds
+- Cold start rebuilds state in 10-15 minutes
 - Acceptable for SLO aggregates (not critical raw events)
 - Future enhancement: Optional persistence to PVC or remote storage
 
@@ -281,7 +267,7 @@ err := e.collectMetrics(ctx) // Queries all namespaces in parallel
 **Trade-offs:**
 - **Pro:** Prevents cascading delays from slow namespaces
 - **Con:** One slow namespace can cause all namespaces to skip a cycle
-- **Mitigation:** Use generous timeout (10min cold start, 2min steady state)
+- **Mitigation:** Use generous timeout (30min cold start, 2min steady state)
 
 ---
 

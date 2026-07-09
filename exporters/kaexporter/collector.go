@@ -232,9 +232,9 @@ func (e *KAExporter) collectMetrics(ctx context.Context) (*releaseIndex, error) 
 
 			if !bootstrapped {
 				windowHours = coldStartWindowHours // 720h (30 days)
-				maxItems = coldStartMaxItems       // 10,000
-				// Give each non-bootstrapped namespace its own independent 10-minute timeout.
-				// Derive from Background() to get full 600s independent of the 120s steady-state
+				maxItems = coldStartMaxItems       // 30,000
+				// Give each non-bootstrapped namespace its own independent 30-minute timeout.
+				// Derive from Background() to get full 1800s independent of the 120s steady-state
 				// collection timeout, but use AfterFunc to ensure SIGTERM cancels immediately.
 				nsCtx, nsCancel = context.WithTimeout(context.Background(), time.Duration(defaultColdStartTimeoutSecs)*time.Second)
 				defer nsCancel()
@@ -331,7 +331,7 @@ func (e *KAExporter) collectMetrics(ctx context.Context) (*releaseIndex, error) 
 					defer func() { <-gapSem }() // Release
 
 					// Use cold-start per-namespace timeout for gap-fill queries (30-day window).
-					// Derive from Background() to get full 600s independent of the 120s steady-state
+					// Derive from Background() to get full 1800s independent of the 120s steady-state
 					// collection timeout, but use AfterFunc to ensure SIGTERM cancels immediately.
 					gapCtx, cancel := context.WithTimeout(context.Background(), time.Duration(defaultColdStartTimeoutSecs)*time.Second)
 					defer cancel()
@@ -583,7 +583,6 @@ func (e *KAExporter) fillNamespaceGap(ctx context.Context, namespace string) {
 		log.Printf("namespace %q: bootstrap COMPLETE (%d builds, %d tests fetched in gap-fill)",
 			namespace, buildCnt, testCnt)
 	} else {
-		// Gap is still >10K, narrow the window further
 		updatedState.OldestSeenCreationTS = oldestTS
 		updatedState.GapAttempts++
 		log.Printf("namespace %q: gap-fill incomplete (%d builds, %d tests, still truncated, oldest now %s)",
