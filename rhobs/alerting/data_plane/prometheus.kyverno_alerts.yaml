@@ -42,8 +42,8 @@ spec:
           runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/kyverno/sre/kyverno_controller_requeue.md
       - alert: KyvernoPolicyFailures
         expr: |
-          increase(kyverno_policy_results_total{rule_result=~"fail|error"}[1m]) > 10
-        for: 3m
+          increase(kyverno_policy_results_total{rule_result=~"fail|error"}[5m]) > 50
+        for: 15m
         labels:
           severity: warning
           slo: "false"
