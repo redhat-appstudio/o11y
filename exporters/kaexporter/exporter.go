@@ -68,8 +68,8 @@ const (
 	// Cold-start configuration: on first boot the exporter queries 30 days of history
 	// to bootstrap full rolling-window accuracy, then switches to the steady-state window.
 	coldStartWindowHours        = 720   // 30 days
-	coldStartMaxItems           = 10000 // higher cap during bootstrap (busy namespaces exceed 1500 over 30d)
-	defaultColdStartTimeoutSecs = 600   // 10 min - allows busy namespaces to complete 30-day bootstrap
+	coldStartMaxItems           = 30000 // higher cap during bootstrap (handles high-volume namespaces with >10K PLRs/30d)
+	defaultColdStartTimeoutSecs = 1800  // 30 min - allows time for 60+ pages at 500 items/page
 
 	// parallelism for KubeArchive API calls.
 	defaultMaxConcurrent   = 10
@@ -96,7 +96,7 @@ const (
 	retryBackoffMultiplier   = 2.0
 
 	// maxGapFillAttempts limits gap-fill retries for truncated namespaces.
-	// With coldStartMaxItems=10,000, this allows up to 50,000 PLRs to be covered.
+	// With coldStartMaxItems=30,000, this allows up to 150,000 PLRs to be covered across 5 attempts.
 	maxGapFillAttempts = 5
 )
 
