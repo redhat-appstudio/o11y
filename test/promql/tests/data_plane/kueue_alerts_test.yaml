@@ -215,11 +215,15 @@ tests:
         alertname: TektonKueuePodStuckInPending
         exp_alerts: []
 
-  # TektonKueuePodStuckInCreation - should fire: pod in ContainerCreating for 5m
+  # TektonKueuePodStuckInCreation - should fire: pod in ContainerCreating for 5m and NOT Running
   - interval: 1m
     input_series:
       - series: 'kube_pod_container_status_waiting_reason{namespace="tekton-kueue", reason="ContainerCreating", pod="tekton-kueue-controller-manager-abc123", container="manager", source_cluster="c1"}'
         values: '1+0x10'
+      - series: 'kube_pod_status_phase{namespace="tekton-kueue", phase="Pending", pod="tekton-kueue-controller-manager-abc123", source_cluster="c1"}'
+        values: '1+0x10'
+      - series: 'kube_pod_status_phase{namespace="tekton-kueue", phase="Running", pod="tekton-kueue-controller-manager-abc123", source_cluster="c1"}'
+        values: '0+0x10'
     alert_rule_test:
       - eval_time: 5m
         alertname: TektonKueuePodStuckInCreation
@@ -243,6 +247,18 @@ tests:
     input_series:
       - series: 'kube_pod_container_status_waiting_reason{namespace="tekton-kueue", reason="ContainerCreating", pod="tekton-kueue-controller-manager-abc123", container="manager", source_cluster="c1"}'
         values: '0+0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: TektonKueuePodStuckInCreation
+        exp_alerts: []
+
+  # TektonKueuePodStuckInCreation - should NOT fire: stale ContainerCreating metric while pod is Running
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_waiting_reason{namespace="tekton-kueue", reason="ContainerCreating", pod="tekton-kueue-controller-manager-abc123", container="manager", source_cluster="c1"}'
+        values: '1+0x10'
+      - series: 'kube_pod_status_phase{namespace="tekton-kueue", phase="Running", pod="tekton-kueue-controller-manager-abc123", source_cluster="c1"}'
+        values: '1+0x10'
     alert_rule_test:
       - eval_time: 5m
         alertname: TektonKueuePodStuckInCreation
