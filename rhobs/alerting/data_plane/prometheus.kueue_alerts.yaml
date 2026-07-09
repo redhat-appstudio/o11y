@@ -105,6 +105,11 @@ spec:
           namespace="tekton-kueue",
           reason="ContainerCreating"
         } == 1
+        unless on (pod, namespace, source_cluster)
+        kube_pod_status_phase{
+          namespace="tekton-kueue",
+          phase="Running"
+        } == 1
       for: 5m
       labels:
         severity: high
