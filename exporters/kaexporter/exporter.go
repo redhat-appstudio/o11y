@@ -309,11 +309,14 @@ func NewKAExporter() (*KAExporter, error) {
 		if err != nil {
 			return nil, fmt.Errorf("load config: %w", err)
 		}
-		nsFilter = newNamespaceFilter(cfg)
-		log.Printf("Namespace filter: loaded from %s (%d exact, %d prefix rules)",
+		nsFilter, err = newNamespaceFilter(cfg)
+		if err != nil {
+			return nil, fmt.Errorf("load config: %w", err)
+		}
+		log.Printf("Namespace filter: loaded from %s (%d exact, %d pattern rules)",
 			configFile, len(nsFilter.exactMatches), len(nsFilter.patterns))
 	} else {
-		nsFilter = newNamespaceFilter(nil)
+		nsFilter, _ = newNamespaceFilter(nil)
 		log.Printf("Namespace filter: no config file specified, no namespaces excluded")
 	}
 

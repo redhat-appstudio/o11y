@@ -68,6 +68,26 @@ func TestLoadConfig(t *testing.T) {
 		},
 	}
 
+	invalidGlobTests := []struct {
+		name    string
+		content string
+	}{
+		{
+			name: "invalid glob pattern",
+			content: `excludeNamespaces:
+  - "bad[*"
+`,
+		},
+		{
+			name: "invalid glob among valid entries",
+			content: `excludeNamespaces:
+  - exact-ns
+  - "valid-*"
+  - "[-*"
+`,
+		},
+	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			path := filepath.Join(t.TempDir(), "config.yaml")
@@ -86,7 +106,10 @@ func TestLoadConfig(t *testing.T) {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			f := newNamespaceFilter(cfg)
+			f, filterErr := newNamespaceFilter(cfg)
+			if filterErr != nil {
+				t.Fatalf("unexpected newNamespaceFilter error: %v", filterErr)
+			}
 
 			if len(tt.wantExact) == 0 && len(f.exactMatches) != 0 {
 				t.Errorf("exactMatches: want empty, got %v", f.exactMatches)
@@ -109,6 +132,23 @@ func TestLoadConfig(t *testing.T) {
 			}
 		})
 	}
+
+	for _, tt := range invalidGlobTests {
+		t.Run(tt.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "config.yaml")
+			if err := os.WriteFile(path, []byte(tt.content), 0644); err != nil {
+				t.Fatalf("write temp file: %v", err)
+			}
+			cfg, err := loadConfig(path)
+			if err != nil {
+				t.Fatalf("unexpected loadConfig error: %v", err)
+			}
+			_, err = newNamespaceFilter(cfg)
+			if err == nil {
+				t.Fatal("expected error for invalid glob pattern, got nil")
+			}
+		})
+	}
 }
 
 func TestLoadConfig_FileNotFound(t *testing.T) {
@@ -120,76 +160,76 @@ func TestLoadConfig_FileNotFound(t *testing.T) {
 
 func TestNamespaceFilter_Apply(t *testing.T) {
 	tests := []struct {
-		name       string
-		filter     *namespaceFilter
-		input      []string
-		want       []string
+		name   string
+		cfg    *KAConfig
+		input  []string
+		want   []string
 	}{
 		{
-			name:   "nil config excludes nothing",
-			filter: newNamespaceFilter(nil),
-			input:  []string{"my-tenant", "rhtap-releng-tenant", "managed-foo", "managed-bar", "other-ns"},
-			want:   []string{"my-tenant", "rhtap-releng-tenant", "managed-foo", "managed-bar", "other-ns"},
+			name:  "nil config excludes nothing",
+			cfg:   nil,
+			input: []string{"my-tenant", "rhtap-releng-tenant", "managed-foo", "managed-bar", "other-ns"},
+			want:  []string{"my-tenant", "rhtap-releng-tenant", "managed-foo", "managed-bar", "other-ns"},
 		},
 		{
 			name: "exact match only",
-			filter: newNamespaceFilter(&KAConfig{
+			cfg: &KAConfig{
 				ExcludeNamespaces: []string{"special-ns"},
-			}),
+			},
 			input: []string{"special-ns", "special-ns-2", "other"},
 			want:  []string{"special-ns-2", "other"},
 		},
 		{
 			name: "prefix match only",
-			filter: newNamespaceFilter(&KAConfig{
+			cfg: &KAConfig{
 				ExcludeNamespaces: []string{"test-*"},
-			}),
+			},
 			input: []string{"test-foo", "test-bar", "my-test", "production"},
 			want:  []string{"my-test", "production"},
 		},
 		{
 			name: "mixed exact and prefix",
-			filter: newNamespaceFilter(&KAConfig{
+			cfg: &KAConfig{
 				ExcludeNamespaces: []string{"exact-ns", "prefix-*"},
-			}),
+			},
 			input: []string{"exact-ns", "prefix-one", "prefix-two", "keep-me"},
 			want:  []string{"keep-me"},
 		},
 		{
 			name: "empty config excludes nothing",
-			filter: newNamespaceFilter(&KAConfig{
+			cfg: &KAConfig{
 				ExcludeNamespaces: []string{},
-			}),
+			},
 			input: []string{"rhtap-releng-tenant", "managed-foo", "anything"},
 			want:  []string{"rhtap-releng-tenant", "managed-foo", "anything"},
 		},
 		{
-			name:   "empty input",
-			filter: newNamespaceFilter(nil),
-			input:  nil,
-			want:   nil,
+			name:  "empty input",
+			cfg:   nil,
+			input: nil,
+			want:  nil,
 		},
 		{
 			name: "leading wildcard",
-			filter: newNamespaceFilter(&KAConfig{
+			cfg: &KAConfig{
 				ExcludeNamespaces: []string{"*-managed"},
-			}),
+			},
 			input: []string{"foo-managed", "bar-managed", "managed-foo", "other"},
 			want:  []string{"managed-foo", "other"},
 		},
 		{
 			name: "mid-string wildcard",
-			filter: newNamespaceFilter(&KAConfig{
+			cfg: &KAConfig{
 				ExcludeNamespaces: []string{"konflux-perfscale-*-tenant"},
-			}),
+			},
 			input: []string{"konflux-perfscale-large-tenant", "konflux-perfscale-small-tenant", "konflux-perfscale", "other-ns"},
 			want:  []string{"konflux-perfscale", "other-ns"},
 		},
 		{
 			name: "all excluded",
-			filter: newNamespaceFilter(&KAConfig{
+			cfg: &KAConfig{
 				ExcludeNamespaces: []string{"ns-a", "ns-b"},
-			}),
+			},
 			input: []string{"ns-a", "ns-b"},
 			want:  nil,
 		},
@@ -197,7 +237,11 @@ func TestNamespaceFilter_Apply(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := tt.filter.apply(tt.input)
+			filter, err := newNamespaceFilter(tt.cfg)
+			if err != nil {
+				t.Fatalf("unexpected newNamespaceFilter error: %v", err)
+			}
+			got := filter.apply(tt.input)
 
 			if len(got) != len(tt.want) {
 				t.Fatalf("apply() = %v, want %v", got, tt.want)

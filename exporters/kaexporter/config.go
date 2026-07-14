@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path"
 	"strings"
@@ -35,12 +36,12 @@ func loadConfig(path string) (*KAConfig, error) {
 	return &cfg, nil
 }
 
-func newNamespaceFilter(cfg *KAConfig) *namespaceFilter {
+func newNamespaceFilter(cfg *KAConfig) (*namespaceFilter, error) {
 	if cfg == nil {
 		return &namespaceFilter{
 			exactMatches: make(map[string]bool),
 			source:       "none",
-		}
+		}, nil
 	}
 
 	f := &namespaceFilter{
@@ -53,12 +54,15 @@ func newNamespaceFilter(cfg *KAConfig) *namespaceFilter {
 			continue
 		}
 		if strings.Contains(entry, "*") {
+			if _, err := path.Match(entry, "validate"); err != nil {
+				return nil, fmt.Errorf("invalid glob pattern %q: %w", entry, err)
+			}
 			f.patterns = append(f.patterns, entry)
 		} else {
 			f.exactMatches[entry] = true
 		}
 	}
-	return f
+	return f, nil
 }
 
 func (f *namespaceFilter) apply(namespaces []string) []string {
@@ -69,7 +73,12 @@ func (f *namespaceFilter) apply(namespaces []string) []string {
 		}
 		excluded := false
 		for _, pattern := range f.patterns {
-			if matched, _ := path.Match(pattern, ns); matched {
+			matched, err := path.Match(pattern, ns)
+			if err != nil {
+				log.Printf("WARNING: invalid glob pattern %q (skipping): %v", pattern, err)
+				continue
+			}
+			if matched {
 				excluded = true
 				break
 			}
