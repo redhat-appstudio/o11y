@@ -1,0 +1,45 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-konflux-ui-service-availability
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: konflux_ui_service_availability
+      interval: 1m
+      rules:
+        - record: konflux_up
+          expr: |
+            clamp_max(
+              label_replace(
+                label_replace(
+                  floor(
+                    kube_deployment_status_replicas_available{
+                      namespace="konflux-ui", deployment="proxy"
+                    } / (kube_deployment_spec_replicas * 2/3)
+                  ), "check", "replicas-available", "",""
+                ), "service", "$1", "deployment","(.*)"
+              ), 1
+            )
+        - record: konflux_up
+          expr: |
+            clamp_max(
+              label_replace(
+                label_replace(
+                  floor(
+                    kube_deployment_status_replicas_available{
+                      namespace="konflux-ui", deployment="dex"
+                    } / (kube_deployment_spec_replicas * 2/3)
+                  ), "check", "replicas-available", "",""
+                ), "service", "$1", "deployment","(.*)"
+              ), 1
+            )
+        - record: nginx_otel_http_request_errors:rate5m
+          expr: sum(rate(nginx_otel_http_request_errors_total[5m])) by (job, status, source_cluster)
+
+        - record: nginx_otel_http_request_errors:rate24h_avg
+          expr: avg_over_time(nginx_otel_http_request_errors:rate5m[24h])
+
+        - record: nginx_otel_http_request_errors:rate24h_stddev
+          expr: stddev_over_time(nginx_otel_http_request_errors:rate5m[24h])

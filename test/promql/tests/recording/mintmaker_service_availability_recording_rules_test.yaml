@@ -1,0 +1,65 @@
+evaluation_interval: 1m
+
+rule_files:
+  - mintmaker_service_availability_recording_rules.yaml
+
+tests:
+  - name: MintMakerControllerUpTest
+    interval: 1m
+    input_series:
+      - series: "kube_deployment_status_replicas_available{namespace='mintmaker', deployment='mintmaker-controller-manager'}"
+        values: "1 1 1 1 1"
+      - series: "kube_deployment_spec_replicas{namespace='mintmaker', deployment='mintmaker-controller-manager'}"
+        values: "1 1 1 1 1"
+
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples:
+          - labels: konflux_up{service='mintmaker-controller-manager', check='replicas-available', namespace='mintmaker', deployment='mintmaker-controller-manager'}
+            value: 1
+
+  - name: MintMakerControllerDownTest
+    interval: 1m
+    input_series:
+      - series: "kube_deployment_status_replicas_available{namespace='mintmaker', deployment='mintmaker-controller-manager'}"
+        values: "0 0 0 0 0"
+      - series: "kube_deployment_spec_replicas{namespace='mintmaker', deployment='mintmaker-controller-manager'}"
+        values: "1 1 1 1 1"
+
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples:
+          - labels: konflux_up{service='mintmaker-controller-manager', check='replicas-available', namespace='mintmaker', deployment='mintmaker-controller-manager'}
+            value: 0
+
+  - name: MintMakerCacheUpTest
+    interval: 1m
+    input_series:
+      - series: "kube_deployment_status_replicas_available{namespace='mintmaker', deployment='redis'}"
+        values: "1 1 1 1 1"
+      - series: "kube_deployment_spec_replicas{namespace='mintmaker', deployment='redis'}"
+        values: "1 1 1 1 1"
+
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples:
+          - labels: konflux_up{service='redis', check='replicas-available', namespace='mintmaker', deployment='redis'}
+            value: 1
+
+  - name: MintMakerCacheDownTest
+    interval: 1m
+    input_series:
+      - series: "kube_deployment_status_replicas_available{namespace='mintmaker', deployment='redis'}"
+        values: "0 0 0 0 0"
+      - series: "kube_deployment_spec_replicas{namespace='mintmaker', deployment='redis'}"
+        values: "1 1 1 1 1"
+
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples:
+          - labels: konflux_up{service='redis', check='replicas-available', namespace='mintmaker', deployment='redis'}
+            value: 0

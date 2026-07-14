@@ -1,0 +1,78 @@
+evaluation_interval: 1m
+
+rule_files:
+  - mintmaker_service_quality_recording_rules.yaml
+
+tests:
+  - name: MintMakerClusterRamRequestedHighTest
+    interval: 1m
+    input_series:
+      - series: "kube_pod_container_resource_requests{
+          container='affinity-assistant', namespace='managed-release-team-tenant', resource='memory', unit='byte'
+        }"
+        values: "104857600"
+      - series: "kube_pod_container_resource_requests{
+          container='alertmanager', namespace='openshift-monitoring', resource='memory', unit='byte'
+        }"
+        values: "41943040"
+      - series: "kube_node_status_allocatable{
+          container='kube-rbac-proxy-main', namespace='openshift-monitoring', node='example-node1', resource='memory', unit='byte'
+        }"
+        values: "60523909120"
+      - series: "kube_node_status_allocatable{
+          container='kube-rbac-proxy-main', namespace='openshift-monitoring', node='example-node2', resource='memory', unit='byte'
+        }"
+        values: "29605638144"
+
+    promql_expr_test:
+      - expr: cluster_ram_requested_perc
+        eval_time: 1m
+        exp_samples:
+          - labels: cluster_ram_requested_perc
+            value: 0.0016287737424221574
+
+  - name: MintMakerNodeMemoryPressuredTest
+    interval: 1m
+    input_series:
+      - series: "kube_node_info{
+          container='kube-rbac-proxy-maind-release-team-tenant', node='example-node1'
+        }"
+        values: "1"
+      - series: "kube_node_info{
+          container='kube-rbac-proxy-maind-release-team-tenant', node='example-node2'
+        }"
+        values: "1"
+      - series: "kube_node_status_condition{
+          condition='MemoryPressure', node='example-node1', status='true'
+        }"
+        values: "0"
+      - series: "kube_node_status_condition{
+          condition='MemoryPressure', node='example-node2', status='true'
+        }"
+        values: "1"
+
+    promql_expr_test:
+      - expr: node_memory_pressured_perc
+        eval_time: 1m
+        exp_samples:
+          - labels: node_memory_pressured_perc
+            value: 0.5
+
+  - name: MintMakerRedisNodeMemoryUsageTest
+    interval: 1m
+    input_series:
+      - series: "container_memory_usage_bytes{
+          container='redis'
+        }"
+        values: "104857600"
+      - series: "container_spec_memory_limit_bytes{
+          container='redis'
+        }"
+        values: "2147483648"
+
+    promql_expr_test:
+      - expr: mintmaker_redis_node_memory_usage_perc
+        eval_time: 1m
+        exp_samples:
+          - labels: mintmaker_redis_node_memory_usage_perc{container="redis"}
+            value: 0.048828125

@@ -1,0 +1,220 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.performance_alerts.yaml
+
+tests:
+  # Etcd Alerts
+  - interval: 1m
+    input_series:
+      # Average Fsync latency higher than 40ms, so it will be alerted.
+      - series: 'etcd_disk_wal_fsync_duration_seconds_bucket{le="0.05", pod="etcd-pod-1", source_cluster="cluster01"}'
+        values: '0+0.01x15'
+
+      - series: 'etcd_disk_wal_fsync_duration_seconds_bucket{le="+Inf", pod="etcd-pod-1", source_cluster="cluster01"}'
+        values: '0+0.1x15'
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: EtcdFsyncLatency
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              component: etcd
+              pod: etcd-pod-1
+              source_cluster: cluster01
+            exp_annotations:
+              summary: "ETCD slow file system synchronization."
+              description: "10 minutes avg. 99th etcd fsync latency on etcd-pod-1 higher than 40ms in cluster cluster01."
+              alert_routing_key: perfandscale
+
+  - interval: 1m
+    input_series:
+      # Average Fsync latency is below alert threshold, so it will not be alerted.
+      - series: 'etcd_disk_wal_fsync_duration_seconds_bucket{le="0.01", pod="etcd-pod-2", source_cluster="cluster01"}'
+        values: '2+0.01x15'
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: EtcdFsyncLatency
+
+
+  - interval: 1m
+    input_series:
+      # Average commit latency higher than 40ms, so it will be alerted.
+      - series: 'etcd_disk_backend_commit_duration_seconds_bucket{le="0.05", pod="etcd-pod-1", source_cluster="cluster01"}'
+        values: '0+0.01x30'
+
+      - series: 'etcd_disk_backend_commit_duration_seconds_bucket{le="+Inf", pod="etcd-pod-1", source_cluster="cluster01"}'
+        values: '0+0.5x30'
+
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: EtcdCommitLatency
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              component: etcd
+              pod: etcd-pod-1
+              source_cluster: cluster01
+            exp_annotations:
+              summary: "ETCD slow writes observed."
+              description: "15 minutes avg. 99th etcd commit latency on etcd-pod-1 higher than 40ms in cluster cluster01."
+              alert_routing_key: perfandscale
+
+  - interval: 1m
+    input_series:
+      # Average commit latency higher than 40ms on a cluster we do not care about, so it will not be alerted.
+      - series: 'etcd_disk_backend_commit_duration_seconds_bucket{le="0.05", pod="etcd-pod-1", source_cluster="cluster01"}'
+        values: '2+0x15'
+
+      - series: 'etcd_disk_backend_commit_duration_seconds_bucket{le="+Inf", pod="etcd-pod-1", source_cluster="cluster01"}'
+        values: '2+0x15'
+
+      - series: 'etcd_disk_backend_commit_duration_seconds_bucket{le="0.05", pod="etcd-pod-1"}'
+        values: '0+0.01x15'
+
+      - series: 'etcd_disk_backend_commit_duration_seconds_bucket{le="+Inf", pod="etcd-pod-1"}'
+        values: '0+0.5x15'
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: EtcdCommitLatency
+
+  - interval: 1m
+    input_series:
+      # Average commit latency is below alert threshold count, so it will not be alerted.
+      - series: 'etcd_disk_backend_commit_duration_seconds_bucket{le="0.03", pod="etcd-pod-2", source_cluster="cluster01"}'
+        values: '2+0.01x15'
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: EtcdCommitLatency
+
+  - interval: 1m
+    input_series:
+      # Two etcd members have RTT > 0.15 and proposal failures increase,
+      # so it will be alerted.
+      - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="0.01", pod="etcd-pod-1", source_cluster="cluster01"}'
+        values: '0.1+0.3x16'
+
+      - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="0.2", pod="etcd-pod-1", source_cluster="cluster01"}'
+        values: '0.1+0.5x16'
+
+      - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="+Inf", pod="etcd-pod-1", source_cluster="cluster01"}'
+        values: '0.1+0.2x16'
+
+      - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="0.01", pod="etcd-pod-2", source_cluster="cluster01"}'
+        values: '0.1+0.3x16'
+
+      - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="0.2", pod="etcd-pod-2", source_cluster="cluster01"}'
+        values: '0.1+0.5x16'
+
+      - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="+Inf", pod="etcd-pod-2", source_cluster="cluster01"}'
+        values: '0.1+0.2x16'
+
+      - series: 'etcd_server_proposals_failed_total{source_cluster="cluster01"}'
+        values: '0+1x16'
+
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: EtcdSlowNetworkRTT
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              component: etcd
+              source_cluster: cluster01
+            exp_annotations:
+              summary: "High RTT latency on ETCD cluster member requests."
+              description: "99th etcd RTT latency is higher than 0.15 on at least 2 members, with proposal failures increasing in cluster cluster01."
+              alert_routing_key: perfandscale
+
+  - interval: 1m
+    input_series:
+      # Only one etcd member has RTT > 0.15, so it will not be alerted.
+      - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="0.01", pod="etcd-pod-1", source_cluster="cluster01"}'
+        values: '0.1+0.3x16'
+
+      - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="0.2", pod="etcd-pod-1", source_cluster="cluster01"}'
+        values: '0.1+0.5x16'
+
+      - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="+Inf", pod="etcd-pod-1", source_cluster="cluster01"}'
+        values: '0.1+0.2x16'
+
+      - series: 'etcd_server_proposals_failed_total{source_cluster="cluster01"}'
+        values: '0+1x16'
+
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: EtcdSlowNetworkRTT
+
+  - interval: 1m
+    input_series:
+      # Two etcd members have RTT, but proposal failures are not increasing,
+      # so it will not be alerted.
+      - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="0.01", pod="etcd-pod-1", source_cluster="cluster01"}'
+        values: '0.1+0.3x16'
+
+      - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="0.2", pod="etcd-pod-1", source_cluster="cluster01"}'
+        values: '0.1+0.5x16'
+
+      - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="+Inf", pod="etcd-pod-1", source_cluster="cluster01"}'
+        values: '0.1+0.2x16'
+
+      - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="0.01", pod="etcd-pod-2", source_cluster="cluster01"}'
+        values: '0.1+0.3x16'
+
+      - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="0.2", pod="etcd-pod-2", source_cluster="cluster01"}'
+        values: '0.1+0.5x16'
+
+      - series: 'etcd_network_peer_round_trip_time_seconds_bucket{le="+Inf", pod="etcd-pod-2", source_cluster="cluster01"}'
+        values: '0.1+0.2x16'
+
+      - series: 'etcd_server_proposals_failed_total{source_cluster="cluster01"}'
+        values: '0+0x16'
+
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: EtcdSlowNetworkRTT
+
+
+  - interval: 1m
+    input_series:
+      # Increase in Etcd raft proposal failures over time, so it will be alerted.
+      - series: 'etcd_server_proposals_failed_total{pod="etcd-pod-1", source_cluster="cluster01"}'
+        values: '0+10x60'
+
+      - series: 'etcd_server_proposals_failed_total{pod="etcd-pod-2", source_cluster="cluster01"}'
+        values: '0+0x60'
+
+      - series: 'etcd_server_proposals_failed_total{pod="etcd-pod-3", source_cluster="cluster01"}'
+        values: '0+0x60'
+
+    alert_rule_test:
+      - eval_time: 1h
+        alertname: EtcdProposalFailures
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              component: etcd
+              source_cluster: cluster01
+            exp_annotations:
+              summary: "ETCD raft proposal failures."
+              description: "Etcd high number of failed proposals on some etcd pod in cluster cluster01."
+              alert_routing_key: spreandinfra
+
+  - interval: 1m
+    input_series:
+      # Etcd raft proposals failures within threshold limit, so it will not be alerted.
+      - series: 'etcd_server_proposals_failed_total{pod="etcd-pod-1", source_cluster="cluster01"}'
+        values: '0+5x30 1+0x30'
+
+      - series: 'etcd_server_proposals_failed_total{pod="etcd-pod-2", source_cluster="cluster01"}'
+        values: '0+5x30 1+0x30'
+
+      - series: 'etcd_server_proposals_failed_total{pod="etcd-pod-3", source_cluster="cluster01"}'
+        values: '0+5x30 1+0x30'
+
+    alert_rule_test:
+      - eval_time: 1h
+        alertname: EtcdProposalFailures

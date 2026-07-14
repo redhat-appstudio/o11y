@@ -1,0 +1,161 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.krd_runner_alerts.yaml
+
+tests:
+  # ==================== KRDRunnerDown ====================
+  # No runner metrics — should fire
+  - interval: 1m
+    input_series: []
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: KRDRunnerDown
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              component: krd-gitlab-runner
+              namespace: krd-gitlab-runner--pipeline
+            exp_annotations:
+              summary: >-
+                KRD GitLab Runner is down in krd-gitlab-runner--pipeline
+              description: >-
+                No metrics received from the GitLab runner in krd-gitlab-runner--pipeline namespace for more than 10 minutes. The runner pod may be absent, crash looping, or not ready.
+              alert_routing_key: krd-releng
+              team: releng
+
+  # Runner metrics present — should NOT fire
+  - interval: 1m
+    input_series:
+      - series: 'gitlab_runner_concurrent{namespace="krd-gitlab-runner--pipeline", source_cluster="cluster01"}'
+        values: "60x15"
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: KRDRunnerDown
+        exp_alerts: []
+
+  # ==================== KRDRunnerHighMemoryUsage ====================
+  - interval: 1m
+    input_series:
+      # Memory at 90% of 650Mi (~613Mi = 643825664 bytes) — should fire
+      - series: 'process_resident_memory_bytes{namespace="krd-gitlab-runner--pipeline", source_cluster="cluster01"}'
+        values: "643825664x35"
+
+      # Memory at 50% of 650Mi (~325Mi) — should NOT fire
+      - series: 'process_resident_memory_bytes{namespace="krd-gitlab-runner--pipeline", source_cluster="cluster02"}'
+        values: "340787200x35"
+
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: KRDRunnerHighMemoryUsage
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              component: krd-gitlab-runner
+              namespace: krd-gitlab-runner--pipeline
+              source_cluster: cluster01
+            exp_annotations:
+              summary: >-
+                KRD GitLab Runner memory usage exceeds 80% of limit on cluster cluster01
+              description: >-
+                The GitLab runner process in namespace krd-gitlab-runner--pipeline on cluster cluster01 has been using more than 80% of its 650Mi memory limit for 30 minutes.
+              alert_routing_key: krd-releng
+              team: releng
+
+  # ==================== KRDRunnerHighCPUUsage ====================
+  - interval: 1m
+    input_series:
+      # CPU usage above 0.48 (80% of 600m) — rate of 0.5 per second
+      - series: 'process_cpu_seconds_total{namespace="krd-gitlab-runner--pipeline", source_cluster="cluster01"}'
+        values: "0+30x35"
+
+      # CPU usage below threshold — rate of 0.2 per second
+      - series: 'process_cpu_seconds_total{namespace="krd-gitlab-runner--pipeline", source_cluster="cluster02"}'
+        values: "0+12x35"
+
+    alert_rule_test:
+      - eval_time: 35m
+        alertname: KRDRunnerHighCPUUsage
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              component: krd-gitlab-runner
+              namespace: krd-gitlab-runner--pipeline
+              source_cluster: cluster01
+            exp_annotations:
+              summary: >-
+                KRD GitLab Runner CPU usage exceeds 80% of limit on cluster cluster01
+              description: >-
+                The GitLab runner process in namespace krd-gitlab-runner--pipeline on cluster cluster01 has been using more than 80% of its 600m CPU limit for 30 minutes.
+              alert_routing_key: krd-releng
+              team: releng
+
+  # CPU spike lasting only 15 minutes then dropping — should NOT fire (for: 30m)
+  - interval: 1m
+    input_series:
+      - series: 'process_cpu_seconds_total{namespace="krd-gitlab-runner--pipeline", source_cluster="cluster03"}'
+        values: "0+30x15 450+12x20"
+
+    alert_rule_test:
+      - eval_time: 35m
+        alertname: KRDRunnerHighCPUUsage
+        exp_alerts: []
+
+  # ==================== KRDRunnerJobFailureRateHigh ====================
+  # 50% failure rate (5 failed out of 10 total) — should fire (threshold > 30%)
+  - interval: 1m
+    input_series:
+      - series: 'gitlab_runner_failed_jobs_total{namespace="krd-gitlab-runner--pipeline", failure_reason="script_failure", source_cluster="cluster01"}'
+        values: "0+1x25"
+      - series: 'gitlab_runner_jobs_total{namespace="krd-gitlab-runner--pipeline", failure_reason="script_failure", source_cluster="cluster01"}'
+        values: "0+2x25"
+
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: KRDRunnerJobFailureRateHigh
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              component: krd-gitlab-runner
+              namespace: krd-gitlab-runner--pipeline
+              failure_reason: script_failure
+              source_cluster: cluster01
+            exp_annotations:
+              summary: >-
+                KRD GitLab Runner job failure rate exceeds 30%.
+              description: >-
+                More than 30% of runner jobs have failed in the last 15 minutes in krd-gitlab-runner--pipeline namespace. Failure reason: script_failure.
+              alert_routing_key: krd-releng
+              team: releng
+
+  # 10% failure rate (1 failed out of 10 total) — should NOT fire
+  - interval: 1m
+    input_series:
+      - series: 'gitlab_runner_failed_jobs_total{namespace="krd-gitlab-runner--pipeline", failure_reason="script_failure", source_cluster="cluster02"}'
+        values: "0+1x25"
+      - series: 'gitlab_runner_jobs_total{namespace="krd-gitlab-runner--pipeline", failure_reason="script_failure", source_cluster="cluster02"}'
+        values: "0+10x25"
+
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: KRDRunnerJobFailureRateHigh
+        exp_alerts: []
+
+  # No jobs running (0 total) — should NOT fire
+  - interval: 1m
+    input_series:
+      - series: 'gitlab_runner_failed_jobs_total{namespace="krd-gitlab-runner--pipeline", failure_reason="script_failure", source_cluster="cluster03"}'
+        values: "0x25"
+      - series: 'gitlab_runner_jobs_total{namespace="krd-gitlab-runner--pipeline", failure_reason="script_failure", source_cluster="cluster03"}'
+        values: "0x25"
+
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: KRDRunnerJobFailureRateHigh
+        exp_alerts: []

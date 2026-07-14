@@ -1,0 +1,171 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.krd_argocd_tenant_config_alerts.yaml
+
+tests:
+  # ==================== KRDTenantConfigAppDegraded ====================
+  - interval: 1m
+    input_series:
+      # Degraded app in tenant-config namespace for monitored tenant — should fire
+      - series: 'argocd_app_info{namespace="konflux-tenants-config", name="infra-deployments-stone-prd-rh01", health_status="Degraded", sync_status="Synced", dest_namespace="rhtap-releng-tenant", dest_server="https://api.stone-prd-rh01.example.com:6443", source_cluster="appsres09ue1"}'
+        values: "1x15"
+
+      # Degraded app in stage namespace for monitored tenant — should fire
+      - series: 'argocd_app_info{namespace="konflux-tenants-config-stage", name="infra-deployments-stone-stg-rh01", health_status="Degraded", sync_status="Synced", dest_namespace="ibm-asmw-releng-tenant", dest_server="https://api.stone-stg-rh01.example.com:6443", source_cluster="appsres09ue1"}'
+        values: "1x15"
+
+      # Healthy app — should NOT fire
+      - series: 'argocd_app_info{namespace="konflux-tenants-config", name="healthy-app", health_status="Healthy", sync_status="Synced", dest_namespace="rhtap-releng-tenant", dest_server="https://api.stone-prd-rh01.example.com:6443", source_cluster="appsres09ue1"}'
+        values: "1x15"
+
+      # Degraded app in different namespace — should NOT fire
+      - series: 'argocd_app_info{namespace="argocd", name="other-app", health_status="Degraded", sync_status="Synced", dest_namespace="rhtap-releng-tenant", dest_server="https://api.stone-prd-rh01.example.com:6443", source_cluster="appsres09ue1"}'
+        values: "1x15"
+
+      # Degraded app for unmonitored tenant — should NOT fire
+      - series: 'argocd_app_info{namespace="konflux-tenants-config", name="unmonitored-app", health_status="Degraded", sync_status="Synced", dest_namespace="stone-prd-rh01-tenant", dest_server="https://api.stone-prd-rh01.example.com:6443", source_cluster="appsres09ue1"}'
+        values: "1x15"
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: KRDTenantConfigAppDegraded
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              component: krd-tenants-config
+              namespace: konflux-tenants-config
+              name: infra-deployments-stone-prd-rh01
+              health_status: Degraded
+              sync_status: Synced
+              dest_namespace: rhtap-releng-tenant
+              dest_server: "https://api.stone-prd-rh01.example.com:6443"
+              source_cluster: appsres09ue1
+            exp_annotations:
+              summary: >-
+                Tenant-config ArgoCD app infra-deployments-stone-prd-rh01 is degraded for rhtap-releng-tenant namespace
+              description: >-
+                ArgoCD application infra-deployments-stone-prd-rh01 in konflux-tenants-config has been in Degraded health status for more than 10 minutes.
+              alert_routing_key: krd-releng
+              team: releng
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              component: krd-tenants-config
+              namespace: konflux-tenants-config-stage
+              name: infra-deployments-stone-stg-rh01
+              health_status: Degraded
+              sync_status: Synced
+              dest_namespace: ibm-asmw-releng-tenant
+              dest_server: "https://api.stone-stg-rh01.example.com:6443"
+              source_cluster: appsres09ue1
+            exp_annotations:
+              summary: >-
+                Tenant-config ArgoCD app infra-deployments-stone-stg-rh01 is degraded for ibm-asmw-releng-tenant namespace
+              description: >-
+                ArgoCD application infra-deployments-stone-stg-rh01 in konflux-tenants-config-stage has been in Degraded health status for more than 10 minutes.
+              alert_routing_key: krd-releng
+              team: releng
+
+  # ==================== KRDTenantConfigAppOutOfSync ====================
+  - interval: 1m
+    input_series:
+      # Healthy but OutOfSync for monitored tenant — should fire
+      - series: 'argocd_app_info{namespace="konflux-tenants-config", name="tenants-config-stone-prd-rh01", health_status="Healthy", sync_status="OutOfSync", dest_namespace="releng-dev-tenant", dest_server="https://api.stone-prd-rh01.example.com:6443", source_cluster="appsres09ue1"}'
+        values: "1x15"
+
+      # Healthy and Synced — should NOT fire
+      - series: 'argocd_app_info{namespace="konflux-tenants-config", name="synced-app", health_status="Healthy", sync_status="Synced", dest_namespace="releng-dev-tenant", dest_server="https://api.stone-prd-rh01.example.com:6443", source_cluster="appsres09ue1"}'
+        values: "1x15"
+
+      # Degraded and OutOfSync — should NOT fire (only Healthy+OutOfSync)
+      - series: 'argocd_app_info{namespace="konflux-tenants-config", name="degraded-oos-app", health_status="Degraded", sync_status="OutOfSync", dest_namespace="releng-dev-tenant", dest_server="https://api.stone-prd-rh01.example.com:6443", source_cluster="appsres09ue1"}'
+        values: "1x15"
+
+      # Healthy but OutOfSync for unmonitored tenant — should NOT fire
+      - series: 'argocd_app_info{namespace="konflux-tenants-config", name="unmonitored-oos-app", health_status="Healthy", sync_status="OutOfSync", dest_namespace="stone-prd-rh01-tenant", dest_server="https://api.stone-prd-rh01.example.com:6443", source_cluster="appsres09ue1"}'
+        values: "1x15"
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: KRDTenantConfigAppOutOfSync
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              component: krd-tenants-config
+              namespace: konflux-tenants-config
+              name: tenants-config-stone-prd-rh01
+              health_status: Healthy
+              sync_status: OutOfSync
+              dest_namespace: releng-dev-tenant
+              dest_server: "https://api.stone-prd-rh01.example.com:6443"
+              source_cluster: appsres09ue1
+            exp_annotations:
+              summary: >-
+                Tenant-config ArgoCD app tenants-config-stone-prd-rh01 is OutOfSync for releng-dev-tenant namespace
+              description: >-
+                ArgoCD application tenants-config-stone-prd-rh01 in konflux-tenants-config has been in OutOfSync health status for more than 10 minutes.
+              alert_routing_key: krd-releng
+              team: releng
+
+  # ==================== KRDTenantConfigAppMissingOrUnknown ====================
+  - interval: 1m
+    input_series:
+      # Missing health status for monitored tenant — should fire
+      - series: 'argocd_app_info{namespace="konflux-tenants-config", name="missing-app", health_status="Missing", sync_status="Synced", dest_namespace="releng-integration-tenant", dest_server="https://api.stone-prd-rh01.example.com:6443", source_cluster="appsres09ue1"}'
+        values: "1x15"
+
+      # Unknown health status in stage for monitored tenant — should fire
+      - series: 'argocd_app_info{namespace="konflux-tenants-config-stage", name="unknown-app", health_status="Unknown", sync_status="Synced", dest_namespace="releng-test-product-tenant", dest_server="https://api.stone-stg-rh01.example.com:6443", source_cluster="appsres09ue1"}'
+        values: "1x15"
+
+      # Healthy app — should NOT fire
+      - series: 'argocd_app_info{namespace="konflux-tenants-config", name="healthy-app", health_status="Healthy", sync_status="Synced", dest_namespace="releng-dev-tools-tenant", dest_server="https://api.stone-prd-rh01.example.com:6443", source_cluster="appsres09ue1"}'
+        values: "1x15"
+
+      # Missing health for unmonitored tenant — should NOT fire
+      - series: 'argocd_app_info{namespace="konflux-tenants-config", name="unmonitored-missing-app", health_status="Missing", sync_status="Synced", dest_namespace="stone-prd-rh01-tenant", dest_server="https://api.stone-prd-rh01.example.com:6443", source_cluster="appsres09ue1"}'
+        values: "1x15"
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: KRDTenantConfigAppMissingOrUnknown
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              component: krd-tenants-config
+              namespace: konflux-tenants-config
+              name: missing-app
+              health_status: Missing
+              sync_status: Synced
+              dest_namespace: releng-integration-tenant
+              dest_server: "https://api.stone-prd-rh01.example.com:6443"
+              source_cluster: appsres09ue1
+            exp_annotations:
+              summary: >-
+                Tenant-config ArgoCD app missing-app has Missing health for releng-integration-tenant namespace
+              description: >-
+                ArgoCD application missing-app in konflux-tenants-config has been in Missing health status for more than 10 minutes.
+              alert_routing_key: krd-releng
+              team: releng
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              component: krd-tenants-config
+              namespace: konflux-tenants-config-stage
+              name: unknown-app
+              health_status: Unknown
+              sync_status: Synced
+              dest_namespace: releng-test-product-tenant
+              dest_server: "https://api.stone-stg-rh01.example.com:6443"
+              source_cluster: appsres09ue1
+            exp_annotations:
+              summary: >-
+                Tenant-config ArgoCD app unknown-app has Unknown health for releng-test-product-tenant namespace
+              description: >-
+                ArgoCD application unknown-app in konflux-tenants-config-stage has been in Unknown health status for more than 10 minutes.
+              alert_routing_key: krd-releng
+              team: releng

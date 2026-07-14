@@ -1,0 +1,54 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-kanary-alerting-rules
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: kanary_alerts
+    interval: 1m
+    rules:
+    # Kanary V1 alerts (metrics pushed via OTEL to konflux-otel namespace)
+    # Note: KanarySignalTriggered should be promoted to slo: "true" once confirmed stable
+    - alert: KanarySignalTriggered
+      expr: kanary_up{namespace="konflux-otel", tested_cluster=~"stone-prod-p01|stone-prod-p02|stone-prd-rh01|kflux-ocp-p01|kflux-prd-rh02|kflux-prd-rh03|kflux-rhel-p01|kflux-fedora-01"} == 0
+      for: 30m
+      labels:
+        severity: high
+        slo: "false"
+        component: kanary
+      annotations:
+        alert_routing_key: o11y
+        team: o11y
+        summary: "Kanary signal for {{ $labels.type }} artifacts has been triggered for cluster {{ $labels.tested_cluster }}"
+        description: "The e2e load tests for {{ $labels.type }} artifacts failed multiple times in a row for cluster {{ $labels.tested_cluster }}"
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-kanary.md
+
+    - alert: KanaryInfrastructureError
+      expr: kanary_error{namespace="konflux-otel", reason="infrastructure", tested_cluster=~"stone-prod-p01|stone-prod-p02|stone-prd-rh01|kflux-ocp-p01|kflux-prd-rh02|kflux-prd-rh03|kflux-rhel-p01|kflux-fedora-01"} == 1
+      for: 30m
+      labels:
+        severity: warning
+        slo: "false"
+        component: kanary
+      annotations:
+        alert_routing_key: o11y
+        team: o11y
+        summary: "Kanary infrastructure error for {{ $labels.type }} artifacts on cluster {{ $labels.tested_cluster }}"
+        description: "An infrastructure error prevented the kanary signal from properly measuring {{ $labels.type }} artifacts for cluster {{ $labels.tested_cluster }}"
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-kanary.md
+
+    - alert: KanaryStaleMetrics
+      expr: (time() - kanary_last_push_timestamp{namespace="konflux-otel", tested_cluster=~"stone-prod-p01|stone-prod-p02|stone-prd-rh01|kflux-ocp-p01|kflux-prd-rh02|kflux-prd-rh03|kflux-rhel-p01|kflux-fedora-01"}) > 3600
+      for: 5m
+      labels:
+        severity: warning
+        slo: "false"
+        component: kanary
+      annotations:
+        alert_routing_key: o11y
+        team: o11y
+        summary: "Kanary metrics for {{ $labels.type }} artifacts are stale on cluster {{ $labels.tested_cluster }}"
+        description: "No kanary metrics have been pushed for {{ $labels.type }} artifacts on cluster {{ $labels.tested_cluster }} for more than 1 hour. Cronjobs run every 30 minutes."
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-kanary.md
