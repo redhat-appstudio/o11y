@@ -296,13 +296,17 @@ def has_file_level_ignore(raw_lines):
     return None
 
 
-def find_rule_line_range(raw_lines, rule_name):
+def find_rule_line_range(raw_lines, rule_name, occurrence=1):
+    """Find the Nth occurrence of a rule in raw lines (1-based)."""
     start = None
+    found = 0
     for i, line in enumerate(raw_lines, start=1):
         stripped = line.split("#")[0].strip() if "#" in line else line.strip()
         if stripped in (f"- alert: {rule_name}", f"alert: {rule_name}",
                         f"- record: {rule_name}", f"record: {rule_name}"):
-            start = i
+            found += 1
+            if found == occurrence:
+                start = i
         elif start is not None and stripped.startswith(("- alert:", "- record:", "- name:")):
             return (start, i - 1)
     if start is not None:
@@ -359,6 +363,7 @@ def extract_rules(doc):
                 key = f"{group_name}/{name}#{seen[name]}"
             else:
                 key = f"{group_name}/{name}"
+            rule["_occurrence"] = seen[name]
             rules[key] = rule
     return rules
 
@@ -369,7 +374,8 @@ def extract_rules(doc):
 
 def _is_rule_fully_ignored(rule, raw_lines):
     rule_name = rule.get("alert") or rule.get("record")
-    rng = find_rule_line_range(raw_lines, rule_name)
+    occurrence = rule.get("_occurrence", 1)
+    rng = find_rule_line_range(raw_lines, rule_name, occurrence=occurrence)
     if rng:
         ignores = find_inline_ignores(raw_lines)
         return check_line_or_above_for_ignore(raw_lines, rng[0], ignores)
@@ -395,8 +401,10 @@ def compare_rules(rule_key, rel_path, rule_name, staging_rule, production_rule,
     production_ignores = find_inline_ignores(production_lines)
 
     alert_or_record = staging_rule.get("alert") or staging_rule.get("record")
-    s_range = find_rule_line_range(staging_lines, alert_or_record)
-    p_range = find_rule_line_range(production_lines, alert_or_record)
+    s_occurrence = staging_rule.get("_occurrence", 1)
+    p_occurrence = production_rule.get("_occurrence", 1)
+    s_range = find_rule_line_range(staging_lines, alert_or_record, occurrence=s_occurrence)
+    p_range = find_rule_line_range(production_lines, alert_or_record, occurrence=p_occurrence)
 
     def field_ignored_in_either(field):
         for lines, ignores, rng in [
