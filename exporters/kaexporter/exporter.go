@@ -27,6 +27,7 @@ const (
 	namespaceEnvVar = "TENANT_NAMESPACE"
 	portEnvVar      = "EXPORTER_PORT"
 	defaultPort     = "9101"
+	kaConfigFileEnv = "KA_CONFIG_FILE"
 
 	// 30-day SLO rolling window configuration
 	// NOTE: seenPLRRetentionHours is now calculated dynamically in NewKAExporter()
@@ -185,6 +186,9 @@ type KAExporter struct {
 	// Namespaces that were truncated during cold start will be gap-filled progressively.
 	bootstrapStates map[string]*nsBootstrapState
 
+	// nsFilter controls which namespaces are excluded from metric collection.
+	nsFilter *namespaceFilter
+
 	// 30-day SLO rolling aggregates (in-memory only, no persistence).
 	rollingStore   *Store
 	buildSLO       *BuildSLO30d
@@ -299,6 +303,23 @@ func NewKAExporter() (*KAExporter, error) {
 
 	fixedNS := strings.TrimSpace(os.Getenv(namespaceEnvVar))
 
+	var nsFilter *namespaceFilter
+	if configFile := strings.TrimSpace(os.Getenv(kaConfigFileEnv)); configFile != "" {
+		cfg, err := loadConfig(configFile)
+		if err != nil {
+			return nil, fmt.Errorf("load config: %w", err)
+		}
+		nsFilter, err = newNamespaceFilter(cfg)
+		if err != nil {
+			return nil, fmt.Errorf("load config: %w", err)
+		}
+		log.Printf("Namespace filter: loaded from %s (%d exact, %d pattern rules)",
+			configFile, len(nsFilter.exactMatches), len(nsFilter.patterns))
+	} else {
+		nsFilter, _ = newNamespaceFilter(nil)
+		log.Printf("Namespace filter: no config file specified, no namespaces excluded")
+	}
+
 	var k8sClient kubernetes.Interface
 	if fixedNS == "" {
 		cfg, err := kubeRESTConfig()
@@ -338,6 +359,7 @@ func NewKAExporter() (*KAExporter, error) {
 		fixedTenantNamespace: fixedNS,
 		k8sClient:            k8sClient,
 		httpClient:           httpClient,
+		nsFilter:             nsFilter,
 
 		// Retry configuration
 		retry: retryConfig{
