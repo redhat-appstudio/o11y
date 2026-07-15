@@ -24,7 +24,21 @@ Exposes mean duration and success rate metrics over a rolling 30-day window usin
 | `KA_MAX_RETRIES` | No | `3` | Max retries per failed KubeArchive request (exponential backoff). |
 | `KA_INITIAL_RETRY_DELAY_MS` | No | `100` | Initial retry delay in milliseconds. |
 | `KA_MAX_RETRY_DELAY_MS` | No | `5000` | Maximum retry delay cap in milliseconds. |
+| `KA_CONFIG_FILE` | No | *(empty)* | Path to YAML config file. When set, the file controls which namespaces are excluded from collection. When unset, no namespaces are excluded. |
 | `EXPORTER_PORT` | No | `9101` | HTTP listen port. |
+
+### Configuration file
+
+When `KA_CONFIG_FILE` is set, the exporter reads a YAML file that specifies namespaces to exclude from metric collection. Entries containing `*` are treated as glob patterns (using Go's `path.Match`); all others are exact matches. The `*` wildcard matches any sequence of characters and can appear anywhere in the pattern — leading (`*-managed`), trailing (`managed-*`), or mid-string (`konflux-perfscale-*-tenant`).
+
+```yaml
+excludeNamespaces:
+  - rhtap-releng-tenant
+  - "managed-*"
+  - "konflux-perfscale-*-tenant"
+```
+
+If the file is specified but cannot be read or parsed, the exporter fails to start. When `KA_CONFIG_FILE` is not set, no namespaces are excluded.
 
 ### Cold start behavior
 

@@ -398,35 +398,13 @@ func (e *KAExporter) tenantNamespaces(ctx context.Context) ([]string, error) {
 
 	sort.Strings(names)
 
-	// Filter out managed tenants that should not be scraped.
-	// rhtap-releng-tenant is a special managed tenant with different SLO expectations.
-	filtered := filterManagedTenants(names)
+	filtered := e.nsFilter.apply(names)
 	if len(filtered) < len(names) {
 		excluded := len(names) - len(filtered)
-		log.Printf("Filtered out %d managed tenant namespace(s) from scraping", excluded)
+		log.Printf("Filtered out %d namespace(s) from scraping (filter: %s)", excluded, e.nsFilter.source)
 	}
 
 	return filtered, nil
-}
-
-// filterManagedTenants removes namespaces that should not be scraped.
-// Excludes:
-//   - rhtap-releng-tenant: special managed tenant with separate monitoring
-//   - managed-*: other managed tenant namespaces
-func filterManagedTenants(namespaces []string) []string {
-	var result []string
-	for _, ns := range namespaces {
-		// Exact match: rhtap-releng-tenant
-		if ns == "rhtap-releng-tenant" {
-			continue
-		}
-		// Prefix match: managed-*
-		if strings.HasPrefix(ns, "managed-") {
-			continue
-		}
-		result = append(result, ns)
-	}
-	return result
 }
 
 // gatherAllReleasesParallel fetches Release CRs from every tenant namespace in parallel
