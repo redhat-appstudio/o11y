@@ -83,20 +83,6 @@ spec:
   selector:
     app: kaexporter
 ---
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: kaexporter-config
-  namespace: konflux-o11y-exporters
-data:
-  config.yaml: |
-    excludeNamespaces:
-      - rhtap-releng-tenant
-      - "managed-*"
-      - dev-release-team-tenant
-      - "konflux-perfscale-*-tenant"
-      - build-templates-e2e
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -113,10 +99,6 @@ spec:
         app: kaexporter
     spec:
       serviceAccountName: kaexporter-sa
-      volumes:
-        - name: kaexporter-config
-          configMap:
-            name: kaexporter-config
       containers:
         - name: kube-rbac-proxy
           image: quay.io/brancz/kube-rbac-proxy:v0.14.0
@@ -161,12 +143,6 @@ spec:
               value: "9101"
             - name: KA_COLLECTION_TIMEOUT_SECONDS
               value: "160"
-            - name: KA_CONFIG_FILE
-              value: "/etc/kaexporter/config.yaml"
-          volumeMounts:
-            - name: kaexporter-config
-              mountPath: /etc/kaexporter
-              readOnly: true
           startupProbe:
             httpGet:
               path: /healthz
