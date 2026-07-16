@@ -13,7 +13,7 @@ spec:
       - alert: ProbeAlert
         expr: |
           konflux_up{check="probe", service!~".*-vpn|.*static-host|.*pwvs"} != 1
-          and on(instance)
+          and on(instance, job)
           (multicluster_probe_up == 1)
         for: 25m
         labels:
@@ -39,9 +39,9 @@ spec:
           slo: "true"
         annotations:
           summary: >-
-             Probe alert {{ $labels.instance }} in multiple clusters.
+             Probe alert {{ $labels.job }} ({{ $labels.instance }}) in multiple clusters.
           description: >-
-             More than 20% of Konflux cluster probes are failing to connect to {{ $labels.instance }} for the last 25 minutes.
+             More than 20% of Konflux cluster probes are failing to connect to {{ $labels.instance }} ({{ $labels.job }}) for the last 25 minutes.
           alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
           runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/exporters/blackbox/probe-alerts.md
 

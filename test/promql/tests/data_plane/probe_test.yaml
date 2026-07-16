@@ -15,7 +15,7 @@ tests:
         values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
       - series: konflux_up{job="web-server",instance="instance01",target="target01",source_cluster="cluster04",check="probe",service="web-server"}
         values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-      - series: multicluster_probe_up{instance="instance01",check="probe-multicluster",service="web-server"}
+      - series: multicluster_probe_up{instance="instance01",job="web-server",check="probe-multicluster",service="web-server"}
         values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
     alert_rule_test:
       - eval_time: 39m
@@ -36,9 +36,24 @@ tests:
               alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/exporters/blackbox/probe-alerts.md
 
+  # Shared instance across jobs (e.g. github-actions vs github-webhooks on githubstatus.com):
+  # when one job is down multicluster-wide, ProbeAlert must not fire via another job's healthy multicluster_probe_up.
   - interval: 1m
     input_series:
-      - series: multicluster_probe_up{instance="instance01",check="probe-multicluster",service="web-server"}
+      - series: konflux_up{job="github-actions",instance="https://www.githubstatus.com/api/v2/components.json",target="github-actions",source_cluster="cluster01",check="probe",service="github-actions"}
+        values: 0x44
+      - series: multicluster_probe_up{instance="https://www.githubstatus.com/api/v2/components.json",job="github-actions",check="probe-multicluster",service="github-actions"}
+        values: 0x55
+      - series: multicluster_probe_up{instance="https://www.githubstatus.com/api/v2/components.json",job="github-webhooks",check="probe-multicluster",service="github-webhooks"}
+        values: 1x55
+    alert_rule_test:
+      - eval_time: 39m
+        alertname: ProbeAlert
+        exp_alerts: []
+
+  - interval: 1m
+    input_series:
+      - series: multicluster_probe_up{instance="instance01",job="web-server",check="probe-multicluster",service="web-server"}
         values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
     alert_rule_test:
       - eval_time: 39m
@@ -47,12 +62,13 @@ tests:
           - exp_labels:
               severity: critical
               instance: instance01
+              job: web-server
               slo: "true"
               check: probe-multicluster
               service: web-server
             exp_annotations:
-              description: 'More than 20% of Konflux cluster probes are failing to connect to instance01 for the last 25 minutes.'
-              summary: Probe alert instance01 in multiple clusters.
+              description: 'More than 20% of Konflux cluster probes are failing to connect to instance01 (web-server) for the last 25 minutes.'
+              summary: Probe alert web-server (instance01) in multiple clusters.
               alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/exporters/blackbox/probe-alerts.md
 
