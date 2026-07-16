@@ -187,7 +187,7 @@ data:
                   },
                   "editorMode": "code",
                   "exemplar": false,
-                  "expr": "sort_desc(\n    avg by (source_cluster, exported_namespace, application, component) (konflux_build_mean_duration_seconds_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"})\n)",
+                  "expr": "sort_desc(\n    avg by (source_cluster, exported_namespace, application, component) (konflux_build_mean_duration_seconds_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\", component=~\"${Component}\"})\n)",
                   "format": "table",
                   "instant": true,
                   "legendFormat": "__auto",
@@ -201,7 +201,7 @@ data:
                   },
                   "editorMode": "code",
                   "exemplar": false,
-                  "expr": "sort_desc(\n    avg by (source_cluster, exported_namespace, application, component) (konflux_build_mean_wait_seconds_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"})\n)",
+                  "expr": "sort_desc(\n    avg by (source_cluster, exported_namespace, application, component) (konflux_build_mean_wait_seconds_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\", component=~\"${Component}\"})\n)",
                   "format": "table",
                   "hide": false,
                   "instant": true,
@@ -422,7 +422,7 @@ data:
                 "h": 7,
                 "w": 24,
                 "x": 0,
-                "y": 154
+                "y": 8
               },
               "id": 61,
               "options": {
@@ -452,7 +452,7 @@ data:
                   },
                   "editorMode": "code",
                   "exemplar": false,
-                  "expr": "sort_desc(\n    (\n        sum by (source_cluster, application, component) (konflux_build_success_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"})\n        or \n        sum by (source_cluster, application, component) (konflux_build_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"}) * 0\n    )\n    /\n    sum by (source_cluster, application, component) (konflux_build_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"})\n)",
+                  "expr": "sort_desc(\n    (\n        sum by (source_cluster, application, component) (konflux_build_success_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\", component=~\"${Component}\"})\n        or \n        sum by (source_cluster, application, component) (konflux_build_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\", component=~\"${Component}\"}) * 0\n    )\n    /\n    sum by (source_cluster, application, component) (konflux_build_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\", component=~\"${Component}\"})\n)",
                   "format": "table",
                   "instant": true,
                   "legendFormat": "__auto",
@@ -466,7 +466,7 @@ data:
                   },
                   "editorMode": "code",
                   "exemplar": false,
-                  "expr": "sort_desc(\n    (\n        sum by (source_cluster, application, component) (konflux_build_failure_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"})\n        or \n        sum by (source_cluster, application, component) (konflux_build_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"}) * 0\n    )\n    /\n    sum by (source_cluster, application, component) (konflux_build_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"})\n)",
+                  "expr": "sort_desc(\n    (\n        sum by (source_cluster, application, component) (konflux_build_failure_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\", component=~\"${Component}\"})\n        or \n        sum by (source_cluster, application, component) (konflux_build_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\", component=~\"${Component}\"}) * 0\n    )\n    /\n    sum by (source_cluster, application, component) (konflux_build_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\", component=~\"${Component}\"})\n)",
                   "format": "table",
                   "hide": false,
                   "instant": true,
@@ -481,7 +481,7 @@ data:
                   },
                   "editorMode": "code",
                   "exemplar": false,
-                  "expr": "sort_desc(\n  (\n    sum by (source_cluster, application, component) (\n      konflux_build_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", event_type=~\"retest-comment|retest-all-comment\"}\n    ) \n    or \n    sum by (source_cluster, application, component) (\n      konflux_build_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"}\n    ) * 0\n  )\n  /\n  sum by (source_cluster, application, component) (\n    konflux_build_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"}\n  )\n)",
+                  "expr": "sort_desc(\n  (\n    sum by (source_cluster, application, component) (\n      konflux_build_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\", component=~\"${Component}\", event_type=~\"retest-comment|retest-all-comment\"}\n    ) \n    or \n    sum by (source_cluster, application, component) (\n      konflux_build_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\", component=~\"${Component}\"}\n    ) * 0\n  )\n  /\n  sum by (source_cluster, application, component) (\n    konflux_build_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\", component=~\"${Component}\"}\n  )\n)",
                   "format": "table",
                   "hide": false,
                   "instant": true,
@@ -490,7 +490,7 @@ data:
                   "refId": "C"
                 }
               ],
-              "title": "Rates for Builds by Component",
+              "title": "30-day Rates for Builds by Component",
               "transformations": [
                 {
                   "id": "merge",
@@ -679,7 +679,7 @@ data:
                 "h": 7,
                 "w": 24,
                 "x": 0,
-                "y": 161
+                "y": 15
               },
               "id": 72,
               "options": {
@@ -709,7 +709,7 @@ data:
                   },
                   "editorMode": "code",
                   "exemplar": false,
-                  "expr": "sort_desc(\n    avg by (source_cluster, exported_namespace, application, component, scenario, test_type) (konflux_integration_mean_duration_seconds_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"})\n)",
+                  "expr": "sort_desc(\n    avg by (source_cluster, exported_namespace, application, component, scenario, test_type) (konflux_integration_mean_duration_seconds_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\", component=~\"${Component}\"})\n)",
                   "format": "table",
                   "instant": true,
                   "legendFormat": "__auto",
@@ -723,7 +723,7 @@ data:
                   },
                   "editorMode": "code",
                   "exemplar": false,
-                  "expr": "sort_desc(\n    avg by (source_cluster, exported_namespace, application, component, scenario, test_type) (konflux_integration_mean_wait_seconds_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"})\n)",
+                  "expr": "sort_desc(\n    avg by (source_cluster, exported_namespace, application, component, scenario, test_type) (konflux_integration_mean_wait_seconds_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\", component=~\"${Component}\"})\n)",
                   "format": "table",
                   "hide": false,
                   "instant": true,
@@ -972,7 +972,7 @@ data:
                 "h": 7,
                 "w": 24,
                 "x": 0,
-                "y": 168
+                "y": 22
               },
               "id": 73,
               "options": {
@@ -1002,7 +1002,7 @@ data:
                   },
                   "editorMode": "code",
                   "exemplar": false,
-                  "expr": "sort_desc(\n    (\n        sum by (source_cluster, application, component, scenario, test_type) (konflux_integration_success_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"})\n        or \n        sum by (source_cluster, application, component, scenario, test_type) (konflux_integration_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"}) * 0\n    )\n    /\n    sum by (source_cluster, application, component, scenario, test_type) (konflux_integration_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"})\n)",
+                  "expr": "sort_desc(\n    (\n        sum by (source_cluster, application, component, scenario, test_type) (konflux_integration_success_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\", component=~\"${Component}\"})\n        or \n        sum by (source_cluster, application, component, scenario, test_type) (konflux_integration_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\", component=~\"${Component}\"}) * 0\n    )\n    /\n    sum by (source_cluster, application, component, scenario, test_type) (konflux_integration_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\", component=~\"${Component}\"})\n)",
                   "format": "table",
                   "instant": true,
                   "legendFormat": "__auto",
@@ -1016,7 +1016,7 @@ data:
                   },
                   "editorMode": "code",
                   "exemplar": false,
-                  "expr": "sort_desc(\n    (\n        sum by (source_cluster, application, component, scenario, test_type) (konflux_integration_failure_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"})\n        or \n        sum by (source_cluster, application, component, scenario, test_type) (konflux_integration_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"}) * 0\n    )\n    /\n    sum by (source_cluster, application, component, scenario, test_type) (konflux_integration_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"})\n)",
+                  "expr": "sort_desc(\n    (\n        sum by (source_cluster, application, component, scenario, test_type) (konflux_integration_failure_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\", component=~\"${Component}\"})\n        or \n        sum by (source_cluster, application, component, scenario, test_type) (konflux_integration_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\", component=~\"${Component}\"}) * 0\n    )\n    /\n    sum by (source_cluster, application, component, scenario, test_type) (konflux_integration_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\", component=~\"${Component}\"})\n)",
                   "format": "table",
                   "hide": false,
                   "instant": true,
@@ -1031,7 +1031,7 @@ data:
                   },
                   "editorMode": "code",
                   "exemplar": false,
-                  "expr": "sort_desc(\n  (\n    sum by (source_cluster, application, component, scenario, test_type) (\n      konflux_integration_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", event_type=~\"retest-comment|retest-all-comment\"}\n    ) \n    or \n    sum by (source_cluster, application, component, scenario, test_type) (\n      konflux_integration_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"}\n    ) * 0\n  )\n  /\n  sum by (source_cluster, application, component, scenario, test_type) (\n    konflux_integration_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"}\n  )\n)",
+                  "expr": "sort_desc(\n  (\n    sum by (source_cluster, application, component, scenario, test_type) (\n      konflux_integration_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\", component=~\"${Component}\", event_type=~\"retest-comment|retest-all-comment\"}\n    ) \n    or \n    sum by (source_cluster, application, component, scenario, test_type) (\n      konflux_integration_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\", component=~\"${Component}\"}\n    ) * 0\n  )\n  /\n  sum by (source_cluster, application, component, scenario, test_type) (\n    konflux_integration_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\", component=~\"${Component}\"}\n  )\n)",
                   "format": "table",
                   "hide": false,
                   "instant": true,
@@ -1040,7 +1040,7 @@ data:
                   "refId": "C"
                 }
               ],
-              "title": "Rates for Integrations (Tests) by Scenario",
+              "title": "30-day Rates for Integrations (Tests) by Scenario",
               "transformations": [
                 {
                   "id": "merge",
@@ -1208,7 +1208,505 @@ data:
                 "h": 7,
                 "w": 24,
                 "x": 0,
-                "y": 175
+                "y": 29
+              },
+              "id": 78,
+              "options": {
+                "cellHeight": "sm",
+                "footer": {
+                  "countRows": false,
+                  "fields": [],
+                  "reducer": [
+                    "mean"
+                  ],
+                  "show": true
+                },
+                "showHeader": true,
+                "sortBy": [
+                  {
+                    "desc": true,
+                    "displayName": "Average Time"
+                  }
+                ]
+              },
+              "pluginVersion": "11.6.11",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${Datasource}"
+                  },
+                  "editorMode": "code",
+                  "exemplar": false,
+                  "expr": "sort_desc(\n    avg by (source_cluster, exported_namespace, application) (konflux_release_cr_mean_duration_seconds_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\"})\n)",
+                  "format": "table",
+                  "instant": true,
+                  "legendFormat": "__auto",
+                  "range": false,
+                  "refId": "A"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${Datasource}"
+                  },
+                  "editorMode": "code",
+                  "exemplar": false,
+                  "expr": "sort_desc(\n    avg by (source_cluster, exported_namespace, application) (konflux_release_cr_mean_wait_seconds_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\"})\n)",
+                  "format": "table",
+                  "hide": false,
+                  "instant": true,
+                  "legendFormat": "__auto",
+                  "range": false,
+                  "refId": "B"
+                }
+              ],
+              "title": "30-day Average Times for Releases by Application",
+              "transformations": [
+                {
+                  "id": "merge",
+                  "options": {}
+                },
+                {
+                  "id": "filterFieldsByName",
+                  "options": {
+                    "include": {
+                      "names": [
+                        "application",
+                        "component",
+                        "source_cluster",
+                        "Value #A",
+                        "Value #B"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "id": "organize",
+                  "options": {
+                    "excludeByName": {},
+                    "includeByName": {},
+                    "indexByName": {
+                      "Value": 4,
+                      "application": 2,
+                      "component": 3,
+                      "exported_namespace": 1,
+                      "source_cluster": 0
+                    },
+                    "renameByName": {
+                      "Value": "Average Time",
+                      "Value #A": "Average Time",
+                      "Value #B": "Average Wait Time",
+                      "application": "Application",
+                      "component": "Component",
+                      "exported_namespace": "Tenant",
+                      "source_cluster": "Cluster"
+                    }
+                  }
+                }
+              ],
+              "type": "table"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${Datasource}"
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "thresholds"
+                  },
+                  "custom": {
+                    "align": "auto",
+                    "cellOptions": {
+                      "type": "auto"
+                    },
+                    "inspect": false
+                  },
+                  "mappings": [],
+                  "max": 1,
+                  "min": 0,
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green"
+                      }
+                    ]
+                  },
+                  "unit": "percentunit"
+                },
+                "overrides": [
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Success Rate"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.cellOptions",
+                        "value": {
+                          "mode": "basic",
+                          "type": "gauge",
+                          "valueDisplayMode": "color"
+                        }
+                      },
+                      {
+                        "id": "thresholds",
+                        "value": {
+                          "mode": "absolute",
+                          "steps": [
+                            {
+                              "color": "red"
+                            },
+                            {
+                              "color": "green",
+                              "value": 0.01
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Application"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 200
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Component"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 200
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Cluster"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 150
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Failure Rate"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.cellOptions",
+                        "value": {
+                          "mode": "basic",
+                          "type": "gauge",
+                          "valueDisplayMode": "color"
+                        }
+                      },
+                      {
+                        "id": "thresholds",
+                        "value": {
+                          "mode": "absolute",
+                          "steps": [
+                            {
+                              "color": "green"
+                            },
+                            {
+                              "color": "red",
+                              "value": 0.01
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Retry Rate"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.cellOptions",
+                        "value": {
+                          "mode": "basic",
+                          "type": "gauge",
+                          "valueDisplayMode": "color"
+                        }
+                      },
+                      {
+                        "id": "thresholds",
+                        "value": {
+                          "mode": "absolute",
+                          "steps": [
+                            {
+                              "color": "green"
+                            },
+                            {
+                              "color": "red",
+                              "value": 0.01
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              "gridPos": {
+                "h": 7,
+                "w": 24,
+                "x": 0,
+                "y": 36
+              },
+              "id": 79,
+              "options": {
+                "cellHeight": "sm",
+                "footer": {
+                  "countRows": false,
+                  "fields": "",
+                  "reducer": [
+                    "sum"
+                  ],
+                  "show": false
+                },
+                "showHeader": true,
+                "sortBy": [
+                  {
+                    "desc": true,
+                    "displayName": "Success Rate"
+                  }
+                ]
+              },
+              "pluginVersion": "11.6.11",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${Datasource}"
+                  },
+                  "editorMode": "code",
+                  "exemplar": false,
+                  "expr": "sort_desc(\n    (\n        sum by (source_cluster, application) (konflux_release_cr_success_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\"})\n        or \n        sum by (source_cluster, application) (konflux_release_cr_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\"}) * 0\n    )\n    /\n    sum by (source_cluster, application) (konflux_release_cr_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\"})\n)",
+                  "format": "table",
+                  "instant": true,
+                  "legendFormat": "__auto",
+                  "range": false,
+                  "refId": "A"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${Datasource}"
+                  },
+                  "editorMode": "code",
+                  "exemplar": false,
+                  "expr": "sort_desc(\n    (\n        sum by (source_cluster, application) (konflux_release_cr_failure_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\"})\n        or \n        sum by (source_cluster, application) (konflux_release_cr_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\"}) * 0\n    )\n    /\n    sum by (source_cluster, application) (konflux_release_cr_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\"})\n)",
+                  "format": "table",
+                  "hide": false,
+                  "instant": true,
+                  "legendFormat": "__auto",
+                  "range": false,
+                  "refId": "B"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${Datasource}"
+                  },
+                  "editorMode": "code",
+                  "exemplar": false,
+                  "expr": "sort_desc(\n  (\n    sum by (source_cluster, application) (\n      konflux_release_cr_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\", event_type=~\"retest-comment|retest-all-comment\"}\n    ) \n    or \n    sum by (source_cluster, application) (\n      konflux_release_cr_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\"}\n    ) * 0\n  )\n  /\n  sum by (source_cluster, application) (\n    konflux_release_cr_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\"}\n  )\n)",
+                  "format": "table",
+                  "hide": false,
+                  "instant": true,
+                  "legendFormat": "__auto",
+                  "range": false,
+                  "refId": "C"
+                }
+              ],
+              "title": "30-day Rates for Releases by Application",
+              "transformations": [
+                {
+                  "id": "merge",
+                  "options": {}
+                },
+                {
+                  "id": "filterFieldsByName",
+                  "options": {
+                    "include": {
+                      "names": [
+                        "application",
+                        "component",
+                        "source_cluster",
+                        "Value #A",
+                        "Value #B",
+                        "Value #C",
+                        "Value #C + 0"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "id": "organize",
+                  "options": {
+                    "excludeByName": {},
+                    "includeByName": {},
+                    "indexByName": {
+                      "Value": 3,
+                      "application": 1,
+                      "component": 2,
+                      "source_cluster": 0
+                    },
+                    "renameByName": {
+                      "Value": "Rate %",
+                      "Value #A": "Success Rate",
+                      "Value #B": "Failure Rate",
+                      "Value #C": "Retry Rate",
+                      "Value #C + 0": "Retry Rate",
+                      "application": "Application",
+                      "component": "Component",
+                      "exported_namespace": "Tenant",
+                      "source_cluster": "Cluster"
+                    }
+                  }
+                }
+              ],
+              "type": "table"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${Datasource}"
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "thresholds"
+                  },
+                  "custom": {
+                    "align": "auto",
+                    "cellOptions": {
+                      "type": "auto"
+                    },
+                    "inspect": false
+                  },
+                  "mappings": [],
+                  "min": 0,
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "text"
+                      }
+                    ]
+                  },
+                  "unit": "s"
+                },
+                "overrides": [
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Average Time"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.cellOptions",
+                        "value": {
+                          "mode": "basic",
+                          "type": "gauge",
+                          "valueDisplayMode": "color"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Component"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 200
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Tenant"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 200
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Application"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 200
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Cluster"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 150
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Average Wait Time"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.cellOptions",
+                        "value": {
+                          "mode": "basic",
+                          "type": "gauge",
+                          "valueDisplayMode": "color"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              "gridPos": {
+                "h": 7,
+                "w": 24,
+                "x": 0,
+                "y": 43
               },
               "id": 75,
               "options": {
@@ -1238,7 +1736,7 @@ data:
                   },
                   "editorMode": "code",
                   "exemplar": false,
-                  "expr": "sort_desc(\n    avg by (source_cluster, exported_namespace, application, component) (konflux_release_cr_mean_duration_seconds_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"})\n)",
+                  "expr": "sort_desc(\n    avg by (source_cluster, exported_namespace, application, component) (konflux_release_cr_mean_duration_seconds_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\", component=~\"${Component}\"})\n)",
                   "format": "table",
                   "instant": true,
                   "legendFormat": "__auto",
@@ -1252,7 +1750,7 @@ data:
                   },
                   "editorMode": "code",
                   "exemplar": false,
-                  "expr": "sort_desc(\n    avg by (source_cluster, exported_namespace, application, component) (konflux_release_cr_mean_wait_seconds_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"})\n)",
+                  "expr": "sort_desc(\n    avg by (source_cluster, exported_namespace, application, component) (konflux_release_cr_mean_wait_seconds_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\", component=~\"${Component}\"})\n)",
                   "format": "table",
                   "hide": false,
                   "instant": true,
@@ -1473,7 +1971,7 @@ data:
                 "h": 7,
                 "w": 24,
                 "x": 0,
-                "y": 182
+                "y": 50
               },
               "id": 74,
               "options": {
@@ -1503,7 +2001,7 @@ data:
                   },
                   "editorMode": "code",
                   "exemplar": false,
-                  "expr": "sort_desc(\n    (\n        sum by (source_cluster, application, component) (konflux_release_cr_success_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"})\n        or \n        sum by (source_cluster, application, component) (konflux_release_cr_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"}) * 0\n    )\n    /\n    sum by (source_cluster, application, component) (konflux_release_cr_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"})\n)",
+                  "expr": "sort_desc(\n    (\n        sum by (source_cluster, application, component) (konflux_release_cr_success_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\", component=~\"${Component}\"})\n        or \n        sum by (source_cluster, application, component) (konflux_release_cr_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\", component=~\"${Component}\"}) * 0\n    )\n    /\n    sum by (source_cluster, application, component) (konflux_release_cr_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\", component=~\"${Component}\"})\n)",
                   "format": "table",
                   "instant": true,
                   "legendFormat": "__auto",
@@ -1517,7 +2015,7 @@ data:
                   },
                   "editorMode": "code",
                   "exemplar": false,
-                  "expr": "sort_desc(\n    (\n        sum by (source_cluster, application, component) (konflux_release_cr_failure_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"})\n        or \n        sum by (source_cluster, application, component) (konflux_release_cr_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"}) * 0\n    )\n    /\n    sum by (source_cluster, application, component) (konflux_release_cr_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"})\n)",
+                  "expr": "sort_desc(\n    (\n        sum by (source_cluster, application, component) (konflux_release_cr_failure_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\", component=~\"${Component}\"})\n        or \n        sum by (source_cluster, application, component) (konflux_release_cr_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\", component=~\"${Component}\"}) * 0\n    )\n    /\n    sum by (source_cluster, application, component) (konflux_release_cr_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\", component=~\"${Component}\"})\n)",
                   "format": "table",
                   "hide": false,
                   "instant": true,
@@ -1532,7 +2030,7 @@ data:
                   },
                   "editorMode": "code",
                   "exemplar": false,
-                  "expr": "sort_desc(\n  (\n    sum by (source_cluster, application, component) (\n      konflux_release_cr_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", event_type=~\"retest-comment|retest-all-comment\"}\n    ) \n    or \n    sum by (source_cluster, application, component) (\n      konflux_release_cr_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"}\n    ) * 0\n  )\n  /\n  sum by (source_cluster, application, component) (\n    konflux_release_cr_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"}\n  )\n)",
+                  "expr": "sort_desc(\n  (\n    sum by (source_cluster, application, component) (\n      konflux_release_cr_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\", component=~\"${Component}\", event_type=~\"retest-comment|retest-all-comment\"}\n    ) \n    or \n    sum by (source_cluster, application, component) (\n      konflux_release_cr_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\", component=~\"${Component}\"}\n    ) * 0\n  )\n  /\n  sum by (source_cluster, application, component) (\n    konflux_release_cr_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", application=~\"${Application}\", component=~\"${Component}\"}\n  )\n)",
                   "format": "table",
                   "hide": false,
                   "instant": true,
@@ -1541,7 +2039,7 @@ data:
                   "refId": "C"
                 }
               ],
-              "title": "Rates for Releases by Component",
+              "title": "30-day Rates for Releases by Component",
               "transformations": [
                 {
                   "id": "merge",
@@ -1601,7 +2099,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 189
+            "y": 1
           },
           "id": 32,
           "panels": [
@@ -1705,7 +2203,7 @@ data:
                 "h": 7,
                 "w": 12,
                 "x": 0,
-                "y": 740
+                "y": 100
               },
               "id": 24,
               "options": {
@@ -1798,7 +2296,7 @@ data:
                   "mappings": [],
                   "min": 0,
                   "thresholds": {
-                    "mode": "absolute",
+                    "mode": "percentage",
                     "steps": [
                       {
                         "color": "text"
@@ -1878,7 +2376,7 @@ data:
                 "h": 7,
                 "w": 12,
                 "x": 12,
-                "y": 740
+                "y": 100
               },
               "id": 25,
               "options": {
@@ -1993,7 +2491,7 @@ data:
                 "h": 7,
                 "w": 12,
                 "x": 0,
-                "y": 820
+                "y": 140
               },
               "id": 10,
               "options": {
@@ -2072,7 +2570,7 @@ data:
                 "h": 7,
                 "w": 12,
                 "x": 12,
-                "y": 820
+                "y": 140
               },
               "id": 17,
               "options": {
@@ -2186,7 +2684,7 @@ data:
                 "h": 7,
                 "w": 12,
                 "x": 0,
-                "y": 827
+                "y": 147
               },
               "id": 31,
               "options": {
@@ -2219,7 +2717,7 @@ data:
                   "refId": "A"
                 }
               ],
-              "title": "Tenants with Partial Build Success Rates",
+              "title": "Tenants with Partial 30-day Build Success Rates",
               "transformations": [
                 {
                   "id": "filterFieldsByName",
@@ -2332,7 +2830,7 @@ data:
                 "h": 7,
                 "w": 12,
                 "x": 12,
-                "y": 827
+                "y": 147
               },
               "id": 33,
               "options": {
@@ -2365,7 +2863,7 @@ data:
                   "refId": "A"
                 }
               ],
-              "title": "Tenants with 0% Build Success Rates",
+              "title": "Tenants with 0% 30-day Build Success Rates",
               "transformations": [
                 {
                   "id": "filterFieldsByName",
@@ -2478,7 +2976,7 @@ data:
                 "h": 7,
                 "w": 12,
                 "x": 0,
-                "y": 834
+                "y": 154
               },
               "id": 34,
               "options": {
@@ -2511,7 +3009,7 @@ data:
                   "refId": "A"
                 }
               ],
-              "title": "Tenants with Build Failure Rates (>0%)",
+              "title": "Tenants with 30-day Build Failure Rates (>0%)",
               "transformations": [
                 {
                   "id": "filterFieldsByName",
@@ -2624,7 +3122,7 @@ data:
                 "h": 7,
                 "w": 12,
                 "x": 12,
-                "y": 834
+                "y": 154
               },
               "id": 35,
               "options": {
@@ -2657,7 +3155,7 @@ data:
                   "refId": "A"
                 }
               ],
-              "title": "Tenants with Build Retry Rates (>0%)",
+              "title": "Tenants with 30-day Build Retry Rates (>0%)",
               "transformations": [
                 {
                   "id": "filterFieldsByName",
@@ -2703,7 +3201,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 190
+            "y": 2
           },
           "id": 36,
           "panels": [
@@ -2807,7 +3305,7 @@ data:
                 "h": 12,
                 "w": 12,
                 "x": 0,
-                "y": 191
+                "y": 1155
               },
               "id": 38,
               "options": {
@@ -2980,7 +3478,7 @@ data:
                 "h": 12,
                 "w": 12,
                 "x": 12,
-                "y": 191
+                "y": 1155
               },
               "id": 39,
               "options": {
@@ -3095,7 +3593,7 @@ data:
                 "h": 7,
                 "w": 12,
                 "x": 0,
-                "y": 203
+                "y": 1167
               },
               "id": 40,
               "options": {
@@ -3174,7 +3672,7 @@ data:
                 "h": 7,
                 "w": 12,
                 "x": 12,
-                "y": 203
+                "y": 1167
               },
               "id": 41,
               "options": {
@@ -3288,7 +3786,7 @@ data:
                 "h": 7,
                 "w": 12,
                 "x": 0,
-                "y": 210
+                "y": 1174
               },
               "id": 42,
               "options": {
@@ -3321,7 +3819,7 @@ data:
                   "refId": "A"
                 }
               ],
-              "title": "Tenants with Partial Integration (Test) Success Rates",
+              "title": "Tenants with Partial 30-day Integration (Test) Success Rates",
               "transformations": [
                 {
                   "id": "filterFieldsByName",
@@ -3434,7 +3932,7 @@ data:
                 "h": 7,
                 "w": 12,
                 "x": 12,
-                "y": 210
+                "y": 1174
               },
               "id": 43,
               "options": {
@@ -3467,7 +3965,7 @@ data:
                   "refId": "A"
                 }
               ],
-              "title": "Tenants with 0% Integration (Test) Success Rates",
+              "title": "Tenants with 0% 30-day Integration (Test) Success Rates",
               "transformations": [
                 {
                   "id": "filterFieldsByName",
@@ -3592,7 +4090,7 @@ data:
                 "h": 7,
                 "w": 12,
                 "x": 0,
-                "y": 217
+                "y": 1181
               },
               "id": 76,
               "options": {
@@ -3625,7 +4123,7 @@ data:
                   "refId": "A"
                 }
               ],
-              "title": "Tenants with EC Integration (Test) Failure Rates (>0%)",
+              "title": "Tenants with 30-day EC Integration (Test) Failure Rates (>0%)",
               "transformations": [
                 {
                   "id": "filterFieldsByName",
@@ -3753,7 +4251,7 @@ data:
                 "h": 7,
                 "w": 12,
                 "x": 12,
-                "y": 217
+                "y": 1181
               },
               "id": 77,
               "options": {
@@ -3786,7 +4284,7 @@ data:
                   "refId": "A"
                 }
               ],
-              "title": "Tenants with EC Integration (Test) Retry Rates (>0%)",
+              "title": "Tenants with 30-day EC Integration (Test) Retry Rates (>0%)",
               "transformations": [
                 {
                   "id": "filterFieldsByName",
@@ -3914,7 +4412,7 @@ data:
                 "h": 7,
                 "w": 12,
                 "x": 0,
-                "y": 224
+                "y": 1188
               },
               "id": 44,
               "options": {
@@ -3947,7 +4445,7 @@ data:
                   "refId": "A"
                 }
               ],
-              "title": "Tenants with Non-EC Integration (Test) Failure Rates (>0%)",
+              "title": "Tenants with 30-day Non-EC Integration (Test) Failure Rates (>0%)",
               "transformations": [
                 {
                   "id": "filterFieldsByName",
@@ -4075,7 +4573,7 @@ data:
                 "h": 7,
                 "w": 12,
                 "x": 12,
-                "y": 224
+                "y": 1188
               },
               "id": 45,
               "options": {
@@ -4108,7 +4606,7 @@ data:
                   "refId": "A"
                 }
               ],
-              "title": "Tenants with Non-EC Integration (Test) Retry Rates (>0%)",
+              "title": "Tenants with 30-day Non-EC Integration (Test) Retry Rates (>0%)",
               "transformations": [
                 {
                   "id": "filterFieldsByName",
@@ -4157,7 +4655,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 191
+            "y": 3
           },
           "id": 37,
           "panels": [
@@ -4261,7 +4759,7 @@ data:
                 "h": 12,
                 "w": 12,
                 "x": 0,
-                "y": 272
+                "y": 102
               },
               "id": 46,
               "options": {
@@ -4437,7 +4935,7 @@ data:
                 "h": 12,
                 "w": 12,
                 "x": 12,
-                "y": 272
+                "y": 102
               },
               "id": 47,
               "options": {
@@ -4552,7 +5050,7 @@ data:
                 "h": 7,
                 "w": 12,
                 "x": 0,
-                "y": 284
+                "y": 114
               },
               "id": 48,
               "options": {
@@ -4631,7 +5129,7 @@ data:
                 "h": 7,
                 "w": 12,
                 "x": 12,
-                "y": 284
+                "y": 114
               },
               "id": 49,
               "options": {
@@ -4745,7 +5243,7 @@ data:
                 "h": 7,
                 "w": 12,
                 "x": 0,
-                "y": 291
+                "y": 121
               },
               "id": 50,
               "options": {
@@ -4778,7 +5276,7 @@ data:
                   "refId": "A"
                 }
               ],
-              "title": "Tenants with Partial Release Success Rates",
+              "title": "Tenants with Partial 30-day Release Success Rates",
               "transformations": [
                 {
                   "id": "filterFieldsByName",
@@ -4891,7 +5389,7 @@ data:
                 "h": 7,
                 "w": 12,
                 "x": 12,
-                "y": 291
+                "y": 121
               },
               "id": 51,
               "options": {
@@ -4924,7 +5422,7 @@ data:
                   "refId": "A"
                 }
               ],
-              "title": "Tenants with 0% Release Success Rates",
+              "title": "Tenants with 0% 30-day Release Success Rates",
               "transformations": [
                 {
                   "id": "filterFieldsByName",
@@ -5037,7 +5535,7 @@ data:
                 "h": 7,
                 "w": 12,
                 "x": 0,
-                "y": 298
+                "y": 128
               },
               "id": 52,
               "options": {
@@ -5070,7 +5568,7 @@ data:
                   "refId": "A"
                 }
               ],
-              "title": "Tenants with Release Failure Rates (>0%)",
+              "title": "Tenants with 30-day Release Failure Rates (>0%)",
               "transformations": [
                 {
                   "id": "filterFieldsByName",
@@ -5161,7 +5659,19 @@ data:
                     "properties": [
                       {
                         "id": "custom.width",
-                        "value": 204
+                        "value": 200
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Cluster"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 150
                       }
                     ]
                   }
@@ -5171,7 +5681,7 @@ data:
                 "h": 7,
                 "w": 12,
                 "x": 12,
-                "y": 298
+                "y": 128
               },
               "id": 53,
               "options": {
@@ -5204,7 +5714,7 @@ data:
                   "refId": "A"
                 }
               ],
-              "title": "Tenants with Release Retry Rates (>0%)",
+              "title": "Tenants with 30-day Release Retry Rates (>0%)",
               "transformations": [
                 {
                   "id": "filterFieldsByName",
@@ -5249,7 +5759,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 192
+            "y": 4
           },
           "id": 2,
           "panels": [
@@ -5264,16 +5774,21 @@ data:
                     "mode": "thresholds"
                   },
                   "mappings": [],
+                  "max": 600,
                   "min": 0,
                   "thresholds": {
-                    "mode": "absolute",
+                    "mode": "percentage",
                     "steps": [
                       {
                         "color": "green"
                       },
                       {
-                        "color": "red",
+                        "color": "#EAB839",
                         "value": 80
+                      },
+                      {
+                        "color": "red",
+                        "value": 100
                       }
                     ]
                   },
@@ -5285,7 +5800,7 @@ data:
                 "h": 6,
                 "w": 12,
                 "x": 0,
-                "y": 2205
+                "y": 732
               },
               "id": 4,
               "maxPerRow": 2,
@@ -5341,16 +5856,21 @@ data:
                     "mode": "thresholds"
                   },
                   "mappings": [],
+                  "max": 600,
                   "min": 0,
                   "thresholds": {
-                    "mode": "absolute",
+                    "mode": "percentage",
                     "steps": [
                       {
                         "color": "green"
                       },
                       {
-                        "color": "red",
+                        "color": "#EAB839",
                         "value": 80
+                      },
+                      {
+                        "color": "red",
+                        "value": 100
                       }
                     ]
                   },
@@ -5362,7 +5882,7 @@ data:
                 "h": 6,
                 "w": 12,
                 "x": 12,
-                "y": 2205
+                "y": 732
               },
               "id": 5,
               "maxPerRow": 2,
@@ -5471,7 +5991,7 @@ data:
                 "h": 7,
                 "w": 24,
                 "x": 0,
-                "y": 2211
+                "y": 738
               },
               "id": 1,
               "maxPerRow": 2,
@@ -5526,14 +6046,18 @@ data:
                   "mappings": [],
                   "max": 1,
                   "thresholds": {
-                    "mode": "absolute",
+                    "mode": "percentage",
                     "steps": [
                       {
                         "color": "green"
                       },
                       {
-                        "color": "red",
+                        "color": "#EAB839",
                         "value": 80
+                      },
+                      {
+                        "color": "red",
+                        "value": 95
                       }
                     ]
                   }
@@ -5601,7 +6125,7 @@ data:
                 "h": 7,
                 "w": 24,
                 "x": 0,
-                "y": 2218
+                "y": 745
               },
               "id": 6,
               "maxPerRow": 2,
@@ -5762,7 +6286,7 @@ data:
                 "h": 7,
                 "w": 24,
                 "x": 0,
-                "y": 2225
+                "y": 752
               },
               "id": 7,
               "maxPerRow": 2,
@@ -5813,8 +6337,8 @@ data:
           {
             "allowCustomValue": false,
             "current": {
-              "text": "rhtap-observatorium-stage",
-              "value": "PDCCF087A30F0737B"
+              "text": "rhtap-observatorium-production",
+              "value": "P22466E8E7855F1E0"
             },
             "name": "Datasource",
             "options": [],
@@ -5853,14 +6377,15 @@ data:
           {
             "allowCustomValue": false,
             "current": {
-              "text": "abardavi-test-tenant",
-              "value": "abardavi-test-tenant"
+              "text": "rhtap-build-tenant",
+              "value": "rhtap-build-tenant"
             },
             "datasource": {
               "type": "prometheus",
               "uid": "${Datasource}"
             },
             "definition": "label_values(kube_namespace_labels{source_cluster=~\"$Cluster\"},namespace)",
+            "description": "Select tenant to view for the \"Tenant-Level Metrics - <tenant>\" row",
             "includeAll": false,
             "name": "Tenant",
             "options": [],
@@ -5877,12 +6402,67 @@ data:
           {
             "current": {
               "text": [
+                "All"
+              ],
+              "value": [
+                "$__all"
+              ]
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${Datasource}"
+            },
+            "definition": "label_values(konflux_build_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"$Tenant\"},application)",
+            "description": "Filter for specific application(s) to view for the \"Tenant-Level Metrics - <tenant>\" row",
+            "includeAll": true,
+            "multi": true,
+            "name": "Application",
+            "options": [],
+            "query": {
+              "qryType": 1,
+              "query": "label_values(konflux_build_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"$Tenant\"},application)",
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "refresh": 1,
+            "regex": "",
+            "type": "query"
+          },
+          {
+            "current": {
+              "text": "All",
+              "value": [
+                "$__all"
+              ]
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${Datasource}"
+            },
+            "definition": "label_values(konflux_build_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"$Tenant\", application=~\"$Application\"},component)",
+            "description": "Filter for specific component(s) to view under the \"Tenant-Level Metrics - <tenant>\" row",
+            "includeAll": true,
+            "multi": true,
+            "name": "Component",
+            "options": [],
+            "query": {
+              "qryType": 1,
+              "query": "label_values(konflux_build_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"$Tenant\", application=~\"$Application\"},component)",
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "refresh": 1,
+            "regex": "",
+            "type": "query"
+          },
+          {
+            "current": {
+              "text": [
                 "$__all"
               ],
               "value": [
                 "$__all"
               ]
             },
+            "description": "Do not change unless absolutely necessary!\nThis is a set list of tenants to omit from results as they cause the dashboard to reach query limits and break.\nTenants listed here typically are for testing/development and can be safely omitted.",
             "includeAll": true,
             "label": "Omitted Tenants",
             "multi": true,
@@ -5935,7 +6515,7 @@ data:
       },
       "timepicker": {},
       "timezone": "UTC",
-      "title": "Konflux Tenant-Level UX SLO",
+      "title": "Konflux Tenant-Level 30-day UX SLO",
       "uid": "konflux-tenant-ux-slo",
-      "version": 1
+      "version": 2
     }
