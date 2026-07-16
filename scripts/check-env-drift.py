@@ -739,7 +739,7 @@ def _rebuild_text_message(item):
     file_path = item.get("file", "")
     rule = item.get("rule", "")
     field = item.get("field", "")
-    reason = item.get("reason", "")
+    reason = item.get("reason") or ""
 
     for env in ("staging", "production"):
         if f"only in {env}" in reason:
