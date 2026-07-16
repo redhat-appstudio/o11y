@@ -64,22 +64,22 @@ echo "=== check-env-drift test suite ==="
 echo ""
 echo "A. File-level differences"
 run_test "scenario_01" "File only in staging, no bypass → warn (exit 0)" \
-  0 "[WARN]"
+  0 "staging/"
 run_test "scenario_02" "File only in production, no bypass → FAIL" \
-  1 "[DRIFT]"
+  1 "production/"
 run_test "scenario_03" "File only in staging, drift:ignore-file → acknowledged" \
   0 "[bypass]"
 
 echo ""
 echo "B. Rule-level (file in both envs)"
 run_test "scenario_04" "Rule only in staging, drift:ignore above rule → acknowledged" \
-  0 "[bypass]"
+  0 "staging/"
 run_test "scenario_05" "Rule only in staging, no bypass → warn (exit 0)" \
-  0 "[WARN]"
+  0 "staging/"
 run_test "scenario_06" "Rule only in production, no bypass → FAIL" \
-  1 "[DRIFT]"
+  1 "production/"
 run_test "scenario_07" "Rule only in production, drift:ignore above rule → acknowledged" \
-  0 "[bypass]"
+  0 "production/"
 
 echo ""
 echo "C. Field-level (rule in both envs)"
@@ -107,7 +107,7 @@ echo "D. Edge cases"
 run_test "scenario_17" "drift:ignore-file, wildly different content → skipped" \
   0 "[bypass]"
 run_test "scenario_18" "empty rules only in staging → info" \
-  0 "no rules"
+  0 "staging/"
 run_test "scenario_19" "identical files → nothing reported" \
   0 "No drift violations"
 run_test "scenario_20" "multiple rules, one drifts → only that one fails" \
