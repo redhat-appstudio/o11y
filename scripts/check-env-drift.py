@@ -573,7 +573,7 @@ def check_env_drift(staging_dir, production_dir, report, only_files=None):
             file_ignore = has_file_level_ignore(raw_lines)
             if file_ignore:
                 report.add_acknowledged(
-                    f"{rel_path}: exists only in {only_env} — file bypass: {file_ignore}",
+                    f"{only_env}/{rel_path}: exists only in {only_env} — file bypass: {file_ignore}",
                     item=_drift_item(rel_path, reason=file_ignore),
                 )
                 continue
@@ -581,19 +581,19 @@ def check_env_drift(staging_dir, production_dir, report, only_files=None):
             rules = extract_rules(doc)
             if not rules:
                 report.add_info(
-                    f"{rel_path}: exists only in {only_env} — file has no rules (empty or disabled)",
+                    f"{only_env}/{rel_path}: exists only in {only_env} — file has no rules (empty or disabled)",
                     item=_drift_item(rel_path, reason=f"exists only in {only_env} — file has no rules (empty or disabled)"),
                 )
                 continue
 
             if only_env == "staging":
                 report.add_warning(
-                    f"{rel_path}: exists only in staging",
+                    f"staging/{rel_path}: exists only in staging",
                     item=_drift_item(rel_path, reason="exists only in staging"),
                 )
             else:
                 report.add_violation(
-                    f"{rel_path}: exists only in production",
+                    f"production/{rel_path}: exists only in production",
                     item=_drift_item(rel_path, reason="exists only in production"),
                 )
             continue
@@ -624,12 +624,12 @@ def check_env_drift(staging_dir, production_dir, report, only_files=None):
                 bypass = _check_rule_bypass(s_rule, s_lines)
                 if bypass:
                     report.add_acknowledged(
-                        f"{rel_path}: rule '{rk}' exists only in staging — {bypass}",
+                        f"staging/{rel_path}: rule '{rk}' exists only in staging — {bypass}",
                         item=_drift_item(rel_path, rule=rk, reason=bypass),
                     )
                 else:
                     report.add_warning(
-                        f"{rel_path}: rule '{rk}' exists only in staging",
+                        f"staging/{rel_path}: rule '{rk}' exists only in staging",
                         item=_drift_item(rel_path, rule=rk, reason="exists only in staging"),
                     )
                 continue
@@ -638,12 +638,12 @@ def check_env_drift(staging_dir, production_dir, report, only_files=None):
                 bypass = _check_rule_bypass(p_rule, p_lines)
                 if bypass:
                     report.add_acknowledged(
-                        f"{rel_path}: rule '{rk}' exists only in production — {bypass}",
+                        f"production/{rel_path}: rule '{rk}' exists only in production — {bypass}",
                         item=_drift_item(rel_path, rule=rk, reason=bypass),
                     )
                 else:
                     report.add_violation(
-                        f"{rel_path}: rule '{rk}' exists only in production",
+                        f"production/{rel_path}: rule '{rk}' exists only in production",
                         item=_drift_item(rel_path, rule=rk, reason="exists only in production"),
                     )
                 continue
@@ -740,6 +740,11 @@ def _rebuild_text_message(item):
     rule = item.get("rule", "")
     field = item.get("field", "")
     reason = item.get("reason", "")
+
+    for env in ("staging", "production"):
+        if f"only in {env}" in reason:
+            file_path = f"{env}/{file_path}"
+            break
 
     if rule and field:
         key = f"{file_path} :: {rule}"
