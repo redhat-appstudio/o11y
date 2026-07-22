@@ -7,7 +7,7 @@ metadata:
   annotations:
     grafana-folder: /grafana-dashboard-definitions/RHTAP
 data:
-  grafana-dashboard-kunflux-cluster-upgrade-overview.json: |-
+  grafana-dashboard-konflux-cluster-upgrade-overview.json: |-
     {
       "annotations": {
         "list": [
@@ -34,7 +34,7 @@ data:
       "editable": true,
       "fiscalYearStartMonth": 0,
       "graphTooltip": 0,
-      "id": 1103185,
+      "id": null,
       "links": [],
       "panels": [
         {
@@ -103,7 +103,7 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "aus_cluster_upgrade_policy_info{cluster_name=~\"$clusters\"}",
+              "expr": "aus_cluster_upgrade_policy_info{org_id=~\"$org_id\", sector=~\"$sectors\", workloads=~\".*$workloads.*\", cluster_name=~\"$clusters\"}",
               "legendFormat": "{{cluster_name}} - {{current_version}}",
               "range": true,
               "refId": "A"
@@ -408,7 +408,7 @@ data:
               },
               "editorMode": "code",
               "expr": "sum(aus_cluster_upgrade_policy_info{org_id=~\"$org_id\", sector=~\"$sectors\", workloads=~\".*$workloads.*\", cluster_name=~\"$clusters\"}) by (current_version)",
-              "legendFormat": "{{label_name}}",
+              "legendFormat": "{{current_version}}",
               "range": true,
               "refId": "A"
             }
@@ -884,17 +884,6 @@ data:
                   "soaking_version": "To"
                 }
               }
-            },
-            {
-              "id": "sortBy",
-              "options": {
-                "fields": {},
-                "sort": [
-                  {
-                    "field": "Cluster"
-                  }
-                ]
-              }
             }
           ],
           "type": "table"
@@ -1120,7 +1109,7 @@ data:
             },
             "datasource": {
               "type": "prometheus",
-              "uid": "P7B77307D2CE073BC"
+              "uid": "${datasource}"
             },
             "definition": "aus_cluster_upgrade_policy_info",
             "hide": 2,
@@ -1147,7 +1136,7 @@ data:
             },
             "datasource": {
               "type": "prometheus",
-              "uid": "P7B77307D2CE073BC"
+              "uid": "${datasource}"
             },
             "definition": "label_values(aus_cluster_upgrade_policy_info{org_id=~\"$org_id\"},sector)",
             "hide": 2,
@@ -1176,7 +1165,7 @@ data:
             },
             "datasource": {
               "type": "prometheus",
-              "uid": "P7B77307D2CE073BC"
+              "uid": "${datasource}"
             },
             "definition": "label_values(aus_cluster_upgrade_policy_info{org_id=~\"$org_id\", sector=~\"$sectors\"},workloads)",
             "hide": 2,
@@ -1243,7 +1232,7 @@ data:
       },
       "timepicker": {},
       "timezone": "",
-      "title": "kunflux Cluster Upgrade Overview",
+      "title": "Konflux Cluster Upgrade Overview",
       "uid": "ukLXCSwVz-",
       "version": 85
     }
