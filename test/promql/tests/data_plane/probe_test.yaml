@@ -36,6 +36,46 @@ tests:
               alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/exporters/blackbox/probe-alerts.md
 
+  # Partition boundary: severity="high" series must NOT fire the critical ProbeAlert
+  - interval: 1m
+    input_series:
+      - series: konflux_up{job="critical-service",instance="instance02",target="target02",source_cluster="cluster01",check="probe",service="critical-service",severity="high"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+      - series: multicluster_probe_up{instance="instance02",job="critical-service",check="probe-multicluster",service="critical-service"}
+        values: 1x55
+    alert_rule_test:
+      - eval_time: 39m
+        alertname: ProbeAlert
+        exp_alerts: []
+
+  # ProbeAlertHigh: service with severity="high" metric label fires at high severity (not SLO)
+  - interval: 1m
+    input_series:
+      - series: konflux_up{job="critical-service",instance="instance02",target="target02",source_cluster="cluster01",check="probe",service="critical-service",severity="high"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+      - series: konflux_up{job="critical-service",instance="instance02",target="target02",source_cluster="cluster02",check="probe",service="critical-service",severity="high"}
+        values: 1x44
+      - series: multicluster_probe_up{instance="instance02",job="critical-service",check="probe-multicluster",service="critical-service"}
+        values: 1x55
+    alert_rule_test:
+      - eval_time: 39m
+        alertname: ProbeAlertHigh
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              instance: instance02
+              job: critical-service
+              target: target02
+              source_cluster: cluster01
+              check: probe
+              service: critical-service
+              slo: "false"
+            exp_annotations:
+              description: 'Probe on cluster01 is unable to connect to instance02 (critical-service) for the last 25 minutes. At least 80% of Konflux clusters successfully connect to instance02.'
+              summary: Probe alert critical-service.
+              alert_routing_key: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/exporters/blackbox/probe-alerts.md
+
   # Shared instance across jobs (e.g. github-actions vs github-webhooks on githubstatus.com):
   # when one job is down multicluster-wide, ProbeAlert must not fire via another job's healthy multicluster_probe_up.
   - interval: 1m

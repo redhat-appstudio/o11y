@@ -12,7 +12,7 @@ spec:
 
       - alert: ProbeAlert
         expr: |
-          konflux_up{check="probe", service!~".*-vpn|.*static-host|.*pwvs"} != 1
+          konflux_up{check="probe", service!~".*-vpn|.*static-host|.*pwvs", severity!="high"} != 1
           and on(instance, job)
           (multicluster_probe_up == 1)
         for: 25m
@@ -25,6 +25,23 @@ spec:
           description: >-
              Probe on {{ $labels.source_cluster }} is unable to connect to {{ $labels.instance }} ({{ $labels.job }}) for the last 25 minutes. At least 80% of Konflux clusters successfully connect to {{ $labels.instance }}.
           alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/exporters/blackbox/probe-alerts.md
+
+      - alert: ProbeAlertHigh
+        expr: |
+          konflux_up{check="probe", service!~".*-vpn|.*static-host|.*pwvs", severity="high"} != 1
+          and on(instance, job)
+          (multicluster_probe_up == 1)
+        for: 25m
+        labels:
+          severity: high
+          slo: "false"
+        annotations:
+          summary: >-
+             Probe alert {{ $labels.job }}.
+          description: >-
+             Probe on {{ $labels.source_cluster }} is unable to connect to {{ $labels.instance }} ({{ $labels.job }}) for the last 25 minutes. At least 80% of Konflux clusters successfully connect to {{ $labels.instance }}.
+          alert_routing_key: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
           runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/exporters/blackbox/probe-alerts.md
 
       - alert: MultiClusterProbeAlert

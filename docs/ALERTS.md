@@ -91,6 +91,9 @@ Required labels:
 - `check` — what's being verified (e.g. `replicas-available`, `probe`, `github`)
 - `source_cluster` — added automatically by RHOBS forwarding
 
+Optional labels:
+- `severity` — set on the metric itself (not the alert rule) to override the default alert tier for a specific service. Valid value: `high`. When present, the probe alert for that service fires as `ProbeAlertHigh` (severity: high, slo: "false") instead of `ProbeAlert` (severity: critical, slo: "true"). This lets individual services opt out of SLO-grade paging while still receiving alerting. The label must be emitted by the upstream exporter or recording rule — see [SPRE-5323](https://issues.redhat.com/browse/SPRE-5323) for the probe exporter change that introduced it.
+
 How `konflux_up` signals are created:
 - **Recording rules** (most common): transform an existing metric into `konflux_up` via `label_replace` and clamp to 0/1. Example: `kube_deployment_status_replicas_available / kube_deployment_spec_replicas`. See `rhobs/recording/` for examples.
 - **Custom Go exporters**: expose `konflux_up` directly via the Prometheus client library when availability checks require custom logic (HTTP probes, API calls). See `exporters/dsexporter/` for the reference implementation.
