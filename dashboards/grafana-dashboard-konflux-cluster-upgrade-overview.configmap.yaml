@@ -749,7 +749,7 @@ data:
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "count((aus_cluster_version_remaining_soak_days{} <= -2 and aus_cluster_version_remaining_soak_days{} >= -3) * on (cluster_uuid) (aus_cluster_upgrade_policy_info{org_id=~\"$org_id\", sector=~\"$sectors\", workloads=~\".*$workloads.*\", cluster_name=~\"$clusters\"}))",
+              "expr": "count((aus_cluster_version_remaining_soak_days{} <= -2 and aus_cluster_version_remaining_soak_days{} >= -3) * on (cluster_uuid) group_left() (aus_cluster_upgrade_policy_info{org_id=~\"$org_id\", sector=~\"$sectors\", workloads=~\".*$workloads.*\", cluster_name=~\"$clusters\"}))",
               "format": "table",
               "instant": true,
               "legendFormat": "__auto",
