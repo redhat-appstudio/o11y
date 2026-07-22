@@ -1,0 +1,37 @@
+evaluation_interval: 5m
+
+rule_files:
+  - kueue_performance_slo_recording_rules.yaml
+
+tests:
+  - name: KueuePerformanceSloP95ComputationTest
+    interval: 5m
+    input_series:
+      - series: 'kueue_admission_wait_time_seconds_bucket{le="60", priority_class="test-priority", cluster_queue="cluster-pipeline-queue", source_cluster="test-cluster"}'
+        values: "0x15"
+      - series: 'kueue_admission_wait_time_seconds_bucket{le="120", priority_class="test-priority", cluster_queue="cluster-pipeline-queue", source_cluster="test-cluster"}'
+        values: "0+1x15"
+      - series: 'kueue_admission_wait_time_seconds_bucket{le="300", priority_class="test-priority", cluster_queue="cluster-pipeline-queue", source_cluster="test-cluster"}'
+        values: "0+1x15"
+      - series: 'kueue_admission_wait_time_seconds_bucket{le="+Inf", priority_class="test-priority", cluster_queue="cluster-pipeline-queue", source_cluster="test-cluster"}'
+        values: "0+1x15"
+    promql_expr_test:
+      - expr: konflux_cluster:kueue_admission_wait_time_seconds:p95_1h
+        eval_time: 60m
+        exp_samples:
+          - labels: 'konflux_cluster:kueue_admission_wait_time_seconds:p95_1h{priority_class="test-priority", source_cluster="test-cluster"}'
+            value: 117
+
+  - name: KueuePerformanceSloNoOutputForNonMatchingQueueTest
+    interval: 5m
+    input_series:
+      - series: 'kueue_admission_wait_time_seconds_bucket{le="60", priority_class="test-priority", cluster_queue="other-queue", source_cluster="test-cluster"}'
+        values: "0x15"
+      - series: 'kueue_admission_wait_time_seconds_bucket{le="120", priority_class="test-priority", cluster_queue="other-queue", source_cluster="test-cluster"}'
+        values: "0+1x15"
+      - series: 'kueue_admission_wait_time_seconds_bucket{le="+Inf", priority_class="test-priority", cluster_queue="other-queue", source_cluster="test-cluster"}'
+        values: "0+1x15"
+    promql_expr_test:
+      - expr: konflux_cluster:kueue_admission_wait_time_seconds:p95_1h
+        eval_time: 60m
+        exp_samples: []
