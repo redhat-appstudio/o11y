@@ -447,8 +447,7 @@ data:
                     "value": 80
                   }
                 ]
-              },
-              "unit": "d"
+              }
             },
             "overrides": [
               {
@@ -750,7 +749,7 @@ data:
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "count((aus_cluster_version_remaining_soak_days{} <= -2 >= -3) * on (cluster_uuid) (aus_cluster_upgrade_policy_info{org_id=~\"$org_id\", sector=~\"$sectors\", workloads=~\".*$workloads.*\", cluster_name=~\"$clusters\"}))",
+              "expr": "count((aus_cluster_version_remaining_soak_days{} <= -2 and aus_cluster_version_remaining_soak_days{} >= -3) * on (cluster_uuid) (aus_cluster_upgrade_policy_info{org_id=~\"$org_id\", sector=~\"$sectors\", workloads=~\".*$workloads.*\", cluster_name=~\"$clusters\"}))",
               "format": "table",
               "instant": true,
               "legendFormat": "__auto",
@@ -846,7 +845,7 @@ data:
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "increase(timestamp(avg by (cluster_uuid, soaking_version) (aus_cluster_version_remaining_soak_days{} <= -2 >= -3))[25h:])\n* on (cluster_uuid, soaking_version) (aus_cluster_version_remaining_soak_days{} <= bool -2 >= -3)\n* on (cluster_uuid) group_left(cluster_name, org_name, current_version) aus_cluster_upgrade_policy_info{org_id=~\"$org_id\", sector=~\"$sectors\", workloads=~\".*$workloads.*\", cluster_name=~\"$clusters\"} > 0",
+              "expr": "increase(timestamp(avg by (cluster_uuid, soaking_version) (aus_cluster_version_remaining_soak_days{} <= -2 and aus_cluster_version_remaining_soak_days{} >= -3))[25h:])\n* on (cluster_uuid, soaking_version) ((aus_cluster_version_remaining_soak_days{} <= bool -2) * (aus_cluster_version_remaining_soak_days{} >= bool -3))\n* on (cluster_uuid) group_left(cluster_name, org_name, current_version) aus_cluster_upgrade_policy_info{org_id=~\"$org_id\", sector=~\"$sectors\", workloads=~\".*$workloads.*\", cluster_name=~\"$clusters\"} > 0",
               "format": "table",
               "instant": true,
               "interval": "10",
