@@ -291,7 +291,7 @@ data:
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "count(sum by(cluster_uuid, current_version)(last_over_time({__name__=\"aus_cluster_upgrade_policy_info\"}[25h]))) by (__name__, cluster_uuid) * on (cluster_uuid) group_left (org_id, org_name, cluster_name, current_version) aus_cluster_upgrade_policy_info{org_id=~\"$org_id\", sector=~\"$sectors\", workloads=~\".*$workloads.*\", cluster_name=~\"$clusters\"} * on (cluster_uuid) group_left(previous_version) label_replace(aus_cluster_upgrade_policy_info offset 25h, \"previous_version\", \"$1\", \"current_version\", \"(.+)\") > 1",
+              "expr": "count(sum by(cluster_uuid, current_version)(last_over_time({__name__=\"aus_cluster_upgrade_policy_info\"}[25h]))) by (__name__, cluster_uuid) * on (cluster_uuid) group_left (org_id, org_name, cluster_name, current_version) aus_cluster_upgrade_policy_info{org_id=~\"$org_id\", sector=~\"$sectors\", workloads=~\".*$workloads.*\", cluster_name=~\"$clusters\"} * on (cluster_uuid) group_left(previous_version) label_replace(aus_cluster_upgrade_policy_info{org_id=~\"$org_id\", sector=~\"$sectors\", workloads=~\".*$workloads.*\", cluster_name=~\"$clusters\"} offset 25h, \"previous_version\", \"$1\", \"current_version\", \"(.+)\") > 1",
               "format": "table",
               "instant": true,
               "interval": "10",
@@ -627,7 +627,7 @@ data:
               },
               "editorMode": "code",
               "exemplar": false,
-              "expr": "aus_cluster_upgrade_policy_info{org_name=\"RHTAP\", cluster_name=~\"$clusters\"}",
+              "expr": "aus_cluster_upgrade_policy_info{org_id=~\"$org_id\", sector=~\"$sectors\", workloads=~\".*$workloads.*\", cluster_name=~\"$clusters\"}",
               "format": "table",
               "instant": true,
               "legendFormat": "__auto",
@@ -1207,7 +1207,7 @@ data:
               "type": "prometheus",
               "uid": "${datasource}"
             },
-            "definition": "label_values(aus_cluster_upgrade_policy_info,cluster_name)",
+            "definition": "label_values(aus_cluster_upgrade_policy_info{org_id=~\"$org_id\", sector=~\"$sectors\", workloads=~\".*$workloads.*\"},cluster_name)",
             "includeAll": true,
             "label": "Clusters",
             "multi": true,
@@ -1215,7 +1215,7 @@ data:
             "options": [],
             "query": {
               "qryType": 1,
-              "query": "label_values(aus_cluster_upgrade_policy_info,cluster_name)",
+              "query": "label_values(aus_cluster_upgrade_policy_info{org_id=~\"$org_id\", sector=~\"$sectors\", workloads=~\".*$workloads.*\"},cluster_name)",
               "refId": "PrometheusVariableQueryEditor-VariableQuery"
             },
             "refresh": 2,
