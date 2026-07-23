@@ -1,0 +1,26 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-integration-service-availability
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: integration_service_availability
+      interval: 1m
+      rules:
+        - record: konflux_up
+          expr: |
+            clamp_max(
+              label_replace(
+                label_replace(
+                  floor(
+                    kube_deployment_status_replicas_available{namespace="integration-service"}
+                    / kube_deployment_spec_replicas{namespace="integration-service"}
+                  ), "check", "replicas-available", "", ""
+                ), "service", "$1", "deployment", "(.*)"
+              ),
+              1
+            )
+          labels:
+            check: replicas-available

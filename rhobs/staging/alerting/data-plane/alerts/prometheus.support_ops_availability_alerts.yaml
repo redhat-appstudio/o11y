@@ -1,0 +1,49 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-support-ops-availability-alerting-rules
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: support-ops-availability
+    interval: 1m
+    rules:
+    - alert: SupportOpsDown
+      expr: |
+        konflux_up{
+          namespace="konflux-support-ops",
+          check="replicas-available",
+          service="chat-bot"
+        } != 1
+      for: 10m
+      labels:
+        severity: critical
+        slo: "true"
+        component: support-ops
+      annotations:
+        summary: >-
+          User support automation is down on cluster {{ $labels.source_cluster }}
+        description: >
+          Some of the replicas of user support automation are down in namespace
+          {{ $labels.namespace }} on cluster {{ $labels.source_cluster }}
+        alert_team_handle: <!subteam^S068JNLG03A>
+        team: support-ops
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/user-support/user_support_guide.md
+
+  - name: support-ops-deployment-alerts
+    interval: 1m
+    rules:
+    - alert: SupportOpsDeploymentReplicasMismatch
+      expr: kube_deployment_spec_replicas{namespace="konflux-support-ops"} != kube_deployment_status_replicas_available{namespace="konflux-support-ops"}
+      for: 5m
+      labels:
+        severity: warning
+        component: support-ops
+      annotations:
+        summary: Support Ops deployment {{ $labels.namespace }}/{{ $labels.deployment }} replicas mismatch
+        description: >-
+          The number of replicas defined in {{ $labels.namespace }}/{{ $labels.deployment }}
+          on cluster {{ $labels.source_cluster }} is different than the actual number of replicas
+        alert_routing_key: '{{ $labels.namespace }}'
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/user-support/user_support_guide.md

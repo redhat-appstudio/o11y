@@ -1,0 +1,24 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-kueue-availability
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: kueue_availability
+      interval: 1m
+      rules:
+        - record: konflux_up
+          expr: |
+            clamp_max(
+              label_replace(
+                label_replace(
+                  floor(
+                    kube_deployment_status_replicas_available{
+                      namespace=~"openshift-kueue-operator|tekton-kueue|kueue-external-admission"
+                    } / clamp_min(kube_deployment_spec_replicas{namespace=~"openshift-kueue-operator|tekton-kueue|kueue-external-admission"}, 1)
+                  ), "check", "replicas-available", "",""
+                ), "service", "$1", "deployment","(.*)"
+              ), 1
+            )
