@@ -1,0 +1,47 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-kueue-performance-slo
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: kueue_performance_slo
+      interval: 5m
+      rules:
+        - record: konflux_cluster:kueue_admission_wait_time_seconds:p95_1h
+          expr: |
+            histogram_quantile(0.95, sum by (le, priority_class, source_cluster) (
+              rate(kueue_admission_wait_time_seconds_bucket{
+                cluster_queue="cluster-pipeline-queue"
+              }[1h])
+            ))
+
+        - record: konflux_cluster:kueue_admission_wait_time_seconds:saturated
+          expr: |
+            konflux_cluster:kueue_admission_wait_time_seconds:p95_1h
+            > bool (
+              konflux_cluster:kueue_admission_wait_time_seconds:p95_1h_7d_avg
+              + konflux_cluster:kueue_admission_wait_time_seconds:p95_1h_7d_stddev
+            )
+
+        - record: konflux_cluster:kueue_admission_wait_time_seconds:saturation_7d
+          expr: |
+            avg_over_time(
+              konflux_cluster:kueue_admission_wait_time_seconds:saturated[7d:1h]
+            )
+
+    - name: kueue_performance_slo_baseline
+      interval: 5m
+      rules:
+        - record: konflux_cluster:kueue_admission_wait_time_seconds:p95_1h_7d_avg
+          expr: |
+            avg_over_time(
+              (konflux_cluster:kueue_admission_wait_time_seconds:p95_1h >= 0)[7d:1h]
+            )
+
+        - record: konflux_cluster:kueue_admission_wait_time_seconds:p95_1h_7d_stddev
+          expr: |
+            stddev_over_time(
+              (konflux_cluster:kueue_admission_wait_time_seconds:p95_1h >= 0)[7d:1h]
+            )
