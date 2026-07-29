@@ -6,10 +6,10 @@ metadata:
     tenant: rhtap
 spec:
   groups:
-  - name: pipeline-to-snapshot-exceeded
+  - name: build-plr-to-snapshot-in-progress
     interval: 1m
     rules:
-    - alert: PipelineRunToSnapshotExceeded
+    - alert: BuildPlrToSnapshotInProgress
       expr: |
         (
           (
@@ -26,10 +26,10 @@ spec:
         component: integration-service
       annotations:
         summary: >-
-          PipelineRunFinish to SnapshotInProgress time exceeded
+          Build PLR to Snapshot In Progress time exceeded
         description: >
           Time from build pipeline run finished to snapshot marked in progress has been over 30s for more than 25% of requests during the last 30 minutes on cluster {{ $labels.source_cluster }}
         # alert_team_handle: <!subteam^S05M4AG8CJH>
         alert_routing_key: <!subteam^S05M4AG8CJH>
         team: integration
-        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/sre/latency_service_response.md
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/sre/build_plr_to_snapshot_in_progress.md

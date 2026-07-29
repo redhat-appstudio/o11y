@@ -20,7 +20,7 @@ tests:
       values: '0+100x40'
   alert_rule_test:
     - eval_time: 35m
-      alertname: PipelineRunToSnapshotExceeded
+      alertname: BuildPlrToSnapshotInProgress
       exp_alerts:
         - exp_labels:
             severity: high
@@ -29,13 +29,13 @@ tests:
             namespace: integration-service
             source_cluster: cluster01
           exp_annotations:
-            summary: PipelineRunFinish to SnapshotInProgress time exceeded
+            summary: Build PLR to Snapshot In Progress time exceeded
             description: >
               Time from build pipeline run finished to snapshot marked in progress has been over 30s for more than 25% of requests during the last 30 minutes on cluster cluster01
             # alert_team_handle: <!subteam^S05M4AG8CJH>
             alert_routing_key: <!subteam^S05M4AG8CJH>
             team: integration
-            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/sre/latency_service_response.md
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/sre/build_plr_to_snapshot_in_progress.md
 
 # Scenario where both clusters cross the 25% threshold
 - interval: 1m
@@ -52,7 +52,7 @@ tests:
       values: '0+100x40'
   alert_rule_test:
     - eval_time: 35m
-      alertname: PipelineRunToSnapshotExceeded
+      alertname: BuildPlrToSnapshotInProgress
       exp_alerts:
         - exp_labels:
             severity: high
@@ -61,13 +61,13 @@ tests:
             namespace: integration-service
             source_cluster: cluster01
           exp_annotations:
-            summary: PipelineRunFinish to SnapshotInProgress time exceeded
+            summary: Build PLR to Snapshot In Progress time exceeded
             description: >
               Time from build pipeline run finished to snapshot marked in progress has been over 30s for more than 25% of requests during the last 30 minutes on cluster cluster01
             # alert_team_handle: <!subteam^S05M4AG8CJH>
             alert_routing_key: <!subteam^S05M4AG8CJH>
             team: integration
-            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/sre/latency_service_response.md
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/sre/build_plr_to_snapshot_in_progress.md
         - exp_labels:
             severity: high
             slo: "false"
@@ -75,13 +75,13 @@ tests:
             namespace: integration-service
             source_cluster: cluster02
           exp_annotations:
-            summary: PipelineRunFinish to SnapshotInProgress time exceeded
+            summary: Build PLR to Snapshot In Progress time exceeded
             description: >
               Time from build pipeline run finished to snapshot marked in progress has been over 30s for more than 25% of requests during the last 30 minutes on cluster cluster02
             # alert_team_handle: <!subteam^S05M4AG8CJH>
             alert_routing_key: <!subteam^S05M4AG8CJH>
             team: integration
-            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/sre/latency_service_response.md
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/sre/build_plr_to_snapshot_in_progress.md
 
 # Scenario where no alert is triggered as both clusters stay below the 25% threshold
 - interval: 1m
@@ -99,5 +99,5 @@ tests:
       values: '0+100x40'  # 100 total occurrences in cluster2
   alert_rule_test:
     - eval_time: 35m
-      alertname: PipelineRunToSnapshotExceeded
+      alertname: BuildPlrToSnapshotInProgress
       exp_alerts: []  # No alerts are expected in this scenario
