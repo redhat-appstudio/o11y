@@ -76,21 +76,25 @@ spec:
 
     - alert: PipelineRunStuckWithIntegrationFinalizer
       expr: |
-        kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{
-          finalizers=~".*test.appstudio.openshift.io/pipelinerun.*",
-        } > 0
-        and
-        (time() - kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{
-          finalizers=~".*test.appstudio.openshift.io/pipelinerun.*",
-        }) > 3600
+        count by (source_cluster) (
+          kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{
+            finalizers=~".*test.appstudio.openshift.io/pipelinerun.*",
+          } > 0
+          and
+          (
+            time() - kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{
+              finalizers=~".*test.appstudio.openshift.io/pipelinerun.*",
+            }
+          ) > 1800
+        ) > 10
       for: 10m
       labels:
         severity: warning
         component: integration-service
         slo: "false"
       annotations:
-        summary: "PipelineRun {{ $labels.pipelinerun }} stuck with Integration Service finalizer in namespace {{ $labels.namespace }}"
-        description: "PipelineRun {{ $labels.pipelinerun }} (pipeline: {{ $labels.pipeline }}) in namespace {{ $labels.namespace }} has had deletionTimestamp set for more than 60 minutes and still has finalizers: {{ $labels.finalizers }}."
+        summary: "{{ $value }} PipelineRun(s) on {{ $labels.source_cluster }} stuck with Integration Service finalizer"
+        description: "{{ $value }} PipelineRun(s) on {{ $labels.source_cluster }} have had deletionTimestamp set for more than 30 minutes and still have the Integration Service finalizer."
         alert_routing_key: integration
         team: integration
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/plr_stuck_with_integration_finalizer.md
