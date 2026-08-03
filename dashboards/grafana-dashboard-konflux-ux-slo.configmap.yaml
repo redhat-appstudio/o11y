@@ -513,74 +513,6 @@ data:
                 "type": "prometheus",
                 "uid": "${Datasource}"
               },
-              "description": "1 = P95 exceeds baseline threshold, 0 = within normal range.",
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "thresholds"
-                  },
-                  "custom": {
-                    "drawStyle": "line",
-                    "fillOpacity": 70,
-                    "lineInterpolation": "stepAfter",
-                    "lineWidth": 0,
-                    "showPoints": "never",
-                    "spanNulls": false
-                  },
-                  "max": 1,
-                  "min": 0,
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green"
-                      },
-                      {
-                        "color": "red",
-                        "value": 1
-                      }
-                    ]
-                  }
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 6,
-                "w": 24,
-                "x": 0,
-                "y": 22
-              },
-              "id": 4,
-              "options": {
-                "legend": {
-                  "calcs": [],
-                  "displayMode": "list",
-                  "placement": "bottom"
-                },
-                "tooltip": {
-                  "mode": "multi",
-                  "sort": "desc"
-                }
-              },
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "${Datasource}"
-                  },
-                  "expr": "konflux_cluster:kueue_admission_wait_time_seconds:saturated{source_cluster=\"$Cluster\"}",
-                  "legendFormat": "{{priority_class}}",
-                  "refId": "A"
-                }
-              ],
-              "title": "Saturation Indicator",
-              "type": "timeseries"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${Datasource}"
-              },
               "description": "State timeline showing when each priority class is saturated (P95 > avg+1σ). One lane per priority class — red = saturated, green = normal.",
               "fieldConfig": {
                 "defaults": {
@@ -623,7 +555,7 @@ data:
                 "h": 8,
                 "w": 24,
                 "x": 0,
-                "y": 28
+                "y": 22
               },
               "id": 5,
               "options": {
@@ -634,7 +566,7 @@ data:
                 },
                 "mergeValues": true,
                 "rowHeight": 0.8,
-                "showValue": "auto",
+                "showValue": "never",
                 "tooltip": {
                   "mode": "single",
                   "sort": "none"
@@ -653,82 +585,6 @@ data:
               ],
               "title": "Saturation State Timeline",
               "type": "state-timeline"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${Datasource}"
-              },
-              "description": "Status history grid showing saturation state per priority class over time. Each cell is colored by value — red = saturated, green = normal.",
-              "fieldConfig": {
-                "defaults": {
-                  "color": {
-                    "mode": "thresholds"
-                  },
-                  "mappings": [
-                    {
-                      "options": {
-                        "0": {
-                          "color": "green",
-                          "index": 0,
-                          "text": "Normal"
-                        },
-                        "1": {
-                          "color": "red",
-                          "index": 1,
-                          "text": "Saturated"
-                        }
-                      },
-                      "type": "value"
-                    }
-                  ],
-                  "thresholds": {
-                    "mode": "absolute",
-                    "steps": [
-                      {
-                        "color": "green"
-                      },
-                      {
-                        "color": "red",
-                        "value": 1
-                      }
-                    ]
-                  }
-                },
-                "overrides": []
-              },
-              "gridPos": {
-                "h": 8,
-                "w": 24,
-                "x": 0,
-                "y": 36
-              },
-              "id": 6,
-              "options": {
-                "legend": {
-                  "displayMode": "list",
-                  "placement": "bottom"
-                },
-                "rowHeight": 0.8,
-                "showValue": "auto",
-                "tooltip": {
-                  "mode": "single",
-                  "sort": "none"
-                }
-              },
-              "targets": [
-                {
-                  "datasource": {
-                    "type": "prometheus",
-                    "uid": "${Datasource}"
-                  },
-                  "expr": "konflux_cluster:kueue_admission_wait_time_seconds:saturated{source_cluster=\"$Cluster\"}",
-                  "legendFormat": "{{priority_class}}",
-                  "refId": "A"
-                }
-              ],
-              "title": "Saturation Status History",
-              "type": "status-history"
             },
             {
               "datasource": {
@@ -760,7 +616,7 @@ data:
                 "h": 6,
                 "w": 8,
                 "x": 0,
-                "y": 44
+                "y": 30
               },
               "id": 11,
               "options": {
@@ -822,7 +678,7 @@ data:
                 "h": 6,
                 "w": 8,
                 "x": 8,
-                "y": 44
+                "y": 30
               },
               "id": 12,
               "options": {
@@ -884,7 +740,7 @@ data:
                 "h": 6,
                 "w": 8,
                 "x": 16,
-                "y": 44
+                "y": 30
               },
               "id": 13,
               "options": {
