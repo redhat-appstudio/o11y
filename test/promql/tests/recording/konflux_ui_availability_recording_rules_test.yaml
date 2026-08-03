@@ -63,3 +63,42 @@ tests:
         exp_samples:
           - labels: konflux_up{service='dex', check='replicas-available', namespace='konflux-ui', deployment='dex'}
             value: 0
+
+  - name: NginxOtelHttpRequestErrorsRate5mTest
+    interval: 1m
+    input_series:
+      - series: 'nginx_otel_http_request_errors_total{job="nginx-proxy", status="500", source_cluster="c1"}'
+        values: '0 2 4 6 8'
+      - series: 'nginx_otel_http_request_errors_total{job="nginx-proxy", status="404", source_cluster="c1"}'
+        values: '0 1 1 2 2'
+    promql_expr_test:
+      - expr: nginx_otel_http_request_errors:rate5m
+        eval_time: 5m
+        exp_samples:
+          - labels: nginx_otel_http_request_errors:rate5m{job="nginx-proxy", status="500", source_cluster="c1"}
+            value: 1.6
+          - labels: nginx_otel_http_request_errors:rate5m{job="nginx-proxy", status="404", source_cluster="c1"}
+            value: 0.4
+
+  - name: NginxOtelHttpRequestErrorsRate24hAvgTest
+    interval: 1m
+    input_series:
+      - series: 'nginx_otel_http_request_errors:rate5m{job="nginx-proxy", status="500", source_cluster="c2"}'
+        values: '0.5 1.0 1.5 2.0 2.5 3.0 3.5 4.0 4.5 5.0 5.5 6.0 6.5 7.0 7.5'
+    promql_expr_test:
+      - expr: nginx_otel_http_request_errors:rate24h_avg
+        eval_time: 15m
+        exp_samples:
+          - labels: nginx_otel_http_request_errors:rate24h_avg{job="nginx-proxy", status="500", source_cluster="c2"}
+            value: 4.0
+  - name: NginxOtelHttpRequestErrorsRate24hStddevTest
+    interval: 1m
+    input_series:
+      - series: 'nginx_otel_http_request_errors:rate5m{job="nginx-proxy", status="500", source_cluster="c3"}'
+        values: '1 2 3 4 5 6 7 8 9 10 11 12 13 14 15'
+    promql_expr_test:
+      - expr: nginx_otel_http_request_errors:rate24h_stddev
+        eval_time: 15m
+        exp_samples:
+          - labels: nginx_otel_http_request_errors:rate24h_stddev{job="nginx-proxy", status="500", source_cluster="c3"}
+            value: 4.0
