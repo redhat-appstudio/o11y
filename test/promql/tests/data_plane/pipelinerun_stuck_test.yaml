@@ -121,7 +121,6 @@ tests:
         exp_alerts: []
 
   # Test 4d: PAC finalizer — rotation scenario: PipelineRuns rotate under 40m threshold, no alert
-  # pr-pac-rotate-1 disappears at 30m, pr-pac-rotate-2 appears at 25m — neither was stuck >40m
   - interval: 1m
     input_series:
       - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-pac-rotate-1", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[pipelinesascode.tekton.dev/finalizer]"}
@@ -134,27 +133,55 @@ tests:
         alertname: PipelineRunStuckWithPACFinalizer
         exp_alerts: []
 
-  # Test 5: Integration finalizer — stuck PipelineRun fires alert
+  # Test 5a: Integration finalizer — 1 stuck PipelineRun for >30m, count below threshold, no alert
   - interval: 1m
     input_series:
-      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-integration-stuck", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[test.appstudio.openshift.io/pipelinerun]"}
-        values: '1+0x90'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-integration-stuck", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[test.appstudio.openshift.io/pipelinerun]", source_cluster="c1"}
+        values: '1+0x50'
 
     alert_rule_test:
-      - eval_time: 80m
+      - eval_time: 45m
+        alertname: PipelineRunStuckWithIntegrationFinalizer
+        exp_alerts: []
+
+  # Test 5b: Integration finalizer — 11 stuck PipelineRuns for >30m, alert fires with count=11
+  - interval: 1m
+    input_series:
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-int-1", namespace="ns", pipeline="build-pipeline", finalizers="[test.appstudio.openshift.io/pipelinerun]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-int-2", namespace="ns", pipeline="build-pipeline", finalizers="[test.appstudio.openshift.io/pipelinerun]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-int-3", namespace="ns", pipeline="build-pipeline", finalizers="[test.appstudio.openshift.io/pipelinerun]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-int-4", namespace="ns", pipeline="build-pipeline", finalizers="[test.appstudio.openshift.io/pipelinerun]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-int-5", namespace="ns", pipeline="build-pipeline", finalizers="[test.appstudio.openshift.io/pipelinerun]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-int-6", namespace="ns", pipeline="build-pipeline", finalizers="[test.appstudio.openshift.io/pipelinerun]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-int-7", namespace="ns", pipeline="build-pipeline", finalizers="[test.appstudio.openshift.io/pipelinerun]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-int-8", namespace="ns", pipeline="build-pipeline", finalizers="[test.appstudio.openshift.io/pipelinerun]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-int-9", namespace="ns", pipeline="build-pipeline", finalizers="[test.appstudio.openshift.io/pipelinerun]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-int-10", namespace="ns", pipeline="build-pipeline", finalizers="[test.appstudio.openshift.io/pipelinerun]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-int-11", namespace="ns", pipeline="build-pipeline", finalizers="[test.appstudio.openshift.io/pipelinerun]", source_cluster="c1"}
+        values: '1+0x50'
+
+    alert_rule_test:
+      - eval_time: 45m
         alertname: PipelineRunStuckWithIntegrationFinalizer
         exp_alerts:
           - exp_labels:
               severity: warning
               component: integration-service
               slo: "false"
-              pipelinerun: pr-integration-stuck
-              namespace: tenant-ns
-              pipeline: build-pipeline
-              finalizers: "[test.appstudio.openshift.io/pipelinerun]"
+              source_cluster: c1
             exp_annotations:
-              summary: "PipelineRun pr-integration-stuck stuck with Integration Service finalizer in namespace tenant-ns"
-              description: "PipelineRun pr-integration-stuck (pipeline: build-pipeline) in namespace tenant-ns has had deletionTimestamp set for more than 60 minutes and still has finalizers: [test.appstudio.openshift.io/pipelinerun]."
+              summary: "11 PipelineRun(s) on c1 stuck with Integration Service finalizer"
+              description: "11 PipelineRun(s) on c1 have had deletionTimestamp set for more than 30 minutes and still have the Integration Service finalizer."
               alert_routing_key: integration
               team: integration
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/plr_stuck_with_integration_finalizer.md
