@@ -958,7 +958,57 @@ data:
               },
               "unit": "s"
             },
-            "overrides": []
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "/Saturation/"
+                },
+                "properties": [
+                  {
+                    "id": "custom.axisPlacement",
+                    "value": "right"
+                  },
+                  {
+                    "id": "unit",
+                    "value": "percent"
+                  },
+                  {
+                    "id": "min",
+                    "value": 0
+                  },
+                  {
+                    "id": "max",
+                    "value": 100
+                  },
+                  {
+                    "id": "custom.axisLabel",
+                    "value": "Saturation"
+                  },
+                  {
+                    "id": "custom.thresholdsStyle",
+                    "value": {
+                      "mode": "dashed"
+                    }
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "transparent"
+                        },
+                        {
+                          "color": "text",
+                          "value": 80
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
           },
           "gridPos": {
             "h": 9,
@@ -986,7 +1036,7 @@ data:
               "sort": "none"
             }
           },
-          "pluginVersion": "11.6.3",
+          "pluginVersion": "11.6.11",
           "targets": [
             {
               "datasource": {
@@ -1000,6 +1050,19 @@ data:
               "legendFormat": "{{source_cluster}}",
               "range": true,
               "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${Datasource}"
+              },
+              "editorMode": "code",
+              "expr": "(sum by (source_cluster) (rate(integration_svc_release_latency_seconds_bucket{le=\"+Inf\", source_cluster=~\"$cluster\"}[$__rate_interval])) - sum by (source_cluster) (rate(integration_svc_release_latency_seconds_bucket{le=\"1200.0\", source_cluster=~\"$cluster\"}[$__rate_interval]))) / sum by (source_cluster) (rate(integration_svc_release_latency_seconds_count{source_cluster=~\"$cluster\"}[$__rate_interval])) * 100",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "Saturation {{source_cluster}}",
+              "range": true,
+              "refId": "B"
             }
           ],
           "title": "#5 Latency of Release Creation",
@@ -1100,7 +1163,7 @@ data:
               "sort": "none"
             }
           },
-          "pluginVersion": "11.6.3",
+          "pluginVersion": "11.6.11",
           "targets": [
             {
               "datasource": {
@@ -1232,5 +1295,5 @@ data:
       "timezone": "browser",
       "title": "Konflux - Integration Service SLO",
       "uid": "cerzhj80cyvi8c",
-      "version": 4
+      "version": 29
     }

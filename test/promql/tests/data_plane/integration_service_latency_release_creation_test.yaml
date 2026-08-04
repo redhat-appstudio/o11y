@@ -8,18 +8,18 @@ tests:
     input_series:
       # Simulating data from Cluster 1 (crosses the 10% threshold)
       - series: 'integration_svc_release_latency_seconds_bucket{le="10.0", source_cluster="cluster01"}'
-        values: '0+10x15'  # 10 requests took less than 10s
+        values: '0+10x20'  # 10 requests took less than 10s
       - series: 'integration_svc_release_latency_seconds_bucket{le="+Inf", source_cluster="cluster01"}'
-        values: '0+100x15'  # 100 total occurrences in cluster01
+        values: '0+100x20'  # 100 total occurrences in cluster01
 
       # Simulating data from Cluster 2 (does not cross the 10% threshold)
       - series: 'integration_svc_release_latency_seconds_bucket{le="10.0", source_cluster="cluster02"}'
-        values: '0+90x15'  # 90 requests took less than 10s
+        values: '0+90x20'  # 90 requests took less than 10s
       - series: 'integration_svc_release_latency_seconds_bucket{le="+Inf", source_cluster="cluster02"}'
-        values: '0+100x15'  # 100 total occurrences in cluster02
+        values: '0+100x20'  # 100 total occurrences in cluster02
 
     alert_rule_test:
-      - eval_time: 15m
+      - eval_time: 20m
         alertname: IntegrationServiceLatencyReleaseCreation
         exp_alerts:
           - exp_labels:
@@ -31,7 +31,7 @@ tests:
               summary: Latency of release creation time exceeded
               description: >
                 Time from Snapshot marked as passed to release created has been over
-                10s for more than 10% of requests during the last 10 minutes on cluster
+                10s for more than 10% of requests during the last 15 minutes on cluster
                 cluster01
               # alert_team_handle: <!subteam^S05M4AG8CJH>
               alert_routing_key: <!subteam^S05M4AG8CJH>
@@ -44,18 +44,18 @@ tests:
     input_series:
       # Simulating data from Cluster 1 (crosses the 10% threshold)
       - series: 'integration_svc_release_latency_seconds_bucket{le="10.0", source_cluster="cluster01"}'
-        values: '0+5x15'  # 5 requests took less than 10s
+        values: '0+5x20'  # 5 requests took less than 10s
       - series: 'integration_svc_release_latency_seconds_bucket{le="+Inf", source_cluster="cluster01"}'
-        values: '0+100x15'  # 100 total occurrences in cluster01
+        values: '0+100x20'  # 100 total occurrences in cluster01
 
       # Simulating data from Cluster 2 (also crosses the 10% threshold)
       - series: 'integration_svc_release_latency_seconds_bucket{le="10.0", source_cluster="cluster02"}'
-        values: '0+5x15'  # 5 requests took less than 10s
+        values: '0+5x20'  # 5 requests took less than 10s
       - series: 'integration_svc_release_latency_seconds_bucket{le="+Inf", source_cluster="cluster02"}'
-        values: '0+100x15'  # 100 total occurrences in cluster02
+        values: '0+100x20'  # 100 total occurrences in cluster02
 
     alert_rule_test:
-      - eval_time: 15m
+      - eval_time: 20m
         alertname: IntegrationServiceLatencyReleaseCreation
         exp_alerts:
           - exp_labels:
@@ -67,7 +67,7 @@ tests:
               summary: Latency of release creation time exceeded
               description: >
                 Time from Snapshot marked as passed to release created has been over
-                10s for more than 10% of requests during the last 10 minutes on cluster
+                10s for more than 10% of requests during the last 15 minutes on cluster
                 cluster01
               # alert_team_handle: <!subteam^S05M4AG8CJH>
               alert_routing_key: <!subteam^S05M4AG8CJH>
@@ -82,7 +82,7 @@ tests:
               summary: Latency of release creation time exceeded
               description: >
                 Time from Snapshot marked as passed to release created has been over
-                10s for more than 10% of requests during the last 10 minutes on cluster
+                10s for more than 10% of requests during the last 15 minutes on cluster
                 cluster02
               # alert_team_handle: <!subteam^S05M4AG8CJH>
               alert_routing_key: <!subteam^S05M4AG8CJH>
@@ -95,17 +95,17 @@ tests:
     input_series:
       # Simulating data from Cluster 1 (does not cross the 10% threshold)
       - series: 'integration_svc_release_latency_seconds_bucket{le="10.0", source_cluster="cluster01"}'
-        values: '0+95x15'  # 95 requests took less than 10s
+        values: '0+95x20'  # 95 requests took less than 10s
       - series: 'integration_svc_release_latency_seconds_bucket{le="+Inf", source_cluster="cluster01"}'
-        values: '0+100x15'  # 100 total occurrences in cluster01
+        values: '0+100x20'  # 100 total occurrences in cluster01
 
       # Simulating data from Cluster 2 (does not cross the 10% threshold)
       - series: 'integration_svc_release_latency_seconds_bucket{le="10.0", source_cluster="cluster02"}'
-        values: '0+95x15'  # 95 requests took less than 10s
+        values: '0+95x20'  # 95 requests took less than 10s
       - series: 'integration_svc_release_latency_seconds_bucket{le="+Inf", source_cluster="cluster02"}'
-        values: '0+100x15'  # 100 total occurrences in cluster02
+        values: '0+100x20'  # 100 total occurrences in cluster02
 
     alert_rule_test:
-      - eval_time: 15m
+      - eval_time: 20m
         alertname: IntegrationServiceLatencyReleaseCreation
         exp_alerts: []  # No alerts are expected in this scenario
