@@ -119,7 +119,7 @@ data:
                 "uid": "${nginx_datasource}"
               },
               "editorMode": "code",
-              "expr": "(sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", cache_status=\"HIT\"}[$interval])) / sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\"}[$interval]))) * 100",
+              "expr": "(sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\", cache_status=\"HIT\"}[$interval])) / sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\"}[$interval]))) * 100",
               "legendFormat": "Cache Hit Ratio",
               "range": true,
               "refId": "A"
@@ -184,7 +184,7 @@ data:
                 "uid": "${nginx_datasource}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", cache_status=\"HIT\"}[$interval]))",
+              "expr": "sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\", cache_status=\"HIT\"}[$interval]))",
               "legendFormat": "Cache Hits/sec",
               "range": true,
               "refId": "A"
@@ -249,7 +249,7 @@ data:
                 "uid": "${nginx_datasource}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", cache_status=\"MISS\"}[$interval]))",
+              "expr": "sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\", cache_status=\"MISS\"}[$interval]))",
               "legendFormat": "Cache Misses/sec",
               "range": true,
               "refId": "A"
@@ -325,7 +325,7 @@ data:
                 "uid": "${nginx_datasource}"
               },
               "editorMode": "code",
-              "expr": "(sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", cache_status=\"HIT\"}[$interval])) / sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\"}[$interval]))) * 100",
+              "expr": "(sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\", cache_status=\"HIT\"}[$interval])) / sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\"}[$interval]))) * 100",
               "legendFormat": "Upstream Load Reduction",
               "range": true,
               "refId": "A"
@@ -483,7 +483,7 @@ data:
                 "uid": "${nginx_datasource}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\"}[$interval])) by (cache_status)",
+              "expr": "sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\"}[$interval])) by (cache_status)",
               "legendFormat": "{{cache_status}}",
               "range": true,
               "refId": "A"
@@ -614,7 +614,7 @@ data:
                 "uid": "${nginx_datasource}"
               },
               "editorMode": "code",
-              "expr": "sum(increase(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\"}[$__range])) by (cache_status)",
+              "expr": "sum(increase(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\"}[$__range])) by (cache_status)",
               "instant": true,
               "legendFormat": "{{cache_status}}",
               "refId": "A"
@@ -710,7 +710,7 @@ data:
                 "uid": "${nginx_datasource}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", cache_status=\"BYPASS\"}[$interval]))",
+              "expr": "sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\", cache_status=\"BYPASS\"}[$interval]))",
               "legendFormat": "Bypass Requests",
               "range": true,
               "refId": "A"
@@ -806,7 +806,7 @@ data:
                 "uid": "${nginx_datasource}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", cache_status=\"EXPIRED\"}[$interval]))",
+              "expr": "sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\", cache_status=\"EXPIRED\"}[$interval]))",
               "legendFormat": "Expired Cache Entries",
               "range": true,
               "refId": "A"
@@ -902,7 +902,7 @@ data:
                 "uid": "${nginx_datasource}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", cache_status=~\"STALE|UPDATING|REVALIDATED\"}[$interval])) by (cache_status)",
+              "expr": "sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\", cache_status=~\"STALE|UPDATING|REVALIDATED\"}[$interval])) by (cache_status)",
               "legendFormat": "{{cache_status}}",
               "range": true,
               "refId": "A"
@@ -1001,7 +1001,7 @@ data:
                 "uid": "${nginx_datasource}"
               },
               "editorMode": "code",
-              "expr": "sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", cache_status=\"MISS\"}[$interval]))",
+              "expr": "sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\", cache_status=\"MISS\"}[$interval]))",
               "legendFormat": "Upstream Requests (MISS only)",
               "range": true,
               "refId": "A"
@@ -1121,6 +1121,32 @@ data:
             "options": [],
             "query": {
               "query": "label_values(nginx_up{namespace=\"caching\"}, source_cluster)",
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "refresh": 2,
+            "regex": "",
+            "sort": 1,
+            "type": "query"
+          },
+          {
+            "current": {
+              "text": "All",
+              "value": [
+                "$__all"
+              ]
+            },
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${nginx_datasource}"
+            },
+            "definition": "label_values(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\"}, normalized_uri)",
+            "includeAll": true,
+            "label": "Repository",
+            "multi": true,
+            "name": "normalized_uri",
+            "options": [],
+            "query": {
+              "query": "label_values(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\"}, normalized_uri)",
               "refId": "PrometheusVariableQueryEditor-VariableQuery"
             },
             "refresh": 2,
