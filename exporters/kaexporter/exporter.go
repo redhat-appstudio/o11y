@@ -110,6 +110,24 @@ type nsBootstrapState struct {
 	GapAttempts          int    // number of gap-fill attempts (prevent infinite retry)
 }
 
+// updateBootstrapState applies the state transition after a collection cycle.
+// Returns true if the namespace just completed bootstrap.
+func updateBootstrapState(state *nsBootstrapState, wasTrunc bool, oldestTS string) bool {
+	if state.Bootstrapped {
+		return false
+	}
+	if !wasTrunc {
+		state.Bootstrapped = true
+		state.OldestSeenCreationTS = ""
+		state.GapAttempts = 0
+		return true
+	}
+	if state.OldestSeenCreationTS == "" {
+		state.OldestSeenCreationTS = oldestTS
+	}
+	return false
+}
+
 // ── Retry configuration ───────────────────────────────────────────────────────
 
 // retryConfig holds exponential backoff parameters for KubeArchive API retries

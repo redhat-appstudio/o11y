@@ -548,6 +548,80 @@ func TestStoreCleanup(t *testing.T) {
 	})
 }
 
+// ── Bootstrap State Transition Tests ─────────────────────────────────────────
+
+func TestUpdateBootstrapState(t *testing.T) {
+	t.Run("successful non-truncated fetch marks bootstrapped", func(t *testing.T) {
+		state := &nsBootstrapState{}
+		completed := updateBootstrapState(state, false, "")
+		if !completed {
+			t.Error("expected completed=true")
+		}
+		if !state.Bootstrapped {
+			t.Error("expected Bootstrapped=true")
+		}
+		if state.OldestSeenCreationTS != "" {
+			t.Errorf("expected empty OldestSeenCreationTS, got %q", state.OldestSeenCreationTS)
+		}
+	})
+
+	t.Run("first truncation records oldest timestamp", func(t *testing.T) {
+		state := &nsBootstrapState{}
+		completed := updateBootstrapState(state, true, "2026-07-29T00:44:46Z")
+		if completed {
+			t.Error("expected completed=false")
+		}
+		if state.Bootstrapped {
+			t.Error("expected Bootstrapped=false")
+		}
+		if state.OldestSeenCreationTS != "2026-07-29T00:44:46Z" {
+			t.Errorf("expected OldestSeenCreationTS=2026-07-29T00:44:46Z, got %q", state.OldestSeenCreationTS)
+		}
+	})
+
+	t.Run("subsequent truncation does not overwrite oldest timestamp", func(t *testing.T) {
+		state := &nsBootstrapState{OldestSeenCreationTS: "2026-07-25T10:00:00Z"}
+		completed := updateBootstrapState(state, true, "2026-07-29T00:50:25Z")
+		if completed {
+			t.Error("expected completed=false")
+		}
+		if state.OldestSeenCreationTS != "2026-07-25T10:00:00Z" {
+			t.Errorf("expected original OldestSeenCreationTS preserved, got %q", state.OldestSeenCreationTS)
+		}
+	})
+
+	t.Run("already bootstrapped is a no-op", func(t *testing.T) {
+		state := &nsBootstrapState{Bootstrapped: true}
+		completed := updateBootstrapState(state, false, "")
+		if completed {
+			t.Error("expected completed=false for already-bootstrapped")
+		}
+		if !state.Bootstrapped {
+			t.Error("Bootstrapped should remain true")
+		}
+	})
+
+	t.Run("successful fetch after truncation marks bootstrapped and clears oldest", func(t *testing.T) {
+		state := &nsBootstrapState{
+			OldestSeenCreationTS: "2026-07-25T10:00:00Z",
+			GapAttempts:          3,
+		}
+		completed := updateBootstrapState(state, false, "")
+		if !completed {
+			t.Error("expected completed=true")
+		}
+		if !state.Bootstrapped {
+			t.Error("expected Bootstrapped=true")
+		}
+		if state.OldestSeenCreationTS != "" {
+			t.Errorf("expected OldestSeenCreationTS cleared, got %q", state.OldestSeenCreationTS)
+		}
+		if state.GapAttempts != 0 {
+			t.Errorf("expected GapAttempts reset to 0, got %d", state.GapAttempts)
+		}
+	})
+}
+
 // ── Test Helpers ──────────────────────────────────────────────────────────────
 
 func assertEqual[T comparable](t *testing.T, name string, got, want T) {
