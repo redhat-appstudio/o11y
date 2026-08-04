@@ -566,6 +566,191 @@ data:
                       }
                     ]
                   },
+                  "unit": "short",
+                  "decimals": 0
+                },
+                "overrides": [
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Application"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 200
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Component"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 200
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Cluster"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 150
+                      }
+                    ]
+                  }
+                ]
+              },
+              "gridPos": {
+                "h": 7,
+                "w": 24,
+                "x": 0,
+                "y": 190
+              },
+              "id": 118,
+              "options": {
+                "cellHeight": "sm",
+                "footer": {
+                  "countRows": false,
+                  "fields": [],
+                  "reducer": [
+                    "sum"
+                  ],
+                  "show": true
+                },
+                "showHeader": true,
+                "sortBy": [
+                  {
+                    "desc": true,
+                    "displayName": "Total Count"
+                  }
+                ]
+              },
+              "pluginVersion": "11.6.11",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${Datasource}"
+                  },
+                  "editorMode": "code",
+                  "exemplar": false,
+                  "expr": "sort_desc(\n    sum by (source_cluster, application, component) (konflux_build_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"})\n)",
+                  "format": "table",
+                  "instant": true,
+                  "legendFormat": "__auto",
+                  "range": false,
+                  "refId": "A"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${Datasource}"
+                  },
+                  "editorMode": "code",
+                  "exemplar": false,
+                  "expr": "sort_desc(\n    (\n        sum by (source_cluster, application, component) (konflux_build_success_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"})\n        or \n        sum by (source_cluster, application, component) (konflux_build_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"}) * 0\n    )\n)",
+                  "format": "table",
+                  "instant": true,
+                  "legendFormat": "__auto",
+                  "range": false,
+                  "refId": "B"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${Datasource}"
+                  },
+                  "editorMode": "code",
+                  "exemplar": false,
+                  "expr": "sort_desc(\n    (\n        sum by (source_cluster, application, component) (konflux_build_failure_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"})\n        or \n        sum by (source_cluster, application, component) (konflux_build_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"}) * 0\n    )\n)",
+                  "format": "table",
+                  "instant": true,
+                  "legendFormat": "__auto",
+                  "range": false,
+                  "refId": "C"
+                }
+              ],
+              "title": "Volume for Builds by Component",
+              "transformations": [
+                {
+                  "id": "merge",
+                  "options": {}
+                },
+                {
+                  "id": "filterFieldsByName",
+                  "options": {
+                    "include": {
+                      "names": [
+                        "source_cluster",
+                        "application",
+                        "component",
+                        "Value #A",
+                        "Value #B",
+                        "Value #C"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "id": "organize",
+                  "options": {
+                    "excludeByName": {},
+                    "includeByName": {},
+                    "indexByName": {
+                      "Value": 6,
+                      "source_cluster": 0,
+                      "application": 1,
+                      "component": 2
+                    },
+                    "renameByName": {
+                      "Value #A": "Total Count",
+                      "Value #B": "Success Count",
+                      "Value #C": "Failure Count",
+                      "application": "Application",
+                      "component": "Component",
+                      "exported_namespace": "Tenant",
+                      "source_cluster": "Cluster"
+                    }
+                  }
+                }
+              ],
+              "type": "table"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${Datasource}"
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "thresholds"
+                  },
+                  "custom": {
+                    "align": "auto",
+                    "cellOptions": {
+                      "type": "auto"
+                    },
+                    "inspect": false
+                  },
+                  "mappings": [],
+                  "min": 0,
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "text"
+                      }
+                    ]
+                  },
                   "unit": "s"
                 },
                 "overrides": [
@@ -1119,6 +1304,197 @@ data:
                       }
                     ]
                   },
+                  "unit": "short",
+                  "decimals": 0
+                },
+                "overrides": [
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Application"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 200
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Component"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 200
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Cluster"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 150
+                      }
+                    ]
+                  }
+                ]
+              },
+              "gridPos": {
+                "h": 7,
+                "w": 24,
+                "x": 0,
+                "y": 190
+              },
+              "id": 119,
+              "options": {
+                "cellHeight": "sm",
+                "footer": {
+                  "countRows": false,
+                  "fields": [],
+                  "reducer": [
+                    "sum"
+                  ],
+                  "show": true
+                },
+                "showHeader": true,
+                "sortBy": [
+                  {
+                    "desc": true,
+                    "displayName": "Total Count"
+                  }
+                ]
+              },
+              "pluginVersion": "11.6.11",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${Datasource}"
+                  },
+                  "editorMode": "code",
+                  "exemplar": false,
+                  "expr": "sort_desc(\n    sum by (source_cluster, application, component, scenario, test_type) (konflux_integration_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"})\n)",
+                  "format": "table",
+                  "instant": true,
+                  "legendFormat": "__auto",
+                  "range": false,
+                  "refId": "A"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${Datasource}"
+                  },
+                  "editorMode": "code",
+                  "exemplar": false,
+                  "expr": "sort_desc(\n    (\n        sum by (source_cluster, application, component, scenario, test_type) (konflux_integration_success_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"})\n        or \n        sum by (source_cluster, application, component, scenario, test_type) (konflux_integration_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"}) * 0\n    )\n)",
+                  "format": "table",
+                  "instant": true,
+                  "legendFormat": "__auto",
+                  "range": false,
+                  "refId": "B"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${Datasource}"
+                  },
+                  "editorMode": "code",
+                  "exemplar": false,
+                  "expr": "sort_desc(\n    (\n        sum by (source_cluster, application, component, scenario, test_type) (konflux_integration_failure_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"})\n        or \n        sum by (source_cluster, application, component, scenario, test_type) (konflux_integration_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"}) * 0\n    )\n)",
+                  "format": "table",
+                  "instant": true,
+                  "legendFormat": "__auto",
+                  "range": false,
+                  "refId": "C"
+                }
+              ],
+              "title": "Volume for Integrations (Tests) by Scenario",
+              "transformations": [
+                {
+                  "id": "merge",
+                  "options": {}
+                },
+                {
+                  "id": "filterFieldsByName",
+                  "options": {
+                    "include": {
+                      "names": [
+                        "source_cluster",
+                        "application",
+                        "component",
+                        "scenario",
+                        "test_type",
+                        "Value #A",
+                        "Value #B",
+                        "Value #C"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "id": "organize",
+                  "options": {
+                    "excludeByName": {},
+                    "includeByName": {},
+                    "indexByName": {
+                      "Value": 8,
+                      "source_cluster": 0,
+                      "application": 1,
+                      "component": 2,
+                      "scenario": 3,
+                      "test_type": 4
+                    },
+                    "renameByName": {
+                      "Value #A": "Total Count",
+                      "Value #B": "Success Count",
+                      "Value #C": "Failure Count",
+                      "application": "Application",
+                      "component": "Component",
+                      "exported_namespace": "Tenant",
+                      "source_cluster": "Cluster",
+                      "scenario": "Scenario",
+                      "test_type": "Type"
+                    }
+                  }
+                }
+              ],
+              "type": "table"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${Datasource}"
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "thresholds"
+                  },
+                  "custom": {
+                    "align": "auto",
+                    "cellOptions": {
+                      "type": "auto"
+                    },
+                    "inspect": false
+                  },
+                  "mappings": [],
+                  "min": 0,
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "text"
+                      }
+                    ]
+                  },
                   "unit": "s"
                 },
                 "overrides": [
@@ -1580,6 +1956,191 @@ data:
                       "Value #B": "Failure Rate",
                       "Value #C": "Retry Rate",
                       "Value #C + 0": "Retry Rate",
+                      "application": "Application",
+                      "component": "Component",
+                      "exported_namespace": "Tenant",
+                      "source_cluster": "Cluster"
+                    }
+                  }
+                }
+              ],
+              "type": "table"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${Datasource}"
+              },
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "thresholds"
+                  },
+                  "custom": {
+                    "align": "auto",
+                    "cellOptions": {
+                      "type": "auto"
+                    },
+                    "inspect": false
+                  },
+                  "mappings": [],
+                  "min": 0,
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "text"
+                      }
+                    ]
+                  },
+                  "unit": "short",
+                  "decimals": 0
+                },
+                "overrides": [
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Application"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 200
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Component"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 200
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Cluster"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 150
+                      }
+                    ]
+                  }
+                ]
+              },
+              "gridPos": {
+                "h": 7,
+                "w": 24,
+                "x": 0,
+                "y": 190
+              },
+              "id": 120,
+              "options": {
+                "cellHeight": "sm",
+                "footer": {
+                  "countRows": false,
+                  "fields": [],
+                  "reducer": [
+                    "sum"
+                  ],
+                  "show": true
+                },
+                "showHeader": true,
+                "sortBy": [
+                  {
+                    "desc": true,
+                    "displayName": "Total Count"
+                  }
+                ]
+              },
+              "pluginVersion": "11.6.11",
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${Datasource}"
+                  },
+                  "editorMode": "code",
+                  "exemplar": false,
+                  "expr": "sort_desc(\n    sum by (source_cluster, application, component) (konflux_release_cr_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"})\n)",
+                  "format": "table",
+                  "instant": true,
+                  "legendFormat": "__auto",
+                  "range": false,
+                  "refId": "A"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${Datasource}"
+                  },
+                  "editorMode": "code",
+                  "exemplar": false,
+                  "expr": "sort_desc(\n    (\n        sum by (source_cluster, application, component) (konflux_release_cr_success_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"})\n        or \n        sum by (source_cluster, application, component) (konflux_release_cr_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"}) * 0\n    )\n)",
+                  "format": "table",
+                  "instant": true,
+                  "legendFormat": "__auto",
+                  "range": false,
+                  "refId": "B"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${Datasource}"
+                  },
+                  "editorMode": "code",
+                  "exemplar": false,
+                  "expr": "sort_desc(\n    (\n        sum by (source_cluster, application, component) (konflux_release_cr_failure_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"})\n        or \n        sum by (source_cluster, application, component) (konflux_release_cr_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"}) * 0\n    )\n)",
+                  "format": "table",
+                  "instant": true,
+                  "legendFormat": "__auto",
+                  "range": false,
+                  "refId": "C"
+                }
+              ],
+              "title": "Volume for Releases by Component",
+              "transformations": [
+                {
+                  "id": "merge",
+                  "options": {}
+                },
+                {
+                  "id": "filterFieldsByName",
+                  "options": {
+                    "include": {
+                      "names": [
+                        "source_cluster",
+                        "application",
+                        "component",
+                        "Value #A",
+                        "Value #B",
+                        "Value #C"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "id": "organize",
+                  "options": {
+                    "excludeByName": {},
+                    "includeByName": {},
+                    "indexByName": {
+                      "Value": 6,
+                      "source_cluster": 0,
+                      "application": 1,
+                      "component": 2
+                    },
+                    "renameByName": {
+                      "Value #A": "Total Count",
+                      "Value #B": "Success Count",
+                      "Value #C": "Failure Count",
                       "application": "Application",
                       "component": "Component",
                       "exported_namespace": "Tenant",
