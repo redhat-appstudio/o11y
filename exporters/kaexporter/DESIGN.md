@@ -67,7 +67,7 @@ Steady State Settings:
 **How It Works:**
 1. During cold start, if a namespace hits the 30K limit, mark it as "truncated" and record the oldest fetched timestamp
 2. Schedule a background gap-fill attempt with a narrower time window (query older data before the truncation point)
-3. Limit gap-fill to **5 attempts per namespace** to prevent infinite retries (total coverage up to 150K items)
+3. Limit gap-fill to **5 consecutive failures/stalls per namespace** to prevent infinite retries on persistently truncated namespaces. Successful gap-fills reset the counter, allowing further attempts
 4. Track gap-fill attempts and exhaustion via Prometheus counters
 
 **Trade-offs:**
@@ -89,7 +89,7 @@ Steady State Settings:
 type BootstrapState struct {
     Bootstrapped      bool      // Has 30-day window been populated?
     TruncatedAt       string    // Oldest timestamp if truncated
-    GapFillAttempts   int       // Number of gap-fill retries (max 5)
+    GapFillAttempts   int       // Consecutive gap-fill failures/stalls (max 5, resets on progress)
 }
 
 map[namespace]*BootstrapState
@@ -220,14 +220,14 @@ Typical deployment (500 label combinations):
 **Limitation:** Extremely busy namespaces with >30,000 PLRs in 30 days will be truncated during cold start.
 
 **Mitigations:**
-- Gap-fill mechanism retries with narrower time windows (up to 5 attempts = 150K total coverage)
+- Gap-fill mechanism retries with narrower time windows until the full 30-day range is covered
 - Truncation metrics track occurrences: `kaexporter_truncations_total{resource="pipelineruns"}`
 - Per-namespace bootstrap state prevents repeated failures
 
 **When This Happens:**
 - Typical namespace: ~100-500 PLRs/day → no issue
 - Busy namespace: 500-1,000 PLRs/day → may hit 30K limit over 30 days
-- Very busy namespace: >1,000 PLRs/day → gap-fill may also truncate (uses additional 5 attempts)
+- Very busy namespace: >1,000 PLRs/day → gap-fill runs across multiple cycles until complete (stops only after 5 consecutive failures)
 
 ---
 

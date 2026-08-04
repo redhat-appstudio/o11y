@@ -96,8 +96,8 @@ const (
 	defaultMaxRetryDelay     = 5000 // milliseconds
 	retryBackoffMultiplier   = 2.0
 
-	// maxGapFillAttempts limits gap-fill retries for truncated namespaces.
-	// With coldStartMaxItems=30,000, this allows up to 150,000 PLRs to be covered across 5 attempts.
+	// maxGapFillAttempts limits consecutive gap-fill failures or stalls.
+	// Resets to 0 when gap-fill makes progress (oldest timestamp moves backward).
 	maxGapFillAttempts = 5
 )
 
@@ -107,7 +107,51 @@ const (
 type nsBootstrapState struct {
 	Bootstrapped         bool   // true when namespace has complete 30-day data
 	OldestSeenCreationTS string // RFC3339 timestamp of oldest item seen (empty = no gap)
-	GapAttempts          int    // number of gap-fill attempts (prevent infinite retry)
+	GapAttempts          int    // consecutive gap-fill errors or stalls (resets on progress)
+}
+
+// updateBootstrapState applies the state transition after a collection cycle.
+// Returns true if the namespace just completed bootstrap.
+func updateBootstrapState(state *nsBootstrapState, wasTrunc bool, oldestTS string) bool {
+	if state.Bootstrapped {
+		return false
+	}
+	if !wasTrunc {
+		state.Bootstrapped = true
+		state.OldestSeenCreationTS = ""
+		state.GapAttempts = 0
+		return true
+	}
+	if state.OldestSeenCreationTS == "" {
+		state.OldestSeenCreationTS = oldestTS
+	}
+	return false
+}
+
+// updateGapFillState applies state transitions after a gap-fill fetch.
+// Returns "completed" if bootstrap finished, "progressing" if the cursor
+// moved backward, or "stalled" if no progress was made.
+func updateGapFillState(state *nsBootstrapState, wasTrunc bool, oldestTS string) string {
+	if !wasTrunc {
+		state.Bootstrapped = true
+		state.OldestSeenCreationTS = ""
+		state.GapAttempts = 0
+		return "completed"
+	}
+	if isTimeBefore(oldestTS, state.OldestSeenCreationTS) {
+		state.OldestSeenCreationTS = oldestTS
+		state.GapAttempts = 0
+		return "progressing"
+	}
+	state.GapAttempts++
+	return "stalled"
+}
+
+// isTimeBefore parses two RFC3339 timestamps and returns true if a is before b.
+func isTimeBefore(a, b string) bool {
+	tA, _ := time.Parse(time.RFC3339, a)
+	tB, _ := time.Parse(time.RFC3339, b)
+	return tA.Before(tB)
 }
 
 // ── Retry configuration ───────────────────────────────────────────────────────

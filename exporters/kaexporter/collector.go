@@ -158,37 +158,45 @@ func (e *KAExporter) collectMetrics(ctx context.Context) (*releaseIndex, error) 
 		concurrency = coldStartMaxConcurrent
 	}
 
-	// Count how many namespaces need bootstrap (for logging)
+	// Count namespaces by bootstrap phase:
+	// - needsFirstFetch: no state yet, requires full 30-day initial fetch
+	// - gapFilling: already truncated, gap-fill handles history, main collection uses steady-state
 	e.mu.RLock()
-	var needsBootstrap int
+	var needsFirstFetch, gapFilling int
 	for _, ns := range namespaces {
 		state := e.bootstrapStates[ns]
 		if state == nil || !state.Bootstrapped {
-			needsBootstrap++
+			if state != nil && state.OldestSeenCreationTS != "" {
+				gapFilling++
+			} else {
+				needsFirstFetch++
+			}
 		}
 	}
 	e.mu.RUnlock()
+	needsBootstrap := needsFirstFetch + gapFilling
 
 	if e.coldStart {
 		log.Printf("COLD START: bootstrapping 30-day rolling store (%d tenant namespace(s), %d need bootstrap, concurrency=%d, releases=30d)...",
 			len(namespaces), needsBootstrap, concurrency)
-	} else if needsBootstrap > 0 {
-		log.Printf("Collecting metrics from KubeArchive (%d tenant namespace(s), %d need 30d bootstrap, concurrency=%d, releases=30d)...",
-			len(namespaces), needsBootstrap, concurrency)
+	} else if needsFirstFetch > 0 {
+		log.Printf("Collecting metrics from KubeArchive (%d tenant namespace(s), %d need 30d bootstrap, %d gap-filling, concurrency=%d, releases=30d)...",
+			len(namespaces), needsFirstFetch, gapFilling, concurrency)
+	} else if gapFilling > 0 {
+		log.Printf("Collecting metrics from KubeArchive (%d tenant namespace(s), %d gap-filling, concurrency=%d, releases=%dh)...",
+			len(namespaces), gapFilling, concurrency, e.queryWindowHours)
 	} else {
 		log.Printf("Collecting metrics from KubeArchive (%d tenant namespace(s), query_window=%dh, concurrency=%d, releases=%dh)...",
 			len(namespaces), e.queryWindowHours, concurrency, e.queryWindowHours)
 	}
 
-	// Per-namespace window selection will happen inside goroutines based on bootstrappedNamespaces map
-
-	// For release fetching, use 30d window if ANY namespace still needs bootstrap.
-	// Releases may live in different namespaces (managed release namespaces), and the
-	// release catalog is global for metric collection and retry analysis across all namespaces.
-	// Continue querying 30 days of releases until ALL namespaces are fully bootstrapped.
+	// For release fetching, use 30d window only when namespaces still need their
+	// initial 30-day fetch. Namespaces that are already truncated (gap-filling)
+	// collect fresh data in steady-state; their historical releases were captured
+	// on the first fetch and gap-fill handles the rest.
 	releaseWindowHours := e.queryWindowHours
 	releaseMaxItems := kaMaxItems
-	if e.coldStart || needsBootstrap > 0 {
+	if e.coldStart || needsFirstFetch > 0 {
 		releaseWindowHours = coldStartWindowHours
 		releaseMaxItems = coldStartMaxItems
 	}
@@ -219,10 +227,14 @@ func (e *KAExporter) collectMetrics(ctx context.Context) (*releaseIndex, error) 
 			sem <- struct{}{}
 			defer func() { <-sem }()
 
-			// Per-namespace bootstrap check: use 30-day window if not yet bootstrapped
+			// Per-namespace bootstrap check: use 30-day window only on the
+			// very first attempt (no state yet). Once truncated, switch to
+			// steady-state window for fresh data and let gap-fill handle
+			// the historical backfill independently.
 			e.mu.RLock()
 			state := e.bootstrapStates[ns]
 			bootstrapped := state != nil && state.Bootstrapped
+			alreadyTruncated := state != nil && state.OldestSeenCreationTS != ""
 			e.mu.RUnlock()
 
 			var windowHours int
@@ -230,7 +242,8 @@ func (e *KAExporter) collectMetrics(ctx context.Context) (*releaseIndex, error) 
 			var nsCtx context.Context
 			var nsCancel context.CancelFunc
 
-			if !bootstrapped {
+			if !bootstrapped && !alreadyTruncated {
+				// First attempt: full 30-day bootstrap
 				windowHours = coldStartWindowHours // 720h (30 days)
 				maxItems = coldStartMaxItems       // 30,000
 				// Give each non-bootstrapped namespace its own independent 30-minute timeout.
@@ -241,34 +254,31 @@ func (e *KAExporter) collectMetrics(ctx context.Context) (*releaseIndex, error) 
 				stop := context.AfterFunc(ctx, nsCancel) // Cancel nsCtx when ctx is cancelled
 				defer stop()
 			} else {
+				// Bootstrapped or already truncated: use steady-state window.
+				// Truncated namespaces get fresh data here; gap-fill handles the
+				// historical range [30d ago ... OldestSeenCreationTS] separately.
 				windowHours = e.queryWindowHours // 36h (steady state with safety margin)
 				maxItems = kaMaxItems
-				// Bootstrapped namespaces share the parent context (global timeout)
+				// Share the parent context (global timeout)
 				nsCtx = ctx
 			}
 
 			since := time.Now().UTC().Add(-time.Duration(windowHours) * time.Hour).Format(time.RFC3339)
 			b, t, wasTrunc, oldestTS, err := e.collectNamespace(nsCtx, ns, since, "", maxItems)
 
-			// Track bootstrap state
-			if err == nil {
+			// Track bootstrap state - only on the first-fetch path.
+			// Steady-state cycles (alreadyTruncated=true) just collect fresh
+			// data; gap-fill handles the historical backfill and state transitions.
+			if err == nil && !bootstrapped && !alreadyTruncated {
 				e.mu.Lock()
 				if e.bootstrapStates[ns] == nil {
 					e.bootstrapStates[ns] = &nsBootstrapState{}
 				}
-				if !bootstrapped {
-					if !wasTrunc {
-						// Bootstrap complete: full 30-day fetch succeeded
-						e.bootstrapStates[ns].Bootstrapped = true
-						e.bootstrapStates[ns].OldestSeenCreationTS = ""
-						e.bootstrapStates[ns].GapAttempts = 0
-						log.Printf("namespace %q: 30-day bootstrap complete (%d builds, %d tests)", ns, b, t)
-					} else {
-						// Bootstrap truncated: track gap for later filling
-						e.bootstrapStates[ns].OldestSeenCreationTS = oldestTS
-						log.Printf("namespace %q: 30-day bootstrap TRUNCATED (%d builds, %d tests, oldest=%s)",
-							ns, b, t, oldestTS)
-					}
+				if completed := updateBootstrapState(e.bootstrapStates[ns], wasTrunc, oldestTS); completed {
+					log.Printf("namespace %q: 30-day bootstrap complete (%d builds, %d tests)", ns, b, t)
+				} else if e.bootstrapStates[ns].OldestSeenCreationTS != "" {
+					log.Printf("namespace %q: 30-day bootstrap TRUNCATED (%d builds, %d tests, oldest=%s)",
+						ns, b, t, e.bootstrapStates[ns].OldestSeenCreationTS)
 				}
 				e.mu.Unlock()
 			}
@@ -528,11 +538,11 @@ func (e *KAExporter) fillNamespaceGap(ctx context.Context, namespace string) {
 	}
 	gapSince := time.Now().UTC().Add(-coldStartWindowHours * time.Hour).Format(time.RFC3339)
 	gapUntil := state.OldestSeenCreationTS
-	attemptNum := state.GapAttempts + 1
+	errorCount := state.GapAttempts
 	e.mu.RUnlock()
 
-	log.Printf("namespace %q: gap-fill attempt %d/%d (window: %s to %s)",
-		namespace, attemptNum, maxGapFillAttempts, gapSince, gapUntil)
+	log.Printf("namespace %q: gap-fill (errors: %d/%d, window: %s to %s)",
+		namespace, errorCount, maxGapFillAttempts, gapSince, gapUntil)
 
 	buildCnt, testCnt, wasTrunc, oldestTS, err := e.collectNamespace(
 		ctx, namespace, gapSince, gapUntil, coldStartMaxItems,
@@ -553,17 +563,15 @@ func (e *KAExporter) fillNamespaceGap(ctx context.Context, namespace string) {
 		return
 	}
 
-	if !wasTrunc {
-		// Gap filled successfully!
-		updatedState.Bootstrapped = true
-		updatedState.OldestSeenCreationTS = ""
-		updatedState.GapAttempts = 0
+	switch updateGapFillState(updatedState, wasTrunc, oldestTS) {
+	case "completed":
 		log.Printf("namespace %q: bootstrap COMPLETE (%d builds, %d tests fetched in gap-fill)",
 			namespace, buildCnt, testCnt)
-	} else {
-		updatedState.OldestSeenCreationTS = oldestTS
-		updatedState.GapAttempts++
-		log.Printf("namespace %q: gap-fill incomplete (%d builds, %d tests, still truncated, oldest now %s)",
-			namespace, buildCnt, testCnt, oldestTS)
+	case "progressing":
+		log.Printf("namespace %q: gap-fill progressing (%d builds, %d tests, oldest now %s)",
+			namespace, buildCnt, testCnt, updatedState.OldestSeenCreationTS)
+	case "stalled":
+		log.Printf("namespace %q: gap-fill stalled (%d builds, %d tests, oldest unchanged %s, errors %d/%d)",
+			namespace, buildCnt, testCnt, oldestTS, updatedState.GapAttempts, maxGapFillAttempts)
 	}
 }
