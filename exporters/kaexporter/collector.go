@@ -538,11 +538,11 @@ func (e *KAExporter) fillNamespaceGap(ctx context.Context, namespace string) {
 	}
 	gapSince := time.Now().UTC().Add(-coldStartWindowHours * time.Hour).Format(time.RFC3339)
 	gapUntil := state.OldestSeenCreationTS
-	attemptNum := state.GapAttempts + 1
+	errorCount := state.GapAttempts
 	e.mu.RUnlock()
 
-	log.Printf("namespace %q: gap-fill attempt %d/%d (window: %s to %s)",
-		namespace, attemptNum, maxGapFillAttempts, gapSince, gapUntil)
+	log.Printf("namespace %q: gap-fill (errors: %d/%d, window: %s to %s)",
+		namespace, errorCount, maxGapFillAttempts, gapSince, gapUntil)
 
 	buildCnt, testCnt, wasTrunc, oldestTS, err := e.collectNamespace(
 		ctx, namespace, gapSince, gapUntil, coldStartMaxItems,
@@ -563,17 +563,15 @@ func (e *KAExporter) fillNamespaceGap(ctx context.Context, namespace string) {
 		return
 	}
 
-	if !wasTrunc {
-		// Gap filled successfully!
-		updatedState.Bootstrapped = true
-		updatedState.OldestSeenCreationTS = ""
-		updatedState.GapAttempts = 0
+	switch updateGapFillState(updatedState, wasTrunc, oldestTS) {
+	case "completed":
 		log.Printf("namespace %q: bootstrap COMPLETE (%d builds, %d tests fetched in gap-fill)",
 			namespace, buildCnt, testCnt)
-	} else {
-		updatedState.OldestSeenCreationTS = oldestTS
-		updatedState.GapAttempts++
-		log.Printf("namespace %q: gap-fill incomplete (%d builds, %d tests, still truncated, oldest now %s)",
-			namespace, buildCnt, testCnt, oldestTS)
+	case "progressing":
+		log.Printf("namespace %q: gap-fill progressing (%d builds, %d tests, oldest now %s)",
+			namespace, buildCnt, testCnt, updatedState.OldestSeenCreationTS)
+	case "stalled":
+		log.Printf("namespace %q: gap-fill stalled (%d builds, %d tests, oldest unchanged %s, errors %d/%d)",
+			namespace, buildCnt, testCnt, oldestTS, updatedState.GapAttempts, maxGapFillAttempts)
 	}
 }

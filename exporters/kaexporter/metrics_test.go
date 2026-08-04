@@ -601,6 +601,17 @@ func TestUpdateBootstrapState(t *testing.T) {
 		}
 	})
 
+	t.Run("already bootstrapped ignores truncation", func(t *testing.T) {
+		state := &nsBootstrapState{Bootstrapped: true}
+		completed := updateBootstrapState(state, true, "2026-07-29T00:00:00Z")
+		if completed {
+			t.Error("expected completed=false")
+		}
+		if state.OldestSeenCreationTS != "" {
+			t.Errorf("should not set OldestSeenCreationTS, got %q", state.OldestSeenCreationTS)
+		}
+	})
+
 	t.Run("successful fetch after truncation marks bootstrapped and clears oldest", func(t *testing.T) {
 		state := &nsBootstrapState{
 			OldestSeenCreationTS: "2026-07-25T10:00:00Z",
@@ -618,6 +629,92 @@ func TestUpdateBootstrapState(t *testing.T) {
 		}
 		if state.GapAttempts != 0 {
 			t.Errorf("expected GapAttempts reset to 0, got %d", state.GapAttempts)
+		}
+	})
+}
+
+// ── Gap-Fill State Transition Tests ──────────────────────────────────────────
+
+func TestUpdateGapFillState(t *testing.T) {
+	t.Run("non-truncated completes bootstrap", func(t *testing.T) {
+		state := &nsBootstrapState{
+			OldestSeenCreationTS: "2026-07-20T00:00:00Z",
+			GapAttempts:          2,
+		}
+		result := updateGapFillState(state, false, "")
+		if result != "completed" {
+			t.Errorf("expected completed, got %s", result)
+		}
+		if !state.Bootstrapped {
+			t.Error("expected Bootstrapped=true")
+		}
+		if state.OldestSeenCreationTS != "" {
+			t.Errorf("expected OldestSeenCreationTS cleared, got %q", state.OldestSeenCreationTS)
+		}
+		if state.GapAttempts != 0 {
+			t.Errorf("expected GapAttempts=0, got %d", state.GapAttempts)
+		}
+	})
+
+	t.Run("truncated with progress resets error counter", func(t *testing.T) {
+		state := &nsBootstrapState{
+			OldestSeenCreationTS: "2026-07-20T00:00:00Z",
+			GapAttempts:          3,
+		}
+		result := updateGapFillState(state, true, "2026-07-15T00:00:00Z")
+		if result != "progressing" {
+			t.Errorf("expected progressing, got %s", result)
+		}
+		if state.OldestSeenCreationTS != "2026-07-15T00:00:00Z" {
+			t.Errorf("expected oldest moved to Jul 15, got %q", state.OldestSeenCreationTS)
+		}
+		if state.GapAttempts != 0 {
+			t.Errorf("expected GapAttempts reset to 0, got %d", state.GapAttempts)
+		}
+	})
+
+	t.Run("truncated without progress increments error counter", func(t *testing.T) {
+		state := &nsBootstrapState{
+			OldestSeenCreationTS: "2026-07-20T00:00:00Z",
+			GapAttempts:          2,
+		}
+		result := updateGapFillState(state, true, "2026-07-20T00:00:00Z")
+		if result != "stalled" {
+			t.Errorf("expected stalled, got %s", result)
+		}
+		if state.OldestSeenCreationTS != "2026-07-20T00:00:00Z" {
+			t.Errorf("expected oldest unchanged, got %q", state.OldestSeenCreationTS)
+		}
+		if state.GapAttempts != 3 {
+			t.Errorf("expected GapAttempts=3, got %d", state.GapAttempts)
+		}
+	})
+
+	t.Run("newer oldest timestamp counts as stall", func(t *testing.T) {
+		state := &nsBootstrapState{
+			OldestSeenCreationTS: "2026-07-15T00:00:00Z",
+			GapAttempts:          0,
+		}
+		result := updateGapFillState(state, true, "2026-07-20T00:00:00Z")
+		if result != "stalled" {
+			t.Errorf("expected stalled, got %s", result)
+		}
+		if state.GapAttempts != 1 {
+			t.Errorf("expected GapAttempts=1, got %d", state.GapAttempts)
+		}
+	})
+
+	t.Run("progress after errors resets counter", func(t *testing.T) {
+		state := &nsBootstrapState{
+			OldestSeenCreationTS: "2026-07-20T00:00:00Z",
+			GapAttempts:          4,
+		}
+		result := updateGapFillState(state, true, "2026-07-10T00:00:00Z")
+		if result != "progressing" {
+			t.Errorf("expected progressing, got %s", result)
+		}
+		if state.GapAttempts != 0 {
+			t.Errorf("expected GapAttempts reset to 0 after progress, got %d", state.GapAttempts)
 		}
 	})
 }
