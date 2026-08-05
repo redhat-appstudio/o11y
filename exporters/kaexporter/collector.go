@@ -113,9 +113,12 @@ func (e *KAExporter) runCollection() {
 		now := time.Now().Unix()
 		e.lastScrapeSuccessGauge.Set(float64(now))
 		e.lastScrapeSuccessAt.Store(now)
-		e.buildSLO.updateGauges(e.rollingStore)
-		e.integrationSLO.updateGauges(e.rollingStore)
-		e.releaseSLO.updateGauges(e.rollingStore)
+
+		skipBreach := skipBreachNamespacesFromStates(e.bootstrapStates)
+
+		e.buildSLO.updateGauges(e.rollingStore, skipBreach)
+		e.integrationSLO.updateGauges(e.rollingStore, skipBreach)
+		e.releaseSLO.updateGauges(e.rollingStore, skipBreach)
 
 		// coldStart flag now managed per-namespace; check if all namespaces are bootstrapped
 		if e.coldStart {

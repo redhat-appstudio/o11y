@@ -154,6 +154,22 @@ func isTimeBefore(a, b string) bool {
 	return tA.Before(tB)
 }
 
+// skipBreachNamespacesFromStates returns the set of namespaces that have not
+// completed their 30-day bootstrap. Breach evaluation is suppressed for these
+// namespaces to prevent false positives from partial data.
+func skipBreachNamespacesFromStates(states map[string]*nsBootstrapState) map[string]bool {
+	var skip map[string]bool
+	for ns, state := range states {
+		if !state.Bootstrapped && state.GapAttempts < maxGapFillAttempts {
+			if skip == nil {
+				skip = make(map[string]bool)
+			}
+			skip[ns] = true
+		}
+	}
+	return skip
+}
+
 // ── Retry configuration ───────────────────────────────────────────────────────
 
 // retryConfig holds exponential backoff parameters for KubeArchive API retries
@@ -348,6 +364,7 @@ func NewKAExporter() (*KAExporter, error) {
 	fixedNS := strings.TrimSpace(os.Getenv(namespaceEnvVar))
 
 	var nsFilter *namespaceFilter
+	var sloConfig *SLOConfig
 	if configFile := strings.TrimSpace(os.Getenv(kaConfigFileEnv)); configFile != "" {
 		cfg, err := loadConfig(configFile)
 		if err != nil {
@@ -357,8 +374,16 @@ func NewKAExporter() (*KAExporter, error) {
 		if err != nil {
 			return nil, fmt.Errorf("load config: %w", err)
 		}
+		sloConfig = cfg.CustomSLO
+		if sloConfig != nil {
+			sloConfig.Sanitize()
+		}
 		log.Printf("Namespace filter: loaded from %s (%d exact, %d pattern rules)",
 			configFile, len(nsFilter.exactMatches), len(nsFilter.patterns))
+		if sloConfig != nil {
+			log.Printf("Custom SLO config: loaded from %s", configFile)
+			logSLOOverrides(sloConfig)
+		}
 	} else {
 		nsFilter, _ = newNamespaceFilter(nil)
 		log.Printf("Namespace filter: no config file specified, no namespaces excluded")
@@ -452,9 +477,9 @@ func NewKAExporter() (*KAExporter, error) {
 	}
 
 	// Initialize 30d SLO metric modules
-	e.buildSLO = newBuildSLO30d()
-	e.integrationSLO = newIntegrationSLO30d()
-	e.releaseSLO = newReleaseSLO30d()
+	e.buildSLO = newBuildSLO30d(sloConfig)
+	e.integrationSLO = newIntegrationSLO30d(sloConfig)
+	e.releaseSLO = newReleaseSLO30d(sloConfig)
 
 	// Initialize rolling store (in-memory only, no persistence)
 	e.rollingStore = NewStore()
