@@ -24,7 +24,7 @@ Exposes mean duration and success rate metrics over a rolling 30-day window usin
 | `KA_MAX_RETRIES` | No | `3` | Max retries per failed KubeArchive request (exponential backoff). |
 | `KA_INITIAL_RETRY_DELAY_MS` | No | `100` | Initial retry delay in milliseconds. |
 | `KA_MAX_RETRY_DELAY_MS` | No | `5000` | Maximum retry delay cap in milliseconds. |
-| `KA_CONFIG_FILE` | No | *(empty)* | Path to YAML config file. When set, the file controls which namespaces are excluded from collection. When unset, no namespaces are excluded. |
+| `KA_CONFIG_FILE` | No | *(empty)* | Path to YAML config file. Controls namespace exclusions and per-tenant SLO threshold overrides. When unset, no namespaces are excluded and default SLO thresholds are used. |
 | `EXPORTER_PORT` | No | `9101` | HTTP listen port. |
 
 ### Configuration file
@@ -38,7 +38,75 @@ excludeNamespaces:
   - "konflux-perfscale-*-tenant"
 ```
 
-If the file is specified but cannot be read or parsed, the exporter fails to start. When `KA_CONFIG_FILE` is not set, no namespaces are excluded.
+If the file is specified but cannot be read or parsed, the exporter fails to start. When `KA_CONFIG_FILE` is not set, no namespaces are excluded and default SLO thresholds are used.
+
+#### Custom SLO thresholds
+
+The same config file supports a `customSLO` section for per-tenant, per-application, or per-component SLO threshold overrides. Values cascade from the most specific level upward: component overrides application, application overrides tenant, tenant overrides built-in defaults (k=1 stddev, 5% breach percentage).
+
+At each level, domain-specific keys can be set:
+
+| Key | Description |
+|-----|-------------|
+| `build_duration_threshold_seconds` | Fixed build duration threshold in seconds. Replaces the computed mean + stddev. |
+| `build_duration_breach_percentage` | Fraction of daily means that must exceed the threshold to trigger breach (default: 0.05). |
+| `integration_duration_threshold_seconds` | Fixed integration test duration threshold. |
+| `integration_duration_breach_percentage` | Integration breach percentage override. |
+| `release_duration_threshold_seconds` | Fixed release duration threshold. |
+| `release_duration_breach_percentage` | Release breach percentage override. |
+
+Each key accepts either a simple numeric value or an object with `default` and `matches` for label-specific precision:
+
+```yaml
+# Simple form (backward compatible):
+build_duration_threshold_seconds: 7200
+
+# Match-based form:
+integration_duration_threshold_seconds:
+  default: 1800
+  matches:
+    - scenario: ec-scan
+      value: 300
+    - event_type: pull_request
+      value: 900
+```
+
+Match fields (`scenario`, `event_type`, `build_type`, `automated`) are compared against the metric's label set. Empty fields act as wildcards. Matches are evaluated in YAML order; the first match wins. When no match hits, `default` is used. When `default` is also absent, the value falls through to the parent hierarchy level or the built-in defaults.
+
+When `duration_threshold_seconds` is set, the breach evaluation uses that fixed value directly instead of computing `mean + stddev`. When omitted, the statistical baseline is used. Breach percentages must be in the range (0, 1]. Thresholds must be > 0. Invalid values are logged as warnings at startup and ignored -- the exporter starts normally and the affected overrides fall back to built-in defaults.
+
+```yaml
+excludeNamespaces:
+  - rhtap-releng-tenant
+  - "managed-*"
+
+customSLO:
+  tenants:
+    a-team-tenant:
+      integration_duration_threshold_seconds: 3600
+      applications:
+        heavy-app:
+          integration_duration_breach_percentage: 0.10
+          components:
+            slow-builder:
+              build_duration_threshold_seconds: 7200
+            tested-component:
+              integration_duration_threshold_seconds:
+                default: 1800
+                matches:
+                  - scenario: enterprise-contract
+                    value: 300
+                  - scenario: long-running-integration
+                    event_type: push
+                    value: 5400
+```
+
+In this example:
+- `slow-builder` uses a fixed 7200s build threshold and inherits the 10% integration breach percentage from `heavy-app`
+- `tested-component` uses different integration thresholds depending on the scenario: 300s for EC checks, 5400s for a specific long-running scenario on push events, and 1800s for everything else
+- All other components in `heavy-app` use the default stddev-based build threshold but the relaxed 10% integration breach percentage
+- All components in `a-team-tenant` use a fixed 3600s integration threshold unless overridden at a lower level
+- Tenants not listed use the built-in defaults
 
 ### Cold start behavior
 
@@ -49,7 +117,7 @@ On first boot, the exporter queries **720 hours (30 days)** of historical data t
 | Query window | 720h (30 days) | `KA_WINDOW_HOURS` + 50% |
 | Collection timeout | 600s | `KA_COLLECTION_TIMEOUT_SECONDS` |
 | Concurrency | 5 | `KA_MAX_CONCURRENT` |
-| Per-namespace item cap | 10,000 | 1,500 |
+| Per-namespace item cap | 30,000 | 1,500 |
 
 **Note:** `/metrics` endpoint is not served until cold start completes (~90-120 seconds). For architectural details on why this is necessary, see [DESIGN.md](DESIGN.md#1-cold-start-bootstrapping).
 
@@ -68,16 +136,19 @@ All metrics are **Gauges** over a rolling 30-day window of daily aggregated buck
 | `konflux_build_total_count_30d` | build | `cluster, namespace, application, component, build_type, event_type` |
 | `konflux_build_success_count_30d` | build | `cluster, namespace, application, component, build_type, event_type` |
 | `konflux_build_failure_count_30d` | build | `cluster, namespace, application, component, build_type, event_type, reason` |
+| `konflux_build_duration_slo_breach` | build | `cluster, namespace, application, component, build_type, event_type` |
 | `konflux_integration_mean_duration_seconds_30d` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type` |
 | `konflux_integration_mean_wait_seconds_30d` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type` |
 | `konflux_integration_total_count_30d` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type` |
 | `konflux_integration_success_count_30d` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type` |
 | `konflux_integration_failure_count_30d` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type, reason` |
+| `konflux_integration_duration_slo_breach` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type` |
 | `konflux_release_cr_mean_duration_seconds_30d` | release | `cluster, namespace, application, component, automated, event_type` |
 | `konflux_release_cr_mean_wait_seconds_30d` | release | `cluster, namespace, application, component, automated, event_type` |
 | `konflux_release_cr_total_count_30d` | release | `cluster, namespace, application, component, automated, event_type` |
 | `konflux_release_cr_success_count_30d` | release | `cluster, namespace, application, component, automated, event_type` |
 | `konflux_release_cr_failure_count_30d` | release | `cluster, namespace, application, component, automated, event_type, reason` |
+| `konflux_release_cr_duration_slo_breach` | release | `cluster, namespace, application, component, automated, event_type` |
 
 **Metric definitions**:
 - **Duration metrics** (`mean_duration_seconds_30d`): Mean execution time for **successful workloads only** (startTime to completionTime for PipelineRuns; startTime to completionTime for Releases). Failed workloads are excluded from this average.
@@ -85,6 +156,7 @@ All metrics are **Gauges** over a rolling 30-day window of daily aggregated buck
 - **Total count** (`total_count_30d`): Count of all completed workloads (successful + failed) in the rolling window
 - **Success count** (`success_count_30d`): Count of successful workloads in the rolling window. Enables correct volume-weighted aggregation across dimensions: `sum(success_count) / sum(total_count)`.
 - **Failure count** (`failure_count_30d`): Count of failed workloads, broken down by failure reason. Useful for root cause analysis.
+- **Duration SLO breach** (`duration_slo_breach`): 1 if the component's duration SLO is breached, 0 otherwise. Not emitted when data is insufficient (success_count < 10 or days_with_data < 3). By default, a component is in breach when >=5% of its daily mean durations over the past 30 days exceed the 30-day mean + 1 standard deviation. Thresholds and breach percentages can be overridden per tenant/application/component via the config file (see [Custom SLO thresholds](#custom-slo-thresholds)).
 
 **Derived metrics** (can be computed from the above):
 - **Success rate**: `success_count_30d / total_count_30d` (or 0 when total_count_30d == 0)
@@ -177,12 +249,12 @@ go test -mod=mod -count=1 ./exporters/kaexporter/...
 
 **High truncation counts:**
 - Monitor `konflux_ka_exporter_truncations_total{resource="pipelineruns"}`
-- Namespaces with >10,000 PLRs in 30 days will truncate
-- Gap-filling mechanism automatically retries (see [DESIGN.md](DESIGN.md#2-gap-filling-for-busy-namespaces))
+- Truncation is expected during cold-start bootstrap for high-volume tenants (>30,000 items in 30 days) and resolves automatically via gap-fill retries across subsequent collection cycles
+- In steady state (36h window, 1,500 item cap), truncation is normal for the busiest tenants and does not affect 30-day accuracy since most data is already in the rolling store
 
 **Memory usage growing:**
-- Expected memory: ~50-100 MB depending on label cardinality
-- Check number of unique label combinations (namespaces × applications × components)
+- Expected memory: ~50-100 MB in stage, ~1 GB in production depending on label cardinality
+- Check number of unique label combinations (namespaces x applications x components)
 - Consider filtering to specific namespaces via `TENANT_NAMESPACE`
 
 ---

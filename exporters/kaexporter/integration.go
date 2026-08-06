@@ -12,10 +12,10 @@ type IntegrationSLO30d struct {
 }
 
 // newIntegrationSLO30d initializes integration 30d SLO metrics
-func newIntegrationSLO30d() *IntegrationSLO30d {
+func newIntegrationSLO30d(sloConfig *SLOConfig) *IntegrationSLO30d {
 	labels := []string{"cluster", "namespace", "application", "component", "scenario", "optional", "test_type", "event_type"}
 	return &IntegrationSLO30d{
-		SLOGaugeSet: newSLOGaugeSet("konflux_integration", "integration test", labels),
+		SLOGaugeSet: newSLOGaugeSet("konflux_integration", "integration test", labels, sloConfig, metricIntegrationDuration),
 	}
 }
 
@@ -81,10 +81,10 @@ func (m *IntegrationSLO30d) recordObservation(
 }
 
 // updateGauges reads from the rolling store and updates the 30d SLO gauges
-func (m *IntegrationSLO30d) updateGauges(store *Store) {
+func (m *IntegrationSLO30d) updateGauges(store *Store, skipBreachNamespaces map[string]bool) {
 	m.SLOGaugeSet.UpdateFromStore(store, metricIntegrationDuration, func(ls LabelSet) []string {
 		return []string{ls.Cluster, ls.Namespace, ls.Application, ls.Component, ls.Scenario, ls.Optional, ls.TestType, ls.EventType}
-	})
+	}, skipBreachNamespaces)
 }
 
 // Describe implements prometheus.Collector

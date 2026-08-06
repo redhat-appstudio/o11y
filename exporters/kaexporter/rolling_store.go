@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"strings"
 	"sync"
 	"time"
@@ -53,12 +54,13 @@ func (l LabelSet) String() string {
 
 // DailyBucket holds per-day aggregates for one label set.
 type DailyBucket struct {
-	Day               string           `json:"day"`
-	Count             int64            `json:"count"`               // All completed PLRs
-	SuccessCount      int64            `json:"success_count"`       // Count of successful PLRs
-	SuccessSumSeconds float64          `json:"success_sum_seconds"` // Duration sum of successful PLRs
-	WaitSumSeconds    float64          `json:"wait_sum_seconds"`    // Wait time sum ofsuccesful PLRs
-	FailureReasons    map[string]int64 `json:"failure_reasons"`     // Failure count by reason
+	Day                      string           `json:"day"`
+	Count                    int64            `json:"count"`                        // All completed PLRs
+	SuccessCount             int64            `json:"success_count"`                // Count of successful PLRs
+	SuccessSumSeconds        float64          `json:"success_sum_seconds"`          // Duration sum of successful PLRs
+	SuccessSumSquaredSeconds float64          `json:"success_sum_squared_seconds"`  // Sum of squared durations (for stddev)
+	WaitSumSeconds           float64          `json:"wait_sum_seconds"`             // Wait time sum of successful PLRs
+	FailureReasons           map[string]int64 `json:"failure_reasons"`              // Failure count by reason
 }
 
 // MetricWindow is a fixed 30-day circular buffer indexed by day offset.
@@ -128,6 +130,7 @@ func (s *Store) RecordObservation(
 	if succeeded {
 		bucket.SuccessCount++
 		bucket.SuccessSumSeconds += durationSeconds
+		bucket.SuccessSumSquaredSeconds += durationSeconds * durationSeconds
 		// Only accumulate wait time for successful PLRs to match SuccessCount denominator
 		if waitSeconds >= 0 {
 			bucket.WaitSumSeconds += waitSeconds
@@ -143,8 +146,7 @@ func (s *Store) RecordObservation(
 }
 
 // ComputeSuccessMean returns the mean duration for successful PLRs only.
-func (w *MetricWindow) ComputeSuccessMean() float64 {
-	cutoff := time.Now().UTC().AddDate(0, 0, -30).Format("2006-01-02")
+func (w *MetricWindow) ComputeSuccessMean(cutoff string) float64 {
 	var sum float64
 	var count int64
 	for i := range w.Buckets {
@@ -161,8 +163,7 @@ func (w *MetricWindow) ComputeSuccessMean() float64 {
 }
 
 // ComputeWaitMean returns the mean wait time across successful observations only.
-func (w *MetricWindow) ComputeWaitMean() float64 {
-	cutoff := time.Now().UTC().AddDate(0, 0, -30).Format("2006-01-02")
+func (w *MetricWindow) ComputeWaitMean(cutoff string) float64 {
 	var sum float64
 	var count int64
 	for i := range w.Buckets {
@@ -180,8 +181,7 @@ func (w *MetricWindow) ComputeWaitMean() float64 {
 
 // ComputeTotalCount returns the total Count across all fresh buckets (within 30 days).
 // Used for both empty window detection and total_count_30d gauge.
-func (w *MetricWindow) ComputeTotalCount() int64 {
-	cutoff := time.Now().UTC().AddDate(0, 0, -30).Format("2006-01-02")
+func (w *MetricWindow) ComputeTotalCount(cutoff string) int64 {
 	var count int64
 	for i := range w.Buckets {
 		if w.Buckets[i].Day == "" || w.Buckets[i].Day <= cutoff {
@@ -194,8 +194,7 @@ func (w *MetricWindow) ComputeTotalCount() int64 {
 
 // ComputeSuccessCount returns the total number of successful observations (within 30 days).
 // Used to determine if mean_duration_30d metrics should be emitted (only when successes exist).
-func (w *MetricWindow) ComputeSuccessCount() int64 {
-	cutoff := time.Now().UTC().AddDate(0, 0, -30).Format("2006-01-02")
+func (w *MetricWindow) ComputeSuccessCount(cutoff string) int64 {
 	var count int64
 	for i := range w.Buckets {
 		if w.Buckets[i].Day == "" || w.Buckets[i].Day <= cutoff {
@@ -208,8 +207,7 @@ func (w *MetricWindow) ComputeSuccessCount() int64 {
 
 // ComputeFailureReasons returns aggregated failure counts by reason across all buckets.
 // Skips stale buckets (older than 30 days from today).
-func (w *MetricWindow) ComputeFailureReasons() map[string]int64 {
-	cutoff := time.Now().UTC().AddDate(0, 0, -30).Format("2006-01-02")
+func (w *MetricWindow) ComputeFailureReasons(cutoff string) map[string]int64 {
 	aggregated := make(map[string]int64)
 	for i := range w.Buckets {
 		if w.Buckets[i].Day == "" || w.Buckets[i].Day <= cutoff {
@@ -220,6 +218,49 @@ func (w *MetricWindow) ComputeFailureReasons() map[string]int64 {
 		}
 	}
 	return aggregated
+}
+
+// ComputeSuccessStdDev returns the population standard deviation of successful
+// durations across all fresh buckets (within 30 days).
+func (w *MetricWindow) ComputeSuccessStdDev(cutoff string) float64 {
+	var sum, sumSq float64
+	var count int64
+	for i := range w.Buckets {
+		if w.Buckets[i].Day == "" || w.Buckets[i].Day <= cutoff {
+			continue
+		}
+		sum += w.Buckets[i].SuccessSumSeconds
+		sumSq += w.Buckets[i].SuccessSumSquaredSeconds
+		count += w.Buckets[i].SuccessCount
+	}
+	if count <= 1 {
+		return 0
+	}
+	mean := sum / float64(count)
+	variance := (sumSq / float64(count)) - (mean * mean)
+	if variance < 0 {
+		variance = 0
+	}
+	return math.Sqrt(variance)
+}
+
+// CountBreachingDays counts how many daily buckets (with successful observations)
+// have a daily mean duration exceeding the given threshold.
+func (w *MetricWindow) CountBreachingDays(cutoff string, threshold float64) (breachingDays, totalDaysWithData int) {
+	for i := range w.Buckets {
+		if w.Buckets[i].Day == "" || w.Buckets[i].Day <= cutoff {
+			continue
+		}
+		if w.Buckets[i].SuccessCount == 0 {
+			continue
+		}
+		totalDaysWithData++
+		dailyMean := w.Buckets[i].SuccessSumSeconds / float64(w.Buckets[i].SuccessCount)
+		if dailyMean > threshold {
+			breachingDays++
+		}
+	}
+	return breachingDays, totalDaysWithData
 }
 
 // PruneSeenKeys removes entries older than retention.
@@ -266,18 +307,21 @@ func (s *Store) getOrCreateLocked(metricName string, labelSet LabelSet) *MetricW
 
 // SLOGaugeSet holds the common set of 30-day SLO gauges shared across
 // build, integration, and release metrics. Domain-specific modules embed
-// this struct and add their own record logic + any extra gauges.
+// this struct and add their own record logic.
 type SLOGaugeSet struct {
-	mean30d         *prometheus.GaugeVec
-	meanWait30d     *prometheus.GaugeVec
-	totalCount30d   *prometheus.GaugeVec
-	successCount30d *prometheus.GaugeVec
-	failureCount30d *prometheus.GaugeVec
+	mean30d           *prometheus.GaugeVec
+	meanWait30d       *prometheus.GaugeVec
+	totalCount30d     *prometheus.GaugeVec
+	successCount30d   *prometheus.GaugeVec
+	failureCount30d   *prometheus.GaugeVec
+	durationSLOBreach *prometheus.GaugeVec
+	sloConfig         *SLOConfig
+	domain            string
 }
 
 // newSLOGaugeSet creates the common gauge set. The failureCount gauge
 // automatically appends a "reason" label to the provided base labels.
-func newSLOGaugeSet(prefix, helpContext string, labels []string) SLOGaugeSet {
+func newSLOGaugeSet(prefix, helpContext string, labels []string, sloConfig *SLOConfig, domain string) SLOGaugeSet {
 	failureLabels := make([]string, len(labels)+1)
 	copy(failureLabels, labels)
 	failureLabels[len(labels)] = "reason"
@@ -303,42 +347,91 @@ func newSLOGaugeSet(prefix, helpContext string, labels []string) SLOGaugeSet {
 			Name: prefix + "_failure_count_30d",
 			Help: fmt.Sprintf("%s failure count over the past 30 days, broken down by failure reason.", helpContext),
 		}, failureLabels),
+		durationSLOBreach: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: prefix + "_duration_slo_breach",
+			Help: fmt.Sprintf("1 if %s duration SLO is breached (daily means exceed configured threshold for configured percentage of days), 0 otherwise. Not emitted when data is insufficient.", helpContext),
+		}, labels),
+		sloConfig: sloConfig,
+		domain:    domain,
 	}
 }
 
 // UpdateFromStore resets all gauges and repopulates from the rolling store.
 // labelExtractor converts a LabelSet into the ordered label values for this gauge set.
-func (s *SLOGaugeSet) UpdateFromStore(store *Store, metricName string, labelExtractor func(LabelSet) []string) {
+// skipBreachNamespaces, when non-nil, suppresses breach evaluation for namespaces
+// that have not completed their 30-day bootstrap (prevents false positives from
+// partial data during gap-fill).
+func (s *SLOGaugeSet) UpdateFromStore(store *Store, metricName string, labelExtractor func(LabelSet) []string, skipBreachNamespaces map[string]bool) {
 	s.mean30d.Reset()
 	s.meanWait30d.Reset()
 	s.totalCount30d.Reset()
 	s.successCount30d.Reset()
 	s.failureCount30d.Reset()
+	s.durationSLOBreach.Reset()
+
+	cutoff := time.Now().UTC().AddDate(0, 0, -30).Format("2006-01-02")
 
 	store.ForEachWindow(metricName, func(ls LabelSet, window *MetricWindow) {
-		totalCount := window.ComputeTotalCount()
+		totalCount := window.ComputeTotalCount(cutoff)
 		if totalCount == 0 {
 			return
 		}
 
 		labels := labelExtractor(ls)
 
-		successCount := window.ComputeSuccessCount()
+		successCount := window.ComputeSuccessCount(cutoff)
 
 		s.totalCount30d.WithLabelValues(labels...).Set(float64(totalCount))
 		s.successCount30d.WithLabelValues(labels...).Set(float64(successCount))
 
+		var successMean float64
 		if successCount > 0 {
-			s.mean30d.WithLabelValues(labels...).Set(window.ComputeSuccessMean())
-			s.meanWait30d.WithLabelValues(labels...).Set(window.ComputeWaitMean())
+			successMean = window.ComputeSuccessMean(cutoff)
+			s.mean30d.WithLabelValues(labels...).Set(successMean)
+			s.meanWait30d.WithLabelValues(labels...).Set(window.ComputeWaitMean(cutoff))
 		}
 
-		for reason, count := range window.ComputeFailureReasons() {
+		for reason, count := range window.ComputeFailureReasons(cutoff) {
 			reasonLabels := make([]string, len(labels)+1)
 			copy(reasonLabels, labels)
 			reasonLabels[len(labels)] = reason
 			s.failureCount30d.WithLabelValues(reasonLabels...).Set(float64(count))
 		}
+
+		// SLO breach evaluation skip for namespaces still gap-filling
+		if skipBreachNamespaces[ls.Namespace] {
+			return
+		}
+		if successCount < minSuccessCountForSLO {
+			return
+		}
+
+		resolved := s.sloConfig.Resolve(ls, s.domain)
+
+		var threshold float64
+		if resolved.DurationThreshold != nil {
+			threshold = *resolved.DurationThreshold
+		} else {
+			threshold = successMean + sloThresholdK*window.ComputeSuccessStdDev(cutoff)
+		}
+		if threshold <= 0 {
+			return
+		}
+
+		breachPct := sloBreachPercentage
+		if resolved.BreachPercentage != nil {
+			breachPct = *resolved.BreachPercentage
+		}
+
+		breachingDays, totalDays := window.CountBreachingDays(cutoff, threshold)
+		if totalDays < minDaysWithDataForSLO {
+			return
+		}
+		var breach float64
+		if float64(breachingDays)/float64(totalDays) >= breachPct {
+			breach = 1
+		}
+		s.durationSLOBreach.WithLabelValues(labels...).Set(breach)
 	})
 }
 
@@ -349,6 +442,7 @@ func (s *SLOGaugeSet) Describe(ch chan<- *prometheus.Desc) {
 	s.totalCount30d.Describe(ch)
 	s.successCount30d.Describe(ch)
 	s.failureCount30d.Describe(ch)
+	s.durationSLOBreach.Describe(ch)
 }
 
 // Collect emits current metric values for all gauges in the set.
@@ -358,6 +452,7 @@ func (s *SLOGaugeSet) Collect(ch chan<- prometheus.Metric) {
 	s.totalCount30d.Collect(ch)
 	s.successCount30d.Collect(ch)
 	s.failureCount30d.Collect(ch)
+	s.durationSLOBreach.Collect(ch)
 }
 
 // Metric names used by the exporter.
@@ -366,3 +461,12 @@ const (
 	metricIntegrationDuration = "integration_duration"
 	metricReleaseDuration     = "release_duration"
 )
+
+// SLO breach evaluation constants.
+const (
+	sloThresholdK         = 1.0  // threshold = mean + k*stddev
+	sloBreachPercentage   = 0.05 // fraction of daily means that must exceed threshold
+	minSuccessCountForSLO = 10   // minimum observations before evaluating SLO
+	minDaysWithDataForSLO = 3    // minimum days with successful observations before evaluating SLO
+)
+

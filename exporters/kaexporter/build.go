@@ -12,10 +12,10 @@ type BuildSLO30d struct {
 }
 
 // newBuildSLO30d initializes build 30d SLO metrics
-func newBuildSLO30d() *BuildSLO30d {
+func newBuildSLO30d(sloConfig *SLOConfig) *BuildSLO30d {
 	labels := []string{"cluster", "namespace", "application", "component", "build_type", "event_type"}
 	return &BuildSLO30d{
-		SLOGaugeSet: newSLOGaugeSet("konflux_build", "build", labels),
+		SLOGaugeSet: newSLOGaugeSet("konflux_build", "build", labels, sloConfig, metricBuildDuration),
 	}
 }
 
@@ -70,10 +70,10 @@ func (m *BuildSLO30d) recordObservation(
 }
 
 // updateGauges reads from the rolling store and updates the 30d SLO gauges
-func (m *BuildSLO30d) updateGauges(store *Store) {
+func (m *BuildSLO30d) updateGauges(store *Store, skipBreachNamespaces map[string]bool) {
 	m.SLOGaugeSet.UpdateFromStore(store, metricBuildDuration, func(ls LabelSet) []string {
 		return []string{ls.Cluster, ls.Namespace, ls.Application, ls.Component, ls.BuildType, ls.EventType}
-	})
+	}, skipBreachNamespaces)
 }
 
 // Describe implements prometheus.Collector

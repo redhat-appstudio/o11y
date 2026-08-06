@@ -17,10 +17,10 @@ type ReleaseSLO30d struct {
 }
 
 // newReleaseSLO30d initializes release 30d SLO metrics
-func newReleaseSLO30d() *ReleaseSLO30d {
+func newReleaseSLO30d(sloConfig *SLOConfig) *ReleaseSLO30d {
 	labels := []string{"cluster", "namespace", "application", "component", "automated", "event_type"}
 	return &ReleaseSLO30d{
-		SLOGaugeSet: newSLOGaugeSet("konflux_release_cr", "Release CR", labels),
+		SLOGaugeSet: newSLOGaugeSet("konflux_release_cr", "Release CR", labels, sloConfig, metricReleaseDuration),
 	}
 }
 
@@ -110,10 +110,10 @@ func (m *ReleaseSLO30d) recordAllFromIndex(
 }
 
 // updateGauges reads from the rolling store and updates the 30d SLO gauges
-func (m *ReleaseSLO30d) updateGauges(store *Store) {
+func (m *ReleaseSLO30d) updateGauges(store *Store, skipBreachNamespaces map[string]bool) {
 	m.SLOGaugeSet.UpdateFromStore(store, metricReleaseDuration, func(ls LabelSet) []string {
 		return []string{ls.Cluster, ls.Namespace, ls.Application, ls.Component, ls.Automated, ls.EventType}
-	})
+	}, skipBreachNamespaces)
 }
 
 // Describe implements prometheus.Collector
