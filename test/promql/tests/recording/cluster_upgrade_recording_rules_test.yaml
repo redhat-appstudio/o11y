@@ -1,0 +1,29 @@
+evaluation_interval: 1m
+
+rule_files:
+  - cluster_upgrade_recording_rules.yaml
+
+tests:
+  - name: ClusterUpgradeOngoingSignalFiring
+    interval: 1m
+    input_series:
+      - series: 'ALERTS{alertname="ClusterUpgradeOngoing",alertstate="firing",source_cluster="cluster01",severity="info"}'
+        values: '1+0x10'
+
+    promql_expr_test:
+      - expr: cluster_upgrade_ongoing
+        eval_time: 5m
+        exp_samples:
+          - labels: '{__name__="cluster_upgrade_ongoing", source_cluster="cluster01"}'
+            value: 1
+
+  - name: ClusterUpgradeOngoingSignalPendingNotCaptured
+    interval: 1m
+    input_series:
+      - series: 'ALERTS{alertname="ClusterUpgradeOngoing",alertstate="pending",source_cluster="cluster01",severity="info"}'
+        values: '1+0x10'
+
+    promql_expr_test:
+      - expr: cluster_upgrade_ongoing
+        eval_time: 5m
+        exp_samples: []

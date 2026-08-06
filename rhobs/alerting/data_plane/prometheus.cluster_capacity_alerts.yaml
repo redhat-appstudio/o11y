@@ -79,7 +79,9 @@ spec:
 
       - alert: EtcdHighNumberOfLeaderChanges
         expr: |
-          increase(etcd_server_leader_changes_seen_total{namespace="openshift-etcd"}[10m]) > 2
+          (increase(etcd_server_leader_changes_seen_total{namespace="openshift-etcd"}[10m]) > 2)
+          unless on (source_cluster)
+          cluster_upgrade_ongoing
         for: 1m
         labels:
           severity: warning
