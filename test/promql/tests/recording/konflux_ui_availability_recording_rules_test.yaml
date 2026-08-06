@@ -63,3 +63,42 @@ tests:
         exp_samples:
           - labels: konflux_up{service='dex', check='replicas-available', namespace='konflux-ui', deployment='dex'}
             value: 0
+
+  # Two middleware handlers for the same 401 collapse to one request-level rate
+  # (max of 30/60 = 0.5). 200 excluded; 502 = 6/60 = 0.1.
+  - name: CaddyHttpRequestErrorsRate5m
+    interval: 1m
+    input_series:
+      - series: 'caddy_http_request_duration_seconds_count{namespace="konflux-ui", job="proxy", code="401", handler="metrics", method="GET", server="srv0", source_cluster="stg"}'
+        values: '0+30x10'
+      - series: 'caddy_http_request_duration_seconds_count{namespace="konflux-ui", job="proxy", code="401", handler="reverse_proxy", method="GET", server="srv0", source_cluster="stg"}'
+        values: '0+30x10'
+      - series: 'caddy_http_request_duration_seconds_count{namespace="konflux-ui", job="proxy", code="200", handler="reverse_proxy", method="GET", server="srv0", source_cluster="stg"}'
+        values: '0+100x10'
+      - series: 'caddy_http_request_duration_seconds_count{namespace="konflux-ui", job="proxy", code="502", handler="reverse_proxy", method="GET", server="srv0", source_cluster="stg"}'
+        values: '0+6x10'
+    promql_expr_test:
+      - expr: caddy_http_request_errors:rate5m
+        eval_time: 6m
+        exp_samples:
+          - labels: 'caddy_http_request_errors:rate5m{job="proxy", status="401", source_cluster="stg"}'
+            value: 0.5
+          - labels: 'caddy_http_request_errors:rate5m{job="proxy", status="502", source_cluster="stg"}'
+            value: 0.1
+
+  - name: CaddyHttpRequestErrorsRate24hBaseline
+    interval: 1m
+    input_series:
+      - series: 'caddy_http_request_errors:rate5m{job="proxy", status="500", source_cluster="stg"}'
+        values: '0.2x30'
+    promql_expr_test:
+      - expr: caddy_http_request_errors:rate24h_avg
+        eval_time: 30m
+        exp_samples:
+          - labels: 'caddy_http_request_errors:rate24h_avg{job="proxy", status="500", source_cluster="stg"}'
+            value: 0.2
+      - expr: caddy_http_request_errors:rate24h_stddev
+        eval_time: 30m
+        exp_samples:
+          - labels: 'caddy_http_request_errors:rate24h_stddev{job="proxy", status="500", source_cluster="stg"}'
+            value: 0
