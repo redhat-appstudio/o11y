@@ -2442,7 +2442,7 @@ data:
                 "uid": "${Datasource}"
               },
               "editorMode": "code",
-              "expr": "sum(konflux_release_cr_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", automated=\"true\"}) / sum(konflux_release_cr_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"})",
+              "expr": "sum(\n    konflux_release_cr_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\", automated=\"true\"}\n    or\n    konflux_release_cr_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"} * 0\n)\n/\nsum(konflux_release_cr_total_count_30d{source_cluster=~\"$Cluster\", exported_namespace=~\"${Tenant}\"})",
               "legendFormat": "",
               "refId": "A",
               "instant": true,
@@ -2565,6 +2565,7 @@ data:
           },
           {
             "allowCustomValue": false,
+            "allValue": ".*",
             "current": {
               "text": [
                 "All"
