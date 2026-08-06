@@ -103,7 +103,7 @@ data:
                 "type": "prometheus",
                 "uid": "${Datasource}"
               },
-              "expr": "count by (source_cluster) (\n  konflux_cluster:kueue_admission_wait_time_seconds:saturation_7d{\n    source_cluster=~\"$Cluster\"\n  } > 0.05\n)",
+              "expr": "sum by (source_cluster) (\n  konflux_cluster:kueue_admission_wait_time_seconds:saturation_7d{\n    source_cluster=~\"$Cluster\"\n  } > bool 0.05\n)",
               "instant": true,
               "legendFormat": "{{source_cluster}}",
               "refId": "A"
@@ -178,7 +178,7 @@ data:
                 "type": "prometheus",
                 "uid": "${Datasource}"
               },
-              "expr": "count by (source_cluster) (\n  konflux_build_duration_slo_breach{\n    source_cluster=~\"$Cluster\"\n  } == 1\n)\n/\ncount by (source_cluster) (\n  konflux_build_duration_slo_breach{\n    source_cluster=~\"$Cluster\"\n  }\n)",
+              "expr": "sum by (source_cluster) (\n  konflux_build_duration_slo_breach{\n    source_cluster=~\"$Cluster\"\n  } == bool 1\n)\n/\ncount by (source_cluster) (\n  konflux_build_duration_slo_breach{\n    source_cluster=~\"$Cluster\"\n  }\n)",
               "instant": true,
               "legendFormat": "{{source_cluster}}",
               "refId": "A"
@@ -253,7 +253,7 @@ data:
                 "type": "prometheus",
                 "uid": "${Datasource}"
               },
-              "expr": "count by (source_cluster) (\n  konflux_integration_duration_slo_breach{\n    source_cluster=~\"$Cluster\"\n  } == 1\n)\n/\ncount by (source_cluster) (\n  konflux_integration_duration_slo_breach{\n    source_cluster=~\"$Cluster\"\n  }\n)",
+              "expr": "sum by (source_cluster) (\n  konflux_integration_duration_slo_breach{\n    source_cluster=~\"$Cluster\"\n  } == bool 1\n)\n/\ncount by (source_cluster) (\n  konflux_integration_duration_slo_breach{\n    source_cluster=~\"$Cluster\"\n  }\n)",
               "instant": true,
               "legendFormat": "{{source_cluster}}",
               "refId": "A"
@@ -328,7 +328,7 @@ data:
                 "type": "prometheus",
                 "uid": "${Datasource}"
               },
-              "expr": "count by (source_cluster) (\n  konflux_release_cr_duration_slo_breach{\n    source_cluster=~\"$Cluster\"\n  } == 1\n)\n/\ncount by (source_cluster) (\n  konflux_release_cr_duration_slo_breach{\n    source_cluster=~\"$Cluster\"\n  }\n)",
+              "expr": "sum by (source_cluster) (\n  konflux_release_cr_duration_slo_breach{\n    source_cluster=~\"$Cluster\"\n  } == bool 1\n)\n/\ncount by (source_cluster) (\n  konflux_release_cr_duration_slo_breach{\n    source_cluster=~\"$Cluster\"\n  }\n)",
               "instant": true,
               "legendFormat": "{{source_cluster}}",
               "refId": "A"
