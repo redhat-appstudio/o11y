@@ -1,0 +1,31 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-konflux-operator-alerting
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: konflux-operator-availability
+    interval: 1m
+    rules:
+    - alert: KonfluxOperatorNotReady
+      expr: |
+        konflux_up{
+          service="konflux-operator",
+          check="konflux-ready"
+        } != 1
+      for: 10m
+      labels:
+        severity: warning
+        slo: "false"
+        component: konflux-operator
+      annotations:
+        summary: >-
+          Konflux operator is not ready in cluster {{ $labels.source_cluster }}
+        description: >-
+          The Konflux operator reports the platform is not ready for 10min
+          in cluster {{ $labels.source_cluster }}. One or more sub-component
+          readiness conditions are not True.
+        alert_routing_key: 'konflux-operator'
+        team: konflux-operator
