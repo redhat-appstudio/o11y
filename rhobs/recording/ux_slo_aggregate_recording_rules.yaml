@@ -101,11 +101,11 @@ spec:
             (konflux:aggregate_performance_slo_breach == 1)
               or
             (
-              max by (source_cluster) (
+              max without (priority_class) (
                 konflux_cluster:kueue_admission_wait_time_seconds:saturation_7d >= bool 0.05
               ) == 1
             )
               or
             (konflux:aggregate_performance_slo_breach * 0)
               or
-            (max by (source_cluster) (konflux_cluster:kueue_admission_wait_time_seconds:saturation_7d) * 0)
+            (max without (priority_class) (konflux_cluster:kueue_admission_wait_time_seconds:saturation_7d) * 0)

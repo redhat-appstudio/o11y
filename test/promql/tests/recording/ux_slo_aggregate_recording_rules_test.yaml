@@ -394,6 +394,27 @@ tests:
           - labels: 'konflux:cluster_ux_slo_breach{source_cluster="cluster-1"}'
             value: 1
 
+  - name: ClusterUxSloWithTenantIdLabelCollision
+    interval: 5m
+    input_series:
+      # Simulates RHOBS injecting tenant_id into all metrics.
+      # max by (source_cluster) drops tenant_id from kueue, causing label
+      # mismatch with aggregate (which keeps tenant_id). The or chain then
+      # produces two series for the same source_cluster that collide after
+      # rule labels are applied.
+      - series: 'konflux:aggregate_performance_slo_breach{source_cluster="cluster-1", tenant_id="rhobs-tenant"}'
+        values: "1x5"
+      - series: 'konflux_cluster:kueue_admission_wait_time_seconds:saturation_7d{priority_class="pre-merge-build", source_cluster="cluster-1", tenant_id="rhobs-tenant"}'
+        values: "0.03x5"
+    promql_expr_test:
+      # Should produce exactly ONE series. With max by (source_cluster), it
+      # produces TWO (one with tenant_id, one without) which is the bug.
+      - expr: konflux:cluster_ux_slo_breach
+        eval_time: 5m
+        exp_samples:
+          - labels: 'konflux:cluster_ux_slo_breach{source_cluster="cluster-1", tenant_id="rhobs-tenant"}'
+            value: 1
+
   - name: ClusterUxSloNoBreachWhenBothHealthy
     interval: 5m
     input_series:
