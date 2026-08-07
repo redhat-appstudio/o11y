@@ -1,0 +1,74 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-cert-manager-alerting
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: cert-manager-alerts
+      interval: 1m
+      rules:
+        - alert: CertManagerCertificateNotReady
+          expr: |
+            certmanager_certificate_ready_status{condition="True"} == 0
+          for: 15m
+          labels:
+            severity: warning
+            slo: "false"
+            component: cert-manager
+          annotations:
+            summary: >-
+              Certificate {{ $labels.name }} in namespace {{ $labels.exported_namespace }} is not ready on cluster {{ $labels.source_cluster }}.
+            description: >-
+              Certificate {{ $labels.name }} in namespace {{ $labels.exported_namespace }} has been in a non-ready state for more than 15 minutes on cluster {{ $labels.source_cluster }}.
+            alert_routing_key: spreandinfra
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-cert-manager.md
+
+        - alert: CertManagerCertificateExpiringSoon
+          expr: |
+            (certmanager_certificate_expiration_timestamp_seconds - time()) / 86400 < 21
+          for: 30m
+          labels:
+            severity: warning
+            slo: "false"
+            component: cert-manager
+          annotations:
+            summary: >-
+              Certificate {{ $labels.name }} in namespace {{ $labels.exported_namespace }} expires in less than 21 days on cluster {{ $labels.source_cluster }}.
+            description: >-
+              Certificate {{ $labels.name }} in namespace {{ $labels.exported_namespace }} on cluster {{ $labels.source_cluster }} expires in {{ $value | humanize }} days. Investigate why cert-manager has not renewed it.
+            alert_routing_key: spreandinfra
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-cert-manager.md
+
+        - alert: CertManagerCertificateExpiryCritical
+          expr: |
+            (certmanager_certificate_expiration_timestamp_seconds - time()) / 86400 < 7
+          for: 15m
+          labels:
+            severity: critical
+            slo: "false"
+            component: cert-manager
+          annotations:
+            summary: >-
+              Certificate {{ $labels.name }} in namespace {{ $labels.exported_namespace }} expires in less than 7 days on cluster {{ $labels.source_cluster }}.
+            description: >-
+              Certificate {{ $labels.name }} in namespace {{ $labels.exported_namespace }} on cluster {{ $labels.source_cluster }} expires in {{ $value | humanize }} days. Immediate action required — renewal has likely failed.
+            alert_routing_key: spreandinfra
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-cert-manager.md
+
+        - alert: CertManagerClusterIssuerNotReady
+          expr: |
+            certmanager_clusterissuer_ready_status{condition="True"} == 0
+          for: 10m
+          labels:
+            severity: critical
+            slo: "false"
+            component: cert-manager
+          annotations:
+            summary: >-
+              ClusterIssuer {{ $labels.name }} is not ready on cluster {{ $labels.source_cluster }}.
+            description: >-
+              ClusterIssuer {{ $labels.name }} has been in a non-ready state for more than 10 minutes on cluster {{ $labels.source_cluster }}. No new certificates can be issued by this issuer.
+            alert_routing_key: spreandinfra
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-cert-manager.md

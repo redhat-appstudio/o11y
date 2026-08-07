@@ -1,0 +1,156 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.cert_manager_alerts.yaml
+
+tests:
+  # --- CertManagerCertificateNotReady ---
+
+  # Positive: cert stays not-ready for 15m, should fire
+  - interval: 1m
+    input_series:
+      - series: 'certmanager_certificate_ready_status{condition="True", name="my-cert", exported_namespace="my-ns", source_cluster="stone-prod-p01", issuer_name="letsencrypt", issuer_kind="ClusterIssuer"}'
+        values: '0x20'
+
+    alert_rule_test:
+      - alertname: CertManagerCertificateNotReady
+        eval_time: 16m
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              component: cert-manager
+              condition: "True"
+              name: my-cert
+              exported_namespace: my-ns
+              source_cluster: stone-prod-p01
+              issuer_name: letsencrypt
+              issuer_kind: ClusterIssuer
+            exp_annotations:
+              summary: "Certificate my-cert in namespace my-ns is not ready on cluster stone-prod-p01."
+              description: "Certificate my-cert in namespace my-ns has been in a non-ready state for more than 15 minutes on cluster stone-prod-p01."
+              alert_routing_key: spreandinfra
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-cert-manager.md
+
+  # Negative: cert is ready (value=1), should NOT fire
+  - interval: 1m
+    input_series:
+      - series: 'certmanager_certificate_ready_status{condition="True", name="healthy-cert", exported_namespace="my-ns", source_cluster="stone-prod-p01", issuer_name="letsencrypt", issuer_kind="ClusterIssuer"}'
+        values: '1x20'
+
+    alert_rule_test:
+      - alertname: CertManagerCertificateNotReady
+        eval_time: 16m
+        exp_alerts: []
+
+  # --- CertManagerCertificateExpiringSoon ---
+
+  # Positive: cert expiring in 15 days (< 21), should fire
+  - interval: 1m
+    input_series:
+      - series: 'certmanager_certificate_expiration_timestamp_seconds{name="expiring-cert", exported_namespace="my-ns", source_cluster="stone-prod-p01", issuer_name="letsencrypt", issuer_kind="ClusterIssuer"}'
+        values: '1296000+0x35'
+
+    alert_rule_test:
+      - alertname: CertManagerCertificateExpiringSoon
+        eval_time: 31m
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              component: cert-manager
+              name: expiring-cert
+              exported_namespace: my-ns
+              source_cluster: stone-prod-p01
+              issuer_name: letsencrypt
+              issuer_kind: ClusterIssuer
+            exp_annotations:
+              summary: "Certificate expiring-cert in namespace my-ns expires in less than 21 days on cluster stone-prod-p01."
+              description: "Certificate expiring-cert in namespace my-ns on cluster stone-prod-p01 expires in 15 days. Investigate why cert-manager has not renewed it."
+              alert_routing_key: spreandinfra
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-cert-manager.md
+
+  # Negative: cert expiring in 60 days (> 21), should NOT fire
+  - interval: 1m
+    input_series:
+      - series: 'certmanager_certificate_expiration_timestamp_seconds{name="healthy-cert", exported_namespace="my-ns", source_cluster="stone-prod-p01", issuer_name="letsencrypt", issuer_kind="ClusterIssuer"}'
+        values: '5184000+0x35'
+
+    alert_rule_test:
+      - alertname: CertManagerCertificateExpiringSoon
+        eval_time: 31m
+        exp_alerts: []
+
+  # --- CertManagerCertificateExpiryCritical ---
+
+  # Positive: cert expiring in 3 days (< 7), should fire
+  - interval: 1m
+    input_series:
+      - series: 'certmanager_certificate_expiration_timestamp_seconds{name="critical-cert", exported_namespace="my-ns", source_cluster="stone-prod-p01", issuer_name="letsencrypt", issuer_kind="ClusterIssuer"}'
+        values: '259200+0x20'
+
+    alert_rule_test:
+      - alertname: CertManagerCertificateExpiryCritical
+        eval_time: 16m
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "false"
+              component: cert-manager
+              name: critical-cert
+              exported_namespace: my-ns
+              source_cluster: stone-prod-p01
+              issuer_name: letsencrypt
+              issuer_kind: ClusterIssuer
+            exp_annotations:
+              summary: "Certificate critical-cert in namespace my-ns expires in less than 7 days on cluster stone-prod-p01."
+              description: "Certificate critical-cert in namespace my-ns on cluster stone-prod-p01 expires in 3 days. Immediate action required — renewal has likely failed."
+              alert_routing_key: spreandinfra
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-cert-manager.md
+
+  # Negative: cert expiring in 15 days (> 7), should NOT fire for critical
+  - interval: 1m
+    input_series:
+      - series: 'certmanager_certificate_expiration_timestamp_seconds{name="warning-cert", exported_namespace="my-ns", source_cluster="stone-prod-p01", issuer_name="letsencrypt", issuer_kind="ClusterIssuer"}'
+        values: '1296000+0x20'
+
+    alert_rule_test:
+      - alertname: CertManagerCertificateExpiryCritical
+        eval_time: 16m
+        exp_alerts: []
+
+  # --- CertManagerClusterIssuerNotReady ---
+
+  # Positive: issuer not ready for 10m, should fire
+  - interval: 1m
+    input_series:
+      - series: 'certmanager_clusterissuer_ready_status{condition="True", name="letsencrypt-prod", source_cluster="stone-prod-p01"}'
+        values: '0x15'
+
+    alert_rule_test:
+      - alertname: CertManagerClusterIssuerNotReady
+        eval_time: 11m
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "false"
+              component: cert-manager
+              condition: "True"
+              name: letsencrypt-prod
+              source_cluster: stone-prod-p01
+            exp_annotations:
+              summary: "ClusterIssuer letsencrypt-prod is not ready on cluster stone-prod-p01."
+              description: "ClusterIssuer letsencrypt-prod has been in a non-ready state for more than 10 minutes on cluster stone-prod-p01. No new certificates can be issued by this issuer."
+              alert_routing_key: spreandinfra
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-cert-manager.md
+
+  # Negative: issuer is ready (value=1), should NOT fire
+  - interval: 1m
+    input_series:
+      - series: 'certmanager_clusterissuer_ready_status{condition="True", name="letsencrypt-prod", source_cluster="stone-prod-p01"}'
+        values: '1x15'
+
+    alert_rule_test:
+      - alertname: CertManagerClusterIssuerNotReady
+        eval_time: 11m
+        exp_alerts: []
