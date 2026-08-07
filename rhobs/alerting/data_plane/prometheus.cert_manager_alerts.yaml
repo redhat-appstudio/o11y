@@ -28,6 +28,8 @@ spec:
         - alert: CertManagerCertificateExpiringSoon
           expr: |
             (certmanager_certificate_expiration_timestamp_seconds - time()) / 86400 < 21
+            and
+            (certmanager_certificate_expiration_timestamp_seconds - time()) >= 0
           for: 30m
           labels:
             severity: warning
@@ -37,13 +39,15 @@ spec:
             summary: >-
               Certificate {{ $labels.name }} in namespace {{ $labels.exported_namespace }} expires in less than 21 days on cluster {{ $labels.source_cluster }}.
             description: >-
-              Certificate {{ $labels.name }} in namespace {{ $labels.exported_namespace }} on cluster {{ $labels.source_cluster }} expires in {{ $value | humanize }} days. Investigate why cert-manager has not renewed it.
+              Certificate {{ $labels.name }} in namespace {{ $labels.exported_namespace }} on cluster {{ $labels.source_cluster }} expires in {{ printf "%.0f" $value }} days. Investigate why cert-manager has not renewed it.
             alert_routing_key: spreandinfra
             runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-cert-manager.md
 
         - alert: CertManagerCertificateExpiryCritical
           expr: |
             (certmanager_certificate_expiration_timestamp_seconds - time()) / 86400 < 7
+            and
+            (certmanager_certificate_expiration_timestamp_seconds - time()) >= 0
           for: 15m
           labels:
             severity: critical
@@ -53,7 +57,7 @@ spec:
             summary: >-
               Certificate {{ $labels.name }} in namespace {{ $labels.exported_namespace }} expires in less than 7 days on cluster {{ $labels.source_cluster }}.
             description: >-
-              Certificate {{ $labels.name }} in namespace {{ $labels.exported_namespace }} on cluster {{ $labels.source_cluster }} expires in {{ $value | humanize }} days. Immediate action required — renewal has likely failed.
+              Certificate {{ $labels.name }} in namespace {{ $labels.exported_namespace }} on cluster {{ $labels.source_cluster }} expires in {{ printf "%.0f" $value }} days. Immediate action required — renewal has likely failed.
             alert_routing_key: spreandinfra
             runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-cert-manager.md
 
