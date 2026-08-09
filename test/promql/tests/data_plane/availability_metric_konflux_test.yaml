@@ -4,18 +4,26 @@ rule_files:
   - prometheus.availability_metric_konflux_alerts.yaml
 
 tests:
+  # Test 1: Metric disappears after 59 minutes - should alert
   - interval: 1m
     input_series:
       - series: 'konflux_up{service="grafana", check="prometheus-appstudio-ds", source_cluster="stone-stg-rh01"}'
-        values: '1x59 _x61'
+        values: '1x59 _x41'
       - series: 'konflux_up{service="grafana", check="prometheus-appstudio-ds", source_cluster="stone-stg-m01"}'
-        values: '1x120'
+        values: '1x100'
 
     alert_rule_test:
-      - eval_time: 70m
+      # At 65m: metric absent for only 6 minutes. count_over_time[10m] still has samples. No alert.
+      - eval_time: 65m
         alertname: KonfluxAlert
 
-      - eval_time: 105m
+      # At 72m: count_over_time[10m] no longer includes the last sample (T=58m),
+      # so the expression is true, but for:5m pending period has not fully elapsed. No alert.
+      - eval_time: 72m
+        alertname: KonfluxAlert
+
+      # At 80m: metric absent for 21 minutes. Well past 10m window + 5m for. Alert fires.
+      - eval_time: 80m
         alertname: KonfluxAlert
         exp_alerts:
           - exp_labels:
@@ -27,27 +35,29 @@ tests:
               summary: >-
                 Availability metric 'konflux_up' is missing.
               description: >-
-                Availability metric 'konflux_up' is missing some entries for check
-                prometheus-appstudio-ds on service grafana and cluster stone-stg-rh01 when
-                compared to previous hour.
+                Availability metric 'konflux_up' has not reported for check
+                prometheus-appstudio-ds on service grafana and cluster stone-stg-rh01
+                in the last 10 minutes, but was present in the last hour.
               alert_routing_key: 'o11y'
 
+  # Test 2: Metric disappears too early (outside 1h lookback) - should NOT alert
   - interval: 1m
     input_series:
       - series: 'konflux_up{service="grafana", check="prometheus-appstudio-ds", source_cluster="stone-stg-rh01"}'
-        values: '1x30 _x90'
+        values: '1x5 _x115'
 
     alert_rule_test:
-      - eval_time: 120m
+      - eval_time: 100m
         alertname: KonfluxAlert
 
+  # Test 3: Pod label change (pod restart) - should NOT alert
   - interval: 1m
     input_series:
       - series: 'konflux_up{service="grafana", check="prometheus-appstudio-ds", source_cluster="stone-stg-rh01", pod="grafana-pod1"}'
-        values: '_x59 1x61'
+        values: '_x59 1x41'
       - series: 'konflux_up{service="grafana", check="prometheus-appstudio-ds", source_cluster="stone-stg-rh01", pod="grafana-pod2"}'
-        values: '1x59 _x61'
+        values: '1x59 _x41'
 
     alert_rule_test:
-      - eval_time: 120m
+      - eval_time: 80m
         alertname: KonfluxAlert
