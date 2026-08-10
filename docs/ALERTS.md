@@ -100,7 +100,7 @@ How `konflux_up` signals are created:
 
 In both cases, the metric must be forwarded to RHOBS via infra-deployments before alerts can consume it.
 
-Alerts built on `konflux_up` follow the pattern `konflux_up{namespace="...", check="...", service="..."} != 1`. A meta-alert (`KonfluxAlert`) also monitors for missing `konflux_up` signals by comparing against an `offset 1h` window and notifies o11y if a signal disappears.
+Alerts built on `konflux_up` follow the pattern `konflux_up{namespace="...", check="...", service="..."} != 1`. A meta-alert (`KonfluxAlert`) also monitors for missing `konflux_up` signals by checking whether the metric was present in the last hour but absent for the last 10 minutes, and notifies o11y if a signal disappears.
 
 ### Converting between alert types
 
