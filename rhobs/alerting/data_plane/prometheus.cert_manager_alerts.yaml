@@ -78,3 +78,52 @@ spec:
             alert_team_handle: >-
               <!subteam^S07SW2EEW3D> <!subteam^S05Q1P4Q2TG>
             runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-CertManagerClusterIssuerNotReady.md
+
+        - alert: CertManagerIssuerNotReady
+          expr: |
+            certmanager_issuer_ready_status{condition="True"} == 0
+          for: 10m
+          labels:
+            severity: warning
+            slo: "false"
+            component: cert-manager
+          annotations:
+            summary: >-
+              Issuer {{ $labels.name }} in namespace {{ $labels.exported_namespace }} is not ready on cluster {{ $labels.source_cluster }}.
+            description: >-
+              Issuer {{ $labels.name }} in namespace {{ $labels.exported_namespace }} has been in a non-ready state for more than 10 minutes on cluster {{ $labels.source_cluster }}. Certificates referencing this issuer will not be renewed.
+            alert_routing_key: spreandinfra
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-cert-manager.md
+
+        - alert: CertManagerCertificateExpired
+          expr: |
+            (certmanager_certificate_expiration_timestamp_seconds - time()) < 0
+          for: 5m
+          labels:
+            severity: critical
+            slo: "true"
+            component: cert-manager
+          annotations:
+            summary: >-
+              Certificate {{ $labels.name }} in namespace {{ $labels.exported_namespace }} has expired on cluster {{ $labels.source_cluster }}.
+            description: >-
+              Certificate {{ $labels.name }} in namespace {{ $labels.exported_namespace }} on cluster {{ $labels.source_cluster }} has expired. Services using this certificate will fail TLS handshakes. Immediate action required.
+            alert_team_handle: >-
+              <!subteam^S07SW2EEW3D> <!subteam^S05Q1P4Q2TG>
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-CertManagerCertificateExpiryCritical.md
+
+        - alert: CertManagerControllerSyncErrors
+          expr: |
+            increase(certmanager_controller_sync_error_count[15m]) > 5
+          for: 15m
+          labels:
+            severity: warning
+            slo: "false"
+            component: cert-manager
+          annotations:
+            summary: >-
+              cert-manager controller is experiencing sync errors on cluster {{ $labels.source_cluster }}.
+            description: >-
+              cert-manager controller has logged more than 5 sync errors in the last 15 minutes on cluster {{ $labels.source_cluster }}. Certificate issuance or renewal may be failing.
+            alert_routing_key: spreandinfra
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-cert-manager.md
