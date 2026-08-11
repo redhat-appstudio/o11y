@@ -813,7 +813,7 @@ data:
                     "type": "prometheus",
                     "uid": "${Datasource}"
                   },
-                  "expr": "sum by (exported_namespace) (konflux_build_duration_slo_breach{source_cluster=\"$Cluster\", exported_namespace=~\"$Tenant\"} == bool 1)\n/\ncount by (exported_namespace) (konflux_build_duration_slo_breach{source_cluster=\"$Cluster\", exported_namespace=~\"$Tenant\"})",
+                  "expr": "avg by (exported_namespace) (\n  max by (exported_namespace, application, component) (\n    konflux_build_duration_slo_breach{source_cluster=\"$Cluster\", exported_namespace=~\"$Tenant\"} == bool 1\n  )\n)",
                   "format": "table",
                   "instant": true,
                   "legendFormat": "",
@@ -824,7 +824,7 @@ data:
                     "type": "prometheus",
                     "uid": "${Datasource}"
                   },
-                  "expr": "sum by (exported_namespace) (konflux_integration_duration_slo_breach{source_cluster=\"$Cluster\", exported_namespace=~\"$Tenant\"} == bool 1)\n/\ncount by (exported_namespace) (konflux_integration_duration_slo_breach{source_cluster=\"$Cluster\", exported_namespace=~\"$Tenant\"})",
+                  "expr": "avg by (exported_namespace) (\n  max by (exported_namespace, application, component) (\n    konflux_integration_duration_slo_breach{source_cluster=\"$Cluster\", exported_namespace=~\"$Tenant\"} == bool 1\n  )\n)",
                   "format": "table",
                   "instant": true,
                   "legendFormat": "",
@@ -835,7 +835,7 @@ data:
                     "type": "prometheus",
                     "uid": "${Datasource}"
                   },
-                  "expr": "sum by (exported_namespace) (konflux_release_cr_duration_slo_breach{source_cluster=\"$Cluster\", exported_namespace=~\"$Tenant\"} == bool 1)\n/\ncount by (exported_namespace) (konflux_release_cr_duration_slo_breach{source_cluster=\"$Cluster\", exported_namespace=~\"$Tenant\"})",
+                  "expr": "avg by (exported_namespace) (\n  max by (exported_namespace, application, component) (\n    konflux_release_cr_duration_slo_breach{source_cluster=\"$Cluster\", exported_namespace=~\"$Tenant\"} == bool 1\n  )\n)",
                   "format": "table",
                   "instant": true,
                   "legendFormat": "",
@@ -1028,11 +1028,11 @@ data:
                   "id": "organize",
                   "options": {
                     "excludeByName": {
-                      "Time": true,
-                      "application": true
+                      "Time": true
                     },
                     "renameByName": {
                       "exported_namespace": "Tenant",
+                      "application": "Application",
                       "component": "Component",
                       "Value #Build": "Build",
                       "Value #Integration": "Integration",
@@ -1040,10 +1040,11 @@ data:
                     },
                     "indexByName": {
                       "exported_namespace": 0,
-                      "component": 1,
-                      "Value #Build": 2,
-                      "Value #Integration": 3,
-                      "Value #Release": 4
+                      "application": 1,
+                      "component": 2,
+                      "Value #Build": 3,
+                      "Value #Integration": 4,
+                      "Value #Release": 5
                     }
                   }
                 },
