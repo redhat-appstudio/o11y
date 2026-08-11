@@ -115,7 +115,7 @@ spec:
         - alert: CertManagerControllerSyncErrors
           expr: |
             increase(certmanager_controller_sync_error_count[15m]) > 5
-          for: 15m
+          for: 5m
           labels:
             severity: warning
             slo: "false"
@@ -124,6 +124,6 @@ spec:
             summary: >-
               cert-manager controller is experiencing sync errors on cluster {{ $labels.source_cluster }}.
             description: >-
-              cert-manager controller has logged more than 5 sync errors in the last 15 minutes on cluster {{ $labels.source_cluster }}. Certificate issuance or renewal may be failing.
+              cert-manager controller has logged more than 5 sync errors in the last 15 minutes on cluster {{ $labels.source_cluster }}. This condition has persisted for at least 5 minutes. Certificate issuance or renewal may be failing.
             alert_routing_key: spreandinfra
             runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-cert-manager.md
