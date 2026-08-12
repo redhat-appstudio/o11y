@@ -103,8 +103,33 @@ tests:
               issuer_name: letsencrypt
               issuer_kind: ClusterIssuer
             exp_annotations:
-              summary: "Certificate critical-cert in namespace my-ns expires in less than 7 days on cluster stone-prod-p01."
-              description: "Certificate critical-cert in namespace my-ns on cluster stone-prod-p01 expires in 3 days. Immediate action required — renewal has likely failed."
+              summary: "Certificate critical-cert in namespace my-ns expires in less than 7 days or has already expired on cluster stone-prod-p01."
+              description: "Certificate critical-cert in namespace my-ns on cluster stone-prod-p01 expires in 3 days. If the value is negative, the certificate has already expired. Immediate action required - renewal has likely failed."
+              alert_team_handle: "<!subteam^S07SW2EEW3D> <!subteam^S05Q1P4Q2TG>"
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-CertManagerCertificateExpiryCritical.md
+
+  # Positive: cert already expired (negative value), should also fire
+  - interval: 1m
+    input_series:
+      - series: 'certmanager_certificate_expiration_timestamp_seconds{name="expired-cert", exported_namespace="my-ns", source_cluster="stone-prod-p01", issuer_name="selfsigned-issuer", issuer_kind="Issuer"}'
+        values: '-86400+0x20'
+
+    alert_rule_test:
+      - alertname: CertManagerCertificateExpiryCritical
+        eval_time: 16m
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              component: cert-manager
+              name: expired-cert
+              exported_namespace: my-ns
+              source_cluster: stone-prod-p01
+              issuer_name: selfsigned-issuer
+              issuer_kind: Issuer
+            exp_annotations:
+              summary: "Certificate expired-cert in namespace my-ns expires in less than 7 days or has already expired on cluster stone-prod-p01."
+              description: "Certificate expired-cert in namespace my-ns on cluster stone-prod-p01 expires in -1 days. If the value is negative, the certificate has already expired. Immediate action required - renewal has likely failed."
               alert_team_handle: "<!subteam^S07SW2EEW3D> <!subteam^S05Q1P4Q2TG>"
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-CertManagerCertificateExpiryCritical.md
 
@@ -153,4 +178,76 @@ tests:
     alert_rule_test:
       - alertname: CertManagerClusterIssuerNotReady
         eval_time: 11m
+        exp_alerts: []
+
+  # --- CertManagerIssuerNotReady ---
+
+  # Positive: namespace issuer not ready for 10m, should fire
+  - interval: 1m
+    input_series:
+      - series: 'certmanager_issuer_ready_status{condition="True", name="selfsigned-issuer", exported_namespace="etcd-shield", source_cluster="stone-prod-p01"}'
+        values: '0x15'
+
+    alert_rule_test:
+      - alertname: CertManagerIssuerNotReady
+        eval_time: 11m
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              component: cert-manager
+              condition: "True"
+              name: selfsigned-issuer
+              exported_namespace: etcd-shield
+              source_cluster: stone-prod-p01
+            exp_annotations:
+              summary: "Issuer selfsigned-issuer in namespace etcd-shield is not ready on cluster stone-prod-p01."
+              description: "Issuer selfsigned-issuer in namespace etcd-shield has been in a non-ready state for more than 10 minutes on cluster stone-prod-p01. Certificates referencing this issuer will not be renewed."
+              alert_routing_key: spreandinfra
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-cert-manager.md
+
+  # Negative: namespace issuer is ready, should NOT fire
+  - interval: 1m
+    input_series:
+      - series: 'certmanager_issuer_ready_status{condition="True", name="selfsigned-issuer", exported_namespace="etcd-shield", source_cluster="stone-prod-p01"}'
+        values: '1x15'
+
+    alert_rule_test:
+      - alertname: CertManagerIssuerNotReady
+        eval_time: 11m
+        exp_alerts: []
+
+  # --- CertManagerControllerSyncErrors ---
+
+  # Positive: more than 5 sync errors in 15m, should fire after 5m persistence
+  - interval: 1m
+    input_series:
+      - series: 'certmanager_controller_sync_error_count{source_cluster="stone-prod-p01", controller="certificates-trigger"}'
+        values: '0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25'
+
+    alert_rule_test:
+      - alertname: CertManagerControllerSyncErrors
+        eval_time: 20m
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              component: cert-manager
+              source_cluster: stone-prod-p01
+              controller: certificates-trigger
+            exp_annotations:
+              summary: "cert-manager controller is experiencing sync errors on cluster stone-prod-p01."
+              description: "cert-manager controller has logged more than 5 sync errors in the last 15 minutes on cluster stone-prod-p01. This condition has persisted for at least 5 minutes. Certificate issuance or renewal may be failing."
+              alert_routing_key: spreandinfra
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-cert-manager.md
+
+  # Negative: no sync errors, should NOT fire
+  - interval: 1m
+    input_series:
+      - series: 'certmanager_controller_sync_error_count{source_cluster="stone-prod-p01", controller="certificates-trigger"}'
+        values: '0x25'
+
+    alert_rule_test:
+      - alertname: CertManagerControllerSyncErrors
+        eval_time: 20m
         exp_alerts: []
