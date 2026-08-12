@@ -95,23 +95,6 @@ spec:
             alert_routing_key: spreandinfra
             runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-cert-manager.md
 
-        - alert: CertManagerCertificateExpired
-          expr: |
-            (certmanager_certificate_expiration_timestamp_seconds - time()) < 0
-          for: 5m
-          labels:
-            severity: critical
-            slo: "true"
-            component: cert-manager
-          annotations:
-            summary: >-
-              Certificate {{ $labels.name }} in namespace {{ $labels.exported_namespace }} has expired on cluster {{ $labels.source_cluster }}.
-            description: >-
-              Certificate {{ $labels.name }} in namespace {{ $labels.exported_namespace }} on cluster {{ $labels.source_cluster }} has expired. Services using this certificate will fail TLS handshakes. Immediate action required.
-            alert_team_handle: >-
-              <!subteam^S07SW2EEW3D> <!subteam^S05Q1P4Q2TG>
-            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-CertManagerCertificateExpiryCritical.md
-
         - alert: CertManagerControllerSyncErrors
           expr: |
             increase(certmanager_controller_sync_error_count[15m]) > 5

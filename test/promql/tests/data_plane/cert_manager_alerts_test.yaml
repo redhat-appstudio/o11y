@@ -192,44 +192,6 @@ tests:
         eval_time: 11m
         exp_alerts: []
 
-  # --- CertManagerCertificateExpired ---
-
-  # Positive: cert expired (expiry timestamp in the past), should fire
-  - interval: 1m
-    input_series:
-      - series: 'certmanager_certificate_expiration_timestamp_seconds{name="expired-cert", exported_namespace="my-ns", source_cluster="stone-prod-p01", issuer_name="selfsigned-issuer", issuer_kind="Issuer"}'
-        values: '-86400+0x10'
-
-    alert_rule_test:
-      - alertname: CertManagerCertificateExpired
-        eval_time: 6m
-        exp_alerts:
-          - exp_labels:
-              severity: critical
-              slo: "true"
-              component: cert-manager
-              name: expired-cert
-              exported_namespace: my-ns
-              source_cluster: stone-prod-p01
-              issuer_name: selfsigned-issuer
-              issuer_kind: Issuer
-            exp_annotations:
-              summary: "Certificate expired-cert in namespace my-ns has expired on cluster stone-prod-p01."
-              description: "Certificate expired-cert in namespace my-ns on cluster stone-prod-p01 has expired. Services using this certificate will fail TLS handshakes. Immediate action required."
-              alert_team_handle: "<!subteam^S07SW2EEW3D> <!subteam^S05Q1P4Q2TG>"
-              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-CertManagerCertificateExpiryCritical.md
-
-  # Negative: cert not expired (60 days left), should NOT fire
-  - interval: 1m
-    input_series:
-      - series: 'certmanager_certificate_expiration_timestamp_seconds{name="valid-cert", exported_namespace="my-ns", source_cluster="stone-prod-p01", issuer_name="selfsigned-issuer", issuer_kind="Issuer"}'
-        values: '5184000+0x10'
-
-    alert_rule_test:
-      - alertname: CertManagerCertificateExpired
-        eval_time: 6m
-        exp_alerts: []
-
   # --- CertManagerControllerSyncErrors ---
 
   # Positive: more than 5 sync errors in 15m, should fire after 5m persistence
