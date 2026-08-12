@@ -46,8 +46,6 @@ spec:
         - alert: CertManagerCertificateExpiryCritical
           expr: |
             (certmanager_certificate_expiration_timestamp_seconds - time()) / 86400 < 7
-            and
-            (certmanager_certificate_expiration_timestamp_seconds - time()) >= 0
           for: 15m
           labels:
             severity: critical
@@ -55,9 +53,9 @@ spec:
             component: cert-manager
           annotations:
             summary: >-
-              Certificate {{ $labels.name }} in namespace {{ $labels.exported_namespace }} expires in less than 7 days on cluster {{ $labels.source_cluster }}.
+              Certificate {{ $labels.name }} in namespace {{ $labels.exported_namespace }} expires in less than 7 days or has already expired on cluster {{ $labels.source_cluster }}.
             description: >-
-              Certificate {{ $labels.name }} in namespace {{ $labels.exported_namespace }} on cluster {{ $labels.source_cluster }} expires in {{ printf "%.0f" $value }} days. Immediate action required — renewal has likely failed.
+              Certificate {{ $labels.name }} in namespace {{ $labels.exported_namespace }} on cluster {{ $labels.source_cluster }} expires in {{ printf "%.0f" $value }} days. If the value is negative, the certificate has already expired. Immediate action required - renewal has likely failed.
             alert_team_handle: >-
               <!subteam^S07SW2EEW3D> <!subteam^S05Q1P4Q2TG>
             runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-CertManagerCertificateExpiryCritical.md
