@@ -114,6 +114,17 @@ tests:
               alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/exporters/blackbox/probe-alerts.md
 
+  # konflux-ui is a per-cluster service; a single-cluster outage must not fire the
+  # fleet-wide MultiClusterProbeAlert.
+  - interval: 1m
+    input_series:
+      - series: multicluster_probe_up{instance="instance01",job="konflux-ui",check="probe-multicluster",service="konflux-ui"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+    alert_rule_test:
+      - eval_time: 39m
+        alertname: MultiClusterProbeAlert
+        exp_alerts: []
+
   - interval: 1m
     input_series:
       - series: multicluster_probe_up{instance="instance01",check="probe-multicluster",service="quay"}
