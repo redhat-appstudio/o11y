@@ -230,12 +230,12 @@ tests:
       # 10m average is 0.8. Since 0.8 >= 0.7, konflux_up should remain 1.
       - series: probe_success{job="pwvs", target="net01", source_cluster="cluster01"}
         values: 1x8 0x2 1x5
-      
+
       # Target 2 (Failing-sample): 10m lookback at eval_time 12m contains 7 failures.
       # 10m average drops to 0.3. Since 0.3 < 0.7, konflux_up should drop to 0.
       - series: probe_success{job="pwvs", target="net02", source_cluster="cluster01"}
         values: 1x6 0x9
-        
+
     promql_expr_test:
       - expr: |
           clamp_max(
