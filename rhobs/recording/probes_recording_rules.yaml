@@ -63,16 +63,14 @@ spec:
             )
 
     - name: probes_pwvs_availability
-      # Reduced interval from 10m to 5m to prevent metric lock-in during edge cases
-      # and ensure state updates occur twice as fast for genuine outages.
-      interval: 5m
+      interval: 10m
       rules:
         - record: konflux_up
           expr: |
             clamp_max(
               label_replace(
                 label_replace(
-                    avg by (job,target,source_cluster) (avg_over_time(probe_success{job=~".*pwvs"}[10m])) >= bool 0.7
+                    sum by (job,target,source_cluster) (avg_over_time(probe_success{job=~".*pwvs"}[10m])) / count by (job,target,source_cluster) (avg_over_time(probe_success{job=~".*pwvs"}[10m])) >= bool 0.7
                   , "check", "probe-pwvs", "",""
                 ), "service", "$1", "job", "(.*)"
               ), 1
