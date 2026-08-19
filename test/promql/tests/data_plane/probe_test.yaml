@@ -169,7 +169,6 @@ tests:
               alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/static_host_probe_alerts.md
 
-
   - interval: 1m
     input_series:
       - series: konflux_up{job="ppc-static-host", source_cluster="cluster01",check="probe-ppc",service="ppc-static-host"}
@@ -199,6 +198,11 @@ tests:
         values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 
     alert_rule_test:
+      # Boundary check at 33m (19m after drop): strictly less than for: 20m -> must NOT fire
+      - eval_time: 33m
+        alertname: PWVSProbeAlert
+        exp_alerts: []
+      # Fire check at 35m (21m after drop): exceeds for: 20m -> MUST fire
       - eval_time: 35m
         alertname: PWVSProbeAlert
         exp_alerts:
@@ -216,3 +220,37 @@ tests:
               summary: PWVS Probe alert pwvs.
               alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/vpn_probe_alerts.md
+
+  # =========================================================================
+  # NEW TEST: PWVS Recording Rule - Smoothing and Threshold-Boundary Test
+  # =========================================================================
+  - interval: 1m
+    input_series:
+      # Target 1 (Smoothing): Fails for only 2 minutes out of 10.
+      # 10m average is 0.8. Since 0.8 >= 0.7, konflux_up should remain 1.
+      - series: probe_success{job="pwvs", target="net01", source_cluster="cluster01"}
+        values: 1x8 0x2 1x5
+
+      # Target 2 (Failing-sample): Fails for 4 minutes out of 10.
+      # 10m average drops to 0.6. Since 0.6 < 0.7, konflux_up should drop to 0.
+      - series: probe_success{job="pwvs", target="net02", source_cluster="cluster01"}
+        values: 1x6 0x9
+
+    promql_expr_test:
+      - expr: |
+          clamp_max(
+            label_replace(
+              label_replace(
+                  avg by (job,target,source_cluster) (avg_over_time(probe_success{job=~".*pwvs"}[10m])) >= bool 0.7
+                , "check", "probe-pwvs", "",""
+              ), "service", "$1", "job", "(.*)"
+            ), 1
+          )
+        eval_time: 12m
+        exp_samples:
+          # Assert Target 1 stayed UP (absorbed the transient blip)
+          - labels: '{job="pwvs", target="net01", source_cluster="cluster01", check="probe-pwvs", service="pwvs"}'
+            value: 1
+          # Assert Target 2 went DOWN (caught the sustained outage)
+          - labels: '{job="pwvs", target="net02", source_cluster="cluster01", check="probe-pwvs", service="pwvs"}'
+            value: 0

@@ -63,6 +63,8 @@ spec:
             )
 
     - name: probes_pwvs_availability
+      # Reduced interval from 10m to 5m to prevent metric lock-in during edge cases
+      # and ensure state updates occur twice as fast for genuine outages.
       interval: 5m
       rules:
         - record: konflux_up
