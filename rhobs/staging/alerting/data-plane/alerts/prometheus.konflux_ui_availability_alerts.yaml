@@ -1,0 +1,159 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-konflux-ui-availability-alerting-rules
+  labels:
+    tenant: rhtap
+
+spec:
+  groups:
+  - name: konflux-ui-proxy-availability
+    interval: 1m
+    rules:
+    - alert: KonfluxUIProxyDown
+      expr: |
+        konflux_up{
+          namespace="konflux-ui",
+          check="replicas-available",
+          service="proxy"
+        } != 1
+      for: 5m
+      labels:
+        severity: critical
+        slo: "true"
+        component: konflux-ui
+      annotations:
+        summary: >-
+          Konflux UI proxy pod is down in cluster {{ $labels.source_cluster }}
+        description: >
+          The Konflux UI proxy pod has been down for 5min in cluster {{ $labels.source_cluster }}
+        alert_team_handle: <!subteam^S04HY632621>
+        team: konflux-ui
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/konflux-ui/sre/proxy-down.md?ref_type=heads
+
+  - name: konflux-ui-dex-availability
+    interval: 1m
+    rules:
+    - alert: KonfluxUIDexDown
+      expr: |
+        konflux_up{
+          namespace="konflux-ui",
+          check="replicas-available",
+          service="dex"
+        } != 1
+      for: 5m
+      labels:
+        severity: critical
+        slo: "true"
+        component: konflux-ui
+      annotations:
+        summary: >-
+          Konflux UI dex pod is down in cluster {{ $labels.source_cluster }}
+        description: >
+          The Konflux UI dex pod has been down for 5min in cluster {{ $labels.source_cluster }}
+        alert_team_handle: <!subteam^S04HY632621>
+        team: konflux-ui
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/konflux-ui/sre/dex-down.md?ref_type=heads
+
+  - name: konflux-ui-endpoint-availability
+    interval: 1m
+    rules:
+    - alert: KonfluxUIEndpointDown
+      expr: |
+        sum without (cluster) (kube_endpoint_address{namespace="konflux-ui", endpoint="proxy"}) == 0
+      for: 5m
+      labels:
+        severity: critical
+        slo: "true"
+        component: konflux-ui
+      annotations:
+        summary: >-
+          Konflux UI endpoint is down in cluster {{ $labels.source_cluster }}
+        description: >
+          There were no Konflux UI proxy pods behind the endopint for 5min in cluster {{ $labels.source_cluster }}
+        alert_team_handle: <!subteam^S04HY632621>
+        team: konflux-ui
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/konflux-ui/sre/endpoint-unavailable.md?ref_type=heads
+
+  - name: konflux-ui-http-error-rate
+    interval: 1m
+    rules:
+    - alert: KonfluxUIHttpHighErrorRate
+      expr: |
+        sum by (job, source_cluster) (nginx_otel_http_request_errors:rate5m)
+        >
+        sum by (job, source_cluster) (
+          (nginx_otel_http_request_errors:rate24h_avg)
+          +
+          3 * (nginx_otel_http_request_errors:rate24h_stddev)
+        )
+      for: 5m
+      labels:
+        severity: warning
+        slo: "false"
+        component: konflux-ui
+      annotations:
+        summary: >-
+          Konflux UI HTTP endpoints are experiencing a high error rate in cluster {{ $labels.source_cluster }}
+        description: >
+          The Konflux UI HTTP endpoints have been experiencing a high error rate for 5min in cluster {{ $labels.source_cluster }}
+        alert_routing_key: konflux-ui
+        team: konflux-ui
+        runbook_url: null
+
+  - name: konflux-ui-5xx-http-error-rate
+    interval: 1m
+    rules:
+    - alert: KonfluxUIHttpHigh5xxErrorRate
+      expr: |
+        sum by (job, source_cluster) (nginx_otel_http_request_errors:rate5m{status=~"5.."})
+        >
+        sum by (job, source_cluster) (
+          (nginx_otel_http_request_errors:rate24h_avg{status=~"5.."})
+          +
+          3 * (nginx_otel_http_request_errors:rate24h_stddev{status=~"5.."})
+        )
+      for: 5m
+      labels:
+        severity: warning
+        slo: "false"
+        component: konflux-ui
+      annotations:
+        summary: >-
+          Konflux UI HTTP endpoints are experiencing a high 5xx error rate in cluster {{ $labels.source_cluster }}
+        description: >
+          The Konflux UI HTTP endpoints have been experiencing a high 5xx error rate for 5min in cluster {{ $labels.source_cluster }}
+        alert_routing_key: <!subteam^S06V06A36F5>
+        team: spre
+        runbook_url: null
+
+  - name: konflux-ui-upstream-502
+    interval: 1m
+    rules:
+    - alert: KonfluxUIUpstream502
+      expr: |
+        # Uses raw metric (not the existing recording rule) because the recording rule drops
+        # the namespace label, which would cause false positives from other namespaces.
+        # rate[2m] matches the for: 2m pending period intentionally: a wider window (e.g. [5m])
+        # would allow a brief burst to keep the rate positive long enough to satisfy the
+        # pending period without sustained errors actually occurring.
+        # threshold of 0.05/s (~1 error per 20s) filters brief rolling-deploy bursts
+        # while catching sustained upstream failures within the 2m pending period.
+        sum by (source_cluster) (
+          rate(nginx_otel_http_request_errors_total{namespace="konflux-ui", status="502"}[2m])
+        ) > 0.05
+      for: 2m
+      labels:
+        severity: critical
+        slo: "true"
+        component: konflux-ui
+      annotations:
+        summary: >-
+          Konflux UI proxy returning 502 errors in cluster {{ $labels.source_cluster }}
+        description: >
+          The Konflux UI nginx proxy has been returning 502 errors for 2min in cluster
+          {{ $labels.source_cluster }}, indicating an upstream backend (e.g. namespace-lister)
+          is down or unreachable.
+        alert_team_handle: <!subteam^S04HY632621>
+        team: konflux-ui
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/konflux-ui/sre/upstream-502.md

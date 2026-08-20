@@ -1,0 +1,75 @@
+name: Drift Detection Comment
+
+"on":
+  workflow_run:
+    workflows: ["Drift Detection"]
+    types:
+      - completed
+
+permissions:
+  actions: read
+  pull-requests: write
+
+jobs:
+  post-comment:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.event == 'pull_request'
+    steps:
+      - name: Download drift report artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: drift-report
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Post PR comment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          report=$(sed '/^$/d' drift-report.txt | sed 's/```/` ` `/g')
+          pr_number=$(cat pr_number)
+          exit_code=$(cat exit_code)
+          both_envs=$(cat both_envs)
+          has_warnings=$(cat has_warnings)
+          sha=$(cut -c1-7 head_sha)
+          base_sha=$(cut -c1-7 base_sha)
+          run_id="${{ github.event.workflow_run.id }}"
+
+          if [ "$exit_code" != "0" ]; then
+            icon="❌"; status="Failed"
+          elif [ "$both_envs" = "true" ] || [ "$has_warnings" = "true" ]; then
+            icon="⚠️"; status="Warning"
+          else
+            icon="✅"; status="Passed"
+          fi
+
+          run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${run_id}"
+
+          {
+            echo "<!-- check-env-drift -->"
+            echo "### Drift Detection ${icon} ${status}"
+            echo ""
+            echo "Comparing \`${base_sha}\` → \`${sha}\`"
+            if [ "$both_envs" = "true" ]; then
+              echo ""
+              echo "> **Note:** This PR modifies both staging and production environments."
+              echo ""
+            fi
+            echo '```'
+            echo "$report"
+            echo '```'
+            echo ""
+            echo "Full log available in the [workflow run](${run_url})."
+          } > /tmp/comment-body.md
+          body=$(cat /tmp/comment-body.md)
+
+          comment_id=$(gh api --paginate "repos/${{ github.repository }}/issues/${pr_number}/comments" \
+            --jq '.[] | select(.body | contains("<!-- check-env-drift -->")) | .id' \
+            | head -1)
+
+          if [ -n "$comment_id" ]; then
+            gh api "repos/${{ github.repository }}/issues/comments/${comment_id}" \
+              -X PATCH -f body="$body"
+          else
+            gh pr comment "$pr_number" --repo "${{ github.repository }}" --body "$body"
+          fi
