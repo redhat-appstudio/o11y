@@ -42,13 +42,13 @@ If the file is specified but cannot be read or parsed, the exporter fails to sta
 
 #### Custom SLO thresholds
 
-The same config file supports a `customSLO` section for per-tenant, per-application, or per-component SLO threshold overrides. Values cascade from the most specific level upward: component overrides application, application overrides tenant, tenant overrides built-in defaults (k=1 stddev, 5% breach percentage).
+The same config file supports a `customSLO` section for per-tenant, per-application, or per-component SLO threshold overrides. Values cascade from the most specific level upward: component overrides application, application overrides tenant, tenant overrides built-in defaults (k=2 stddev, 5% breach percentage).
 
 At each level, domain-specific keys can be set:
 
 | Key | Description |
 |-----|-------------|
-| `build_duration_threshold_seconds` | Fixed build duration threshold in seconds. Replaces the computed mean + stddev. |
+| `build_duration_threshold_seconds` | Fixed build duration threshold in seconds. Replaces the computed mean + 2*stddev. |
 | `build_duration_breach_percentage` | Fraction of daily means that must exceed the threshold to trigger breach (default: 0.05). |
 | `integration_duration_threshold_seconds` | Fixed integration test duration threshold. |
 | `integration_duration_breach_percentage` | Integration breach percentage override. |
@@ -73,7 +73,7 @@ integration_duration_threshold_seconds:
 
 Match fields (`scenario`, `event_type`, `build_type`, `automated`) are compared against the metric's label set. Empty fields act as wildcards. Matches are evaluated in YAML order; the first match wins. When no match hits, `default` is used. When `default` is also absent, the value falls through to the parent hierarchy level or the built-in defaults.
 
-When `duration_threshold_seconds` is set, the breach evaluation uses that fixed value directly instead of computing `mean + stddev`. When omitted, the statistical baseline is used. Breach percentages must be in the range (0, 1]. Thresholds must be > 0. Invalid values are logged as warnings at startup and ignored -- the exporter starts normally and the affected overrides fall back to built-in defaults.
+When `duration_threshold_seconds` is set, the breach evaluation uses that fixed value directly instead of computing `mean + 2*stddev`. When omitted, the statistical baseline is used. Breach percentages must be in the range (0, 1]. Thresholds must be > 0. Invalid values are logged as warnings at startup and ignored -- the exporter starts normally and the affected overrides fall back to built-in defaults.
 
 ```yaml
 excludeNamespaces:
@@ -156,7 +156,7 @@ All metrics are **Gauges** over a rolling 30-day window of daily aggregated buck
 - **Total count** (`total_count_30d`): Count of all completed workloads (successful + failed) in the rolling window
 - **Success count** (`success_count_30d`): Count of successful workloads in the rolling window. Enables correct volume-weighted aggregation across dimensions: `sum(success_count) / sum(total_count)`.
 - **Failure count** (`failure_count_30d`): Count of failed workloads, broken down by failure reason. Useful for root cause analysis.
-- **Duration SLO breach** (`duration_slo_breach`): 1 if the component's duration SLO is breached, 0 otherwise. Not emitted when data is insufficient (success_count < 10 or days_with_data < 3). By default, a component is in breach when >=5% of its daily mean durations over the past 30 days exceed the 30-day mean + 1 standard deviation. Thresholds and breach percentages can be overridden per tenant/application/component via the config file (see [Custom SLO thresholds](#custom-slo-thresholds)).
+- **Duration SLO breach** (`duration_slo_breach`): 1 if the component's duration SLO is breached, 0 otherwise. Not emitted when data is insufficient (success_count < 10 or days_with_data < 3). By default, a component is in breach when >=5% of its daily mean durations over the past 30 days exceed the 30-day mean + 2 standard deviations. Thresholds and breach percentages can be overridden per tenant/application/component via the config file (see [Custom SLO thresholds](#custom-slo-thresholds)).
 
 **Derived metrics** (can be computed from the above):
 - **Success rate**: `success_count_30d / total_count_30d` (or 0 when total_count_30d == 0)

@@ -863,6 +863,36 @@ func TestBuildDurationSLOBreach(t *testing.T) {
 		}
 	})
 
+	t.Run("no breach for moderate variance that exceeds mean+1*stddev but not mean+2*stddev", func(t *testing.T) {
+		store := NewStore()
+		now := time.Now().UTC()
+		labels := buildLabelShort
+
+		// 15 days at 300s, 5 days at 450s.
+		// mean = (15*300 + 5*450) / 20 = 337.5
+		// stddev ~= 64.95
+		// mean + 1*stddev ~= 402.5  -> 5 days (450s) exceed this -> 5/20 = 25% -> breach at k=1
+		// mean + 2*stddev ~= 467.4  -> 0 days exceed this -> 0/20 = 0% -> no breach at k=2
+		for i := 0; i < 15; i++ {
+			store.RecordObservation(metricBuildDuration, fmt.Sprintf("normal-%d", i),
+				now.Add(-time.Duration((i+5)*24)*time.Hour), labels, 300.0, 10.0, true, "")
+		}
+		for i := 0; i < 5; i++ {
+			store.RecordObservation(metricBuildDuration, fmt.Sprintf("elevated-%d", i),
+				now.Add(-time.Duration(i*24)*time.Hour), labels, 450.0, 10.0, true, "")
+		}
+
+		buildSLO := newBuildSLO30d(nil)
+		buildSLO.updateGauges(store, nil)
+
+		m := &dto.Metric{}
+		buildSLO.durationSLOBreach.WithLabelValues("c", "ns", "app", "comp", "docker-builds", "push").Write(m) //nolint:errcheck
+		if m.GetGauge().GetValue() != 0 {
+			t.Errorf("expected breach=0 with k=2 (daily means between mean+1*stddev and mean+2*stddev should not breach), got %v",
+				m.GetGauge().GetValue())
+		}
+	})
+
 	t.Run("single day with data skips SLO evaluation", func(t *testing.T) {
 		store := NewStore()
 		now := time.Now().UTC()
@@ -1433,7 +1463,7 @@ func TestSLOBreachWithConfigOverrides(t *testing.T) {
 		store := NewStore()
 		now := time.Now().UTC()
 
-		// 17 days at 300s, 3 days at 600s -> with stddev, 3 days breach
+		// 17 days at 300s, 3 days at 600s -> with 2*stddev, 3 days breach
 		// 3/20 = 15% -> default 5% would trigger, but 20% override should not
 		for i := 0; i < 17; i++ {
 			store.RecordObservation(metricBuildDuration, fmt.Sprintf("norm-%d", i),
@@ -1649,20 +1679,20 @@ func TestSLOBreachWithMatchBasedConfig(t *testing.T) {
 		})
 	})
 
-	t.Run("unmatched scenario with no parent threshold falls to mean+stddev", func(t *testing.T) {
+	t.Run("unmatched scenario with no parent threshold falls to mean+2*stddev", func(t *testing.T) {
 		store := NewStore()
 
 		// ec-scan: 50s mean. Match sets fixed threshold=60, and 50 < 60 -> no breach.
-		// If it fell to mean+stddev instead, threshold would be ~50 (stddev~=0),
+		// If it fell to mean+2*stddev instead, threshold would be ~50 (stddev~=0),
 		// and daily means = 50, not > 50, also no breach -- so we need ec-scan
-		// to prove the match fires by using a threshold that differs from mean+stddev.
+		// to prove the match fires by using a threshold that differs from mean+2*stddev.
 		populateIntegrationData(store, "ec-scan", "push", 50.0, 20)
 
 		// other-scenario: consistent 300s with a few spikes.
-		// mean+stddev with consistent data -> stddev~=0, threshold~=300,
+		// mean+2*stddev with consistent data -> stddev~=0, threshold~=300,
 		// daily means = 300, not > 300 -> no breach under statistical baseline.
 		// BUT if a fixed threshold like ec-scan's 60 were applied, 300 >> 60 -> breach.
-		// So breach=0 here proves it's using mean+stddev, not the ec-scan match.
+		// So breach=0 here proves it's using mean+2*stddev, not the ec-scan match.
 		populateIntegrationData(store, "other-scenario", "push", 300.0, 20)
 
 		cfg := newSLOCfg().
@@ -1692,10 +1722,10 @@ func TestSLOBreachWithMatchBasedConfig(t *testing.T) {
 					t.Errorf("ec-scan: expected breach=0 (50s < 60s match threshold), got %v", m.GetGauge().GetValue())
 				}
 			case "other-scenario":
-				// 300s consistent -> mean+stddev threshold ~300, daily means not > 300 -> no breach
+				// 300s consistent -> mean+2*stddev threshold ~300, daily means not > 300 -> no breach
 				// If the ec-scan match (60) leaked here, 300 >> 60 would breach=1
 				if m.GetGauge().GetValue() != 0 {
-					t.Errorf("other-scenario: expected breach=0 (using mean+stddev, not ec-scan's 60s), got %v", m.GetGauge().GetValue())
+					t.Errorf("other-scenario: expected breach=0 (using mean+2*stddev, not ec-scan's 60s), got %v", m.GetGauge().GetValue())
 				}
 			}
 		})
