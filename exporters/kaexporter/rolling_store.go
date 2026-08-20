@@ -464,7 +464,7 @@ const (
 
 // SLO breach evaluation constants.
 const (
-	sloThresholdK         = 1.0  // threshold = mean + k*stddev
+	sloThresholdK         = 2.0  // threshold = mean + k*stddev
 	sloBreachPercentage   = 0.05 // fraction of daily means that must exceed threshold
 	minSuccessCountForSLO = 10   // minimum observations before evaluating SLO
 	minDaysWithDataForSLO = 3    // minimum days with successful observations before evaluating SLO
