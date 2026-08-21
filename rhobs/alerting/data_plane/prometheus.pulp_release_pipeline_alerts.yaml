@@ -1,0 +1,70 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-pulp-release-pipeline-alerting
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: pulp_release_pipeline_alerts
+    interval: 1m
+
+    rules:
+    - alert: PushRpmsToPulpTaskFailureRate
+      expr: |
+        (
+          sum by (source_cluster) (rate(tekton_pipelines_controller_taskrun_total{pipeline="push-rpms-to-pulp",status="failed"}[1h]))
+          /
+          sum by (source_cluster) (rate(tekton_pipelines_controller_taskrun_total{pipeline="push-rpms-to-pulp"}[1h]))
+        ) > 0.2
+      for: 15m
+      labels:
+        severity: high
+        slo: "false"
+        component: release-service
+      annotations:
+        summary: >-
+          Pulp RPM release task failure rate exceeds 20% on {{ $labels.source_cluster }}
+        description: >-
+          More than 20% of push-rpms-to-pulp TaskRuns have failed over the last hour
+          on cluster {{ $labels.source_cluster }}.
+        alert_routing_key: release-service
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/release-service/sre/rpm-release-pipeline-troubleshooting.md
+        team: release
+
+    - alert: ReleaseTaskOOMKilled
+      expr: |
+        increase(kube_pod_container_status_terminated_reason{reason="OOMKilled",namespace=~".*-tenant",pod=~".*push-rpms-to-pulp.*"}[1h]) > 0
+      for: 5m
+      labels:
+        severity: high
+        slo: "false"
+        component: release-service
+      annotations:
+        summary: >-
+          Pulp release task OOMKilled in {{ $labels.namespace }} on {{ $labels.source_cluster }}
+        description: >-
+          A push-rpms-to-pulp container was OOMKilled in namespace {{ $labels.namespace }}
+          on cluster {{ $labels.source_cluster }}.
+        alert_routing_key: release-service
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/release-service/sre/rpm-release-pipeline-troubleshooting.md
+        team: release
+
+    - alert: PulpReleaseBurst
+      expr: |
+        sum by (source_cluster) (rate(tekton_pipelines_controller_taskrun_total{pipeline="push-rpms-to-pulp"}[15m])) * 60
+        > 10
+      for: 10m
+      labels:
+        severity: warning
+        slo: "false"
+        component: release-service
+      annotations:
+        summary: >-
+          Unusual burst of Pulp release tasks on {{ $labels.source_cluster }}
+        description: >-
+          More than 10 push-rpms-to-pulp TaskRuns per minute sustained over 10 minutes
+          on cluster {{ $labels.source_cluster }}. May indicate a noisy neighbor or runaway automation.
+        alert_routing_key: release-service
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/release-service/sre/rpm-release-pipeline-troubleshooting.md
+        team: release

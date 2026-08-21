@@ -1,0 +1,122 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.pulp_release_pipeline_alerts.yaml
+
+tests:
+
+  # --- PushRpmsToPulpTaskFailureRate ---
+
+  - name: PushRpmsToPulpTaskFailureRate fires when failure rate exceeds 20%
+    interval: 1m
+    input_series:
+      - series: 'tekton_pipelines_controller_taskrun_total{pipeline="push-rpms-to-pulp",status="failed",source_cluster="stone-prod-p02"}'
+        values: '0+5x90'
+      - series: 'tekton_pipelines_controller_taskrun_total{pipeline="push-rpms-to-pulp",status="success",source_cluster="stone-prod-p02"}'
+        values: '0+10x90'
+    alert_rule_test:
+      - eval_time: 80m
+        alertname: PushRpmsToPulpTaskFailureRate
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              slo: "false"
+              source_cluster: stone-prod-p02
+              component: release-service
+            exp_annotations:
+              summary: >-
+                Pulp RPM release task failure rate exceeds 20% on stone-prod-p02
+              description: >-
+                More than 20% of push-rpms-to-pulp TaskRuns have failed over the last hour
+                on cluster stone-prod-p02.
+              alert_routing_key: release-service
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/release-service/sre/rpm-release-pipeline-troubleshooting.md
+              team: release
+
+  - name: PushRpmsToPulpTaskFailureRate does not fire when failure rate is below 20%
+    interval: 1m
+    input_series:
+      - series: 'tekton_pipelines_controller_taskrun_total{pipeline="push-rpms-to-pulp",status="failed",source_cluster="stone-prod-p02"}'
+        values: '0+1x90'
+      - series: 'tekton_pipelines_controller_taskrun_total{pipeline="push-rpms-to-pulp",status="success",source_cluster="stone-prod-p02"}'
+        values: '0+10x90'
+    alert_rule_test:
+      - eval_time: 80m
+        alertname: PushRpmsToPulpTaskFailureRate
+        exp_alerts: []
+
+  # --- ReleaseTaskOOMKilled ---
+
+  - name: ReleaseTaskOOMKilled fires on OOMKilled event
+    interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_terminated_reason{reason="OOMKilled",namespace="tenant01-tenant",pod="pipeline-push-rpms-to-pulp-run-abc-step",container="step-push",source_cluster="stone-prod-p02"}'
+        values: '0 0 0 0 0 1 1 1 1 1 1 1 1 1 1'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: ReleaseTaskOOMKilled
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              slo: "false"
+              reason: OOMKilled
+              namespace: tenant01-tenant
+              pod: pipeline-push-rpms-to-pulp-run-abc-step
+              container: step-push
+              source_cluster: stone-prod-p02
+              component: release-service
+            exp_annotations:
+              summary: >-
+                Pulp release task OOMKilled in tenant01-tenant on stone-prod-p02
+              description: >-
+                A push-rpms-to-pulp container was OOMKilled in namespace tenant01-tenant
+                on cluster stone-prod-p02.
+              alert_routing_key: release-service
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/release-service/sre/rpm-release-pipeline-troubleshooting.md
+              team: release
+
+  - name: ReleaseTaskOOMKilled does not fire for non-pulp pods
+    interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_terminated_reason{reason="OOMKilled",namespace="tenant01-tenant",pod="pipeline-build-run-xyz-step",container="step-build",source_cluster="stone-prod-p02"}'
+        values: '0 0 0 0 0 1 1 1 1 1 1 1 1 1 1'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: ReleaseTaskOOMKilled
+        exp_alerts: []
+
+  # --- PulpReleaseBurst ---
+
+  - name: PulpReleaseBurst fires on sustained high rate
+    interval: 1m
+    input_series:
+      - series: 'tekton_pipelines_controller_taskrun_total{pipeline="push-rpms-to-pulp",status="success",source_cluster="stone-prod-p02"}'
+        values: '0+15x40'
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: PulpReleaseBurst
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              source_cluster: stone-prod-p02
+              component: release-service
+            exp_annotations:
+              summary: >-
+                Unusual burst of Pulp release tasks on stone-prod-p02
+              description: >-
+                More than 10 push-rpms-to-pulp TaskRuns per minute sustained over 10 minutes
+                on cluster stone-prod-p02. May indicate a noisy neighbor or runaway automation.
+              alert_routing_key: release-service
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/release-service/sre/rpm-release-pipeline-troubleshooting.md
+              team: release
+
+  - name: PulpReleaseBurst does not fire on normal rate
+    interval: 1m
+    input_series:
+      - series: 'tekton_pipelines_controller_taskrun_total{pipeline="push-rpms-to-pulp",status="success",source_cluster="stone-prod-p02"}'
+        values: '0+1x40'
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: PulpReleaseBurst
+        exp_alerts: []
