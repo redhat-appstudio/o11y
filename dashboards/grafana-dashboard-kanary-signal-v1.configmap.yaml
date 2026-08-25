@@ -214,7 +214,7 @@ data:
               },
               "disableTextWrap": false,
               "editorMode": "code",
-              "expr": "max by (tested_cluster) (kanary_error{tested_cluster=~\"${kanary_clusters}\", type=~\"${kanary_type}\", namespace=\"konflux-otel\"})",
+              "expr": "1 - min by (tested_cluster) (\n  last_over_time(\n    kanary_up{tested_cluster=~\"${kanary_clusters}\", type=~\"${kanary_type}\", namespace=\"konflux-otel\"}[2m]\n  )\n)",
               "fullMetaSearch": false,
               "includeNullMetadata": true,
               "instant": false,
@@ -366,7 +366,7 @@ data:
             {
               "datasource": {
                 "type": "prometheus",
-                "uid": "PDCCF087A30F0737B"
+                "uid": "${kanary_datasource}"
               },
               "disableTextWrap": false,
               "editorMode": "code",
@@ -389,79 +389,6 @@ data:
             "type": "prometheus",
             "uid": "${kanary_datasource}"
           },
-          "description": "Shows the frequency of a kanary error signal reason for a given time range.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "percentage",
-                "steps": [
-                  {
-                    "color": "green"
-                  },
-                  {
-                    "color": "red",
-                    "value": 20
-                  }
-                ]
-              },
-              "unit": "percentunit"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 10,
-            "w": 12,
-            "x": 0,
-            "y": 32
-          },
-          "id": 5,
-          "options": {
-            "minVizHeight": 75,
-            "minVizWidth": 75,
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showThresholdLabels": false,
-            "showThresholdMarkers": true,
-            "sizing": "auto"
-          },
-          "pluginVersion": "11.6.11",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "PDCCF087A30F0737B"
-              },
-              "disableTextWrap": false,
-              "editorMode": "code",
-              "exemplar": false,
-              "expr": "avg by (tested_cluster, reason) (avg_over_time(kanary_error{tested_cluster=~\"${kanary_clusters}\", type=~\"${kanary_type}\", namespace=\"konflux-otel\"}[$__range]))",
-              "fullMetaSearch": false,
-              "includeNullMetadata": true,
-              "instant": false,
-              "legendFormat": "{{tested_cluster}}->{{reason}}",
-              "range": true,
-              "refId": "A",
-              "useBackend": false
-            }
-          ],
-          "title": "Kanary Error Frequency",
-          "type": "gauge"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${kanary_datasource}"
-          },
           "description": "Kanary signal processing error overview.",
           "fieldConfig": {
             "defaults": {
@@ -476,11 +403,12 @@ data:
                 "inspect": false
               },
               "mappings": [],
+              "noValue": "No active failures",
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
+                    "color": "red"
                   },
                   {
                     "color": "red",
@@ -493,9 +421,9 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 10,
-            "w": 12,
-            "x": 12,
+            "h": 11,
+            "w": 24,
+            "x": 0,
             "y": 32
           },
           "id": 2,
@@ -521,13 +449,13 @@ data:
               "disableTextWrap": false,
               "editorMode": "code",
               "exemplar": false,
-              "expr": "max by (tested_cluster, reason) (kanary_error{tested_cluster=~\"${kanary_clusters}\", type=~\"${kanary_type}\", namespace=\"konflux-otel\"})",
+              "expr": "max by (tested_cluster, type, reason, phase) (\n  kanary_error{tested_cluster=~\"${kanary_clusters}\", type=~\"${kanary_type}\", namespace=\"konflux-otel\"}\n  and (time() - timestamp(kanary_error{tested_cluster=~\"${kanary_clusters}\", type=~\"${kanary_type}\", namespace=\"konflux-otel\"})) < 120\n) > 0",
               "format": "table",
               "fullMetaSearch": false,
               "includeNullMetadata": true,
-              "instant": false,
+              "instant": true,
               "legendFormat": "{{tested_cluster}}",
-              "range": true,
+              "range": false,
               "refId": "A",
               "useBackend": false
             }
@@ -535,33 +463,32 @@ data:
           "title": "Kanary Error Signal",
           "transformations": [
             {
-              "id": "groupingToMatrix",
-              "options": {
-                "columnField": "reason",
-                "rowField": "tested_cluster",
-                "valueField": "Value"
-              }
-            },
-            {
-              "id": "calculateField",
-              "options": {
-                "mode": "reduceRow",
-                "reduce": {
-                  "reducer": "sum"
-                },
-                "replaceFields": false
-              }
-            },
-            {
               "id": "organize",
               "options": {
-                "excludeByName": {},
+                "excludeByName": {
+                  "Time": true,
+                  "Value": true
+                },
                 "includeByName": {},
-                "indexByName": {},
+                "indexByName": {
+                  "Time": 0,
+                  "Value": 5,
+                  "phase": 2,
+                  "reason": 3,
+                  "tested_cluster": 1,
+                  "type": 4
+                },
                 "renameByName": {
+                  "Time": "Time",
                   "Total": "",
+                  "Value": "",
+                  "cluster": "",
                   "db_error": "",
-                  "tested_cluster\\reason": "cluster\\reason"
+                  "phase": "Phase",
+                  "reason": "Reason",
+                  "tested_cluster": "Cluster",
+                  "tested_cluster\\reason": "cluster\\reason",
+                  "type": "Type"
                 }
               }
             }
@@ -569,91 +496,354 @@ data:
           "type": "table"
         },
         {
-          "collapsed": false,
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 2,
+            "w": 24,
+            "x": 0,
+            "y": 43
+          },
+          "id": 14,
+          "options": {
+            "code": {
+              "language": "plaintext",
+              "showLineNumbers": false,
+              "showMiniMap": false
+            },
+            "content": "<div style=\"text-align: center; width: 100%;\">\n  <h1 style=\"margin: 0; padding: 10px; font-weight: 600;\">Kanary Failure Reason Frequencies</h1>\n</div>",
+            "mode": "html"
+          },
+          "pluginVersion": "11.6.11",
+          "title": "",
+          "type": "text"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${kanary_datasource}"
+          },
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "fillOpacity": 80,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineWidth": 1,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red"
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 45
+          },
+          "id": 12,
+          "maxPerRow": 2,
+          "options": {
+            "barRadius": 0,
+            "barWidth": 0.97,
+            "colorByField": "type",
+            "fullHighlight": false,
+            "groupWidth": 0.7,
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": false
+            },
+            "orientation": "auto",
+            "showValue": "auto",
+            "stacking": "none",
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            },
+            "xTickLabelRotation": 0,
+            "xTickLabelSpacing": 0
+          },
+          "pluginVersion": "11.6.11",
+          "repeat": "kanary_clusters",
+          "repeatDirection": "h",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${kanary_datasource}"
+              },
+              "disableTextWrap": false,
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "sum by (type, reason) (\n  count_over_time(\n    kanary_error{tested_cluster=\"$kanary_clusters\", type=~\"${kanary_type}\", namespace=\"konflux-otel\"}[$__range:30m]\n  )\n)",
+              "format": "table",
+              "fullMetaSearch": false,
+              "includeNullMetadata": true,
+              "instant": true,
+              "legendFormat": "{{tested_cluster}}",
+              "range": false,
+              "refId": "A",
+              "useBackend": false
+            }
+          ],
+          "title": "Kanary Failure Reason Frequency - $kanary_clusters",
+          "type": "barchart"
+        },
+        {
+          "fieldConfig": {
+            "defaults": {},
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 2,
+            "w": 24,
+            "x": 0,
+            "y": 65
+          },
+          "id": 15,
+          "options": {
+            "code": {
+              "language": "plaintext",
+              "showLineNumbers": false,
+              "showMiniMap": false
+            },
+            "content": "<div style=\"text-align: center; width: 100%;\">\n  <h1 style=\"margin: 0; padding: 10px; font-weight: 600;\">Kanary Failure Phase Frequencies</h1>\n</div>",
+            "mode": "html"
+          },
+          "pluginVersion": "11.6.11",
+          "title": "",
+          "type": "text"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${kanary_datasource}"
+          },
+          "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "fillOpacity": 80,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "lineWidth": 1,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red"
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              },
+              "unit": "none"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 10,
+            "w": 24,
+            "x": 0,
+            "y": 67
+          },
+          "id": 13,
+          "maxPerRow": 2,
+          "options": {
+            "barRadius": 0,
+            "barWidth": 0.97,
+            "colorByField": "type",
+            "fullHighlight": false,
+            "groupWidth": 0.7,
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": false
+            },
+            "orientation": "auto",
+            "showValue": "auto",
+            "stacking": "none",
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            },
+            "xTickLabelRotation": 0,
+            "xTickLabelSpacing": 0
+          },
+          "pluginVersion": "11.6.11",
+          "repeat": "kanary_clusters",
+          "repeatDirection": "h",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${kanary_datasource}"
+              },
+              "disableTextWrap": false,
+              "editorMode": "code",
+              "exemplar": false,
+              "expr": "sum by (type, phase) (\n  count_over_time(\n    kanary_error{tested_cluster=\"$kanary_clusters\", type=~\"${kanary_type}\", namespace=\"konflux-otel\"}[$__range:30m]\n  )\n)",
+              "format": "table",
+              "fullMetaSearch": false,
+              "includeNullMetadata": true,
+              "instant": true,
+              "legendFormat": "{{tested_cluster}}",
+              "range": false,
+              "refId": "A",
+              "useBackend": false
+            }
+          ],
+          "title": "Kanary Failure Phase Frequency - $kanary_clusters",
+          "type": "barchart"
+        },
+        {
+          "collapsed": true,
           "gridPos": {
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 42
+            "y": 87
           },
           "id": 10,
-          "panels": [],
+          "panels": [
+            {
+              "description": "This will show the kanary signal critical alerts.",
+              "fieldConfig": {
+                "defaults": {},
+                "overrides": []
+              },
+              "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 270
+              },
+              "id": 8,
+              "options": {
+                "alertInstanceLabelFilter": "{severity=\"critical\"}",
+                "alertName": "KanarySignal",
+                "dashboardAlerts": false,
+                "datasource": "rhtap-observatorium-production",
+                "folder": "",
+                "groupBy": [],
+                "groupMode": "default",
+                "maxItems": 20,
+                "showInactiveAlerts": false,
+                "sortOrder": 1,
+                "stateFilter": {
+                  "error": true,
+                  "firing": true,
+                  "noData": true,
+                  "normal": true,
+                  "pending": true
+                },
+                "viewMode": "list"
+              },
+              "pluginVersion": "11.6.11",
+              "title": "Kanary Critical Alerts",
+              "type": "alertlist"
+            },
+            {
+              "description": "This will show the kanary signal warning alerts.",
+              "fieldConfig": {
+                "defaults": {},
+                "overrides": []
+              },
+              "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 270
+              },
+              "id": 9,
+              "options": {
+                "alertInstanceLabelFilter": "{severity=\"warning\"}",
+                "alertName": "Kanary",
+                "dashboardAlerts": false,
+                "datasource": "rhtap-observatorium-production",
+                "folder": "",
+                "groupBy": [],
+                "groupMode": "default",
+                "maxItems": 20,
+                "showInactiveAlerts": false,
+                "sortOrder": 1,
+                "stateFilter": {
+                  "error": true,
+                  "firing": true,
+                  "noData": true,
+                  "normal": true,
+                  "pending": true
+                },
+                "viewMode": "list"
+              },
+              "pluginVersion": "11.6.11",
+              "title": "Kanary Warning Alerts",
+              "type": "alertlist"
+            }
+          ],
           "title": "Kanary Alerts",
           "type": "row"
-        },
-        {
-          "description": "This will show the kanary signal critical alerts.",
-          "fieldConfig": {
-            "defaults": {},
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 43
-          },
-          "id": 8,
-          "options": {
-            "alertInstanceLabelFilter": "{severity=\"critical\"}",
-            "alertName": "KanarySignal",
-            "dashboardAlerts": false,
-            "datasource": "rhtap-observatorium-production",
-            "folder": "",
-            "groupBy": [],
-            "groupMode": "default",
-            "maxItems": 20,
-            "showInactiveAlerts": false,
-            "sortOrder": 1,
-            "stateFilter": {
-              "error": true,
-              "firing": true,
-              "noData": true,
-              "normal": true,
-              "pending": true
-            },
-            "viewMode": "list"
-          },
-          "pluginVersion": "11.6.11",
-          "title": "Kanary Critical Alerts",
-          "type": "alertlist"
-        },
-        {
-          "description": "This will show the kanary signal warning alerts.",
-          "fieldConfig": {
-            "defaults": {},
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 43
-          },
-          "id": 9,
-          "options": {
-            "alertInstanceLabelFilter": "{severity=\"warning\"}",
-            "alertName": "Kanary",
-            "dashboardAlerts": false,
-            "datasource": "rhtap-observatorium-production",
-            "folder": "",
-            "groupBy": [],
-            "groupMode": "default",
-            "maxItems": 20,
-            "showInactiveAlerts": false,
-            "sortOrder": 1,
-            "stateFilter": {
-              "error": true,
-              "firing": true,
-              "noData": true,
-              "normal": true,
-              "pending": true
-            },
-            "viewMode": "list"
-          },
-          "pluginVersion": "11.6.11",
-          "title": "Kanary Warning Alerts",
-          "type": "alertlist"
         }
       ],
       "preload": false,
@@ -691,7 +881,7 @@ data:
               "type": "prometheus",
               "uid": "${kanary_datasource}"
             },
-            "definition": "label_values(kanary_up,tested_cluster)",
+            "definition": "label_values(kanary_up{namespace=\"konflux-otel\"},tested_cluster)",
             "description": "The cluster(s) that the kanary signal is monitoring",
             "includeAll": true,
             "label": "Kanary Clusters",
@@ -700,7 +890,7 @@ data:
             "options": [],
             "query": {
               "qryType": 1,
-              "query": "label_values(kanary_up,tested_cluster)",
+              "query": "label_values(kanary_up{namespace=\"konflux-otel\"},tested_cluster)",
               "refId": "PrometheusVariableQueryEditor-VariableQuery"
             },
             "refresh": 1,
@@ -717,14 +907,14 @@ data:
               "type": "prometheus",
               "uid": "${kanary_datasource}"
             },
-            "definition": "label_values(kanary_up,type)",
+            "definition": "label_values(kanary_up{namespace=\"konflux-otel\"},type)",
             "description": "The type of artifacts the canary is monitoring",
             "label": "Kanary Type",
             "name": "kanary_type",
             "options": [],
             "query": {
               "qryType": 1,
-              "query": "label_values(kanary_up,type)",
+              "query": "label_values(kanary_up{namespace=\"konflux-otel\"},type)",
               "refId": "PrometheusVariableQueryEditor-VariableQuery"
             },
             "refresh": 1,
@@ -741,5 +931,5 @@ data:
       "timezone": "browser",
       "title": "Kanary Signal V1 Dashboard",
       "uid": "kanary-signals-v1",
-      "version": 9
+      "version": 1
     }
