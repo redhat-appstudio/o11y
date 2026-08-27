@@ -29,6 +29,25 @@ spec:
         team: vanguard
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/vanguard/sre/artifact-registry-proxy-down.md
 
+    - alert: ArtifactRegistryProxyDown
+      expr: |
+        konflux_up{namespace="artifact-registry-proxy", service="artifact-registry-proxy", check="nginx-proxy"} == 0
+      for: 5m
+      labels:
+        severity: critical
+        slo: "true"
+        component: artifact-registry-proxy
+      annotations:
+        html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.artifact_registry_proxy_alerts.yaml#L32
+        summary: >-
+          Artifact Registry proxy is down
+        description: >-
+          Access log exporter cannot scrape the artifact registry proxy successfully in namespace artifact-registry-proxy.
+          The proxy has been down for 5 minutes in cluster {{ $labels.source_cluster }}.
+        alert_team_handle: <!subteam^S07NDQV6A4D>
+        team: vanguard
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/vanguard/sre/artifact-registry-proxy-down.md
+
   - name: artifact_registry_proxy_alerts
     interval: 1m
     rules:

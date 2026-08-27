@@ -7,9 +7,9 @@ tests:
   # Test 1: Metric disappears after 59 minutes - should alert
   - interval: 1m
     input_series:
-      - series: 'konflux_up{service="grafana", check="prometheus-appstudio-ds", source_cluster="stone-stg-rh01"}'
+      - series: 'konflux_up{service="grafana", check="prometheus-appstudio-ds", namespace="appstudio-grafana", source_cluster="stone-stg-rh01"}'
         values: '1x59 _x41'
-      - series: 'konflux_up{service="grafana", check="prometheus-appstudio-ds", source_cluster="stone-stg-m01"}'
+      - series: 'konflux_up{service="grafana", check="prometheus-appstudio-ds", namespace="appstudio-grafana", source_cluster="stone-stg-m01"}'
         values: '1x100'
 
     alert_rule_test:
@@ -33,20 +33,21 @@ tests:
               severity: warning
               check: prometheus-appstudio-ds
               service: grafana
+              namespace: appstudio-grafana
               source_cluster: stone-stg-rh01
             exp_annotations:
               summary: >-
                 Availability metric 'konflux_up' is missing.
               description: >-
                 Availability metric 'konflux_up' has not reported for check
-                prometheus-appstudio-ds on service grafana and cluster stone-stg-rh01
+                prometheus-appstudio-ds on service grafana in namespace appstudio-grafana and cluster stone-stg-rh01
                 in the last 10 minutes, but was present in the last hour.
               alert_routing_key: 'o11y'
 
   # Test 2: Metric disappears too early (outside 1h lookback) - should NOT alert
   - interval: 1m
     input_series:
-      - series: 'konflux_up{service="grafana", check="prometheus-appstudio-ds", source_cluster="stone-stg-rh01"}'
+      - series: 'konflux_up{service="grafana", check="prometheus-appstudio-ds", namespace="appstudio-grafana", source_cluster="stone-stg-rh01"}'
         values: '1x5 _x115'
 
     alert_rule_test:
@@ -56,11 +57,62 @@ tests:
   # Test 3: Pod label change (pod restart) - should NOT alert
   - interval: 1m
     input_series:
-      - series: 'konflux_up{service="grafana", check="prometheus-appstudio-ds", source_cluster="stone-stg-rh01", pod="grafana-pod1"}'
+      - series: 'konflux_up{service="grafana", check="prometheus-appstudio-ds", namespace="appstudio-grafana", source_cluster="stone-stg-rh01", pod="grafana-pod1"}'
         values: '_x59 1x41'
-      - series: 'konflux_up{service="grafana", check="prometheus-appstudio-ds", source_cluster="stone-stg-rh01", pod="grafana-pod2"}'
+      - series: 'konflux_up{service="grafana", check="prometheus-appstudio-ds", namespace="appstudio-grafana", source_cluster="stone-stg-rh01", pod="grafana-pod2"}'
         values: '1x59 _x41'
 
     alert_rule_test:
       - eval_time: 80m
         alertname: KonfluxAlert
+
+  # Test 4: A signal in another namespace must not mask a missing signal
+  - interval: 1m
+    input_series:
+      - series: 'konflux_up{service="artifact-registry-proxy", check="nginx-proxy", namespace="artifact-registry-proxy", source_cluster="cluster03"}'
+        values: '1x59 _x41'
+      - series: 'konflux_up{service="artifact-registry-proxy", check="nginx-proxy", namespace="caching", source_cluster="cluster03"}'
+        values: '1x100'
+
+    alert_rule_test:
+      - eval_time: 80m
+        alertname: KonfluxAlert
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              check: nginx-proxy
+              service: artifact-registry-proxy
+              namespace: artifact-registry-proxy
+              source_cluster: cluster03
+            exp_annotations:
+              summary: >-
+                Availability metric 'konflux_up' is missing.
+              description: >-
+                Availability metric 'konflux_up' has not reported for check
+                nginx-proxy on service artifact-registry-proxy in namespace artifact-registry-proxy and cluster cluster03
+                in the last 10 minutes, but was present in the last hour.
+              alert_routing_key: 'o11y'
+
+  # Test 5: A signal without a namespace omits the namespace phrase
+  - interval: 1m
+    input_series:
+      - series: 'konflux_up{service="github", check="probe", source_cluster="cluster03"}'
+        values: '1x59 _x41'
+
+    alert_rule_test:
+      - eval_time: 80m
+        alertname: KonfluxAlert
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              check: probe
+              service: github
+              source_cluster: cluster03
+            exp_annotations:
+              summary: >-
+                Availability metric 'konflux_up' is missing.
+              description: >-
+                Availability metric 'konflux_up' has not reported for check
+                probe on service github and cluster cluster03
+                in the last 10 minutes, but was present in the last hour.
+              alert_routing_key: 'o11y'
