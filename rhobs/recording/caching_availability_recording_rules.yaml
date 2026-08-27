@@ -38,8 +38,56 @@ spec:
       rules:
         # Record rule: calculate total request rate
         - record: artifact_registry_proxy:http_requests:rate5m
-          expr: sum by (source_cluster, namespace, service) (rate(http_requests_total{namespace="caching", service="artifact-registry-proxy"}[5m]))
+          expr: sum by (source_cluster, namespace, service) (rate(http_requests_total{namespace=~"caching|artifact-registry-proxy", service="artifact-registry-proxy"}[5m]))
 
         # Record rule: calculate error rate (5xx responses)
         - record: artifact_registry_proxy:http_errors:rate5m
-          expr: sum by (source_cluster, namespace, service) (rate(http_requests_total{namespace="caching", service="artifact-registry-proxy", status=~"5.."}[5m]))
+          expr: sum by (source_cluster, namespace, service) (rate(http_requests_total{namespace=~"caching|artifact-registry-proxy", service="artifact-registry-proxy", status=~"5.."}[5m]))
+
+        # Record rule: calculate cache hit rate
+        - record: artifact_registry_proxy:cache_hits:rate5m
+          expr: sum by (source_cluster, namespace, service) (rate(http_requests_total{namespace="artifact-registry-proxy", service="artifact-registry-proxy", cache_status="HIT"}[5m]))
+
+        # Record rule: calculate cache miss rate
+        - record: artifact_registry_proxy:cache_misses:rate5m
+          expr: sum by (source_cluster, namespace, service) (rate(http_requests_total{namespace="artifact-registry-proxy", service="artifact-registry-proxy", cache_status="MISS"}[5m]))
+
+        # Record rule: calculate cache hit ratio (percentage)
+        - record: artifact_registry_proxy:cache_hit_ratio:rate5m
+          expr: |
+            (
+              sum by (source_cluster, namespace, service) (rate(http_requests_total{namespace="artifact-registry-proxy", service="artifact-registry-proxy", cache_status="HIT"}[5m]))
+              /
+              sum by (source_cluster, namespace, service) (rate(http_requests_total{namespace="artifact-registry-proxy", service="artifact-registry-proxy"}[5m]))
+            ) * 100
+
+    - name: container_image_proxy_performance
+      interval: 1m
+      rules:
+        # Record rule: calculate total request rate
+        - record: container_image_proxy:http_requests:rate5m
+          expr: sum by (source_cluster, namespace, service) (rate(squid_client_http_requests_total{namespace="container-image-proxy", service="squid"}[5m]))
+
+        # Record rule: calculate error rate
+        - record: container_image_proxy:http_errors:rate5m
+          expr: sum by (source_cluster, namespace, service) (rate(squid_client_http_errors_total{namespace="container-image-proxy", service="squid"}[5m]))
+
+        # Record rule: calculate cache hit rate
+        - record: container_image_proxy:cache_hits:rate5m
+          expr: sum by (source_cluster, namespace, service) (rate(squid_client_http_hits_total{namespace="container-image-proxy", service="squid"}[5m]))
+
+        # Record rule: calculate cache miss rate
+        - record: container_image_proxy:cache_misses:rate5m
+          expr: |
+            sum by (source_cluster, namespace, service) (rate(squid_client_http_requests_total{namespace="container-image-proxy", service="squid"}[5m]))
+            -
+            sum by (source_cluster, namespace, service) (rate(squid_client_http_hits_total{namespace="container-image-proxy", service="squid"}[5m]))
+
+        # Record rule: calculate cache hit ratio (percentage)
+        - record: container_image_proxy:cache_hit_ratio:rate5m
+          expr: |
+            (
+              sum by (source_cluster, namespace, service) (rate(squid_client_http_hits_total{namespace="container-image-proxy", service="squid"}[5m]))
+              /
+              sum by (source_cluster, namespace, service) (rate(squid_client_http_requests_total{namespace="container-image-proxy", service="squid"}[5m]))
+            ) * 100
