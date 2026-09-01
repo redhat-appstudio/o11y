@@ -1,0 +1,25 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-blackbox-exporter-availability
+  labels:
+    tenant: rhtap
+spec:
+
+  groups:
+    - name: blackbox_exporter_availability
+      interval: 1m
+      rules:
+        - record: konflux_up
+          expr: |
+            clamp_max(
+              label_replace(
+                label_replace(
+                  floor(
+                    kube_deployment_status_replicas_available{
+                      namespace="appstudio-monitoring", deployment="blackbox-exporter-obo"
+                    } / kube_deployment_spec_replicas
+                  ), "check", "replicas-available", "",""
+                ), "service", "$1", "deployment","(.*)"
+              ), 1
+            )

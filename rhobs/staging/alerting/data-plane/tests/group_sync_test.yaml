@@ -1,0 +1,42 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.group_sync.yaml
+
+tests:
+  - interval: 1m
+    input_series:
+
+      # Cronjob succeeded recently
+      - series: 'kube_cronjob_status_last_successful_time{cronjob="rover-group-sync", source_cluster="cluster01"}'
+        values: '0+60x120'  # Advancing with current time
+      - series: 'kube_cronjob_status_last_schedule_time{cronjob="rover-group-sync", source_cluster="cluster01"}'
+        values: '0+60x120'  # Advancing with current time
+
+      # Cronjob failed
+      - series: 'kube_cronjob_status_last_successful_time{cronjob="rover-group-sync", source_cluster="cluster02"}'
+        values: '-100000x120'  # Static old timestamp (> 24h ago)
+      - series: 'kube_cronjob_status_last_schedule_time{cronjob="rover-group-sync", source_cluster="cluster02"}'
+        values: '0+60x120'  # Current time, advancing
+
+      # Cronjob failed but recovers before 1h 'for' duration
+      - series: 'kube_cronjob_status_last_successful_time{cronjob="rover-group-sync", source_cluster="cluster03"}'
+        values: '-100000x30 0+60x90'  # Old timestamp for 30m, then recovers to current
+      - series: 'kube_cronjob_status_last_schedule_time{cronjob="rover-group-sync", source_cluster="cluster03"}'
+        values: '0+60x120'  # Current time, advancing
+
+    alert_rule_test:
+      - eval_time: 120m
+        alertname: GroupSyncAlert
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              component: rover-group-sync
+              cronjob: rover-group-sync
+              source_cluster: cluster02
+            exp_annotations:
+              summary: Group sync cronjob failed multiple times.
+              description: Group sync cronjob failed multiple times in the last 24 hours in cluster cluster02.
+              alert_routing_key: spreandinfra
+              team: o11y
+              slo: "false"

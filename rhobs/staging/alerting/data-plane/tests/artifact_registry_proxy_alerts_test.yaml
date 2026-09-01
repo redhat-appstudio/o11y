@@ -1,0 +1,126 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.artifact_registry_proxy_alerts.yaml
+
+tests:
+  # ========================================
+  # NginxProxyDown Alert Tests
+  # ========================================
+  - name: NginxProxyDown_Firing
+    interval: 1m
+    input_series:
+      - series: 'konflux_up{namespace="caching", service="artifact-registry-proxy", source_cluster="cluster01"}'
+        values: '0x10'
+
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: NginxProxyDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              component: artifact-registry-proxy
+              namespace: caching
+              service: artifact-registry-proxy
+              source_cluster: cluster01
+            exp_annotations:
+              summary: "Artifact Registry Nginx proxy is down"
+              description: "Access log exporter cannot scrape the artifact registry proxy successfully in namespace caching. The proxy has been down for 5 minutes in cluster cluster01."
+              alert_team_handle: "<!subteam^S07NDQV6A4D>"
+              team: vanguard
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/vanguard/sre/artifact-registry-proxy-down.md
+
+  - name: NginxProxyDown_NotFiring
+    interval: 1m
+    input_series:
+      - series: 'konflux_up{namespace="caching", service="artifact-registry-proxy", source_cluster="cluster01"}'
+        values: '1x10'
+
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: NginxProxyDown
+        exp_alerts: []
+
+  - name: NginxProxyDown_RecoveredBeforeThreshold
+    interval: 1m
+    input_series:
+      # Down for 4 minutes, then recovers - should not fire (needs 5m)
+      - series: 'konflux_up{namespace="caching", service="artifact-registry-proxy", source_cluster="cluster01"}'
+        values: '0x4 1x6'
+
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: NginxProxyDown
+        exp_alerts: []
+
+  # ========================================
+  # NginxHighErrorRate Alert Tests
+  # ========================================
+  - name: NginxHighErrorRate_Firing
+    interval: 1m
+    input_series:
+      # 10 errors out of 100 requests = 10% error rate (> 5% threshold)
+      - series: 'http_requests_total{namespace="caching", service="artifact-registry-proxy", status="500", source_cluster="cluster01"}'
+        values: '0+10x20'
+      - series: 'http_requests_total{namespace="caching", service="artifact-registry-proxy", status="200", source_cluster="cluster01"}'
+        values: '0+90x20'
+      # Simulated recording rule outputs (normally created by caching_availability_recording_rules.yaml)
+      - series: 'artifact_registry_proxy:http_requests:rate5m{namespace="caching", service="artifact-registry-proxy", source_cluster="cluster01"}'
+        values: '0 0.25 0.25 0.25 0.25 0.25 0.25+0x20'
+      - series: 'artifact_registry_proxy:http_errors:rate5m{namespace="caching", service="artifact-registry-proxy", source_cluster="cluster01"}'
+        values: '0 0.025 0.025 0.025 0.025 0.025 0.025+0x20'
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: NginxHighErrorRate
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              slo: "false"
+              component: artifact-registry-proxy
+              source_cluster: cluster01
+              namespace: caching
+              service: artifact-registry-proxy
+            exp_annotations:
+              summary: "Artifact Registry Nginx proxy has high error rate"
+              description: "More than 5% of requests to the artifact registry proxy are returning 5xx errors in cluster cluster01. Current error rate: 10%."
+              alert_team_handle: "<!subteam^S07NDQV6A4D>"
+              team: vanguard
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/vanguard/sre/artifact-registry-proxy-high-error-rate.md
+
+  - name: NginxHighErrorRate_NotFiring_BelowThreshold
+    interval: 1m
+    input_series:
+      # 3 errors out of 100 requests = 3% error rate (< 5% threshold)
+      - series: 'http_requests_total{namespace="caching", service="artifact-registry-proxy", status="500", source_cluster="cluster01"}'
+        values: '0+3x20'
+      - series: 'http_requests_total{namespace="caching", service="artifact-registry-proxy", status="200", source_cluster="cluster01"}'
+        values: '0+97x20'
+      # Simulated recording rule outputs
+      - series: 'artifact_registry_proxy:http_requests:rate5m{namespace="caching", service="artifact-registry-proxy", source_cluster="cluster01"}'
+        values: '0 0.25 0.25 0.25 0.25 0.25 0.25+0x20'
+      - series: 'artifact_registry_proxy:http_errors:rate5m{namespace="caching", service="artifact-registry-proxy", source_cluster="cluster01"}'
+        values: '0 0.0075 0.0075 0.0075 0.0075 0.0075 0.0075+0x20'
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: NginxHighErrorRate
+        exp_alerts: []
+
+  - name: NginxHighErrorRate_NotFiring_NoErrors
+    interval: 1m
+    input_series:
+      # No errors at all
+      - series: 'http_requests_total{namespace="caching", service="artifact-registry-proxy", status="200", source_cluster="cluster01"}'
+        values: '0+100x20'
+      # Simulated recording rule outputs
+      - series: 'artifact_registry_proxy:http_requests:rate5m{namespace="caching", service="artifact-registry-proxy", source_cluster="cluster01"}'
+        values: '0 0.25 0.25 0.25 0.25 0.25 0.25+0x20'
+      - series: 'artifact_registry_proxy:http_errors:rate5m{namespace="caching", service="artifact-registry-proxy", source_cluster="cluster01"}'
+        values: '0+0x20'
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: NginxHighErrorRate
+        exp_alerts: []

@@ -1,0 +1,88 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.integration_service_availability_alerts.yaml
+
+tests:
+  # Test 1: Availability failes on cluster01 for 5 mins - alert fires
+  - interval: 1m
+    input_series:
+      - series: 'konflux_up{service="integration-service-controller-manager", namespace="integration-service", check="replicas-available", source_cluster="cluster01"}'
+        values: '1x1380 0x60'  # 23h up, 1h down
+      - series: 'konflux_up{service="integration-service-controller-manager", namespace="integration-service", check="replicas-available", source_cluster="cluster02"}'
+        values: '1x1440'  # Always up
+
+    alert_rule_test:
+      - eval_time: 1440m
+        alertname: IntegrationServiceAvailabilitySLOViolation
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              component: integration-service
+              tenant: rhtap
+              service: integration-service-controller-manager
+              namespace: integration-service
+              source_cluster: cluster01
+              check: replicas-available
+            exp_annotations:
+              summary: Integration Service Availability SLO Violation
+              description: Integration service 'integration-service-controller-manager' in namespace 'integration-service' on cluster01 has been down for 5min.
+              alert_team_handle: <!subteam^S05M4AG8CJH>
+              team: integration
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/sre/integration_service_availability_replicas_available.md
+
+  # Test 2: 100% availability on both clusters - no alert
+  - interval: 1m
+    input_series:
+      - series: 'konflux_up{service="integration-service-controller-manager", namespace="integration-service", check="replicas-available", source_cluster="cluster01"}'
+        values: '1x1440'
+      - series: 'konflux_up{service="integration-service-controller-manager", namespace="integration-service", check="replicas-available", source_cluster="cluster02"}'
+        values: '1x1440'
+
+    alert_rule_test:
+      - eval_time: 1440m
+        alertname: IntegrationServiceAvailabilitySLOViolation
+        exp_alerts: []
+
+  # Test 3: Downtime for exactly 5 minutes - alert fires
+  - interval: 1m
+    input_series:
+      - series: 'konflux_up{service="integration-service-controller-manager", namespace="integration-service", check="replicas-available", source_cluster="cluster01"}'
+        values: '1x1434 0x6'
+      - series: 'konflux_up{service="integration-service-controller-manager", namespace="integration-service", check="replicas-available", source_cluster="cluster02"}'
+        values: '1x1440'
+
+    alert_rule_test:
+      - eval_time: 1440m
+        alertname: IntegrationServiceAvailabilitySLOViolation
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              component: integration-service
+              tenant: rhtap
+              service: integration-service-controller-manager
+              namespace: integration-service
+              source_cluster: cluster01
+              check: replicas-available
+            exp_annotations:
+              summary: Integration Service Availability SLO Violation
+              description: Integration service 'integration-service-controller-manager' in namespace 'integration-service' on cluster01 has been down for 5min.
+
+              alert_team_handle: <!subteam^S05M4AG8CJH>
+              team: integration
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/sre/integration_service_availability_replicas_available.md
+
+  # Test: 4 minutes downtime - no alert
+  - interval: 1m
+    input_series:
+      - series: 'konflux_up{service="integration-service-controller-manager", namespace="integration-service", check="replicas-available", source_cluster="cluster01"}'
+        values: '1x1436 0x4'
+      - series: 'konflux_up{service="integration-service-controller-manager", namespace="integration-service", check="replicas-available", source_cluster="cluster02"}'
+        values: '1x1440'
+
+    alert_rule_test:
+      - eval_time: 1440m
+        alertname: IntegrationServiceAvailabilitySLOViolation
+        exp_alerts: []

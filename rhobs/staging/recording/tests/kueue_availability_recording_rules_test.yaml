@@ -1,0 +1,58 @@
+evaluation_interval: 1m
+
+rule_files:
+  - kueue_availability_recording_rules.yaml
+
+tests:
+  - interval: 1m
+    name: KueueAvailabilityTest
+    input_series:
+      # Fully available deployment in openshift-kueue-operator namespace
+      - series: 'kube_deployment_status_replicas_available{deployment="kueue-controller-manager", namespace="openshift-kueue-operator"}'
+        values: '2 2 2 2 2'
+      - series: 'kube_deployment_spec_replicas{deployment="kueue-controller-manager", namespace="openshift-kueue-operator"}'
+        values: '2 2 2 2 2'
+
+      # Partially available deployment in tekton-kueue namespace
+      - series: 'kube_deployment_status_replicas_available{deployment="kueue-webhook", namespace="tekton-kueue"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_spec_replicas{deployment="kueue-webhook", namespace="tekton-kueue"}'
+        values: '3 3 3 3 3'
+
+      # Unavailable deployment in kueue-external-admission namespace
+      - series: 'kube_deployment_status_replicas_available{deployment="external-admission-controller", namespace="kueue-external-admission"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_spec_replicas{deployment="external-admission-controller", namespace="kueue-external-admission"}'
+        values: '1 1 1 1 1'
+
+      # Single replica deployment that's available
+      - series: 'kube_deployment_status_replicas_available{deployment="kueue-operator", namespace="openshift-kueue-operator"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_spec_replicas{deployment="kueue-operator", namespace="openshift-kueue-operator"}'
+        values: '1 1 1 1 1'
+
+      # Test edge case with 0 spec replicas (should be clamped to 1)
+      - series: 'kube_deployment_status_replicas_available{deployment="test-deployment", namespace="tekton-kueue"}'
+        values: '0 0 0 0 0'
+      - series: 'kube_deployment_spec_replicas{deployment="test-deployment", namespace="tekton-kueue"}'
+        values: '0 0 0 0 0'
+
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples:
+          # Fully available: 2/2 = 1.0, floor(1.0) = 1
+          - labels: 'konflux_up{service="kueue-controller-manager", check="replicas-available", deployment="kueue-controller-manager", namespace="openshift-kueue-operator"}'
+            value: 1
+          # Partially available: 1/3 = 0.33, floor(0.33) = 0
+          - labels: 'konflux_up{service="kueue-webhook", check="replicas-available", deployment="kueue-webhook", namespace="tekton-kueue"}'
+            value: 0
+          # Unavailable: 0/1 = 0, floor(0) = 0
+          - labels: 'konflux_up{service="external-admission-controller", check="replicas-available", deployment="external-admission-controller", namespace="kueue-external-admission"}'
+            value: 0
+          # Single replica available: 1/1 = 1.0, floor(1.0) = 1
+          - labels: 'konflux_up{service="kueue-operator", check="replicas-available", deployment="kueue-operator", namespace="openshift-kueue-operator"}'
+            value: 1
+          # Edge case with 0 spec: 0/clamp_min(0,1) = 0/1 = 0, floor(0) = 0
+          - labels: 'konflux_up{service="test-deployment", check="replicas-available", deployment="test-deployment", namespace="tekton-kueue"}'
+            value: 0
