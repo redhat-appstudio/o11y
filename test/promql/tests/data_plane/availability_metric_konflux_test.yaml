@@ -17,12 +17,15 @@ tests:
       - eval_time: 65m
         alertname: KonfluxAlert
 
-      # At 72m: count_over_time[10m] no longer includes the last sample (T=58m),
-      # so the expression is true, but for:5m pending period has not fully elapsed. No alert.
-      - eval_time: 72m
+      # At 74m: count_over_time[10m] expression is true, but for:10m pending period has not elapsed. No alert.
+      - eval_time: 74m
         alertname: KonfluxAlert
 
-      # At 80m: metric absent for 21 minutes. Well past 10m window + 5m for. Alert fires.
+      # At 75m: regression test for for:10m. With for:5m this would FIRE. With for:10m it MUST NOT fire yet (still pending).
+      - eval_time: 75m
+        alertname: KonfluxAlert
+
+      # At 80m: metric absent for 21m (10m expression window + 10m for period elapsed). Alert fires.
       - eval_time: 80m
         alertname: KonfluxAlert
         exp_alerts:
