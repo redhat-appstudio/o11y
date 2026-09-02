@@ -1,0 +1,32 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-konflux-mttb
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: konflux_mttb
+      interval: 1m
+      rules:
+        - record: konflux:mttb:execute_seconds:mean_5m
+          expr: |
+            sum by (namespace, cicd_pipeline_action_name) (rate(traces_span_metrics_duration_seconds_sum{span_name="executeDuration", cicd_pipeline_result="success"}[5m]))
+            /
+            sum by (namespace, cicd_pipeline_action_name) (rate(traces_span_metrics_duration_seconds_count{span_name="executeDuration", cicd_pipeline_result="success"}[5m]))
+        - record: konflux:mttb:execute_seconds:p95_5m
+          expr: |
+            histogram_quantile(0.95, sum by (le, namespace, cicd_pipeline_action_name) (rate(traces_span_metrics_duration_seconds_bucket{span_name="executeDuration", cicd_pipeline_result="success"}[5m])))
+        - record: konflux:mttb:wait_seconds:mean_5m
+          expr: |
+            sum by (namespace, cicd_pipeline_action_name) (rate(traces_span_metrics_duration_seconds_sum{span_name="waitDuration"}[5m]))
+            /
+            sum by (namespace, cicd_pipeline_action_name) (rate(traces_span_metrics_duration_seconds_count{span_name="waitDuration"}[5m]))
+        - record: konflux:mttb:calls:rate_5m
+          expr: |
+            sum by (namespace, cicd_pipeline_action_name, cicd_pipeline_result) (rate(traces_span_metrics_calls_total{span_name="executeDuration"}[5m]))
+        - record: konflux:mttb:success_ratio:5m
+          expr: |
+            sum by (namespace, cicd_pipeline_action_name) (rate(traces_span_metrics_calls_total{span_name="executeDuration", cicd_pipeline_result="success"}[5m]))
+            /
+            sum by (namespace, cicd_pipeline_action_name) (rate(traces_span_metrics_calls_total{span_name="executeDuration"}[5m]))
