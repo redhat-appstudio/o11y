@@ -70,9 +70,21 @@ spec:
 
     - alert: PodCPUUsageExceedsRequested
       expr: |
-        avg_over_time(container_cpu_usage_seconds_total{namespace="appstudio-grafana"}[5m])
+        sum by (namespace, pod, container, source_cluster) (
+          rate(container_cpu_usage_seconds_total{
+            namespace="appstudio-grafana",
+            container!="",
+            container!="POD"
+          }[5m])
+        )
         > on(namespace, pod, container, source_cluster)
-        kube_pod_container_resource_requests{resource="cpu", namespace="appstudio-grafana"}
+        sum by (namespace, pod, container, source_cluster) (
+          kube_pod_container_resource_requests{
+            resource="cpu",
+            unit="core",
+            namespace="appstudio-grafana"
+          }
+        )
       for: 5m
       labels:
         severity: warning
