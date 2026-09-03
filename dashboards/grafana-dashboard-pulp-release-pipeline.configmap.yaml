@@ -62,19 +62,34 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "description": "Total push-rpms-to-pulp TaskRuns in the selected time range",
+          "description": "OOMKilled containers in RPM release pipeline pods",
           "fieldConfig": {
             "defaults": {
               "color": {
                 "mode": "thresholds"
               },
-              "mappings": [],
+              "mappings": [
+                {
+                  "options": {
+                    "0": {
+                      "color": "green",
+                      "index": 0,
+                      "text": "0"
+                    }
+                  },
+                  "type": "value"
+                }
+              ],
               "noValue": "0",
               "thresholds": {
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "blue"
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
                   }
                 ]
               }
@@ -83,240 +98,8 @@ data:
           },
           "gridPos": {
             "h": 5,
-            "w": 6,
+            "w": 8,
             "x": 0,
-            "y": 1
-          },
-          "id": 2,
-          "options": {
-            "colorMode": "background_solid",
-            "graphMode": "none",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showPercentChange": false,
-            "textMode": "auto",
-            "wideLayout": true
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "sum(increase(tekton_pipelines_controller_taskrun_total{source_cluster=~\"$cluster\", pipeline=\"push-rpms-to-pulp\"}[$__range])) or vector(0)",
-              "legendFormat": "Total",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Total TaskRuns",
-          "type": "stat"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "Failed push-rpms-to-pulp TaskRuns in the selected time range",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [
-                {
-                  "options": {
-                    "0": {
-                      "color": "green",
-                      "index": 0,
-                      "text": "0"
-                    }
-                  },
-                  "type": "value"
-                }
-              ],
-              "noValue": "0",
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  },
-                  {
-                    "color": "yellow",
-                    "value": 1
-                  },
-                  {
-                    "color": "red",
-                    "value": 5
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 5,
-            "w": 6,
-            "x": 6,
-            "y": 1
-          },
-          "id": 3,
-          "options": {
-            "colorMode": "background_solid",
-            "graphMode": "none",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showPercentChange": false,
-            "textMode": "auto",
-            "wideLayout": true
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "sum(increase(tekton_pipelines_controller_taskrun_total{source_cluster=~\"$cluster\", pipeline=\"push-rpms-to-pulp\", status=\"failed\"}[$__range])) or vector(0)",
-              "legendFormat": "Failed",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Failed TaskRuns",
-          "type": "stat"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "Failure rate of push-rpms-to-pulp TaskRuns over the last hour",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [],
-              "noValue": "0%",
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  },
-                  {
-                    "color": "yellow",
-                    "value": 10
-                  },
-                  {
-                    "color": "red",
-                    "value": 20
-                  }
-                ]
-              },
-              "unit": "percent"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 5,
-            "w": 6,
-            "x": 12,
-            "y": 1
-          },
-          "id": 4,
-          "options": {
-            "colorMode": "background_solid",
-            "graphMode": "area",
-            "justifyMode": "auto",
-            "orientation": "auto",
-            "reduceOptions": {
-              "calcs": [
-                "lastNotNull"
-              ],
-              "fields": "",
-              "values": false
-            },
-            "showPercentChange": false,
-            "textMode": "auto",
-            "wideLayout": true
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "(\n  sum(rate(tekton_pipelines_controller_taskrun_total{source_cluster=~\"$cluster\", pipeline=\"push-rpms-to-pulp\", status=\"failed\"}[1h]))\n  /\n  sum(rate(tekton_pipelines_controller_taskrun_total{source_cluster=~\"$cluster\", pipeline=\"push-rpms-to-pulp\"}[1h]))\n) * 100",
-              "legendFormat": "Failure Rate",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Failure Rate (1h)",
-          "type": "stat"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "OOMKilled containers in push-rpms-to-pulp pods",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "thresholds"
-              },
-              "mappings": [
-                {
-                  "options": {
-                    "0": {
-                      "color": "green",
-                      "index": 0,
-                      "text": "0"
-                    }
-                  },
-                  "type": "value"
-                }
-              ],
-              "noValue": "0",
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  },
-                  {
-                    "color": "red",
-                    "value": 1
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 5,
-            "w": 6,
-            "x": 18,
             "y": 1
           },
           "id": 5,
@@ -343,7 +126,7 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum(\n  count by (source_cluster, namespace, pod) (\n    max_over_time(\n      kube_pod_container_status_terminated_reason{source_cluster=~\"$cluster\", reason=\"OOMKilled\", pod=~\".*push-rpms-to-pulp.*\"}[$__range]\n    ) > 0\n  )\n) or vector(0)",
+              "expr": "(sum(kube_pod_container_status_terminated_reason{source_cluster=~\"$cluster\", reason=\"OOMKilled\", pod=~\".*(push-rpms-to-pulp|push-rpm-data-to-pyxis|upload-src-rpm-sbom-attestation).*\"}) or vector(0))",
               "legendFormat": "OOMKilled",
               "range": true,
               "refId": "A"
@@ -360,250 +143,6 @@ data:
             "x": 0,
             "y": 6
           },
-          "id": 10,
-          "panels": [],
-          "title": "TaskRun Activity",
-          "type": "row"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "Rate of push-rpms-to-pulp TaskRuns per minute, by status and cluster",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "TaskRuns / min",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 15,
-                "gradientMode": "opacity",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "smooth",
-                "lineWidth": 2,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "auto",
-                "spanNulls": true,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              }
-            },
-            "overrides": [
-              {
-                "matcher": {
-                  "id": "byRegexp",
-                  "options": "/failed/"
-                },
-                "properties": [
-                  {
-                    "id": "color",
-                    "value": {
-                      "fixedColor": "red",
-                      "mode": "fixed"
-                    }
-                  }
-                ]
-              },
-              {
-                "matcher": {
-                  "id": "byRegexp",
-                  "options": "/success/"
-                },
-                "properties": [
-                  {
-                    "id": "color",
-                    "value": {
-                      "fixedColor": "green",
-                      "mode": "fixed"
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          "gridPos": {
-            "h": 10,
-            "w": 24,
-            "x": 0,
-            "y": 7
-          },
-          "id": 11,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "max",
-                "lastNotNull"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "hideZeros": true,
-              "mode": "multi",
-              "sort": "desc"
-            }
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "sum by (source_cluster, status) (rate(tekton_pipelines_controller_taskrun_total{source_cluster=~\"$cluster\", pipeline=\"push-rpms-to-pulp\"}[5m])) * 60",
-              "legendFormat": "{{source_cluster}} — {{status}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "TaskRun Rate by Status & Cluster",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "Failure rate percentage over time (alert threshold at 20%)",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "fixedColor": "red",
-                "mode": "fixed"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "Failure %",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "line",
-                "fillOpacity": 10,
-                "gradientMode": "opacity",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "smooth",
-                "lineWidth": 2,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "auto",
-                "spanNulls": true,
-                "stacking": {
-                  "group": "A",
-                  "mode": "none"
-                },
-                "thresholdsStyle": {
-                  "mode": "line"
-                }
-              },
-              "mappings": [],
-              "max": 100,
-              "min": 0,
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  },
-                  {
-                    "color": "red",
-                    "value": 20
-                  }
-                ]
-              },
-              "unit": "percent"
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 10,
-            "w": 24,
-            "x": 0,
-            "y": 17
-          },
-          "id": 12,
-          "options": {
-            "legend": {
-              "calcs": [
-                "mean",
-                "max",
-                "lastNotNull"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "multi",
-              "sort": "desc"
-            }
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "(\n  sum by (source_cluster) (rate(tekton_pipelines_controller_taskrun_total{source_cluster=~\"$cluster\", pipeline=\"push-rpms-to-pulp\", status=\"failed\"}[1h]))\n  /\n  sum by (source_cluster) (rate(tekton_pipelines_controller_taskrun_total{source_cluster=~\"$cluster\", pipeline=\"push-rpms-to-pulp\"}[1h]))\n) * 100",
-              "legendFormat": "{{source_cluster}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Failure Rate Over Time (Alert Threshold: 20%)",
-          "type": "timeseries"
-        },
-        {
-          "collapsed": false,
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 27
-          },
           "id": 20,
           "panels": [],
           "title": "OOMKilled Events",
@@ -614,7 +153,7 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "description": "OOMKilled events in push-rpms-to-pulp pods over time",
+          "description": "OOMKilled events in RPM release pipeline pods over time",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -670,7 +209,7 @@ data:
             "h": 10,
             "w": 24,
             "x": 0,
-            "y": 28
+            "y": 7
           },
           "id": 21,
           "options": {
@@ -696,7 +235,7 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum by (source_cluster, namespace) (\n  kube_pod_container_status_terminated_reason{source_cluster=~\"$cluster\", reason=\"OOMKilled\", pod=~\".*push-rpms-to-pulp.*\"}\n)",
+              "expr": "sum by (source_cluster, namespace) (\n  kube_pod_container_status_terminated_reason{source_cluster=~\"$cluster\", reason=\"OOMKilled\", pod=~\".*(push-rpms-to-pulp|push-rpm-data-to-pyxis|upload-src-rpm-sbom-attestation).*\"}\n)",
               "legendFormat": "{{namespace}} ({{source_cluster}})",
               "range": true,
               "refId": "A"
@@ -710,7 +249,7 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "description": "Details of OOMKilled push-rpms-to-pulp pods",
+          "description": "Details of OOMKilled RPM release pipeline pods",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -805,7 +344,7 @@ data:
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 38
+            "y": 17
           },
           "id": 22,
           "options": {
@@ -829,14 +368,14 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum by (source_cluster, namespace, pod, container) (\n  max_over_time(\n    kube_pod_container_status_terminated_reason{source_cluster=~\"$cluster\", reason=\"OOMKilled\", pod=~\".*push-rpms-to-pulp.*\"}[$__range]\n  )\n) > 0",
+              "expr": "sum by (source_cluster, namespace, pod, container) (kube_pod_container_status_terminated_reason{source_cluster=~\"$cluster\", reason=\"OOMKilled\", pod=~\".*(push-rpms-to-pulp|push-rpm-data-to-pyxis|upload-src-rpm-sbom-attestation).*\"}) > 0",
               "format": "table",
               "instant": true,
               "legendFormat": "__auto",
               "refId": "A"
             }
           ],
-          "title": "OOMKilled Pulp Release Pods",
+          "title": "OOMKilled RPM Release Pods",
           "transformations": [
             {
               "id": "filterFieldsByName",
@@ -853,213 +392,6 @@ data:
             }
           ],
           "type": "table"
-        },
-        {
-          "collapsed": false,
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 46
-          },
-          "id": 30,
-          "panels": [],
-          "title": "Cluster Breakdown",
-          "type": "row"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "TaskRun volume per cluster over time",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "bars",
-                "fillOpacity": 80,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "auto",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "normal"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 10,
-            "w": 12,
-            "x": 0,
-            "y": 47
-          },
-          "id": 31,
-          "options": {
-            "legend": {
-              "calcs": [
-                "sum",
-                "lastNotNull"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true,
-              "sortBy": "Total",
-              "sortDesc": true
-            },
-            "tooltip": {
-              "hideZeros": true,
-              "mode": "multi",
-              "sort": "desc"
-            }
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "sum by (source_cluster) (increase(tekton_pipelines_controller_taskrun_total{source_cluster=~\"$cluster\", pipeline=\"push-rpms-to-pulp\"}[$__interval]))",
-              "legendFormat": "{{source_cluster}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "TaskRun Volume by Cluster",
-          "type": "timeseries"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "Failed TaskRuns per cluster over time",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "barAlignment": 0,
-                "barWidthFactor": 0.6,
-                "drawStyle": "bars",
-                "fillOpacity": 80,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "insertNulls": false,
-                "lineInterpolation": "linear",
-                "lineWidth": 1,
-                "pointSize": 5,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "showPoints": "auto",
-                "spanNulls": false,
-                "stacking": {
-                  "group": "A",
-                  "mode": "normal"
-                },
-                "thresholdsStyle": {
-                  "mode": "off"
-                }
-              },
-              "mappings": [],
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  }
-                ]
-              }
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 10,
-            "w": 12,
-            "x": 12,
-            "y": 47
-          },
-          "id": 32,
-          "options": {
-            "legend": {
-              "calcs": [
-                "sum",
-                "lastNotNull"
-              ],
-              "displayMode": "table",
-              "placement": "bottom",
-              "showLegend": true,
-              "sortBy": "Total",
-              "sortDesc": true
-            },
-            "tooltip": {
-              "hideZeros": true,
-              "mode": "multi",
-              "sort": "desc"
-            }
-          },
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "sum by (source_cluster) (increase(tekton_pipelines_controller_taskrun_total{source_cluster=~\"$cluster\", pipeline=\"push-rpms-to-pulp\", status=\"failed\"}[$__interval]))",
-              "legendFormat": "{{source_cluster}}",
-              "range": true,
-              "refId": "A"
-            }
-          ],
-          "title": "Failed TaskRuns by Cluster",
-          "type": "timeseries"
         }
       ],
       "preload": false,
@@ -1098,7 +430,7 @@ data:
               "type": "prometheus",
               "uid": "${datasource}"
             },
-            "definition": "label_values(tekton_pipelines_controller_taskrun_total{pipeline=\"push-rpms-to-pulp\"}, source_cluster)",
+            "definition": "label_values(kube_pod_container_status_terminated_reason{namespace=~\".*-tenant\"}, source_cluster)",
             "description": "Select clusters",
             "includeAll": true,
             "label": "Cluster",
@@ -1107,7 +439,7 @@ data:
             "options": [],
             "query": {
               "qryType": 1,
-              "query": "label_values(tekton_pipelines_controller_taskrun_total{pipeline=\"push-rpms-to-pulp\"}, source_cluster)",
+              "query": "label_values(kube_pod_container_status_terminated_reason{namespace=~\".*-tenant\"}, source_cluster)",
               "refId": "PrometheusVariableQueryEditor-VariableQuery"
             },
             "refresh": 1,
