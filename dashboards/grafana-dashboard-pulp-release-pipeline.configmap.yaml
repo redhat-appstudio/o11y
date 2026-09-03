@@ -235,7 +235,7 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum by (source_cluster, namespace) (\n  kube_pod_container_status_terminated_reason{source_cluster=~\"$cluster\", reason=\"OOMKilled\", pod=~\".*(push-rpms-to-pulp|push-rpm-data-to-pyxis|upload-src-rpm-sbom-attestation).*\"}\n)",
+              "expr": "sum by (source_cluster, namespace) (\n  increase(kube_pod_container_status_terminated_reason{source_cluster=~\"$cluster\", reason=\"OOMKilled\", pod=~\".*(push-rpms-to-pulp|push-rpm-data-to-pyxis|upload-src-rpm-sbom-attestation).*\"}[10m])\n)",
               "legendFormat": "{{namespace}} ({{source_cluster}})",
               "range": true,
               "refId": "A"
