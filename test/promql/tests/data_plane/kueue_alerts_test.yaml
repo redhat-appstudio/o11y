@@ -27,7 +27,7 @@ tests:
               alert_routing_key: infra
               team: konflux-infra
 
-  # KueueHighAdmissionWaitTimePreMerge - should fire: 99th percentile wait time above 15m for 40m
+  # KueueAdmissionWaitTimePreMergeTierAWarning - should fire: P95 wait time above 5m (300s) for 15m
   - interval: 1m
     input_series:
       - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-pre-merge-test", le="900.0", source_cluster="c1"}'
@@ -37,21 +37,25 @@ tests:
       - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-pre-merge-test", le="+Inf", source_cluster="c1"}'
         values: '0+10x60'
     alert_rule_test:
-      - eval_time: 45m
-        alertname: KueueHighAdmissionWaitTimePreMerge
+      - eval_time: 20m
+        alertname: KueueAdmissionWaitTimePreMergeTierAWarning
         exp_alerts:
           - exp_labels:
-              severity: high
+              severity: warning
               component: kueue
+              slo: "true"
+              tier: A
+              pipeline_type: PreMerge
               source_cluster: c1
             exp_annotations:
-              summary: "High admission wait time for Pre-merge builds"
-              description: "99th percentile admission wait time for Pre-merge is 16m 40s, which is above 15 minutes in cluster c1"
+              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.kueue_alerts.yaml
+              summary: "High admission wait time for Pre-merge builds (Tier A)"
+              description: "P95 admission wait time for Pre-merge builds is above 5 minutes on cluster c1."
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
               alert_routing_key: infra
               team: konflux-infra
 
-  # KueueHighAdmissionWaitTimePreMerge - should NOT fire: eval time (35m) is less than 'for' duration (40m)
+  # KueueAdmissionWaitTimePreMergeTierAWarning - should NOT fire: eval time (10m) is less than 'for' duration (15m)
   - interval: 1m
     input_series:
       - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-pre-merge-test", le="900.0", source_cluster="c1"}'
@@ -61,46 +65,50 @@ tests:
       - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-pre-merge-test", le="+Inf", source_cluster="c1"}'
         values: '0+10x60'
     alert_rule_test:
-      - eval_time: 35m
-        alertname: KueueHighAdmissionWaitTimePreMerge
+      - eval_time: 10m
+        alertname: KueueAdmissionWaitTimePreMergeTierAWarning
         exp_alerts: []
 
-  # KueueHighAdmissionWaitTimePostMerge - should fire: 99th percentile wait time above 15m for 45m
+  # KueueAdmissionWaitTimePostMergeTierAWarning - should fire: P95 wait time above 20m (1200s) for 20m
   - interval: 1m
     input_series:
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-post-merge-build", le="900.0", source_cluster="c1"}'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-post-merge-build", le="1200.0", source_cluster="c1"}'
         values: '0+0x70'
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-post-merge-build", le="1000.0", source_cluster="c1"}'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-post-merge-build", le="1300.0", source_cluster="c1"}'
         values: '0+0x70'
       - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-post-merge-build", le="+Inf", source_cluster="c1"}'
         values: '0+10x70'
     alert_rule_test:
-      - eval_time: 50m
-        alertname: KueueHighAdmissionWaitTimePostMerge
+      - eval_time: 25m
+        alertname: KueueAdmissionWaitTimePostMergeTierAWarning
         exp_alerts:
           - exp_labels:
-              severity: high
+              severity: warning
               component: kueue
+              slo: "true"
+              tier: A
+              pipeline_type: PostMerge
               source_cluster: c1
             exp_annotations:
-              summary: "High admission wait time for Post-merge builds"
-              description: "99th percentile admission wait time for Post-merge is 16m 40s, which is above 15 minutes in cluster c1"
+              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.kueue_alerts.yaml
+              summary: "High admission wait time for Post-merge builds (Tier A)"
+              description: "P95 admission wait time for Post-merge builds is above 20 minutes on cluster c1."
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
               alert_routing_key: infra
               team: konflux-infra
 
-  # KueueHighAdmissionWaitTimePostMerge - should NOT fire: eval time (40m) is less than 'for' duration (45m)
+  # KueueAdmissionWaitTimePostMergeTierAWarning - should NOT fire: eval time (15m) is less than 'for' duration (20m)
   - interval: 1m
     input_series:
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-post-merge-build", le="900.0", source_cluster="c1"}'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-post-merge-build", le="1200.0", source_cluster="c1"}'
         values: '0+0x70'
-      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-post-merge-build", le="1000.0", source_cluster="c1"}'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-post-merge-build", le="1300.0", source_cluster="c1"}'
         values: '0+0x70'
       - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-post-merge-build", le="+Inf", source_cluster="c1"}'
         values: '0+10x70'
     alert_rule_test:
-      - eval_time: 40m
-        alertname: KueueHighAdmissionWaitTimePostMerge
+      - eval_time: 15m
+        alertname: KueueAdmissionWaitTimePostMergeTierAWarning
         exp_alerts: []
 
   # TektonKueuePodsCrashLoopBackOff - should fire: pod in CrashLoopBackOff
