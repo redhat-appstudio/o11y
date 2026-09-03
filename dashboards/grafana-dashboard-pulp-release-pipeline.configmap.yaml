@@ -368,7 +368,7 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum by (source_cluster, namespace, pod, container) (kube_pod_container_status_terminated_reason{source_cluster=~\"$cluster\", reason=\"OOMKilled\", pod=~\".*(push-rpms-to-pulp|push-rpm-data-to-pyxis|upload-src-rpm-sbom-attestation).*\"}) > 0",
+              "expr": "sum by (source_cluster, namespace, pod, container) (max_over_time(kube_pod_container_status_terminated_reason{source_cluster=~\"$cluster\", reason=\"OOMKilled\", pod=~\".*(push-rpms-to-pulp|push-rpm-data-to-pyxis|upload-src-rpm-sbom-attestation).*\"}[$__range])) > 0",
               "format": "table",
               "instant": true,
               "legendFormat": "__auto",
