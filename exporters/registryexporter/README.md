@@ -13,7 +13,7 @@ The exporter exposes the following unified Prometheus metrics for all test types
 ### Names
 - `registry_exporter_success`: Gauge indicating if a last test was successful (1 if successful, 0 otherwise)
 - `registry_exporter_error_count`: Counter for total number of errors encountered during tests for correlation with failures
-- `registry_exporter_duration_seconds`: Histogram of durations of operations in seconds
+- `registry_exporter_duration_seconds`: Histogram of operation durations in seconds, measured per attempt and recording only the last successful attempt (excludes time spent on failed retries)
 - `registry_exporter_image_size_mbytes`: Gauge of artifact (image) size from the registry in megabytes (only for pull and push tests)
 
 ### Labels
