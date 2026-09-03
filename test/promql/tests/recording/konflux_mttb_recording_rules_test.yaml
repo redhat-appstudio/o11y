@@ -1,0 +1,45 @@
+evaluation_interval: 1m
+
+rule_files:
+  - konflux_mttb_recording_rules.yaml
+
+tests:
+  - name: ExecuteMean
+    interval: 1m
+    input_series:
+      - series: "traces_span_metrics_duration_seconds_sum{span_name='executeDuration', cicd_pipeline_action_name='build', cicd_pipeline_result='success', namespace='team-a'}"
+        values: "0+120x10"
+      - series: "traces_span_metrics_duration_seconds_count{span_name='executeDuration', cicd_pipeline_action_name='build', cicd_pipeline_result='success', namespace='team-a'}"
+        values: "0+1x10"
+    promql_expr_test:
+      - expr: konflux:mttb:execute_seconds:mean_5m
+        eval_time: 10m
+        exp_samples:
+          - labels: 'konflux:mttb:execute_seconds:mean_5m{cicd_pipeline_action_name="build", namespace="team-a"}'
+            value: 120
+  - name: SuccessRatio
+    interval: 1m
+    input_series:
+      - series: "traces_span_metrics_calls_total{span_name='executeDuration', cicd_pipeline_action_name='build', cicd_pipeline_result='success', namespace='team-a'}"
+        values: "0+3x10"
+      - series: "traces_span_metrics_calls_total{span_name='executeDuration', cicd_pipeline_action_name='build', cicd_pipeline_result='failure', namespace='team-a'}"
+        values: "0+1x10"
+    promql_expr_test:
+      - expr: konflux:mttb:success_ratio:5m{cicd_pipeline_action_name="build"}
+        eval_time: 10m
+        exp_samples:
+          - labels: 'konflux:mttb:success_ratio:5m{cicd_pipeline_action_name="build", namespace="team-a"}'
+            value: 0.75
+  - name: WaitMean
+    interval: 1m
+    input_series:
+      - series: "traces_span_metrics_duration_seconds_sum{span_name='waitDuration', cicd_pipeline_action_name='managed', namespace='team-a'}"
+        values: "0+30x10"
+      - series: "traces_span_metrics_duration_seconds_count{span_name='waitDuration', cicd_pipeline_action_name='managed', namespace='team-a'}"
+        values: "0+1x10"
+    promql_expr_test:
+      - expr: konflux:mttb:wait_seconds:mean_5m{cicd_pipeline_action_name="managed"}
+        eval_time: 10m
+        exp_samples:
+          - labels: 'konflux:mttb:wait_seconds:mean_5m{cicd_pipeline_action_name="managed", namespace="team-a"}'
+            value: 30
