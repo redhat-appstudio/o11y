@@ -19,6 +19,20 @@ spec:
             min by (namespace, service) (
               nginx_up{namespace="caching", service="artifact-registry-proxy"}
             )
+        - record: konflux_up
+          expr: |
+            min by (source_cluster, namespace, service) (
+              nginx_up{namespace="artifact-registry-proxy", service="artifact-registry-proxy"}
+            )
+          labels:
+            check: nginx-proxy
+        - record: konflux_up
+          expr: |
+            min by (source_cluster, namespace, service) (
+              squid_up{namespace="container-image-proxy", service="squid"}
+            )
+          labels:
+            check: squid-proxy
     - name: artifact_registry_proxy_performance
       interval: 1m
       rules:

@@ -87,3 +87,79 @@ tests:
         exp_samples:
           - labels: 'artifact_registry_proxy:http_errors:rate5m{namespace="caching", service="artifact-registry-proxy", source_cluster="cluster01"}'
             value: 0.08333333333333334
+
+  - interval: 1m
+    # All replicas up in artifact-registry-proxy namespace → konflux_up = 1
+    input_series:
+      - series: 'nginx_up{namespace="artifact-registry-proxy", service="artifact-registry-proxy", source_cluster="cluster03", job="uwm/scrape", instance="10.0.1.1:9113", pod="nginx-0"}'
+        values: '1 1 1'
+      - series: 'nginx_up{namespace="artifact-registry-proxy", service="artifact-registry-proxy", source_cluster="cluster03", job="uwm/scrape", instance="10.0.1.2:9113", pod="nginx-1"}'
+        values: '1 1 1'
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 2m
+        exp_samples:
+          - labels: 'konflux_up{check="nginx-proxy", namespace="artifact-registry-proxy", service="artifact-registry-proxy", source_cluster="cluster03"}'
+            value: 1
+
+  - interval: 1m
+    # One replica down in artifact-registry-proxy namespace → konflux_up = 0
+    input_series:
+      - series: 'nginx_up{namespace="artifact-registry-proxy", service="artifact-registry-proxy", source_cluster="cluster03", job="uwm/scrape", instance="10.0.1.1:9113", pod="nginx-0"}'
+        values: '1 1 1'
+      - series: 'nginx_up{namespace="artifact-registry-proxy", service="artifact-registry-proxy", source_cluster="cluster03", job="uwm/scrape", instance="10.0.1.2:9113", pod="nginx-1"}'
+        values: '1 0 0'
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 2m
+        exp_samples:
+          - labels: 'konflux_up{check="nginx-proxy", namespace="artifact-registry-proxy", service="artifact-registry-proxy", source_cluster="cluster03"}'
+            value: 0
+
+  - interval: 1m
+    # A matching service in another namespace must not produce this availability signal
+    input_series:
+      - series: 'nginx_up{namespace="other", service="artifact-registry-proxy", source_cluster="cluster03"}'
+        values: '1 1 1'
+    promql_expr_test:
+      - expr: 'konflux_up{namespace="other", service="artifact-registry-proxy"}'
+        eval_time: 2m
+        exp_samples: []
+
+  - interval: 1m
+    # All replicas up in container-image-proxy namespace → konflux_up = 1
+    input_series:
+      - series: 'squid_up{namespace="container-image-proxy", service="squid", source_cluster="cluster04", job="uwm/scrape", instance="10.0.2.1:9301", pod="squid-0"}'
+        values: '1 1 1'
+      - series: 'squid_up{namespace="container-image-proxy", service="squid", source_cluster="cluster04", job="uwm/scrape", instance="10.0.2.2:9301", pod="squid-1"}'
+        values: '1 1 1'
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 2m
+        exp_samples:
+          - labels: 'konflux_up{check="squid-proxy", namespace="container-image-proxy", service="squid", source_cluster="cluster04"}'
+            value: 1
+
+  - interval: 1m
+    # One replica down in container-image-proxy namespace → konflux_up = 0
+    input_series:
+      - series: 'squid_up{namespace="container-image-proxy", service="squid", source_cluster="cluster04", job="uwm/scrape", instance="10.0.2.1:9301", pod="squid-0"}'
+        values: '1 1 1'
+      - series: 'squid_up{namespace="container-image-proxy", service="squid", source_cluster="cluster04", job="uwm/scrape", instance="10.0.2.2:9301", pod="squid-1"}'
+        values: '1 0 0'
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 2m
+        exp_samples:
+          - labels: 'konflux_up{check="squid-proxy", namespace="container-image-proxy", service="squid", source_cluster="cluster04"}'
+            value: 0
+
+  - interval: 1m
+    # A matching service in another namespace must not produce this availability signal
+    input_series:
+      - series: 'squid_up{namespace="other", service="squid", source_cluster="cluster04"}'
+        values: '1 1 1'
+    promql_expr_test:
+      - expr: 'konflux_up{namespace="other", service="squid"}'
+        eval_time: 2m
+        exp_samples: []
