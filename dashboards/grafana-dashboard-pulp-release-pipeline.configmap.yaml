@@ -126,7 +126,7 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "(sum(kube_pod_container_status_terminated_reason{source_cluster=~\"$cluster\", reason=\"OOMKilled\", pod=~\".*(push-rpms-to-pulp|push-rpm-data-to-pyxis|upload-src-rpm-sbom-attestation).*\"}) or vector(0))",
+              "expr": "count(count by (source_cluster, namespace, pod) (max_over_time(kube_pod_container_status_terminated_reason{source_cluster=~\"$cluster\", reason=\"OOMKilled\", pod=~\".*(push-rpms-to-pulp|push-rpm-data-to-pyxis|upload-src-rpm-sbom-attestation).*\"}[$__range]) > 0)) or vector(0)",
               "legendFormat": "OOMKilled",
               "range": true,
               "refId": "A"
