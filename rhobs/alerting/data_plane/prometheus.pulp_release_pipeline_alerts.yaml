@@ -12,7 +12,7 @@ spec:
     rules:
     - alert: ReleaseTaskOOMKilled
       expr: |
-        increase(kube_pod_container_status_terminated_reason{reason="OOMKilled",namespace=~".*-tenant",pod=~".*(push-rpms-to-pulp|push-rpm-data-to-pyxis|upload-src-rpm-sbom-attestation).*"}[1h]) > 0
+        count by (source_cluster,namespace,container,pod) (kube_pod_container_status_terminated_reason{reason="OOMKilled",namespace=~".*-tenant",pod=~".*(push-rpms-to-pulp|push-rpm-data-to-pyxis|upload-src-rpm-sbom-attestation).*"}) >= 1
       for: 5m
       labels:
         severity: high
