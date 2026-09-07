@@ -100,24 +100,6 @@ tests:
               team: spre
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
 
-  # Test 6: Registry metric missing but exporter healthy - SHOULD alert at 15m
-  - interval: 1m
-    input_series:
-      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1"}'
-        values: "1x16"
-
-    alert_rule_test:
-      - eval_time: 15m
-        alertname: RegistryOutageClusterWide
-        exp_alerts:
-          - exp_labels:
-              severity: critical
-              namespace: appstudio-registry-exporter
-              job: appstudio-registry-exporter/registry-exporter-ds-podmonitor
-              source_cluster: c1
-              slo: "true"
-              component: registry-exporter
-
   # Test 7: Registry healthy and exporter healthy - should NOT alert
   - interval: 1m
     input_series:

@@ -38,17 +38,9 @@ spec:
     rules:
     - alert: RegistryOutageClusterWide
       expr: |
-        (
-          up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor"} == 1
-          AND
-          konflux_up{service="registry-exporter"} != 1
-        )
-        OR
-        (
-          up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor"} == 1
-          AND
-          absent(konflux_up{service="registry-exporter"}) == 1
-        )
+        konflux_up{service="registry-exporter"} != 1
+        and on (source_cluster)
+        up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor"} == 1
       for: 15m
       labels:
         severity: critical
