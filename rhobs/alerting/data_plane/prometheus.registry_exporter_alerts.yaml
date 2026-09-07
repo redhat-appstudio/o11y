@@ -6,13 +6,16 @@ metadata:
     tenant: rhtap
 spec:
   groups:
-  - name: registry-exporter-availability
+  # LEVEL 1: Exporter process/infrastructure down (O11y team responsibility)
+  - name: registry-exporter-infrastructure
     interval: 1m
     rules:
     - alert: RegistryExporterDown
       expr: |
-        konflux_up{service="registry-exporter"} != 1
-      for: 15m
+        absent(up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor"}) == 1
+        OR
+        up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor"} == 0
+      for: 5m
       labels:
         severity: critical
         slo: "true"
@@ -20,15 +23,50 @@ spec:
       annotations:
         html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.registry_exporter_alerts.yaml#L12
         summary: >-
-          Registry exporter check failed for registry {{ $labels.check }} in cluster {{ $labels.source_cluster }}
+          Registry exporter process is down in cluster {{ $labels.source_cluster }}
         description: >-
-          The registry exporter has failed to successfully test registry {{ $labels.check }} in cluster {{ $labels.source_cluster }}.
-          All registry test operations (pull, push, metadata, authentication) have been failing for 15 minutes.
+          The registry exporter DaemonSet is not running or Prometheus cannot scrape it.
+          Either pods are crashed/evicted or the scrape endpoint is unavailable.
+          This is an exporter infrastructure issue, NOT a registry issue.
+          Check pod status: kubectl -n appstudio-registry-exporter get pods
+          Check logs: kubectl -n appstudio-registry-exporter logs -l app=registry-exporter
         alert_team_handle: '<!subteam^S06LGCC3C2V>'
         team: o11y
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
 
-  # Alert when a specific test type (pull, push, metadata, authentication) fails across all nodes.
+  # LEVEL 2: Cluster-wide registry outage (SPRE/registry team responsibility)
+  - name: registry-outage-cluster-wide
+    interval: 1m
+    rules:
+    - alert: RegistryOutageClusterWide
+      expr: |
+        up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor"} == 1
+        AND
+        (
+          absent(konflux_up{service="registry-exporter"}) == 1
+          OR
+          konflux_up{service="registry-exporter"} != 1
+        )
+      for: 15m
+      labels:
+        severity: critical
+        slo: "true"
+        component: registry-exporter
+      annotations:
+        html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.registry_exporter_alerts.yaml#L33
+        summary: >-
+          Registry {{ $labels.check }} is unreachable from cluster {{ $labels.source_cluster }}
+        description: >-
+          Registry {{ $labels.check }} tests are failing across ALL nodes in cluster {{ $labels.source_cluster }}.
+          The exporter is healthy (up=1) but all registry operations are failing.
+          Possible causes: Registry outage, network partition, authentication failure, or firewall issue.
+          Check registry status page and network connectivity from cluster to registry.
+          This is a REGISTRY issue, not an exporter issue.
+        alert_routing_key: spre
+        team: spre
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
+
+  # LEVEL 3: Specific test type failures across all nodes (O11y team - more granular diagnosis)
   - name: registry-exporter-test-type-availability
     interval: 1m
     rules:
@@ -53,7 +91,7 @@ spec:
         alert_routing_key: o11y
         team: o11y
 
-  # Notify o11y team when a significant percentage of nodes are failing, but cluster-level check is still passing.
+  # LEVEL 4: Partial node failures (O11y team - detect degraded state before full outage)
   - name: registry-exporter-node-availability
     interval: 1m
     rules:

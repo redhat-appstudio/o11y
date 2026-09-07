@@ -4,149 +4,215 @@ rule_files:
   - prometheus.registry_exporter_alerts.yaml
 
 tests:
-  # Registry exporter down for quay.io registry
+  # ============================================================================
+  # LEVEL 1: RegistryExporterDown (exporter process/infrastructure failures)
+  # ============================================================================
+
+  # Test 1: Exporter process is down (up=0) - SHOULD alert at 5m
   - interval: 1m
     input_series:
-      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
-      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c2"}'
-        values: "1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1"}'
+        values: "0 0 0 0 0 0 0 0 0 0"
 
     alert_rule_test:
-      - eval_time: 15m
+      - eval_time: 5m
         alertname: RegistryExporterDown
         exp_alerts:
           - exp_labels:
               severity: critical
-              check: quay.io
-              service: registry-exporter
-              slo: "true"
+              namespace: appstudio-registry-exporter
+              job: appstudio-registry-exporter/registry-exporter-ds-podmonitor
               source_cluster: c1
+              slo: "true"
               component: registry-exporter
             exp_annotations:
               html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.registry_exporter_alerts.yaml#L12
               summary: >-
-                Registry exporter check failed for registry quay.io in cluster c1
+                Registry exporter process is down in cluster c1
               description: >-
-                The registry exporter has failed to successfully test registry quay.io in cluster c1.
-                All registry test operations (pull, push, metadata, authentication) have been failing for 15 minutes.
+                The registry exporter DaemonSet is not running or Prometheus cannot scrape it.
+                Either pods are crashed/evicted or the scrape endpoint is unavailable.
+                This is an exporter infrastructure issue, NOT a registry issue.
+                Check pod status: kubectl -n appstudio-registry-exporter get pods
+                Check logs: kubectl -n appstudio-registry-exporter logs -l app=registry-exporter
               alert_team_handle: <!subteam^S06LGCC3C2V>
               team: o11y
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
 
-  # Registry exporter down for multiple registries in same cluster
+  # Test 2: Exporter metric missing (absent) - SHOULD alert at 5m
+  - interval: 1m
+    input_series: []
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: RegistryExporterDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              component: registry-exporter
+            exp_annotations:
+              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.registry_exporter_alerts.yaml#L12
+              summary: >-
+                Registry exporter process is down in cluster
+              description: >-
+                The registry exporter DaemonSet is not running or Prometheus cannot scrape it.
+                Either pods are crashed/evicted or the scrape endpoint is unavailable.
+                This is an exporter infrastructure issue, NOT a registry issue.
+                Check pod status: kubectl -n appstudio-registry-exporter get pods
+                Check logs: kubectl -n appstudio-registry-exporter logs -l app=registry-exporter
+              alert_team_handle: <!subteam^S06LGCC3C2V>
+              team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
+
+  # Test 3: Exporter healthy (up=1) - should NOT alert
   - interval: 1m
     input_series:
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1"}'
+        values: "1 1 1 1 1 1 1 1 1 1"
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: RegistryExporterDown
+        exp_alerts: []
+
+  # Test 4: Exporter recovers before 5m - should NOT alert
+  - interval: 1m
+    input_series:
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1"}'
+        values: "0 0 0 0 1 1 1 1 1 1"
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: RegistryExporterDown
+        exp_alerts: []
+
+  # ============================================================================
+  # LEVEL 2: RegistryOutageClusterWide (registry down, exporter healthy)
+  # ============================================================================
+
+  # Test 5: Registry down but exporter healthy - SHOULD alert at 15m
+  - interval: 1m
+    input_series:
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1"}'
+        values: "1x16"
       - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
+        values: "0x16"
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: RegistryOutageClusterWide
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              namespace: appstudio-registry-exporter
+              job: appstudio-registry-exporter/registry-exporter-ds-podmonitor
+              service: registry-exporter
+              check: quay.io
+              source_cluster: c1
+              slo: "true"
+              component: registry-exporter
+            exp_annotations:
+              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.registry_exporter_alerts.yaml#L33
+              summary: >-
+                Registry quay.io is unreachable from cluster c1
+              description: >-
+                Registry quay.io tests are failing across ALL nodes in cluster c1.
+                The exporter is healthy (up=1) but all registry operations are failing.
+                Possible causes: Registry outage, network partition, authentication failure, or firewall issue.
+                Check registry status page and network connectivity from cluster to registry.
+                This is a REGISTRY issue, not an exporter issue.
+              alert_routing_key: spre
+              team: spre
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
+
+  # Test 6: Registry metric missing but exporter healthy - SHOULD alert at 15m
+  - interval: 1m
+    input_series:
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1"}'
+        values: "1x16"
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: RegistryOutageClusterWide
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              namespace: appstudio-registry-exporter
+              job: appstudio-registry-exporter/registry-exporter-ds-podmonitor
+              source_cluster: c1
+              slo: "true"
+              component: registry-exporter
+
+  # Test 7: Registry healthy and exporter healthy - should NOT alert
+  - interval: 1m
+    input_series:
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1"}'
+        values: "1x16"
+      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
+        values: "1x16"
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: RegistryOutageClusterWide
+        exp_alerts: []
+
+  # Test 8: Registry recovers before 15m - should NOT alert
+  - interval: 1m
+    input_series:
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1"}'
+        values: "1x16"
+      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
+        values: "0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1"
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: RegistryOutageClusterWide
+        exp_alerts: []
+
+  # Test 9: Exporter down - registry alert should NOT fire (covered by RegistryExporterDown)
+  - interval: 1m
+    input_series:
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1"}'
+        values: "0x16"
+      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
+        values: "0x16"
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: RegistryOutageClusterWide
+        exp_alerts: []
+
+  # Test 10: Multiple registries down - should alert for each
+  - interval: 1m
+    input_series:
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1"}'
+        values: "1x16"
+      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
+        values: "0x16"
       - series: 'konflux_up{service="registry-exporter", check="registry.example.com", source_cluster="c1"}'
-        values: "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
-      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c2"}'
-        values: "1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1"
+        values: "0x16"
 
     alert_rule_test:
       - eval_time: 15m
-        alertname: RegistryExporterDown
+        alertname: RegistryOutageClusterWide
         exp_alerts:
           - exp_labels:
               severity: critical
               check: quay.io
-              service: registry-exporter
               slo: "true"
-              source_cluster: c1
               component: registry-exporter
-            exp_annotations:
-              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.registry_exporter_alerts.yaml#L12
-              summary: >-
-                Registry exporter check failed for registry quay.io in cluster c1
-              description: >-
-                The registry exporter has failed to successfully test registry quay.io in cluster c1.
-                All registry test operations (pull, push, metadata, authentication) have been failing for 15 minutes.
-              alert_team_handle: <!subteam^S06LGCC3C2V>
-              team: o11y
-              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
           - exp_labels:
               severity: critical
               check: registry.example.com
-              service: registry-exporter
               slo: "true"
-              source_cluster: c1
               component: registry-exporter
-            exp_annotations:
-              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.registry_exporter_alerts.yaml#L12
-              summary: >-
-                Registry exporter check failed for registry registry.example.com in cluster c1
-              description: >-
-                The registry exporter has failed to successfully test registry registry.example.com in cluster c1.
-                All registry test operations (pull, push, metadata, authentication) have been failing for 15 minutes.
-              alert_team_handle: <!subteam^S06LGCC3C2V>
-              team: o11y
-              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
 
-  # Registry exporter recovers before alert fires (should not alert)
-  - interval: 1m
-    input_series:
-      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: "0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1"
-      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c2"}'
-        values: "1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1"
+  # ============================================================================
+  # LEVEL 3: RegistryExporterTestTypeFailure (specific test types failing)
+  # ============================================================================
 
-    alert_rule_test:
-      - eval_time: 15m
-        alertname: RegistryExporterDown
-        exp_alerts: []
-
-  # Registry exporter down for different registries in different clusters
-  - interval: 1m
-    input_series:
-      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
-      - series: 'konflux_up{service="registry-exporter", check="registry.example.com", source_cluster="c2"}'
-        values: "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
-      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c2"}'
-        values: "1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1"
-
-    alert_rule_test:
-      - eval_time: 15m
-        alertname: RegistryExporterDown
-        exp_alerts:
-          - exp_labels:
-              severity: critical
-              check: quay.io
-              service: registry-exporter
-              slo: "true"
-              source_cluster: c1
-              component: registry-exporter
-            exp_annotations:
-              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.registry_exporter_alerts.yaml#L12
-              summary: >-
-                Registry exporter check failed for registry quay.io in cluster c1
-              description: >-
-                The registry exporter has failed to successfully test registry quay.io in cluster c1.
-                All registry test operations (pull, push, metadata, authentication) have been failing for 15 minutes.
-              alert_team_handle: <!subteam^S06LGCC3C2V>
-              team: o11y
-              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
-          - exp_labels:
-              severity: critical
-              check: registry.example.com
-              service: registry-exporter
-              slo: "true"
-              source_cluster: c2
-              component: registry-exporter
-            exp_annotations:
-              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.registry_exporter_alerts.yaml#L12
-              summary: >-
-                Registry exporter check failed for registry registry.example.com in cluster c2
-              description: >-
-                The registry exporter has failed to successfully test registry registry.example.com in cluster c2.
-                All registry test operations (pull, push, metadata, authentication) have been failing for 15 minutes.
-              alert_team_handle: <!subteam^S06LGCC3C2V>
-              team: o11y
-              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
-
-  # Registry exporter test-type failure tests
-  # Single test type failing on all nodes (should alert for that type)
+  # Test 11: Single test type failing on all nodes - SHOULD alert
   - interval: 1m
     input_series:
       - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
@@ -179,7 +245,7 @@ tests:
               alert_routing_key: o11y
               team: o11y
 
-  # Test type failing on some nodes but passing on others (should NOT alert)
+  # Test 12: Test type failing on some nodes but passing on others - should NOT alert
   - interval: 1m
     input_series:
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c1"}'
@@ -192,169 +258,11 @@ tests:
         alertname: RegistryExporterTestTypeFailure
         exp_alerts: []
 
-  # Test type recovers before 15 minutes (should NOT alert)
-  - interval: 1m
-    input_series:
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="metadata", source_cluster="c1"}'
-        values: "0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="metadata", source_cluster="c1"}'
-        values: "0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1"
+  # ============================================================================
+  # LEVEL 4: RegistryExporterNodeFailure (>50% nodes failing)
+  # ============================================================================
 
-    alert_rule_test:
-      - eval_time: 15m
-        alertname: RegistryExporterTestTypeFailure
-        exp_alerts: []
-
-  # Multiple test types failing across all nodes (should alert for each type)
-  - interval: 1m
-    input_series:
-      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: "1x16"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c1"}'
-        values: "0x16"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="push", source_cluster="c1"}'
-        values: "0x16"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="authentication", source_cluster="c1"}'
-        values: "0x16"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="authentication", source_cluster="c1"}'
-        values: "0x16"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="pull", source_cluster="c1"}'
-        values: "1x16"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="pull", source_cluster="c1"}'
-        values: "1x16"
-
-    alert_rule_test:
-      - eval_time: 15m
-        alertname: RegistryExporterTestTypeFailure
-        exp_alerts:
-          - exp_labels:
-              severity: high
-              tested_registry: quay.io
-              type: authentication
-              source_cluster: c1
-              slo: "false"
-              component: registry-exporter
-            exp_annotations:
-              summary: >-
-                Test for authentication failing across all nodes for quay.io in c1
-              description: >-
-                Tests for authentication for quay.io in c1 is failing for 15 minutes.
-              alert_routing_key: o11y
-              team: o11y
-          - exp_labels:
-              severity: high
-              tested_registry: quay.io
-              type: push
-              source_cluster: c1
-              slo: "false"
-              component: registry-exporter
-            exp_annotations:
-              summary: >-
-                Test for push failing across all nodes for quay.io in c1
-              description: >-
-                Tests for push for quay.io in c1 is failing for 15 minutes.
-              alert_routing_key: o11y
-              team: o11y
-
-  # Test type failure isolated to one registry (should only alert for that registry)
-  - interval: 1m
-    input_series:
-      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: "1x16"
-      - series: 'konflux_up{service="registry-exporter", check="registry.example.com", source_cluster="c1"}'
-        values: "1x16"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="pull", source_cluster="c1"}'
-        values: "0x16"
-      - series: 'registry_exporter_success{tested_registry="registry.example.com", node="node1", type="pull", source_cluster="c1"}'
-        values: "1x16"
-
-    alert_rule_test:
-      - eval_time: 15m
-        alertname: RegistryExporterTestTypeFailure
-        exp_alerts:
-          - exp_labels:
-              severity: high
-              tested_registry: quay.io
-              type: pull
-              source_cluster: c1
-              slo: "false"
-              component: registry-exporter
-            exp_annotations:
-              summary: >-
-                Test for pull failing across all nodes for quay.io in c1
-              description: >-
-                Tests for pull for quay.io in c1 is failing for 15 minutes.
-              alert_routing_key: o11y
-              team: o11y
-
-  # Test type failure suppressed when cluster check is down (should NOT alert - covered by RegistryExporterDown)
-  - interval: 1m
-    input_series:
-      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: "0x16"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c1"}'
-        values: "0x16"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="push", source_cluster="c1"}'
-        values: "0x16"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="pull", source_cluster="c1"}'
-        values: "0x16"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="pull", source_cluster="c1"}'
-        values: "0x16"
-
-    alert_rule_test:
-      - eval_time: 15m
-        alertname: RegistryExporterTestTypeFailure
-        exp_alerts: []
-
-  # Combined test: push fails cluster-wide — TestTypeFailure fires at 15m, NodeFailure suppressed at 15m
-  - interval: 1m
-    input_series:
-      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: "1x16"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c1"}'
-        values: "0x16"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="push", source_cluster="c1"}'
-        values: "0x16"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="pull", source_cluster="c1"}'
-        values: "1x16"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="pull", source_cluster="c1"}'
-        values: "1x16"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="metadata", source_cluster="c1"}'
-        values: "1x16"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="metadata", source_cluster="c1"}'
-        values: "1x16"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="authentication", source_cluster="c1"}'
-        values: "1x16"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="authentication", source_cluster="c1"}'
-        values: "1x16"
-
-    alert_rule_test:
-      # TestTypeFailure fires at 15m for push
-      - eval_time: 15m
-        alertname: RegistryExporterTestTypeFailure
-        exp_alerts:
-          - exp_labels:
-              severity: high
-              tested_registry: quay.io
-              type: push
-              source_cluster: c1
-              slo: "false"
-              component: registry-exporter
-            exp_annotations:
-              summary: >-
-                Test for push failing across all nodes for quay.io in c1
-              description: >-
-                Tests for push for quay.io in c1 is failing for 15 minutes.
-              alert_routing_key: o11y
-              team: o11y
-      # NodeFailure does NOT fire at 15m — suppressed by the unless clause
-      - eval_time: 15m
-        alertname: RegistryExporterNodeFailure
-        exp_alerts: []
-
-  # Registry exporter node percentage alert tests
-
-  # >50% of nodes failing (2 of 3 = 66.67%) - SHOULD alert
+  # Test 13: >50% of nodes failing (2 of 3 = 66.67%) - SHOULD alert
   - interval: 1m
     input_series:
       - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
@@ -387,141 +295,11 @@ tests:
               alert_routing_key: o11y
               team: o11y
 
-  # Exactly 50% of nodes failing (1 of 2) - should NOT alert (threshold is strictly >50%, tolerates single-node rolling update)
+  # Test 14: Exactly 50% of nodes failing (1 of 2) - should NOT alert
   - interval: 1m
     input_series:
       - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
         values: "1x16"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="pull", source_cluster="c1"}'
-        values: "0x16"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="pull", source_cluster="c1"}'
-        values: "1x16"
-
-    alert_rule_test:
-      - eval_time: 15m
-        alertname: RegistryExporterNodeFailure
-        exp_alerts: []
-
-  # All node failures are cluster-wide type failures - should NOT alert (covered by RegistryExporterTestTypeFailure)
-  - interval: 1m
-    input_series:
-      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: "1x16"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c1"}'
-        values: "0x16"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="push", source_cluster="c1"}'
-        values: "0x16"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="pull", source_cluster="c1"}'
-        values: "1x16"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="pull", source_cluster="c1"}'
-        values: "1x16"
-
-    alert_rule_test:
-      - eval_time: 15m
-        alertname: RegistryExporterNodeFailure
-        exp_alerts: []
-
-  # Cluster check is down - should NOT alert (covered by RegistryExporterDown)
-  - interval: 1m
-    input_series:
-      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: "0x16"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="pull", source_cluster="c1"}'
-        values: "0x16"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="pull", source_cluster="c1"}'
-        values: "0x16"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node3", type="pull", source_cluster="c1"}'
-        values: "0x16"
-
-    alert_rule_test:
-      - eval_time: 15m
-        alertname: RegistryExporterNodeFailure
-        exp_alerts: []
-
-  # Nodes recover before 15 minutes - should NOT alert
-  - interval: 1m
-    input_series:
-      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: "1x16"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="pull", source_cluster="c1"}'
-        values: "0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="pull", source_cluster="c1"}'
-        values: "0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node3", type="pull", source_cluster="c1"}'
-        values: "1x16"
-
-    alert_rule_test:
-      - eval_time: 15m
-        alertname: RegistryExporterNodeFailure
-        exp_alerts: []
-
-  # >50% nodes failing across multiple registries - each alerts independently
-  - interval: 1m
-    input_series:
-      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: "1x16"
-      - series: 'konflux_up{service="registry-exporter", check="registry.example.com", source_cluster="c1"}'
-        values: "1x16"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="pull", source_cluster="c1"}'
-        values: "0x16"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="pull", source_cluster="c1"}'
-        values: "0x16"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node3", type="pull", source_cluster="c1"}'
-        values: "1x16"
-      - series: 'registry_exporter_success{tested_registry="registry.example.com", node="node1", type="pull", source_cluster="c1"}'
-        values: "0x16"
-      - series: 'registry_exporter_success{tested_registry="registry.example.com", node="node2", type="pull", source_cluster="c1"}'
-        values: "0x16"
-      - series: 'registry_exporter_success{tested_registry="registry.example.com", node="node3", type="pull", source_cluster="c1"}'
-        values: "1x16"
-
-    alert_rule_test:
-      - eval_time: 15m
-        alertname: RegistryExporterNodeFailure
-        exp_alerts:
-          - exp_labels:
-              severity: warning
-              tested_registry: quay.io
-              source_cluster: c1
-              slo: "false"
-              component: registry-exporter
-            exp_annotations:
-              summary: >-
-                Over 50% of registry exporter nodes in cluster c1 are failing tests for registry quay.io.
-              description: >-
-                66.67% of registry exporter nodes in cluster c1 are failing tests for registry quay.io.
-                Over 50% of nodes have had at least one failing test type (pull, push, metadata, or authentication); this condition has persisted for 15 minutes.
-                The cluster-level check is still passing, indicating this is not a total outage.
-                Single-node failures from rolling node replacements will not trigger this alert.
-              alert_routing_key: o11y
-              team: o11y
-          - exp_labels:
-              severity: warning
-              tested_registry: registry.example.com
-              source_cluster: c1
-              slo: "false"
-              component: registry-exporter
-            exp_annotations:
-              summary: >-
-                Over 50% of registry exporter nodes in cluster c1 are failing tests for registry registry.example.com.
-              description: >-
-                66.67% of registry exporter nodes in cluster c1 are failing tests for registry registry.example.com.
-                Over 50% of nodes have had at least one failing test type (pull, push, metadata, or authentication); this condition has persisted for 15 minutes.
-                The cluster-level check is still passing, indicating this is not a total outage.
-                Single-node failures from rolling node replacements will not trigger this alert.
-              alert_routing_key: o11y
-              team: o11y
-
-  # Push fails cluster-wide + pull fails on 1 of 2 nodes (50%) - NodeFailure should NOT alert
-  # (push excluded by unless clause; remaining pull failure is only 1/2 = 50%, not >50%)
-  - interval: 1m
-    input_series:
-      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: "1x16"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c1"}'
-        values: "0x16"
-      - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="push", source_cluster="c1"}'
-        values: "0x16"
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="pull", source_cluster="c1"}'
         values: "0x16"
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="pull", source_cluster="c1"}'
