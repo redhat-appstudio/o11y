@@ -114,7 +114,7 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "nginx_up{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\"}",
+              "expr": "nginx_up{namespace=\"$namespace\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\"}",
               "legendFormat": "{{source_cluster}} - {{pod}}",
               "refId": "A"
             }
@@ -184,7 +184,7 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "changes(process_start_time_seconds{namespace=\"caching\", source_cluster=~\"$source_cluster\", service=\"artifact-registry-proxy\"}[1h])",
+              "expr": "changes(process_start_time_seconds{namespace=\"$namespace\", source_cluster=~\"$source_cluster\", service=\"artifact-registry-proxy\"}[1h])",
               "legendFormat": "{{source_cluster}} - {{pod}}",
               "refId": "A"
             }
@@ -246,7 +246,7 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\"}[$interval]))",
+              "expr": "sum(rate(http_requests_total{namespace=\"$namespace\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\"}[$interval]))",
               "refId": "A"
             }
           ],
@@ -307,7 +307,7 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "count(nginx_up{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\"})",
+              "expr": "sum(nginx_up{namespace=\"$namespace\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\"})",
               "refId": "A"
             }
           ],
@@ -377,7 +377,7 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "(sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\", status=~\"[45]..\"}[$interval])) or vector(0)) / (sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\"}[$interval])) or vector(1)) * 100",
+              "expr": "(sum(rate(http_requests_total{namespace=\"$namespace\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\", status=~\"[45]..\"}[$interval])) or vector(0)) / (sum(rate(http_requests_total{namespace=\"$namespace\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\"}[$interval])) or vector(1)) * 100",
               "refId": "A"
             }
           ],
@@ -467,7 +467,7 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\"}[$interval])) by (source_cluster, pod)",
+              "expr": "sum(rate(http_requests_total{namespace=\"$namespace\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\"}[$interval])) by (source_cluster, pod)",
               "legendFormat": "{{source_cluster}} - {{pod}}",
               "refId": "A"
             }
@@ -577,7 +577,7 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\"}[$interval])) by (source_cluster)",
+              "expr": "sum(rate(http_requests_total{namespace=\"$namespace\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\"}[$interval])) by (source_cluster)",
               "legendFormat": "{{source_cluster}} (total)",
               "refId": "A"
             },
@@ -586,7 +586,7 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\"}[$interval])) by (source_cluster, pod)",
+              "expr": "sum(rate(http_requests_total{namespace=\"$namespace\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\"}[$interval])) by (source_cluster, pod)",
               "legendFormat": "{{source_cluster}} - {{pod}}",
               "refId": "B"
             }
@@ -734,7 +734,7 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "sum(increase(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\", status=~\"2..\"}[1h])) or vector(0)",
+              "expr": "sum(increase(http_requests_total{namespace=\"$namespace\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\", status=~\"2..\"}[1h])) or vector(0)",
               "legendFormat": "2xx Success",
               "refId": "A",
               "interval": "1h"
@@ -744,7 +744,7 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "sum(increase(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\", status=~\"3..\"}[1h])) or vector(0)",
+              "expr": "sum(increase(http_requests_total{namespace=\"$namespace\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\", status=~\"3..\"}[1h])) or vector(0)",
               "legendFormat": "3xx Redirect",
               "refId": "B",
               "interval": "1h"
@@ -754,7 +754,7 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "sum(increase(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\", status=~\"4..\"}[1h])) or vector(0)",
+              "expr": "sum(increase(http_requests_total{namespace=\"$namespace\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\", status=~\"4..\"}[1h])) or vector(0)",
               "legendFormat": "4xx Client Error",
               "refId": "C",
               "interval": "1h"
@@ -764,7 +764,7 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "sum(increase(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\", status=~\"5..\"}[1h])) or vector(0)",
+              "expr": "sum(increase(http_requests_total{namespace=\"$namespace\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\", status=~\"5..\"}[1h])) or vector(0)",
               "legendFormat": "5xx Server Error",
               "refId": "D",
               "interval": "1h"
@@ -893,7 +893,7 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "sum(increase(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\", status=~\"2..\"}[$__range])) or vector(0)",
+              "expr": "sum(increase(http_requests_total{namespace=\"$namespace\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\", status=~\"2..\"}[$__range])) or vector(0)",
               "instant": true,
               "legendFormat": "2xx Success",
               "refId": "A"
@@ -903,7 +903,7 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "sum(increase(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\", status=~\"3..\"}[$__range])) or vector(0)",
+              "expr": "sum(increase(http_requests_total{namespace=\"$namespace\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\", status=~\"3..\"}[$__range])) or vector(0)",
               "instant": true,
               "legendFormat": "3xx Redirect",
               "refId": "B"
@@ -913,7 +913,7 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "sum(increase(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\", status=~\"4..\"}[$__range])) or vector(0)",
+              "expr": "sum(increase(http_requests_total{namespace=\"$namespace\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\", status=~\"4..\"}[$__range])) or vector(0)",
               "instant": true,
               "legendFormat": "4xx Client Error",
               "refId": "C"
@@ -923,7 +923,7 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "sum(increase(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\", status=~\"5..\"}[$__range])) or vector(0)",
+              "expr": "sum(increase(http_requests_total{namespace=\"$namespace\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\", status=~\"5..\"}[$__range])) or vector(0)",
               "instant": true,
               "legendFormat": "5xx Server Error",
               "refId": "D"
@@ -1015,7 +1015,7 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\", status=~\"2..\"}[$interval])) by (source_cluster, pod)",
+              "expr": "sum(rate(http_requests_total{namespace=\"$namespace\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\", status=~\"2..\"}[$interval])) by (source_cluster, pod)",
               "legendFormat": "{{source_cluster}} - {{pod}}",
               "refId": "A"
             }
@@ -1137,7 +1137,7 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\", status=~\"4..\"}[$interval])) by (source_cluster, pod)",
+              "expr": "sum(rate(http_requests_total{namespace=\"$namespace\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\", status=~\"4..\"}[$interval])) by (source_cluster, pod)",
               "legendFormat": "{{source_cluster}} - {{pod}} 4xx",
               "refId": "A"
             },
@@ -1146,7 +1146,7 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "sum(rate(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\", status=~\"5..\"}[$interval])) by (source_cluster, pod)",
+              "expr": "sum(rate(http_requests_total{namespace=\"$namespace\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\", status=~\"5..\"}[$interval])) by (source_cluster, pod)",
               "legendFormat": "{{source_cluster}} - {{pod}} 5xx",
               "refId": "B"
             }
@@ -1237,7 +1237,7 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\"}[$interval])) by (status, source_cluster, pod, le))",
+              "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{namespace=\"$namespace\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\"}[$interval])) by (status, source_cluster, pod, le))",
               "legendFormat": "{{status}} - {{source_cluster}} - {{pod}} (p95)",
               "refId": "A"
             }
@@ -1328,7 +1328,7 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\"}[$interval])) by (source_cluster, pod, le))",
+              "expr": "histogram_quantile(0.50, sum(rate(http_request_duration_seconds_bucket{namespace=\"$namespace\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\"}[$interval])) by (source_cluster, pod, le))",
               "legendFormat": "{{source_cluster}} - {{pod}} p50",
               "refId": "A"
             },
@@ -1337,7 +1337,7 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\"}[$interval])) by (source_cluster, pod, le))",
+              "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{namespace=\"$namespace\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\"}[$interval])) by (source_cluster, pod, le))",
               "legendFormat": "{{source_cluster}} - {{pod}} p95",
               "refId": "B"
             },
@@ -1346,7 +1346,7 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\"}[$interval])) by (source_cluster, pod, le))",
+              "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket{namespace=\"$namespace\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\"}[$interval])) by (source_cluster, pod, le))",
               "legendFormat": "{{source_cluster}} - {{pod}} p99",
               "refId": "C"
             }
@@ -1437,7 +1437,7 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "histogram_quantile(0.50, sum(rate(http_upstream_response_time_seconds_bucket{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\"}[$interval])) by (source_cluster, pod, le))",
+              "expr": "histogram_quantile(0.50, sum(rate(http_upstream_response_time_seconds_bucket{namespace=\"$namespace\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\"}[$interval])) by (source_cluster, pod, le))",
               "legendFormat": "{{source_cluster}} - {{pod}} Upstream p50",
               "refId": "A"
             },
@@ -1446,7 +1446,7 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "histogram_quantile(0.95, sum(rate(http_upstream_response_time_seconds_bucket{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\"}[$interval])) by (source_cluster, pod, le))",
+              "expr": "histogram_quantile(0.95, sum(rate(http_upstream_response_time_seconds_bucket{namespace=\"$namespace\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\"}[$interval])) by (source_cluster, pod, le))",
               "legendFormat": "{{source_cluster}} - {{pod}} Upstream p95",
               "refId": "B"
             },
@@ -1455,7 +1455,7 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "histogram_quantile(0.99, sum(rate(http_upstream_response_time_seconds_bucket{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\"}[$interval])) by (source_cluster, pod, le))",
+              "expr": "histogram_quantile(0.99, sum(rate(http_upstream_response_time_seconds_bucket{namespace=\"$namespace\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\", normalized_uri=~\"$normalized_uri\"}[$interval])) by (source_cluster, pod, le))",
               "legendFormat": "{{source_cluster}} - {{pod}} Upstream p99",
               "refId": "C"
             }
@@ -1528,6 +1528,30 @@ data:
           },
           {
             "current": {
+              "selected": true,
+              "text": "caching",
+              "value": "caching"
+            },
+            "includeAll": false,
+            "label": "Namespace",
+            "name": "namespace",
+            "options": [
+              {
+                "selected": true,
+                "text": "caching",
+                "value": "caching"
+              },
+              {
+                "selected": false,
+                "text": "artifact-registry-proxy",
+                "value": "artifact-registry-proxy"
+              }
+            ],
+            "query": "caching,artifact-registry-proxy",
+            "type": "custom"
+          },
+          {
+            "current": {
               "text": "All",
               "value": [
                 "$__all"
@@ -1537,14 +1561,14 @@ data:
               "type": "prometheus",
               "uid": "${datasource}"
             },
-            "definition": "label_values(nginx_up{namespace=\"caching\", service=\"artifact-registry-proxy\"}, source_cluster)",
+            "definition": "label_values(nginx_up{namespace=\"$namespace\", service=\"artifact-registry-proxy\"}, source_cluster)",
             "includeAll": true,
             "label": "Cluster",
             "multi": true,
             "name": "source_cluster",
             "options": [],
             "query": {
-              "query": "label_values(nginx_up{namespace=\"caching\", service=\"artifact-registry-proxy\"}, source_cluster)",
+              "query": "label_values(nginx_up{namespace=\"$namespace\", service=\"artifact-registry-proxy\"}, source_cluster)",
               "refId": "PrometheusVariableQueryEditor-VariableQuery"
             },
             "refresh": 2,
@@ -1563,14 +1587,14 @@ data:
               "type": "prometheus",
               "uid": "${datasource}"
             },
-            "definition": "label_values(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\"}, normalized_uri)",
+            "definition": "label_values(http_requests_total{namespace=\"$namespace\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\"}, normalized_uri)",
             "includeAll": true,
             "label": "Repository",
             "multi": true,
             "name": "normalized_uri",
             "options": [],
             "query": {
-              "query": "label_values(http_requests_total{namespace=\"caching\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\"}, normalized_uri)",
+              "query": "label_values(http_requests_total{namespace=\"$namespace\", service=\"artifact-registry-proxy\", source_cluster=~\"$source_cluster\"}, normalized_uri)",
               "refId": "PrometheusVariableQueryEditor-VariableQuery"
             },
             "refresh": 2,
