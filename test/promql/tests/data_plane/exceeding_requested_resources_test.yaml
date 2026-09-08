@@ -9,9 +9,9 @@ tests:
 
       # CPU exceeding requested
       - series: 'container_cpu_usage_seconds_total{namespace="appstudio-grafana", pod="prod-pod-1", container="test-container-1", source_cluster="cluster01"}'
-        values: '2x10'
+        values: '0+120x10'
 
-      - series: 'kube_pod_container_resource_requests{resource="cpu", namespace="appstudio-grafana", pod="prod-pod-1", container="test-container-1", source_cluster="cluster01"}'
+      - series: 'kube_pod_container_resource_requests{resource="cpu", unit="core", namespace="appstudio-grafana", pod="prod-pod-1", container="test-container-1", source_cluster="cluster01"}'
         values: '1x10'
 
     alert_rule_test:
@@ -32,6 +32,20 @@ tests:
               description: >-
                 Pod prod-pod-1 in namespace appstudio-grafana on cluster
                 cluster01 has been running above the requested cpu resources.
+  - interval: 1m
+    input_series:
+
+      # A large cumulative CPU value with usage below the request must not alert.
+      - series: 'container_cpu_usage_seconds_total{namespace="appstudio-grafana", pod="prod-pod-low-cpu", container="test-container", source_cluster="cluster01"}'
+        values: '10000+30x10'
+
+      - series: 'kube_pod_container_resource_requests{resource="cpu", unit="core", namespace="appstudio-grafana", pod="prod-pod-low-cpu", container="test-container", source_cluster="cluster01"}'
+        values: '1x10'
+
+    alert_rule_test:
+      - alertname: PodCPUUsageExceedsRequested
+        eval_time: 10m
+        exp_alerts: []
   - interval: 1m
     input_series:
 
