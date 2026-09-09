@@ -78,7 +78,8 @@ tests:
 
   - interval: 1m
     input_series:
-      # Pod is in the Failed state and scheduled, so it will be alerted.
+      # Failed is a terminal phase (Evicted leftovers, completed-failed Jobs/TaskRuns).
+      # PodNotReady must not fire; use CrashLoopBackOff / PodOOMKilled / UnschedulablePods.
       - series: 'kube_pod_status_phase{pod="pod-1", namespace="ns-3", phase="Pending", source_cluster="cluster03"}'
         values: '0x29'
       - series: 'kube_pod_status_phase{pod="pod-1", namespace="ns-3", phase="Unknown", source_cluster="cluster03"}'
@@ -95,21 +96,7 @@ tests:
     alert_rule_test:
       - eval_time: 30m
         alertname: PodNotReady
-        exp_alerts:
-          - exp_labels:
-              severity: warning
-              namespace: ns-3
-              pod: pod-1
-              phase: Failed
-              source_cluster: cluster03
-            exp_annotations:
-              summary: >-
-                Pod pod-1 is not ready
-              description: >-
-                Pod pod-1 in namespace ns-3 on cluster cluster03 is
-                not ready for more than 30 minutes.
-              alert_routing_key: ns-3
-              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-PodNotReady.md
+        exp_alerts: []
 
   - interval: 1m
     input_series:
@@ -144,8 +131,8 @@ tests:
       - series: 'kube_pod_status_unschedulable{namespace="ns-5", pod="pod-1", source_cluster="cluster05"}'
         values: '0x29'
 
-      # Pod is in the Running state for the first 14 min, then it's in the Failed state
-      # for the last 1 min and unscheduled, so it will not be alerted.
+      # Pod is in the Running state for the first 14 min, then Failed for 1 min.
+      # Failed is excluded from PodNotReady, so it will not be alerted.
       - series: 'kube_pod_status_phase{pod="pod-1", namespace="ns-7", phase="Running"}'
         values: '1x28 0'
       - series: 'kube_pod_status_phase{pod="pod-1", namespace="ns-7", phase="Failed"}'
