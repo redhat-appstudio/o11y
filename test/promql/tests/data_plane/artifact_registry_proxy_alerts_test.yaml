@@ -146,6 +146,32 @@ tests:
         alertname: NginxHighErrorRate
         exp_alerts: []
 
+  - name: NginxHighErrorRate_IndependentNamespace_Firing
+    interval: 1m
+    input_series:
+      - series: 'artifact_registry_proxy:http_requests:rate5m{namespace="artifact-registry-proxy", service="artifact-registry-proxy", source_cluster="cluster03"}'
+        values: '0 0.5 0.5 0.5 0.5 0.5 0.5+0x20'
+      - series: 'artifact_registry_proxy:http_errors:rate5m{namespace="artifact-registry-proxy", service="artifact-registry-proxy", source_cluster="cluster03"}'
+        values: '0 0.05 0.05 0.05 0.05 0.05 0.05+0x20'
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: NginxHighErrorRate
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              slo: "false"
+              component: artifact-registry-proxy
+              source_cluster: cluster03
+              namespace: artifact-registry-proxy
+              service: artifact-registry-proxy
+            exp_annotations:
+              summary: "Artifact Registry Nginx proxy has high error rate"
+              description: "More than 5% of requests to the artifact registry proxy are returning 5xx errors in cluster cluster03. Current error rate: 10%."
+              alert_team_handle: "<!subteam^S07NDQV6A4D>"
+              team: vanguard
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/vanguard/sre/artifact-registry-proxy-high-error-rate.md
+
   - name: NginxHighErrorRate_NotFiring_NoErrors
     interval: 1m
     input_series:

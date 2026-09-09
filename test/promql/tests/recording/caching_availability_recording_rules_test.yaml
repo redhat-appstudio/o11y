@@ -163,3 +163,139 @@ tests:
       - expr: 'konflux_up{namespace="other", service="squid"}'
         eval_time: 2m
         exp_samples: []
+
+  - interval: 1m
+    # Test artifact_registry_proxy namespace cache hit ratio
+    input_series:
+      - series: 'http_requests_total{namespace="artifact-registry-proxy", service="artifact-registry-proxy", source_cluster="cluster03", cache_status="HIT"}'
+        values: '0+60x10'
+      - series: 'http_requests_total{namespace="artifact-registry-proxy", service="artifact-registry-proxy", source_cluster="cluster03", cache_status="MISS"}'
+        values: '0+20x10'
+      - series: 'http_requests_total{namespace="artifact-registry-proxy", service="artifact-registry-proxy", source_cluster="cluster03", cache_status="BYPASS"}'
+        values: '0+10x10'
+    promql_expr_test:
+      - expr: artifact_registry_proxy:cache_hit_ratio:rate5m
+        eval_time: 6m
+        exp_samples:
+          - labels: 'artifact_registry_proxy:cache_hit_ratio:rate5m{namespace="artifact-registry-proxy", service="artifact-registry-proxy", source_cluster="cluster03"}'
+            value: 66.66666666666666
+
+  - interval: 1m
+    # Test artifact_registry_proxy namespace cache hits
+    input_series:
+      - series: 'http_requests_total{namespace="artifact-registry-proxy", service="artifact-registry-proxy", source_cluster="cluster03", cache_status="HIT"}'
+        values: '0+60x10'
+      - series: 'http_requests_total{namespace="artifact-registry-proxy", service="artifact-registry-proxy", source_cluster="cluster03", cache_status="MISS"}'
+        values: '0+20x10'
+    promql_expr_test:
+      - expr: artifact_registry_proxy:cache_hits:rate5m
+        eval_time: 6m
+        exp_samples:
+          - labels: 'artifact_registry_proxy:cache_hits:rate5m{namespace="artifact-registry-proxy", service="artifact-registry-proxy", source_cluster="cluster03"}'
+            value: 1
+
+  - interval: 1m
+    # Test artifact_registry_proxy namespace cache misses
+    input_series:
+      - series: 'http_requests_total{namespace="artifact-registry-proxy", service="artifact-registry-proxy", source_cluster="cluster03", cache_status="HIT"}'
+        values: '0+60x10'
+      - series: 'http_requests_total{namespace="artifact-registry-proxy", service="artifact-registry-proxy", source_cluster="cluster03", cache_status="MISS"}'
+        values: '0+20x10'
+    promql_expr_test:
+      - expr: artifact_registry_proxy:cache_misses:rate5m
+        eval_time: 6m
+        exp_samples:
+          - labels: 'artifact_registry_proxy:cache_misses:rate5m{namespace="artifact-registry-proxy", service="artifact-registry-proxy", source_cluster="cluster03"}'
+            value: 0.33333333333333337
+
+  - interval: 1m
+    # Test artifact_registry_proxy namespace total requests
+    input_series:
+      - series: 'http_requests_total{namespace="artifact-registry-proxy", service="artifact-registry-proxy", source_cluster="cluster03", status="200"}'
+        values: '0+50x10'
+      - series: 'http_requests_total{namespace="artifact-registry-proxy", service="artifact-registry-proxy", source_cluster="cluster03", status="500"}'
+        values: '0+10x10'
+    promql_expr_test:
+      - expr: artifact_registry_proxy:http_requests:rate5m
+        eval_time: 6m
+        exp_samples:
+          - labels: 'artifact_registry_proxy:http_requests:rate5m{namespace="artifact-registry-proxy", service="artifact-registry-proxy", source_cluster="cluster03"}'
+            value: 1
+
+  - interval: 1m
+    # Test artifact_registry_proxy namespace errors
+    input_series:
+      - series: 'http_requests_total{namespace="artifact-registry-proxy", service="artifact-registry-proxy", source_cluster="cluster03", status="200"}'
+        values: '0+50x10'
+      - series: 'http_requests_total{namespace="artifact-registry-proxy", service="artifact-registry-proxy", source_cluster="cluster03", status="500"}'
+        values: '0+10x10'
+    promql_expr_test:
+      - expr: artifact_registry_proxy:http_errors:rate5m
+        eval_time: 6m
+        exp_samples:
+          - labels: 'artifact_registry_proxy:http_errors:rate5m{namespace="artifact-registry-proxy", service="artifact-registry-proxy", source_cluster="cluster03"}'
+            value: 0.16666666666666669
+
+  - interval: 1m
+    # Test container_image_proxy namespace cache hit ratio
+    input_series:
+      - series: 'squid_client_http_requests_total{namespace="container-image-proxy", service="squid", source_cluster="cluster04"}'
+        values: '0+100x10'
+      - series: 'squid_client_http_hits_total{namespace="container-image-proxy", service="squid", source_cluster="cluster04"}'
+        values: '0+80x10'
+    promql_expr_test:
+      - expr: container_image_proxy:cache_hit_ratio:rate5m
+        eval_time: 6m
+        exp_samples:
+          - labels: 'container_image_proxy:cache_hit_ratio:rate5m{namespace="container-image-proxy", service="squid", source_cluster="cluster04"}'
+            value: 80
+
+  - interval: 1m
+    # Test container_image_proxy namespace cache hits
+    input_series:
+      - series: 'squid_client_http_hits_total{namespace="container-image-proxy", service="squid", source_cluster="cluster04"}'
+        values: '0+80x10'
+    promql_expr_test:
+      - expr: container_image_proxy:cache_hits:rate5m
+        eval_time: 6m
+        exp_samples:
+          - labels: 'container_image_proxy:cache_hits:rate5m{namespace="container-image-proxy", service="squid", source_cluster="cluster04"}'
+            value: 1.3333333333333335
+
+  - interval: 1m
+    # Test container_image_proxy namespace cache misses
+    input_series:
+      - series: 'squid_client_http_requests_total{namespace="container-image-proxy", service="squid", source_cluster="cluster04"}'
+        values: '0+100x10'
+      - series: 'squid_client_http_hits_total{namespace="container-image-proxy", service="squid", source_cluster="cluster04"}'
+        values: '0+80x10'
+    promql_expr_test:
+      - expr: container_image_proxy:cache_misses:rate5m
+        eval_time: 6m
+        exp_samples:
+          - labels: 'container_image_proxy:cache_misses:rate5m{namespace="container-image-proxy", service="squid", source_cluster="cluster04"}'
+            value: 0.33333333333333326
+
+  - interval: 1m
+    # Test container_image_proxy namespace total requests
+    input_series:
+      - series: 'squid_client_http_requests_total{namespace="container-image-proxy", service="squid", source_cluster="cluster04"}'
+        values: '0+85x10'
+    promql_expr_test:
+      - expr: container_image_proxy:http_requests:rate5m
+        eval_time: 6m
+        exp_samples:
+          - labels: 'container_image_proxy:http_requests:rate5m{namespace="container-image-proxy", service="squid", source_cluster="cluster04"}'
+            value: 1.4166666666666667
+
+  - interval: 1m
+    # Test container_image_proxy namespace errors
+    input_series:
+      - series: 'squid_client_http_errors_total{namespace="container-image-proxy", service="squid", source_cluster="cluster04"}'
+        values: '0+15x10'
+    promql_expr_test:
+      - expr: container_image_proxy:http_errors:rate5m
+        eval_time: 6m
+        exp_samples:
+          - labels: 'container_image_proxy:http_errors:rate5m{namespace="container-image-proxy", service="squid", source_cluster="cluster04"}'
+            value: 0.25
