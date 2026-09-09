@@ -58,5 +58,4 @@ kustomize-build: kustomize
 	# This validates that the build command passes and not its output's validity.
 	kustomize build config/exporters/monitoring/grafana/base 1>/dev/null
 	kustomize build config/exporters/monitoring/kaexporter/base 1>/dev/null
-	kustomize build config/exporters/monitoring/kanary/base 1>/dev/null
 	kustomize build config/exporters/monitoring/registry/base 1>/dev/null
