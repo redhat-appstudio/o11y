@@ -20,8 +20,6 @@ tests:
         exp_alerts:
           - exp_labels:
               severity: critical
-              namespace: appstudio-registry-exporter
-              job: appstudio-registry-exporter/registry-exporter-ds-podmonitor
               source_cluster: c1
               slo: "true"
               component: registry-exporter
@@ -213,6 +211,19 @@ tests:
               source_cluster: c1
               slo: "true"
               component: registry-exporter
+            exp_annotations:
+              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.registry_exporter_alerts.yaml#L33
+              summary: >-
+                Registry quay.io is unreachable from cluster c1
+              description: >-
+                Registry quay.io tests are failing across ALL nodes in cluster c1.
+                The exporter is healthy (up=1) but all registry operations are failing.
+                Possible causes: Registry outage, network partition, authentication failure, or firewall issue.
+                Check registry status page and network connectivity from cluster to registry.
+                This is a REGISTRY issue, not an exporter issue.
+              alert_team_handle: <!subteam^S079J7LV0KM> <!subteam^S06LGCC3C2V>
+              team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
 
   # Test 12: DaemonSet - Some pods down, but at least ONE exporter up and registry down - SHOULD alert at 10m
   - interval: 1m
@@ -239,6 +250,19 @@ tests:
               source_cluster: c1
               slo: "true"
               component: registry-exporter
+            exp_annotations:
+              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.registry_exporter_alerts.yaml#L33
+              summary: >-
+                Registry quay.io is unreachable from cluster c1
+              description: >-
+                Registry quay.io tests are failing across ALL nodes in cluster c1.
+                The exporter is healthy (up=1) but all registry operations are failing.
+                Possible causes: Registry outage, network partition, authentication failure, or firewall issue.
+                Check registry status page and network connectivity from cluster to registry.
+                This is a REGISTRY issue, not an exporter issue.
+              alert_team_handle: <!subteam^S079J7LV0KM> <!subteam^S06LGCC3C2V>
+              team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
 
   # Test 13: Multiple registries down - should alert for each
   - interval: 1m
