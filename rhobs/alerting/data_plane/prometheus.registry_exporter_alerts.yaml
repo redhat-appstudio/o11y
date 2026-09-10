@@ -12,7 +12,7 @@ spec:
     rules:
     - alert: RegistryExporterDown
       expr: |
-        up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor"} == 0
+        max by (source_cluster) (up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor"}) == 0
       for: 5m
       labels:
         severity: critical
@@ -24,11 +24,10 @@ spec:
           Registry exporter process is down in cluster {{ $labels.source_cluster }}
         description: >-
           The registry exporter DaemonSet is not running or Prometheus cannot scrape it.
-          Either pods are crashed/evicted or the scrape endpoint is unavailable.
+          Either pods are crashed or the scrape endpoint is unavailable.
           This is an exporter infrastructure issue, NOT a registry issue.
-          Check pod status: kubectl -n appstudio-registry-exporter get pods
-          Check logs: kubectl -n appstudio-registry-exporter logs -l app=registry-exporter
-        alert_team_handle: '<!subteam^S06LGCC3C2V>'
+          Refer to the runbook for troubleshooting steps.
+        alert_team_handle: '<!subteam^S06LGCC3C2V> <!subteam^S079J7LV0KM>'
         team: o11y
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
 
@@ -40,8 +39,8 @@ spec:
       expr: |
         (konflux_up{service="registry-exporter"} != 1)
         * on (source_cluster) group_left(namespace, job)
-        (up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor"} == 1)
-      for: 15m
+        max by (source_cluster, namespace, job) (up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor"} == 1)
+      for: 10m
       labels:
         severity: critical
         slo: "true"
@@ -56,8 +55,8 @@ spec:
           Possible causes: Registry outage, network partition, authentication failure, or firewall issue.
           Check registry status page and network connectivity from cluster to registry.
           This is a REGISTRY issue, not an exporter issue.
-        alert_routing_key: spre
-        team: spre
+        alert_team_handle: '<!subteam^S079J7LV0KM> <!subteam^S06LGCC3C2V>'
+        team: o11y
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
 
   # LEVEL 3: Specific test type failures across all nodes (O11y team - more granular diagnosis)

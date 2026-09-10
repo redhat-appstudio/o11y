@@ -31,11 +31,10 @@ tests:
                 Registry exporter process is down in cluster c1
               description: >-
                 The registry exporter DaemonSet is not running or Prometheus cannot scrape it.
-                Either pods are crashed/evicted or the scrape endpoint is unavailable.
+                Either pods are crashed or the scrape endpoint is unavailable.
                 This is an exporter infrastructure issue, NOT a registry issue.
-                Check pod status: kubectl -n appstudio-registry-exporter get pods
-                Check logs: kubectl -n appstudio-registry-exporter logs -l app=registry-exporter
-              alert_team_handle: <!subteam^S06LGCC3C2V>
+                Refer to the runbook for troubleshooting steps.
+              alert_team_handle: <!subteam^S06LGCC3C2V> <!subteam^S079J7LV0KM>
               team: o11y
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
 
@@ -61,20 +60,70 @@ tests:
         alertname: RegistryExporterDown
         exp_alerts: []
 
+  # Test 4: DaemonSet - ALL pods down across multiple nodes - SHOULD alert at 5m
+  - interval: 1m
+    input_series:
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node1"}'
+        values: "0 0 0 0 0 0 0 0 0 0"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node2"}'
+        values: "0 0 0 0 0 0 0 0 0 0"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node3"}'
+        values: "0 0 0 0 0 0 0 0 0 0"
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: RegistryExporterDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              source_cluster: c1
+              slo: "true"
+              component: registry-exporter
+
+  # Test 5: DaemonSet - Some pods down but at least ONE is up - should NOT alert
+  - interval: 1m
+    input_series:
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node1"}'
+        values: "0 0 0 0 0 0 0 0 0 0"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node2"}'
+        values: "1 1 1 1 1 1 1 1 1 1"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node3"}'
+        values: "0 0 0 0 0 0 0 0 0 0"
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: RegistryExporterDown
+        exp_alerts: []
+
+  # Test 6: DaemonSet - Rolling restart (pods restarting one by one) - should NOT alert
+  - interval: 1m
+    input_series:
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node1"}'
+        values: "1 1 0 0 1 1 1 1 1 1"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node2"}'
+        values: "1 1 1 1 0 0 1 1 1 1"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node3"}'
+        values: "1 1 1 1 1 1 0 0 1 1"
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: RegistryExporterDown
+        exp_alerts: []
+
   # ============================================================================
   # LEVEL 2: RegistryOutageClusterWide (registry down, exporter healthy)
   # ============================================================================
 
-  # Test 5: Registry down but exporter healthy - SHOULD alert at 15m
+  # Test 7: Registry down but exporter healthy - SHOULD alert at 10m
   - interval: 1m
     input_series:
       - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1"}'
-        values: "1x16"
+        values: "1x12"
       - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: "0x16"
+        values: "0x12"
 
     alert_rule_test:
-      - eval_time: 15m
+      - eval_time: 10m
         alertname: RegistryOutageClusterWide
         exp_alerts:
           - exp_labels:
@@ -96,61 +145,113 @@ tests:
                 Possible causes: Registry outage, network partition, authentication failure, or firewall issue.
                 Check registry status page and network connectivity from cluster to registry.
                 This is a REGISTRY issue, not an exporter issue.
-              alert_routing_key: spre
-              team: spre
+              alert_team_handle: <!subteam^S079J7LV0KM> <!subteam^S06LGCC3C2V>
+              team: o11y
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
 
-  # Test 7: Registry healthy and exporter healthy - should NOT alert
+  # Test 8: Registry healthy and exporter healthy - should NOT alert
   - interval: 1m
     input_series:
       - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1"}'
-        values: "1x16"
+        values: "1x12"
       - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: "1x16"
+        values: "1x12"
 
     alert_rule_test:
-      - eval_time: 15m
+      - eval_time: 10m
         alertname: RegistryOutageClusterWide
         exp_alerts: []
 
-  # Test 8: Registry recovers before 15m - should NOT alert
+  # Test 9: Registry recovers before 10m - should NOT alert
   - interval: 1m
     input_series:
       - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1"}'
-        values: "1x16"
+        values: "1x12"
       - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: "0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1"
+        values: "0 0 0 0 0 0 0 0 0 1 1 1"
 
     alert_rule_test:
-      - eval_time: 15m
+      - eval_time: 10m
         alertname: RegistryOutageClusterWide
         exp_alerts: []
 
-  # Test 9: Exporter down - registry alert should NOT fire (covered by RegistryExporterDown)
+  # Test 10: Exporter down - registry alert should NOT fire (covered by RegistryExporterDown)
   - interval: 1m
     input_series:
       - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1"}'
-        values: "0x16"
+        values: "0x12"
       - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: "0x16"
+        values: "0x12"
 
     alert_rule_test:
-      - eval_time: 15m
+      - eval_time: 10m
         alertname: RegistryOutageClusterWide
         exp_alerts: []
 
-  # Test 10: Multiple registries down - should alert for each
+  # Test 11: DaemonSet - Multiple pods, registry down, all exporters up - SHOULD alert at 10m
+  - interval: 1m
+    input_series:
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node1"}'
+        values: "1x12"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node2"}'
+        values: "1x12"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node3"}'
+        values: "1x12"
+      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
+        values: "0x12"
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: RegistryOutageClusterWide
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              namespace: appstudio-registry-exporter
+              job: appstudio-registry-exporter/registry-exporter-ds-podmonitor
+              service: registry-exporter
+              check: quay.io
+              source_cluster: c1
+              slo: "true"
+              component: registry-exporter
+
+  # Test 12: DaemonSet - Some pods down, but at least ONE exporter up and registry down - SHOULD alert at 10m
+  - interval: 1m
+    input_series:
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node1"}'
+        values: "0x12"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node2"}'
+        values: "1x12"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node3"}'
+        values: "0x12"
+      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
+        values: "0x12"
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: RegistryOutageClusterWide
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              namespace: appstudio-registry-exporter
+              job: appstudio-registry-exporter/registry-exporter-ds-podmonitor
+              service: registry-exporter
+              check: quay.io
+              source_cluster: c1
+              slo: "true"
+              component: registry-exporter
+
+  # Test 13: Multiple registries down - should alert for each
   - interval: 1m
     input_series:
       - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1"}'
-        values: "1x16"
+        values: "1x12"
       - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: "0x16"
+        values: "0x12"
       - series: 'konflux_up{service="registry-exporter", check="registry.example.com", source_cluster="c1"}'
-        values: "0x16"
+        values: "0x12"
 
     alert_rule_test:
-      - eval_time: 15m
+      - eval_time: 10m
         alertname: RegistryOutageClusterWide
         exp_alerts:
           - exp_labels:
@@ -172,8 +273,8 @@ tests:
                 Possible causes: Registry outage, network partition, authentication failure, or firewall issue.
                 Check registry status page and network connectivity from cluster to registry.
                 This is a REGISTRY issue, not an exporter issue.
-              alert_routing_key: spre
-              team: spre
+              alert_team_handle: <!subteam^S079J7LV0KM> <!subteam^S06LGCC3C2V>
+              team: o11y
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
           - exp_labels:
               severity: critical
@@ -194,8 +295,8 @@ tests:
                 Possible causes: Registry outage, network partition, authentication failure, or firewall issue.
                 Check registry status page and network connectivity from cluster to registry.
                 This is a REGISTRY issue, not an exporter issue.
-              alert_routing_key: spre
-              team: spre
+              alert_team_handle: <!subteam^S079J7LV0KM> <!subteam^S06LGCC3C2V>
+              team: o11y
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
 
   # ============================================================================
