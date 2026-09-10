@@ -77,6 +77,18 @@ tests:
               source_cluster: c1
               slo: "true"
               component: registry-exporter
+            exp_annotations:
+              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.registry_exporter_alerts.yaml#L12
+              summary: >-
+                Registry exporter process is down in cluster c1
+              description: >-
+                The registry exporter DaemonSet is not running or Prometheus cannot scrape it.
+                Either pods are crashed or the scrape endpoint is unavailable.
+                This is an exporter infrastructure issue, NOT a registry issue.
+                Refer to the runbook for troubleshooting steps.
+              alert_team_handle: <!subteam^S06LGCC3C2V> <!subteam^S079J7LV0KM>
+              team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
 
   # Test 5: DaemonSet - Some pods down but at least ONE is up - should NOT alert
   - interval: 1m
