@@ -4,11 +4,9 @@ rule_files:
   - prometheus.registry_exporter_alerts.yaml
 
 tests:
-  # ============================================================================
-  # LEVEL 1: RegistryExporterDown (exporter process/infrastructure failures)
-  # ============================================================================
+  # RegistryExporterDown tests
 
-  # Test 1: Exporter process is down (up=0) - SHOULD alert at 5m
+  # Exporter process is down (up=0) - SHOULD alert at 5m
   - interval: 1m
     input_series:
       - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1"}'
@@ -36,7 +34,7 @@ tests:
               team: o11y
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
 
-  # Test 2: Exporter healthy (up=1) - should NOT alert
+  # Exporter healthy (up=1) - should NOT alert
   - interval: 1m
     input_series:
       - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1"}'
@@ -47,7 +45,7 @@ tests:
         alertname: RegistryExporterDown
         exp_alerts: []
 
-  # Test 3: Exporter recovers before 5m - should NOT alert
+  # Exporter recovers before 5m - should NOT alert
   - interval: 1m
     input_series:
       - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1"}'
@@ -58,7 +56,7 @@ tests:
         alertname: RegistryExporterDown
         exp_alerts: []
 
-  # Test 4: DaemonSet - ALL pods down across multiple nodes - SHOULD alert at 5m
+  # DaemonSet - ALL pods down across multiple nodes - SHOULD alert at 5m
   - interval: 1m
     input_series:
       - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node1"}'
@@ -90,7 +88,7 @@ tests:
               team: o11y
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
 
-  # Test 5: DaemonSet - Some pods down but at least ONE is up - should NOT alert
+  #  DaemonSet - Some pods down but at least ONE is up - should NOT alert
   - interval: 1m
     input_series:
       - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node1"}'
@@ -105,7 +103,7 @@ tests:
         alertname: RegistryExporterDown
         exp_alerts: []
 
-  # Test 6: DaemonSet - Rolling restart (pods restarting one by one) - should NOT alert
+  #  DaemonSet - Rolling restart (pods restarting one by one) - should NOT alert
   - interval: 1m
     input_series:
       - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node1"}'
@@ -120,11 +118,9 @@ tests:
         alertname: RegistryExporterDown
         exp_alerts: []
 
-  # ============================================================================
-  # LEVEL 2: RegistryOutageClusterWide (registry down, exporter healthy)
-  # ============================================================================
+  # RegistryOutageClusterWide tests
 
-  # Test 7: Registry down but exporter healthy - SHOULD alert at 10m
+  # Registry down but exporter healthy - SHOULD alert at 10m
   - interval: 1m
     input_series:
       - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1"}'
@@ -152,14 +148,13 @@ tests:
               description: >-
                 Registry quay.io tests are failing across ALL nodes in cluster c1.
                 The exporter is healthy (up=1) but all registry operations are failing.
-                Possible causes: Registry outage, network partition, authentication failure, or firewall issue.
-                Check registry status page and network connectivity from cluster to registry.
                 This is a REGISTRY issue, not an exporter issue.
+                Refer to the runbook for troubleshooting steps.
               alert_team_handle: <!subteam^S079J7LV0KM> <!subteam^S06LGCC3C2V>
               team: o11y
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
 
-  # Test 8: Registry healthy and exporter healthy - should NOT alert
+  #  Registry healthy and exporter healthy - should NOT alert
   - interval: 1m
     input_series:
       - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1"}'
@@ -172,7 +167,7 @@ tests:
         alertname: RegistryOutageClusterWide
         exp_alerts: []
 
-  # Test 9: Registry recovers before 10m - should NOT alert
+  #  Registry recovers before 10m - should NOT alert
   - interval: 1m
     input_series:
       - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1"}'
@@ -185,7 +180,7 @@ tests:
         alertname: RegistryOutageClusterWide
         exp_alerts: []
 
-  # Test 10: Exporter down - registry alert should NOT fire (covered by RegistryExporterDown)
+  #  Exporter down - registry alert should NOT fire (covered by RegistryExporterDown)
   - interval: 1m
     input_series:
       - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1"}'
@@ -198,7 +193,7 @@ tests:
         alertname: RegistryOutageClusterWide
         exp_alerts: []
 
-  # Test 11: DaemonSet - Multiple pods, registry down, all exporters up - SHOULD alert at 10m
+  #  DaemonSet - Multiple pods, registry down, all exporters up - SHOULD alert at 10m
   - interval: 1m
     input_series:
       - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node1"}'
@@ -230,14 +225,13 @@ tests:
               description: >-
                 Registry quay.io tests are failing across ALL nodes in cluster c1.
                 The exporter is healthy (up=1) but all registry operations are failing.
-                Possible causes: Registry outage, network partition, authentication failure, or firewall issue.
-                Check registry status page and network connectivity from cluster to registry.
                 This is a REGISTRY issue, not an exporter issue.
+                Refer to the runbook for troubleshooting steps.
               alert_team_handle: <!subteam^S079J7LV0KM> <!subteam^S06LGCC3C2V>
               team: o11y
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
 
-  # Test 12: DaemonSet - Some pods down, but at least ONE exporter up and registry down - SHOULD alert at 10m
+  #  DaemonSet - Some pods down, but at least ONE exporter up and registry down - SHOULD alert at 10m
   - interval: 1m
     input_series:
       - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node1"}'
@@ -269,14 +263,13 @@ tests:
               description: >-
                 Registry quay.io tests are failing across ALL nodes in cluster c1.
                 The exporter is healthy (up=1) but all registry operations are failing.
-                Possible causes: Registry outage, network partition, authentication failure, or firewall issue.
-                Check registry status page and network connectivity from cluster to registry.
                 This is a REGISTRY issue, not an exporter issue.
+                Refer to the runbook for troubleshooting steps.
               alert_team_handle: <!subteam^S079J7LV0KM> <!subteam^S06LGCC3C2V>
               team: o11y
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
 
-  # Test 13: Multiple registries down - should alert for each
+  #  Multiple registries down - should alert for each
   - interval: 1m
     input_series:
       - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1"}'
@@ -306,9 +299,8 @@ tests:
               description: >-
                 Registry quay.io tests are failing across ALL nodes in cluster c1.
                 The exporter is healthy (up=1) but all registry operations are failing.
-                Possible causes: Registry outage, network partition, authentication failure, or firewall issue.
-                Check registry status page and network connectivity from cluster to registry.
                 This is a REGISTRY issue, not an exporter issue.
+                Refer to the runbook for troubleshooting steps.
               alert_team_handle: <!subteam^S079J7LV0KM> <!subteam^S06LGCC3C2V>
               team: o11y
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
@@ -328,18 +320,15 @@ tests:
               description: >-
                 Registry registry.example.com tests are failing across ALL nodes in cluster c1.
                 The exporter is healthy (up=1) but all registry operations are failing.
-                Possible causes: Registry outage, network partition, authentication failure, or firewall issue.
-                Check registry status page and network connectivity from cluster to registry.
                 This is a REGISTRY issue, not an exporter issue.
+                Refer to the runbook for troubleshooting steps.
               alert_team_handle: <!subteam^S079J7LV0KM> <!subteam^S06LGCC3C2V>
               team: o11y
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
 
-  # ============================================================================
-  # LEVEL 3: RegistryExporterTestTypeFailure (specific test types failing)
-  # ============================================================================
+  # RegistryExporterTestTypeFailure tests
 
-  # Test 11: Single test type failing on all nodes - SHOULD alert
+  # Single test type failing on all nodes - SHOULD alert
   - interval: 1m
     input_series:
       - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
@@ -372,7 +361,7 @@ tests:
               alert_routing_key: o11y
               team: o11y
 
-  # Test 12: Test type failing on some nodes but passing on others - should NOT alert
+  #  Test type failing on some nodes but passing on others - should NOT alert
   - interval: 1m
     input_series:
       - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c1"}'
@@ -385,11 +374,9 @@ tests:
         alertname: RegistryExporterTestTypeFailure
         exp_alerts: []
 
-  # ============================================================================
-  # LEVEL 4: RegistryExporterNodeFailure (>50% nodes failing)
-  # ============================================================================
+  # RegistryExporterNodeFailure tests
 
-  # Test 13: >50% of nodes failing (2 of 3 = 66.67%) - SHOULD alert
+  # >50% of nodes failing (2 of 3 = 66.67%) - SHOULD alert
   - interval: 1m
     input_series:
       - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
@@ -422,7 +409,7 @@ tests:
               alert_routing_key: o11y
               team: o11y
 
-  # Test 14: Exactly 50% of nodes failing (1 of 2) - should NOT alert
+  #  Exactly 50% of nodes failing (1 of 2) - should NOT alert
   - interval: 1m
     input_series:
       - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
