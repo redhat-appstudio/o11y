@@ -52,10 +52,21 @@ spec:
 
     - alert: PodMemoryUsageExceedsRequested
       expr: |
-        avg_over_time(container_memory_usage_bytes{namespace="appstudio-grafana"}[5m])
+        sum by (namespace, pod, container, source_cluster) (
+          container_memory_usage_bytes{
+            namespace="appstudio-grafana",
+            container!="",
+            container!="POD"
+          }
+        )
         > on(namespace, pod, container, source_cluster)
-        kube_pod_container_resource_requests{resource="memory", namespace="appstudio-grafana"}
-      for: 5m
+        sum by (namespace, pod, container, source_cluster) (
+          kube_pod_container_resource_requests{
+            resource="memory",
+            namespace="appstudio-grafana"
+          }
+        )
+      for: 10m
       labels:
         severity: warning
       annotations:

@@ -51,14 +51,14 @@ tests:
 
       # Memory exceeding requested
       - series: 'container_memory_usage_bytes{namespace="appstudio-grafana", pod="prod-pod-2", container="test-container-2", source_cluster="cluster01"}'
-        values: '2x10'
+        values: '2x15'
 
       - series: 'kube_pod_container_resource_requests{resource="memory", namespace="appstudio-grafana", pod="prod-pod-2", container="test-container-2", source_cluster="cluster01"}'
-        values: '1x10'
+        values: '1x15'
 
     alert_rule_test:
       - alertname: PodMemoryUsageExceedsRequested
-        eval_time: 10m
+        eval_time: 15m
         exp_alerts:
           - exp_labels:
               severity: warning
@@ -74,3 +74,31 @@ tests:
               description: >-
                 Pod prod-pod-2 in namespace appstudio-grafana on cluster
                 cluster01 has been running above the requested memory resources.
+  - interval: 1m
+    input_series:
+
+      # Memory usage below the request must not alert.
+      - series: 'container_memory_usage_bytes{namespace="appstudio-grafana", pod="prod-pod-low-memory", container="test-container", source_cluster="cluster01"}'
+        values: '1x15'
+
+      - series: 'kube_pod_container_resource_requests{resource="memory", namespace="appstudio-grafana", pod="prod-pod-low-memory", container="test-container", source_cluster="cluster01"}'
+        values: '2x15'
+
+    alert_rule_test:
+      - alertname: PodMemoryUsageExceedsRequested
+        eval_time: 15m
+        exp_alerts: []
+  - interval: 1m
+    input_series:
+
+      # A spike shorter than the alert duration must not alert after usage drops.
+      - series: 'container_memory_usage_bytes{namespace="appstudio-grafana", pod="prod-pod-memory-spike", container="test-container", source_cluster="cluster01"}'
+        values: '20x8 0x7'
+
+      - series: 'kube_pod_container_resource_requests{resource="memory", namespace="appstudio-grafana", pod="prod-pod-memory-spike", container="test-container", source_cluster="cluster01"}'
+        values: '1x15'
+
+    alert_rule_test:
+      - alertname: PodMemoryUsageExceedsRequested
+        eval_time: 12m
+        exp_alerts: []
