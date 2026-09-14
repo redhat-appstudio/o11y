@@ -63,9 +63,17 @@ type DailyBucket struct {
 	FailureReasons           map[string]int64 `json:"failure_reasons"`              // Failure count by reason
 }
 
-// MetricWindow is a fixed 30-day circular buffer indexed by day offset.
+// MetricWindow is a fixed 30-day circular buffer indexed by UTC calendar day.
 type MetricWindow struct {
 	Buckets [30]DailyBucket `json:"buckets"`
+}
+
+// dailyBucketIndex returns a stable ring-buffer slot for a UTC calendar day.
+// The same date always maps to the same slot, which is reused 30 days later.
+func dailyBucketIndex(day time.Time) int {
+	const secondsPerDay = int64(24 * time.Hour / time.Second)
+	dayNumber := day.UTC().Unix() / secondsPerDay
+	return int((dayNumber%30 + 30) % 30)
 }
 
 // Store holds 30-day rolling aggregates and a seen-set for deduplication.
@@ -93,11 +101,29 @@ func (s *Store) RecordObservation(
 	succeeded bool,
 	failureReason string,
 ) bool {
+	return s.recordObservationAt(
+		time.Now(), metricName, dedupeKey, completionTime, labelSet,
+		durationSeconds, waitSeconds, succeeded, failureReason,
+	)
+}
+
+// recordObservationAt contains RecordObservation's aggregation logic with an
+// explicit current time so date-boundary behavior can be tested deterministically.
+func (s *Store) recordObservationAt(
+	now time.Time,
+	metricName, dedupeKey string,
+	completionTime time.Time,
+	labelSet LabelSet,
+	durationSeconds float64,
+	waitSeconds float64,
+	succeeded bool,
+	failureReason string,
+) bool {
 	if durationSeconds < 0 {
 		return false
 	}
 
-	now := time.Now().UTC().Truncate(24 * time.Hour)
+	now = now.UTC().Truncate(24 * time.Hour)
 	bucketDay := completionTime.UTC().Truncate(24 * time.Hour)
 	dayOffset := int(now.Sub(bucketDay).Hours() / 24)
 	if dayOffset < 0 || dayOffset >= 30 {
@@ -113,7 +139,7 @@ func (s *Store) RecordObservation(
 	s.SeenKeys[dedupeKey] = completionTime
 
 	window := s.getOrCreateLocked(metricName, labelSet)
-	bucket := &window.Buckets[29-dayOffset]
+	bucket := &window.Buckets[dailyBucketIndex(bucketDay)]
 
 	completionDay := bucketDay.Format("2006-01-02")
 	if bucket.Day != "" && bucket.Day != completionDay {
@@ -469,4 +495,3 @@ const (
 	minSuccessCountForSLO = 10   // minimum observations before evaluating SLO
 	minDaysWithDataForSLO = 3    // minimum days with successful observations before evaluating SLO
 )
-
