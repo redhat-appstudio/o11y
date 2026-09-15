@@ -4,111 +4,110 @@ rule_files:
   - prometheus.registry_exporter_alerts.yaml
 
 tests:
-  # Registry exporter down for quay.io registry
+  # All exporter pods down on a cluster (should alert)
   - interval: 1m
     input_series:
-      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
-      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c2"}'
-        values: "1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node1"}'
+        values: "0x6"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node2"}'
+        values: "0x6"
 
     alert_rule_test:
-      - eval_time: 15m
+      - eval_time: 5m
         alertname: RegistryExporterDown
         exp_alerts:
           - exp_labels:
               severity: critical
-              check: quay.io
-              service: registry-exporter
               slo: "true"
               source_cluster: c1
               component: registry-exporter
             exp_annotations:
               html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.registry_exporter_alerts.yaml#L12
               summary: >-
-                Registry exporter check failed for registry quay.io in cluster c1
+                Registry exporter is down in cluster c1
               description: >-
-                The registry exporter has failed to successfully test registry quay.io in cluster c1.
-                All registry test operations (pull, push, metadata, authentication) have been failing for 15 minutes.
+                All registry exporter pods are unscrapable in cluster c1.
+                Prometheus has been unable to scrape any registry exporter pod for 5 minutes.
               alert_team_handle: <!subteam^S06LGCC3C2V>
               team: o11y
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
 
-  # Registry exporter down for multiple registries in same cluster
+  # Some DaemonSet pods down but at least one up (should NOT alert)
   - interval: 1m
     input_series:
-      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
-      - series: 'konflux_up{service="registry-exporter", check="registry.example.com", source_cluster="c1"}'
-        values: "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
-      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c2"}'
-        values: "1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node1"}'
+        values: "0x6"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node2"}'
+        values: "1x6"
 
     alert_rule_test:
-      - eval_time: 15m
-        alertname: RegistryExporterDown
-        exp_alerts:
-          - exp_labels:
-              severity: critical
-              check: quay.io
-              service: registry-exporter
-              slo: "true"
-              source_cluster: c1
-              component: registry-exporter
-            exp_annotations:
-              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.registry_exporter_alerts.yaml#L12
-              summary: >-
-                Registry exporter check failed for registry quay.io in cluster c1
-              description: >-
-                The registry exporter has failed to successfully test registry quay.io in cluster c1.
-                All registry test operations (pull, push, metadata, authentication) have been failing for 15 minutes.
-              alert_team_handle: <!subteam^S06LGCC3C2V>
-              team: o11y
-              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
-          - exp_labels:
-              severity: critical
-              check: registry.example.com
-              service: registry-exporter
-              slo: "true"
-              source_cluster: c1
-              component: registry-exporter
-            exp_annotations:
-              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.registry_exporter_alerts.yaml#L12
-              summary: >-
-                Registry exporter check failed for registry registry.example.com in cluster c1
-              description: >-
-                The registry exporter has failed to successfully test registry registry.example.com in cluster c1.
-                All registry test operations (pull, push, metadata, authentication) have been failing for 15 minutes.
-              alert_team_handle: <!subteam^S06LGCC3C2V>
-              team: o11y
-              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
-
-  # Registry exporter recovers before alert fires (should not alert)
-  - interval: 1m
-    input_series:
-      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: "0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1"
-      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c2"}'
-        values: "1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1"
-
-    alert_rule_test:
-      - eval_time: 15m
+      - eval_time: 5m
         alertname: RegistryExporterDown
         exp_alerts: []
 
-  # Registry exporter down for different registries in different clusters
+  # Exporter recovers before 5 minutes (should NOT alert)
+  - interval: 1m
+    input_series:
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node1"}'
+        values: "0 0 0 0 1 1"
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: RegistryExporterDown
+        exp_alerts: []
+
+  # Rolling restart, pods down alternately (should NOT alert)
+  - interval: 1m
+    input_series:
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node1"}'
+        values: "0 0 1 1 1 1"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node2"}'
+        values: "1 1 0 0 1 1"
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: RegistryExporterDown
+        exp_alerts: []
+
+  # Down on one cluster, up on another (should alert only for the down cluster)
+  - interval: 1m
+    input_series:
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node1"}'
+        values: "0x6"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c2", pod="exporter-node1"}'
+        values: "1x6"
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: RegistryExporterDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              source_cluster: c1
+              component: registry-exporter
+            exp_annotations:
+              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.registry_exporter_alerts.yaml#L12
+              summary: >-
+                Registry exporter is down in cluster c1
+              description: >-
+                All registry exporter pods are unscrapable in cluster c1.
+                Prometheus has been unable to scrape any registry exporter pod for 5 minutes.
+              alert_team_handle: <!subteam^S06LGCC3C2V>
+              team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
+
+  # Registry down, exporter healthy (should alert for RegistryOutageClusterWide)
   - interval: 1m
     input_series:
       - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
-        values: "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
-      - series: 'konflux_up{service="registry-exporter", check="registry.example.com", source_cluster="c2"}'
-        values: "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"
-      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c2"}'
-        values: "1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1"
+        values: "0x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node1"}'
+        values: "1x11"
 
     alert_rule_test:
-      - eval_time: 15m
-        alertname: RegistryExporterDown
+      - eval_time: 10m
+        alertname: RegistryOutageClusterWide
         exp_alerts:
           - exp_labels:
               severity: critical
@@ -118,13 +117,87 @@ tests:
               source_cluster: c1
               component: registry-exporter
             exp_annotations:
+              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.registry_exporter_alerts.yaml#L38
+              summary: >-
+                Registry quay.io outage in cluster c1
+              description: >-
+                Registry exporter is healthy but all tests for registry quay.io in cluster c1 have been failing for 10 minutes.
+              alert_team_handle: <!subteam^S06V06A36F5> <!subteam^S06LGCC3C2V>
+              team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
+
+  # Registry down but exporter also down (should NOT alert RegistryOutageClusterWide, but SHOULD fire RegistryExporterDown)
+  - interval: 1m
+    input_series:
+      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
+        values: "0x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node1"}'
+        values: "0x11"
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: RegistryOutageClusterWide
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: RegistryExporterDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              source_cluster: c1
+              component: registry-exporter
+            exp_annotations:
               html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.registry_exporter_alerts.yaml#L12
               summary: >-
-                Registry exporter check failed for registry quay.io in cluster c1
+                Registry exporter is down in cluster c1
               description: >-
-                The registry exporter has failed to successfully test registry quay.io in cluster c1.
-                All registry test operations (pull, push, metadata, authentication) have been failing for 15 minutes.
+                All registry exporter pods are unscrapable in cluster c1.
+                Prometheus has been unable to scrape any registry exporter pod for 5 minutes.
               alert_team_handle: <!subteam^S06LGCC3C2V>
+              team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
+
+  # Registry recovers before 10 minutes (should NOT alert)
+  - interval: 1m
+    input_series:
+      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
+        values: "0 0 0 0 0 0 0 0 0 1 1"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node1"}'
+        values: "1x11"
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: RegistryOutageClusterWide
+        exp_alerts: []
+
+  # Multiple registries down, exporter healthy (should alert for each registry)
+  - interval: 1m
+    input_series:
+      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
+        values: "0x11"
+      - series: 'konflux_up{service="registry-exporter", check="registry.example.com", source_cluster="c1"}'
+        values: "0x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node1"}'
+        values: "1x11"
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: RegistryOutageClusterWide
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              check: quay.io
+              service: registry-exporter
+              slo: "true"
+              source_cluster: c1
+              component: registry-exporter
+            exp_annotations:
+              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.registry_exporter_alerts.yaml#L38
+              summary: >-
+                Registry quay.io outage in cluster c1
+              description: >-
+                Registry exporter is healthy but all tests for registry quay.io in cluster c1 have been failing for 10 minutes.
+              alert_team_handle: <!subteam^S06V06A36F5> <!subteam^S06LGCC3C2V>
               team: o11y
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
           - exp_labels:
@@ -132,16 +205,77 @@ tests:
               check: registry.example.com
               service: registry-exporter
               slo: "true"
-              source_cluster: c2
+              source_cluster: c1
               component: registry-exporter
             exp_annotations:
-              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.registry_exporter_alerts.yaml#L12
+              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.registry_exporter_alerts.yaml#L38
               summary: >-
-                Registry exporter check failed for registry registry.example.com in cluster c2
+                Registry registry.example.com outage in cluster c1
               description: >-
-                The registry exporter has failed to successfully test registry registry.example.com in cluster c2.
-                All registry test operations (pull, push, metadata, authentication) have been failing for 15 minutes.
-              alert_team_handle: <!subteam^S06LGCC3C2V>
+                Registry exporter is healthy but all tests for registry registry.example.com in cluster c1 have been failing for 10 minutes.
+              alert_team_handle: <!subteam^S06V06A36F5> <!subteam^S06LGCC3C2V>
+              team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
+
+  # Multiple exporter pods all up, registry down (should alert)
+  - interval: 1m
+    input_series:
+      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
+        values: "0x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node1"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node2"}'
+        values: "1x11"
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: RegistryOutageClusterWide
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              check: quay.io
+              service: registry-exporter
+              slo: "true"
+              source_cluster: c1
+              component: registry-exporter
+            exp_annotations:
+              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.registry_exporter_alerts.yaml#L38
+              summary: >-
+                Registry quay.io outage in cluster c1
+              description: >-
+                Registry exporter is healthy but all tests for registry quay.io in cluster c1 have been failing for 10 minutes.
+              alert_team_handle: <!subteam^S06V06A36F5> <!subteam^S06LGCC3C2V>
+              team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
+
+  # Some exporter pods down, at least one up, registry down (should alert)
+  - interval: 1m
+    input_series:
+      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
+        values: "0x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node1"}'
+        values: "0x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", source_cluster="c1", pod="exporter-node2"}'
+        values: "1x11"
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: RegistryOutageClusterWide
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              check: quay.io
+              service: registry-exporter
+              slo: "true"
+              source_cluster: c1
+              component: registry-exporter
+            exp_annotations:
+              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.registry_exporter_alerts.yaml#L38
+              summary: >-
+                Registry quay.io outage in cluster c1
+              description: >-
+                Registry exporter is healthy but all tests for registry quay.io in cluster c1 have been failing for 10 minutes.
+              alert_team_handle: <!subteam^S06V06A36F5> <!subteam^S06LGCC3C2V>
               team: o11y
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
 
