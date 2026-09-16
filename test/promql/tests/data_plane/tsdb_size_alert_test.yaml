@@ -1,0 +1,113 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.tsdb_size_alert.yaml
+
+tests:
+  # Positive test: Alert fires when TSDB at 86% for 5+ minutes
+  - interval: 1m
+    input_series:
+      - series: 'prometheus_tsdb_storage_blocks_bytes{job="prometheus-k8s",namespace="openshift-monitoring",pod="prometheus-k8s-0",source_cluster="cluster01"}'
+        values: '0.86+0x10'
+      - series: 'prometheus_tsdb_retention_limit_bytes{job="prometheus-k8s",namespace="openshift-monitoring",pod="prometheus-k8s-0",source_cluster="cluster01"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: PrometheusTSDBStorageHigh
+        exp_alerts:
+          - exp_labels:
+              component: prometheus
+              namespace: openshift-monitoring
+              pod: prometheus-k8s-0
+              severity: warning
+              slo: "false"
+              source_cluster: cluster01
+            exp_annotations:
+              summary: 'Prometheus TSDB storage high on prometheus-k8s-0 in cluster cluster01'
+              description: 'Prometheus instance prometheus-k8s-0 in namespace openshift-monitoring on cluster cluster01 is using 86% of its TSDB retention limit. Note: Values above 100% can occur during normal compaction cycles and will typically resolve automatically.'
+              alert_routing_key: o11y
+              team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-prometheus-tsdb-storage.md
+
+  # Negative test: No alert when TSDB at 84%
+  - interval: 1m
+    input_series:
+      - series: 'prometheus_tsdb_storage_blocks_bytes{job="prometheus-k8s",namespace="openshift-monitoring",pod="prometheus-k8s-0",source_cluster="cluster01"}'
+        values: '0.84+0x10'
+      - series: 'prometheus_tsdb_retention_limit_bytes{job="prometheus-k8s",namespace="openshift-monitoring",pod="prometheus-k8s-0",source_cluster="cluster01"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: PrometheusTSDBStorageHigh
+
+  # Edge case: No alert when exactly at 85% (expression uses > not >=)
+  - interval: 1m
+    input_series:
+      - series: 'prometheus_tsdb_storage_blocks_bytes{job="prometheus-k8s",namespace="openshift-monitoring",pod="prometheus-k8s-0",source_cluster="cluster01"}'
+        values: '0.85+0x10'
+      - series: 'prometheus_tsdb_retention_limit_bytes{job="prometheus-k8s",namespace="openshift-monitoring",pod="prometheus-k8s-0",source_cluster="cluster01"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: PrometheusTSDBStorageHigh
+
+  # Duration test: No alert if high usage lasts only 4 minutes
+  - interval: 1m
+    input_series:
+      - series: 'prometheus_tsdb_storage_blocks_bytes{job="prometheus-k8s",namespace="openshift-monitoring",pod="prometheus-k8s-0",source_cluster="cluster01"}'
+        values: '0.86+0x4 0.84+0x6'
+      - series: 'prometheus_tsdb_retention_limit_bytes{job="prometheus-k8s",namespace="openshift-monitoring",pod="prometheus-k8s-0",source_cluster="cluster01"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: PrometheusTSDBStorageHigh
+
+  # Above 100% test: Alert fires even when TSDB exceeds retention limit (e.g., 105% during compaction)
+  - interval: 1m
+    input_series:
+      - series: 'prometheus_tsdb_storage_blocks_bytes{job="prometheus-k8s",namespace="openshift-monitoring",pod="prometheus-k8s-0",source_cluster="cluster01"}'
+        values: '1.05+0x10'
+      - series: 'prometheus_tsdb_retention_limit_bytes{job="prometheus-k8s",namespace="openshift-monitoring",pod="prometheus-k8s-0",source_cluster="cluster01"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: PrometheusTSDBStorageHigh
+        exp_alerts:
+          - exp_labels:
+              component: prometheus
+              namespace: openshift-monitoring
+              pod: prometheus-k8s-0
+              severity: warning
+              slo: "false"
+              source_cluster: cluster01
+            exp_annotations:
+              summary: 'Prometheus TSDB storage high on prometheus-k8s-0 in cluster cluster01'
+              description: 'Prometheus instance prometheus-k8s-0 in namespace openshift-monitoring on cluster cluster01 is using 105% of its TSDB retention limit. Note: Values above 100% can occur during normal compaction cycles and will typically resolve automatically.'
+              alert_routing_key: o11y
+              team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-prometheus-tsdb-storage.md
+
+  # Namespace coverage test: user-workload-monitoring
+  - interval: 1m
+    input_series:
+      - series: 'prometheus_tsdb_storage_blocks_bytes{job="prometheus-user-workload",namespace="openshift-user-workload-monitoring",pod="prometheus-user-workload-0",source_cluster="cluster02"}'
+        values: '0.90+0x10'
+      - series: 'prometheus_tsdb_retention_limit_bytes{job="prometheus-user-workload",namespace="openshift-user-workload-monitoring",pod="prometheus-user-workload-0",source_cluster="cluster02"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: PrometheusTSDBStorageHigh
+        exp_alerts:
+          - exp_labels:
+              component: prometheus
+              namespace: openshift-user-workload-monitoring
+              pod: prometheus-user-workload-0
+              severity: warning
+              slo: "false"
+              source_cluster: cluster02
+            exp_annotations:
+              summary: 'Prometheus TSDB storage high on prometheus-user-workload-0 in cluster cluster02'
+              description: 'Prometheus instance prometheus-user-workload-0 in namespace openshift-user-workload-monitoring on cluster cluster02 is using 90% of its TSDB retention limit. Note: Values above 100% can occur during normal compaction cycles and will typically resolve automatically.'
+              alert_routing_key: o11y
+              team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-prometheus-tsdb-storage.md
