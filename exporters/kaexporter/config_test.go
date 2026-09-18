@@ -13,7 +13,7 @@ func TestLoadConfig(t *testing.T) {
 		name        string
 		content     string
 		wantExact   []string
-		wantPattern  []string
+		wantPattern []string
 		wantErr     bool
 	}{
 		{
@@ -22,7 +22,7 @@ func TestLoadConfig(t *testing.T) {
   - rhtap-releng-tenant
   - "managed-*"
 `,
-			wantExact:  []string{"rhtap-releng-tenant"},
+			wantExact:   []string{"rhtap-releng-tenant"},
 			wantPattern: []string{"managed-*"},
 		},
 		{
@@ -31,7 +31,7 @@ func TestLoadConfig(t *testing.T) {
   - ns-a
   - ns-b
 `,
-			wantExact:  []string{"ns-a", "ns-b"},
+			wantExact:   []string{"ns-a", "ns-b"},
 			wantPattern: nil,
 		},
 		{
@@ -40,7 +40,7 @@ func TestLoadConfig(t *testing.T) {
   - "test-*"
   - "staging-*"
 `,
-			wantExact:  nil,
+			wantExact:   nil,
 			wantPattern: []string{"test-*", "staging-*"},
 		},
 		{
@@ -48,19 +48,19 @@ func TestLoadConfig(t *testing.T) {
 			content: `excludeNamespaces:
   - "konflux-perfscale-*-tenant"
 `,
-			wantExact:  nil,
+			wantExact:   nil,
 			wantPattern: []string{"konflux-perfscale-*-tenant"},
 		},
 		{
-			name:       "empty exclusion list",
-			content:    "excludeNamespaces: []\n",
-			wantExact:  nil,
+			name:        "empty exclusion list",
+			content:     "excludeNamespaces: []\n",
+			wantExact:   nil,
 			wantPattern: nil,
 		},
 		{
-			name:       "no excludeNamespaces key",
-			content:    "someOtherKey: true\n",
-			wantExact:  nil,
+			name:        "no excludeNamespaces key",
+			content:     "someOtherKey: true\n",
+			wantExact:   nil,
 			wantPattern: nil,
 		},
 		{
@@ -556,12 +556,12 @@ func TestSLOConfigResolve(t *testing.T) {
 	}
 
 	resolveTests := []struct {
-		name           string
-		cfg            *SLOConfig
-		ls             LabelSet
-		domain         string
-		wantThreshold  *float64
-		wantBreachPct  *float64
+		name          string
+		cfg           *SLOConfig
+		ls            LabelSet
+		domain        string
+		wantThreshold *float64
+		wantBreachPct *float64
 	}{
 		{
 			name:   "nil SLOConfig returns zero ResolvedSLO",
@@ -890,7 +890,7 @@ func TestSLOConfigSanitize(t *testing.T) {
 					Matches: []ThresholdMatch{
 						{EventType: "push", Value: 5400},
 						{EventType: "pull_request", Value: -100},
-						{Scenario: "ec-scan", Value: 300},
+						{BuildType: "custom-builds", Value: 300},
 					},
 				},
 			},
@@ -990,6 +990,43 @@ func TestSLOConfigSanitize(t *testing.T) {
 		}
 	})
 
+	t.Run("domain-invalid match selectors are filtered", func(t *testing.T) {
+		c := &SLOConfig{SLOThresholds: SLOThresholds{
+			BuildDurationThresholdSeconds: &ThresholdValue{
+				Default: float64Ptr(3600),
+				Matches: []ThresholdMatch{
+					{TestType: "ec", Value: 600},
+					{EventType: "push", Value: 1800},
+				},
+			},
+			IntegrationDurationThresholdSeconds: &ThresholdValue{
+				Default: float64Ptr(1800),
+				Matches: []ThresholdMatch{
+					{TestType: "ec", Value: 600},
+					{BuildType: "custom-builds", Value: 900},
+				},
+			},
+			ReleaseDurationThresholdSeconds: &ThresholdValue{
+				Default: float64Ptr(3600),
+				Matches: []ThresholdMatch{
+					{TestType: "ec", Value: 600},
+					{Automated: "true", Value: 1800},
+				},
+			},
+		}}
+		c.Sanitize()
+
+		if got := len(c.BuildDurationThresholdSeconds.Matches); got != 1 || c.BuildDurationThresholdSeconds.Matches[0].EventType != "push" {
+			t.Fatalf("build selectors = %+v, want only event_type match", c.BuildDurationThresholdSeconds.Matches)
+		}
+		if got := len(c.IntegrationDurationThresholdSeconds.Matches); got != 1 || c.IntegrationDurationThresholdSeconds.Matches[0].TestType != "ec" {
+			t.Fatalf("integration selectors = %+v, want only test_type match", c.IntegrationDurationThresholdSeconds.Matches)
+		}
+		if got := len(c.ReleaseDurationThresholdSeconds.Matches); got != 1 || c.ReleaseDurationThresholdSeconds.Matches[0].Automated != "true" {
+			t.Fatalf("release selectors = %+v, want only automated match", c.ReleaseDurationThresholdSeconds.Matches)
+		}
+	})
+
 	t.Run("invalid breach percentage matches are filtered out", func(t *testing.T) {
 		c := &SLOConfig{
 			SLOThresholds: SLOThresholds{
@@ -1045,10 +1082,10 @@ func TestLoadConfig_FileNotFound(t *testing.T) {
 
 func TestNamespaceFilter_Apply(t *testing.T) {
 	tests := []struct {
-		name   string
-		cfg    *KAConfig
-		input  []string
-		want   []string
+		name  string
+		cfg   *KAConfig
+		input []string
+		want  []string
 	}{
 		{
 			name:  "nil config excludes nothing",

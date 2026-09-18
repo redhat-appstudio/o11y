@@ -55,12 +55,12 @@ func (l LabelSet) String() string {
 // DailyBucket holds per-day aggregates for one label set.
 type DailyBucket struct {
 	Day                      string           `json:"day"`
-	Count                    int64            `json:"count"`                        // All completed PLRs
-	SuccessCount             int64            `json:"success_count"`                // Count of successful PLRs
-	SuccessSumSeconds        float64          `json:"success_sum_seconds"`          // Duration sum of successful PLRs
-	SuccessSumSquaredSeconds float64          `json:"success_sum_squared_seconds"`  // Sum of squared durations (for stddev)
-	WaitSumSeconds           float64          `json:"wait_sum_seconds"`             // Wait time sum of successful PLRs
-	FailureReasons           map[string]int64 `json:"failure_reasons"`              // Failure count by reason
+	Count                    int64            `json:"count"`                       // All completed PLRs
+	SuccessCount             int64            `json:"success_count"`               // Count of successful PLRs
+	SuccessSumSeconds        float64          `json:"success_sum_seconds"`         // Duration sum of successful PLRs
+	SuccessSumSquaredSeconds float64          `json:"success_sum_squared_seconds"` // Sum of squared durations (for stddev)
+	WaitSumSeconds           float64          `json:"wait_sum_seconds"`            // Wait time sum of successful PLRs
+	FailureReasons           map[string]int64 `json:"failure_reasons"`             // Failure count by reason
 }
 
 // MetricWindow is a fixed 30-day circular buffer indexed by UTC calendar day.
@@ -143,7 +143,7 @@ func (s *Store) recordObservationAt(
 
 	completionDay := bucketDay.Format("2006-01-02")
 	if bucket.Day != "" && bucket.Day != completionDay {
-		*bucket = DailyBucket{} // Clear stale 30-day-old data
+		*bucket = DailyBucket{} // Clear the slot last used 30 days ago.
 	}
 	if bucket.Day == "" {
 		bucket.Day = completionDay
@@ -227,6 +227,19 @@ func (w *MetricWindow) ComputeSuccessCount(cutoff string) int64 {
 			continue
 		}
 		count += w.Buckets[i].SuccessCount
+	}
+	return count
+}
+
+// ComputeSuccessDayCount returns the number of fresh daily buckets containing
+// at least one successful observation.
+func (w *MetricWindow) ComputeSuccessDayCount(cutoff string) int {
+	var count int
+	for i := range w.Buckets {
+		if w.Buckets[i].Day == "" || w.Buckets[i].Day <= cutoff || w.Buckets[i].SuccessCount == 0 {
+			continue
+		}
+		count++
 	}
 	return count
 }
@@ -342,15 +355,30 @@ type SLOGaugeSet struct {
 	failureCount30d   *prometheus.GaugeVec
 	durationSLOBreach *prometheus.GaugeVec
 	sloConfig         *SLOConfig
+	tierConfig        *TierConfig
+	tierPins          *TierPins
 	domain            string
 }
 
 // newSLOGaugeSet creates the common gauge set. The failureCount gauge
 // automatically appends a "reason" label to the provided base labels.
-func newSLOGaugeSet(prefix, helpContext string, labels []string, sloConfig *SLOConfig, domain string) SLOGaugeSet {
+func newSLOGaugeSet(
+	prefix, helpContext string,
+	labels []string,
+	sloConfig *SLOConfig,
+	tierConfig *TierConfig,
+	tierPins *TierPins,
+	domain string,
+) SLOGaugeSet {
+	if tierPins == nil {
+		tierPins = newTierPins()
+	}
 	failureLabels := make([]string, len(labels)+1)
 	copy(failureLabels, labels)
 	failureLabels[len(labels)] = "reason"
+	breachLabels := make([]string, len(labels)+1)
+	copy(breachLabels, labels)
+	breachLabels[len(labels)] = "tier"
 
 	return SLOGaugeSet{
 		mean30d: prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -375,10 +403,12 @@ func newSLOGaugeSet(prefix, helpContext string, labels []string, sloConfig *SLOC
 		}, failureLabels),
 		durationSLOBreach: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: prefix + "_duration_slo_breach",
-			Help: fmt.Sprintf("1 if %s duration SLO is breached (daily means exceed configured threshold for configured percentage of days), 0 otherwise. Not emitted when data is insufficient.", helpContext),
-		}, labels),
-		sloConfig: sloConfig,
-		domain:    domain,
+			Help: fmt.Sprintf("1 if %s duration SLO is breached (daily means exceed configured threshold for configured percentage of days), 0 otherwise. The tier label identifies the pinned tier or custom/statistical threshold source. Not emitted when data is insufficient.", helpContext),
+		}, breachLabels),
+		sloConfig:  sloConfig,
+		tierConfig: tierConfig,
+		tierPins:   tierPins,
+		domain:     domain,
 	}
 }
 
@@ -431,12 +461,25 @@ func (s *SLOGaugeSet) UpdateFromStore(store *Store, metricName string, labelExtr
 		if successCount < minSuccessCountForSLO {
 			return
 		}
+		totalDays := window.ComputeSuccessDayCount(cutoff)
+		if totalDays < minDaysWithDataForSLO {
+			return
+		}
 
 		resolved := s.sloConfig.Resolve(ls, s.domain)
 
 		var threshold float64
+		tierLabel := statisticalTierLabel
 		if resolved.DurationThreshold != nil {
 			threshold = *resolved.DurationThreshold
+			tierLabel = customTierLabel
+		} else if pin, ok := s.tierPins.get(window); ok {
+			threshold = pin.Threshold
+			tierLabel = pin.Name
+		} else if tier, ok := s.tierConfig.resolveTier(s.domain, ls, successMean); ok {
+			pin := s.tierPins.set(window, tier)
+			threshold = pin.Threshold
+			tierLabel = pin.Name
 		} else {
 			threshold = successMean + sloThresholdK*window.ComputeSuccessStdDev(cutoff)
 		}
@@ -449,15 +492,13 @@ func (s *SLOGaugeSet) UpdateFromStore(store *Store, metricName string, labelExtr
 			breachPct = *resolved.BreachPercentage
 		}
 
-		breachingDays, totalDays := window.CountBreachingDays(cutoff, threshold)
-		if totalDays < minDaysWithDataForSLO {
-			return
-		}
+		breachingDays, _ := window.CountBreachingDays(cutoff, threshold)
 		var breach float64
 		if float64(breachingDays)/float64(totalDays) >= breachPct {
 			breach = 1
 		}
-		s.durationSLOBreach.WithLabelValues(labels...).Set(breach)
+		breachLabels := append(labels, tierLabel)
+		s.durationSLOBreach.WithLabelValues(breachLabels...).Set(breach)
 	})
 }
 
@@ -494,4 +535,6 @@ const (
 	sloBreachPercentage   = 0.05 // fraction of daily means that must exceed threshold
 	minSuccessCountForSLO = 10   // minimum observations before evaluating SLO
 	minDaysWithDataForSLO = 3    // minimum days with successful observations before evaluating SLO
+	customTierLabel       = "custom"
+	statisticalTierLabel  = "statistical"
 )

@@ -18,9 +18,13 @@ type ReleaseSLO30d struct {
 
 // newReleaseSLO30d initializes release 30d SLO metrics
 func newReleaseSLO30d(sloConfig *SLOConfig) *ReleaseSLO30d {
+	return newReleaseSLO30dWithTiers(sloConfig, nil, nil)
+}
+
+func newReleaseSLO30dWithTiers(sloConfig *SLOConfig, tierConfig *TierConfig, tierPins *TierPins) *ReleaseSLO30d {
 	labels := []string{"cluster", "namespace", "application", "component", "automated", "event_type"}
 	return &ReleaseSLO30d{
-		SLOGaugeSet: newSLOGaugeSet("konflux_release_cr", "Release CR", labels, sloConfig, metricReleaseDuration),
+		SLOGaugeSet: newSLOGaugeSet("konflux_release_cr", "Release CR", labels, sloConfig, tierConfig, tierPins, metricReleaseDuration),
 	}
 }
 

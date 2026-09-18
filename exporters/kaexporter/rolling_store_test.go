@@ -48,7 +48,7 @@ func TestStoreRetainsDailyBucketsAcrossUTCDateChange(t *testing.T) {
 	if got, want := window.ComputeTotalCount(cutoff), int64(len(observations)); got != want {
 		t.Fatalf("total count after UTC date change = %d, want %d; a daily bucket was overwritten", got, want)
 	}
-	if _, got := window.CountBreachingDays(cutoff, 0); got != len(observations) {
+	if got, want := window.ComputeSuccessDayCount(cutoff), len(observations); got != want {
 		t.Fatalf("success day count after UTC date change = %d, want %d", got, len(observations))
 	}
 	if got, want := window.ComputeSuccessMean(cutoff), 260.0; got != want {
