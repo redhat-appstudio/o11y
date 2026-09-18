@@ -3,8 +3,8 @@
 This repository contains the Konflux Prometheus metric observability stack:
 
 
-* **[Alerting rules](docs/ALERTS.md)** — Prometheus alert rules deployed to RHOBS (`rhobs/alerting/`)
-* **[Recording rules](docs/RECORDING.md)** — precomputed Prometheus expressions deployed to RHOBS (`rhobs/recording/`)
+* **[Alerting rules](docs/ALERTS.md)** — Prometheus alert rules deployed to RHOBS (`rhobs/staging/alerting/`, `rhobs/production/alerting/`)
+* **[Recording rules](docs/RECORDING.md)** — precomputed Prometheus expressions deployed to RHOBS (`rhobs/staging/recording/`, `rhobs/production/recording/`)
 * **[Grafana dashboards](docs/DASHBOARDS.md)** — dashboard definitions deployed to AppSRE Grafana (`dashboards/`)
 * **[Availability exporters](docs/EXPORTERS.md)** — custom Prometheus Go exporters (`exporters/`, `config/`)
 * **[CI/CD](docs/CICD.md)** — Tekton pipelines and GitHub Actions (`.tekton/`, `.github/`)

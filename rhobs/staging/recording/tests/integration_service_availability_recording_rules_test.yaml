@@ -1,0 +1,36 @@
+evaluation_interval: 1m
+
+rule_files:
+  - integration_service_availability_recording_rules.yaml
+
+tests:
+  - interval: 1m
+    input_series:
+      # Available
+      - series: 'kube_deployment_spec_replicas{namespace="integration-service", deployment="integration-service-controller-manager"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="integration-service", deployment="integration-service-controller-manager"}'
+        values: '1 1 1 1 1'
+
+      # Unavailable
+      - series: 'kube_deployment_spec_replicas{namespace="integration-service", deployment="integration-service-controller-manager1"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="integration-service", deployment="integration-service-controller-manager1"}'
+        values: '0 0 0 0 0'
+
+      # Flapping
+      - series: 'kube_deployment_spec_replicas{namespace="integration-service", deployment="integration-service-controller-manager2"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="integration-service", deployment="integration-service-controller-manager2"}'
+        values: '0 1 0 1 0'
+
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples:
+          - labels: 'konflux_up{service="integration-service-controller-manager", deployment="integration-service-controller-manager", namespace="integration-service", check="replicas-available"}'
+            value: 1
+          - labels: 'konflux_up{service="integration-service-controller-manager1", deployment="integration-service-controller-manager1", namespace="integration-service", check="replicas-available"}'
+            value: 0
+          - labels: 'konflux_up{service="integration-service-controller-manager2", deployment="integration-service-controller-manager2", namespace="integration-service", check="replicas-available"}'
+            value: 0

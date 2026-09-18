@@ -1,0 +1,15 @@
+# Metric format needed
+# grafana_ds_up(check=prometheus-appstudio-ds) -> konflux_up(service=grafana, check=prometheus-appstudio-ds)
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-exporter-label-replace
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: exporter
+    interval: 1m
+    rules:
+    - record: konflux_up
+      expr: label_replace(grafana_ds_up, "service", "grafana", "__name__", "(.+)")

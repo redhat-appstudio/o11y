@@ -1,0 +1,93 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.kanary_alerts.yaml
+
+tests:
+  - interval: 1m
+    input_series:
+      # --- KanarySignalTriggered Test Cases ---
+      # Prod cluster: kanary_up goes to 0 and stays, should trigger alert
+      - series: 'kanary_up{namespace="konflux-otel", tested_cluster="stone-prod-p01", type="container-single-arch"}'
+        values: '1x5 0x36'
+
+      # Prod cluster: kanary_up goes to 0 but recovers, should NOT trigger (recovers before for duration)
+      - series: 'kanary_up{namespace="konflux-otel", tested_cluster="kflux-prd-rh02", type="container-single-arch"}'
+        values: '1x5 0x2 1x34'
+
+      # Staging cluster: should NOT trigger (not in cluster list)
+      - series: 'kanary_up{namespace="konflux-otel", tested_cluster="stone-stage-p01", type="container-single-arch"}'
+        values: '1x5 0x36'
+
+    alert_rule_test:
+      - alertname: KanarySignalTriggered
+        eval_time: 36m
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              component: kanary
+              namespace: konflux-otel
+              tested_cluster: stone-prod-p01
+              type: container-single-arch
+              slo: "false"
+            exp_annotations:
+              team: o11y
+              alert_routing_key: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-kanary.md
+              summary: "Kanary signal for container-single-arch artifacts has been triggered for cluster stone-prod-p01"
+              description: "The e2e load tests for container-single-arch artifacts failed multiple times in a row for cluster stone-prod-p01"
+
+  - interval: 1m
+    input_series:
+      # --- KanaryInfrastructureError Test Cases ---
+      # Prod cluster: infrastructure error stays, should trigger alert
+      - series: 'kanary_error{namespace="konflux-otel", tested_cluster="kflux-ocp-p01", reason="infrastructure", type="container-single-arch"}'
+        values: '0x5 1x36'
+
+      # Prod cluster: infrastructure error recovers, should NOT trigger (recovers before for duration)
+      - series: 'kanary_error{namespace="konflux-otel", tested_cluster="kflux-prd-rh03", reason="infrastructure", type="container-multi-arch"}'
+        values: '0x5 1x2 0x34'
+
+    alert_rule_test:
+      - alertname: KanaryInfrastructureError
+        eval_time: 36m
+        exp_alerts:
+          - exp_labels:
+              component: kanary
+              namespace: konflux-otel
+              tested_cluster: kflux-ocp-p01
+              reason: infrastructure
+              type: container-single-arch
+              severity: warning
+              slo: "false"
+            exp_annotations:
+              team: o11y
+              alert_routing_key: o11y
+              summary: "Kanary infrastructure error for container-single-arch artifacts on cluster kflux-ocp-p01"
+              description: "An infrastructure error prevented the kanary signal from properly measuring container-single-arch artifacts for cluster kflux-ocp-p01"
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-kanary.md
+
+  - interval: 1m
+    input_series:
+      # --- KanaryStaleMetrics Test Cases ---
+      # Prod cluster: timestamp is old (more than 1 hour ago), should trigger after 5m for duration
+      - series: 'kanary_last_push_timestamp{namespace="konflux-otel", tested_cluster="stone-prod-p02", type="container-single-arch"}'
+        values: '0x70'
+
+    alert_rule_test:
+      - alertname: KanaryStaleMetrics
+        eval_time: 70m
+        exp_alerts:
+          - exp_labels:
+              component: kanary
+              namespace: konflux-otel
+              tested_cluster: stone-prod-p02
+              type: container-single-arch
+              severity: warning
+              slo: "false"
+            exp_annotations:
+              team: o11y
+              alert_routing_key: o11y
+              summary: "Kanary metrics for container-single-arch artifacts are stale on cluster stone-prod-p02"
+              description: "No kanary metrics have been pushed for container-single-arch artifacts on cluster stone-prod-p02 for more than 1 hour. Cronjobs run every 30 minutes."
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-kanary.md

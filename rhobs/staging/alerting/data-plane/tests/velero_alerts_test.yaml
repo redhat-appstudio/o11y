@@ -1,0 +1,45 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.velero_alerts.yaml
+
+tests:
+
+  - interval: 1m
+    input_series:
+      - series: kube_customresource_velero_schedule_last_backup{source_cluster="cluster01", schedule="backup-tenants"}
+        values: 0+0x320
+
+    alert_rule_test:
+      - eval_time: 305m
+        alertname: VeleroBackupNeverStarted
+        exp_alerts:
+          - exp_labels:
+              component: velero
+              severity: high
+              source_cluster: cluster01
+              schedule: backup-tenants
+            exp_annotations:
+              summary: Velero backup has never started
+              description: 'Velero schedule backup-tenants has never started a backup in cluster cluster01.'
+              alert_routing_key: infra
+              team: konflux-infra
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/disaster-recovery/cluster/tenants-backup-and-restore/observability.md
+
+  - interval: 1m
+    input_series:
+      - series: kube_customresource_velero_schedule_last_backup{source_cluster="cluster01", schedule="backup-tenants"}
+        values: 1743465600+0x320
+
+    alert_rule_test:
+      - eval_time: 305m
+        alertname: VeleroBackupNeverStarted
+
+  - interval: 1m
+    input_series:
+      - series: kube_customresource_velero_schedule_last_backup{source_cluster="cluster01", schedule="backup-tenants"}
+        values: 0+0x120 1743465600+0x200
+
+    alert_rule_test:
+      - eval_time: 305m
+        alertname: VeleroBackupNeverStarted

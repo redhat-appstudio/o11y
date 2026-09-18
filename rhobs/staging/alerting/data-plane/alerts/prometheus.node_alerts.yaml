@@ -1,0 +1,126 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-node-cluster-alerting
+  labels:
+    tenant: rhtap
+spec:
+
+  groups:
+    - name: node_cluster_alerts
+      interval: 1m
+      rules:
+        # Master Node Alerts
+        - alert: MasterNodeHighCPU
+          expr: |
+            (100 * avg(1 - rate(node_cpu_seconds_total{mode="idle"}[5m])) by (instance, source_cluster)
+            and on (instance) label_replace( kube_node_role{role="master"}, "instance", "$1", "node", "(.+)" )) > 95
+          for: 10m
+          labels:
+            severity: high
+          annotations:
+            summary: >-
+              Master Node High CPU Usage.
+            description: >-
+              CPU Usage is {{$value}}% on master node {{ $labels.instance }} in cluster {{ $labels.source_cluster }}.
+            alert_routing_key: perfandspreandinfra
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/node_alerts.md
+
+        - alert: MasterNodeHighMemory
+          expr: |
+            (avg by (source_cluster,instance) (100 * ((node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes))
+            and on (instance) label_replace( kube_node_role{role="master"}, "instance", "$1", "node", "(.+)" )) > 90
+          for: 10m
+          labels:
+            severity: critical
+            slo: "true"
+          annotations:
+            summary: >-
+              Master Node High Memory Usage.
+            description: >-
+              Memory Usage is {{$value}}% on master node {{ $labels.instance }} in cluster {{ $labels.source_cluster }}.
+            alert_team_handle: >-
+              <!subteam^S07SW2EEW3D> <!subteam^S05Q1P4Q2TG>
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/node_alerts.md
+
+        # Infra Node Alerts
+        - alert: InfraNodeHighCPU
+          expr: |
+            (100 * avg(1 - rate(node_cpu_seconds_total{mode="idle"}[5m])) by (instance, source_cluster)
+            and on (instance) label_replace( kube_node_role{role="infra"}, "instance", "$1", "node", "(.+)" )) > 95
+          for: 10m
+          labels:
+            severity: high
+          annotations:
+            summary: >-
+              Infra Node High CPU Usage.
+            description: >-
+              CPU Usage is {{$value}}% on infra node {{ $labels.instance }} in cluster {{ $labels.source_cluster }}.
+            alert_routing_key: perfandspreandinfra
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/node_alerts.md
+
+        - alert: InfraNodeHighMemory
+          expr: |
+            (avg by (source_cluster,instance) (100 * ((node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes))
+            and on (instance) label_replace( kube_node_role{role="infra"}, "instance", "$1", "node", "(.+)" )) > 90
+          for: 10m
+          labels:
+            severity: high
+          annotations:
+            summary: >-
+              Infra Node High Memory Usage.
+            description: >-
+              Infra Memory Usage is {{$value}}% on infra node {{ $labels.instance }} in cluster {{ $labels.source_cluster }}.
+            alert_routing_key: perfandspreandinfra
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/node_alerts.md
+
+        # Node based Alerts
+        - alert: WorkerNodeHighCPU
+          expr: |
+            count by (source_cluster) ((100 * avg(1 - rate(node_cpu_seconds_total{mode="idle"}[5m])) by (instance, source_cluster)
+            and on (instance) label_replace( kube_node_role{role="worker"}, "instance", "$1", "node", "(.+)" )) > 95) > 10
+          for: 10m
+          labels:
+            severity: high
+          annotations:
+            summary: "Instances with high CPU in {{ $labels.source_cluster }}"
+            description: "More than 10 worker node instances in cluster {{ $labels.source_cluster }} have had CPU usage above 95% for the last 10 minutes."
+            alert_routing_key: perfandspreandinfra
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/node_alerts.md
+
+        - alert: WorkerNodeHighMemory
+          expr: |
+            count by (source_cluster) ((avg by (source_cluster,instance) (100 * ((node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes))
+            and on (instance) label_replace( kube_node_role{role="worker"}, "instance", "$1", "node", "(.+)" )) > 90) > 10
+          for: 10m
+          labels:
+            severity: high
+          annotations:
+            summary: >-
+              Node High Memory Usage.
+            description: >-
+              More than 10 worker node instances in cluster {{ $labels.source_cluster }} have had Memory usage above 90% for the last 10 minutes.
+            alert_routing_key: perfandspreandinfra
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/node_alerts.md
+
+        # Worker-only nodes (excludes nodes that also have role infra); single label_replace for clarity and cost.
+        - alert: WorkerNodeHighCPUAndMemory
+          expr: |
+            (
+              (100 * avg(1 - rate(node_cpu_seconds_total{mode="idle"}[10m])) by (instance, source_cluster)) > 80
+              and on (instance, source_cluster)
+              (avg by (source_cluster, instance) (100 * ((node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes))) > 60
+            )
+            and on (instance)
+            label_replace(
+              (kube_node_role{role="worker"} unless on(node) kube_node_role{role="infra"}),
+              "instance", "$1", "node", "(.+)"
+            )
+          for: 2h
+          labels:
+            severity: high
+          annotations:
+            summary: "Worker node {{ $labels.instance }} high CPU and memory in {{ $labels.source_cluster }}"
+            description: "Worker node {{ $labels.instance }} in cluster {{ $labels.source_cluster }} has had CPU above 80% and memory above 60% for the last 2 hours."
+            alert_routing_key: perfandspreandinfra
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/node_alerts.md

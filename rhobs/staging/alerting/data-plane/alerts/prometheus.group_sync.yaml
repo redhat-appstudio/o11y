@@ -1,0 +1,28 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-group-sync-alerting
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: group_sync_alerts
+      interval: 1h
+      rules:
+
+      - alert: GroupSyncAlert
+        expr: |
+         (time() - kube_cronjob_status_last_successful_time{cronjob="rover-group-sync"} > 86400)
+         and (kube_cronjob_status_last_schedule_time{cronjob="rover-group-sync"} > kube_cronjob_status_last_successful_time{cronjob="rover-group-sync"})
+        for: 1h
+        labels:
+          severity: high
+          component: rover-group-sync
+        annotations:
+          summary: >-
+             Group sync cronjob failed multiple times.
+          description: >-
+             Group sync cronjob failed multiple times in the last 24 hours in cluster {{ $labels.source_cluster }}.
+          alert_routing_key: spreandinfra
+          team: o11y
+          slo: "false"

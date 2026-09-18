@@ -1,0 +1,25 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-image-registry-availability
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: image_registry_availability
+      interval: 2m
+      rules:
+        # Metric format:
+        # registry_exporter_success(tested_registry=quay.io, node=..., type=...) -> konflux_up(source_cluster=..., check=quay.io, service=registry-exporter)
+        # recorded value: 1 if any registry test was successful, 0 otherwise
+        - record: konflux_up
+          expr: |
+            max by (source_cluster, check, service) (
+              label_replace(
+                label_replace(
+                  registry_exporter_success,
+                  "check", "$1", "tested_registry", "(.*)"
+                ),
+                "service", "registry-exporter", "", ""
+              )
+            )
