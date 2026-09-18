@@ -28,7 +28,7 @@ data:
       "editable": true,
       "fiscalYearStartMonth": 0,
       "graphTooltip": 0,
-      "id": 1103339,
+      "id": null,
       "links": [],
       "panels": [
         {
@@ -104,7 +104,7 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum(changes(alerts_for_state_firing{severity=~\"$severity\",alertname=~\"$alertname\",source_cluster=~\"$cluster\"}[$__range]) + 1 ) by (alertname,severity)",
+              "expr": "sum(changes(alerts_for_state_firing{severity=~\"$severity\",alertname=~\"$alertname\",source_cluster=~\"$cluster\",component=~\"$component\"}[$__range]) + 1 ) by (alertname,severity)",
               "format": "time_series",
               "hide": false,
               "instant": false,
@@ -118,7 +118,7 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum(changes(alerts_for_state_firing{severity=~\"$severity\",check=~\"probe-multicluster\",alertname=~\"$alertname\"}[$__range]) + 1 ) by (job,alertname,severity)",
+              "expr": "sum(changes(alerts_for_state_firing{severity=~\"$severity\",check=~\"probe-multicluster\",alertname=~\"$alertname\",component=~\"$component\"}[$__range]) + 1 ) by (job,alertname,severity)",
               "hide": false,
               "instant": false,
               "legendFormat": "{{alertname}} {{job}}",
@@ -235,7 +235,7 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum(changes(alerts_for_state_firing{severity=~\"$severity\",check=~\"probe-multicluster\",alertname=~\"$alertname\"}[$__range]) + 1) by(job) or sum(changes(alerts_for_state_firing{severity=~\"$severity\",alertname=~\"$alertname\",source_cluster=~\"$cluster\"}[$__range]) + 1) by(source_cluster)",
+              "expr": "sum(changes(alerts_for_state_firing{severity=~\"$severity\",check=~\"probe-multicluster\",alertname=~\"$alertname\",component=~\"$component\"}[$__range]) + 1) by(job) or sum(changes(alerts_for_state_firing{severity=~\"$severity\",alertname=~\"$alertname\",source_cluster=~\"$cluster\",component=~\"$component\"}[$__range]) + 1) by(source_cluster)",
               "hide": false,
               "instant": false,
               "legendFormat": "{{source_cluster}} {{job}}",
@@ -269,7 +269,7 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "description": "Alert Count by severity.",
+          "description": "Alert Count by severity  for a selected time range. ",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -281,10 +281,6 @@ data:
                 "steps": [
                   {
                     "color": "green"
-                  },
-                  {
-                    "color": "red",
-                    "value": 80
                   }
                 ]
               }
@@ -292,8 +288,8 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 17,
-            "w": 5,
+            "h": 10,
+            "w": 6,
             "x": 0,
             "y": 17
           },
@@ -330,15 +326,41 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum by (severity) (  (    changes(alerts_for_state_firing{severity=~\"$severity\", alertname=~\"$alertname\", source_cluster=~\"$cluster\"}[$__range]) + 1  )  or  (    changes(alerts_for_state_firing{severity=~\"$severity\", check=~\"probe-multicluster\", alertname=~\"$alertname\"}[$__range]) + 1  ))",
+              "expr": "sum(changes(alerts_for_state_firing{severity=~\"$severity\",alertname=~\"$alertname\",source_cluster=~\"$cluster\",component=~\"$component\"}[$__range]) + 1 ) by (severity)",
+              "format": "time_series",
               "hide": false,
               "instant": false,
-              "legendFormat": "__auto",
+              "legendFormat": "{{alertname}}",
               "range": true,
-              "refId": "C"
+              "refId": "A"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "editorMode": "code",
+              "expr": "sum(changes(alerts_for_state_firing{severity=~\"$severity\",check=~\"probe-multicluster\",alertname=~\"$alertname\",component=~\"$component\"}[$__range]) + 1 ) by (alertname,severity)",
+              "hide": false,
+              "instant": false,
+              "legendFormat": "{{alertname}} {{job}}",
+              "range": true,
+              "refId": "B"
             }
           ],
-          "title": "Alert Count by severity",
+          "title": "Alert Count by Severity",
+          "transformations": [
+            {
+              "id": "reduce",
+              "options": {
+                "includeTimeField": false,
+                "mode": "reduceFields",
+                "reducers": [
+                  "max"
+                ]
+              }
+            }
+          ],
           "type": "bargauge"
         },
         {
@@ -346,7 +368,7 @@ data:
             "type": "prometheus",
             "uid": "${datasource}"
           },
-          "description": "Maximum Alert Count by alert name for a 30d moving average. ",
+          "description": "Alert volume by alert name by selected cluster, excluded multicluster probes.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -370,6 +392,10 @@ data:
                 "steps": [
                   {
                     "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
                   }
                 ]
               }
@@ -377,9 +403,9 @@ data:
             "overrides": []
           },
           "gridPos": {
-            "h": 17,
-            "w": 19,
-            "x": 5,
+            "h": 10,
+            "w": 18,
+            "x": 6,
             "y": 17
           },
           "id": 36,
@@ -407,7 +433,7 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum by (severity) (  changes(    alerts_for_state_firing{      severity=~\"$severity\",      alertname=~\"$alertname\",      source_cluster=~\"$cluster\"    }[30d]  ) + 1)",
+              "expr": "sum by (severity) (\n  changes(\n    alerts_for_state_firing{\n      severity=~\"$severity\",\n      alertname=~\"$alertname\",\n      source_cluster=~\"$cluster\",\n      component=~\"$component\"\n    }[$__range]\n  ) + 1\n) ",
               "hide": false,
               "instant": false,
               "legendFormat": "__auto",
@@ -415,7 +441,7 @@ data:
               "refId": "B"
             }
           ],
-          "title": "Monthly Alert Volume",
+          "title": "Alert Volume",
           "type": "state-timeline"
         },
         {
@@ -443,7 +469,7 @@ data:
             "h": 10,
             "w": 24,
             "x": 0,
-            "y": 34
+            "y": 27
           },
           "id": 8,
           "options": {
@@ -502,299 +528,6 @@ data:
           ],
           "title": "Alert Heatmap per Component",
           "type": "heatmap"
-        },
-        {
-          "collapsed": false,
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 44
-          },
-          "id": 30,
-          "panels": [],
-          "title": "Alert Duration",
-          "type": "row"
-        },
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${datasource}"
-          },
-          "description": "Alerts with  duration below 10 min by alertname and source cluster.",
-          "fieldConfig": {
-            "defaults": {
-              "color": {
-                "mode": "palette-classic"
-              },
-              "custom": {
-                "axisBorderShow": false,
-                "axisCenteredZero": false,
-                "axisColorMode": "text",
-                "axisLabel": "",
-                "axisPlacement": "auto",
-                "fillOpacity": 80,
-                "gradientMode": "none",
-                "hideFrom": {
-                  "legend": false,
-                  "tooltip": false,
-                  "viz": false
-                },
-                "lineWidth": 1,
-                "scaleDistribution": {
-                  "type": "linear"
-                },
-                "thresholdsStyle": {
-                  "mode": "dashed"
-                }
-              },
-              "mappings": [
-                {
-                  "options": {
-                    "from": 0,
-                    "result": {
-                      "color": "orange",
-                      "index": 0
-                    },
-                    "to": 5
-                  },
-                  "type": "range"
-                },
-                {
-                  "options": {
-                    "from": 5,
-                    "result": {
-                      "color": "yellow",
-                      "index": 1
-                    },
-                    "to": 10
-                  },
-                  "type": "range"
-                },
-                {
-                  "options": {
-                    "from": 10,
-                    "result": {
-                      "color": "green",
-                      "index": 2
-                    },
-                    "to": 50
-                  },
-                  "type": "range"
-                }
-              ],
-              "max": 14,
-              "min": 0,
-              "thresholds": {
-                "mode": "absolute",
-                "steps": [
-                  {
-                    "color": "green"
-                  },
-                  {
-                    "color": "orange",
-                    "value": 5
-                  },
-                  {
-                    "color": "green",
-                    "value": 10
-                  }
-                ]
-              },
-              "unit": "m"
-            },
-            "overrides": [
-              {
-                "__systemRef": "hideSeriesFrom",
-                "matcher": {
-                  "id": "byNames",
-                  "options": {
-                    "mode": "exclude",
-                    "names": [
-                      "[5 - 25]"
-                    ],
-                    "prefix": "All except:",
-                    "readOnly": true
-                  }
-                },
-                "properties": [
-                  {
-                    "id": "custom.hideFrom",
-                    "value": {
-                      "legend": false,
-                      "tooltip": false,
-                      "viz": true
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          "gridPos": {
-            "h": 7,
-            "w": 24,
-            "x": 0,
-            "y": 45
-          },
-          "id": 28,
-          "options": {
-            "barRadius": 0,
-            "barWidth": 0.32,
-            "fullHighlight": false,
-            "groupWidth": 0.7,
-            "legend": {
-              "calcs": [],
-              "displayMode": "list",
-              "placement": "bottom",
-              "showLegend": true
-            },
-            "orientation": "horizontal",
-            "showValue": "auto",
-            "stacking": "none",
-            "tooltip": {
-              "hideZeros": false,
-              "mode": "single",
-              "sort": "none"
-            },
-            "xTickLabelRotation": 0,
-            "xTickLabelSpacing": 200
-          },
-          "pluginVersion": "11.6.11",
-          "targets": [
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "(timestamp(alerts_for_state_firing{severity=~\"$severity\",alertname=~\"$alertname\",source_cluster=~\"$cluster\"})) / 60 or (timestamp(alerts_for_state_firing{severity=~\"$severity\",alertname=~\"$alertname\",check=\"probe-multicluster\"})) / 60",
-              "hide": false,
-              "legendFormat": "{{alertname}} {{source_cluster}}",
-              "range": true,
-              "refId": "A"
-            },
-            {
-              "datasource": {
-                "type": "prometheus",
-                "uid": "${datasource}"
-              },
-              "editorMode": "code",
-              "expr": "",
-              "hide": false,
-              "instant": false,
-              "legendFormat": "{{alertname}} {{job}}",
-              "range": true,
-              "refId": "B"
-            }
-          ],
-          "title": "Short Duration Alerts",
-          "transformations": [
-            {
-              "id": "reduce",
-              "options": {
-                "includeTimeField": false,
-                "labelsToFields": false,
-                "mode": "seriesToRows",
-                "reducers": [
-                  "diff"
-                ]
-              }
-            },
-            {
-              "id": "filterByValue",
-              "options": {
-                "filters": [
-                  {
-                    "config": {
-                      "id": "isNotNull",
-                      "options": {}
-                    },
-                    "fieldName": "Difference"
-                  },
-                  {
-                    "config": {
-                      "id": "lowerOrEqual",
-                      "options": {
-                        "value": "10"
-                      }
-                    },
-                    "fieldName": "Difference"
-                  }
-                ],
-                "match": "all",
-                "type": "include"
-              }
-            },
-            {
-              "id": "limit",
-              "options": {
-                "limitField": "10"
-              }
-            },
-            {
-              "id": "sortBy",
-              "options": {
-                "fields": {},
-                "sort": [
-                  {
-                    "field": "Difference"
-                  }
-                ]
-              }
-            }
-          ],
-          "type": "barchart"
-        },
-        {
-          "collapsed": false,
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 52
-          },
-          "id": 26,
-          "panels": [],
-          "title": "Alert List",
-          "type": "row"
-        },
-        {
-          "fieldConfig": {
-            "defaults": {},
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 13,
-            "w": 24,
-            "x": 0,
-            "y": 53
-          },
-          "id": 18,
-          "maxPerRow": 2,
-          "options": {
-            "alertInstanceLabelFilter": "{slo=\"true\"}",
-            "alertName": "",
-            "dashboardAlerts": false,
-            "datasource": "rhtap-observatorium-production",
-            "groupBy": [],
-            "groupMode": "default",
-            "maxItems": 20,
-            "showInactiveAlerts": false,
-            "sortOrder": 1,
-            "stateFilter": {
-              "error": true,
-              "firing": true,
-              "noData": false,
-              "normal": true,
-              "pending": true
-            },
-            "viewMode": "list"
-          },
-          "pluginVersion": "11.6.3",
-          "repeat": "datasource",
-          "repeatDirection": "v",
-          "title": "Critical Alert List Production",
-          "type": "alertlist"
         }
       ],
       "preload": false,
@@ -874,14 +607,10 @@ data:
           {
             "current": {
               "text": [
-                "critical",
-                "high",
-                "warning"
+                "All"
               ],
               "value": [
-                "critical",
-                "high",
-                "warning"
+                "$__all"
               ]
             },
             "datasource": {
@@ -906,7 +635,9 @@ data:
           },
           {
             "current": {
-              "text": "All",
+              "text": [
+                "All"
+              ],
               "value": [
                 "$__all"
               ]
@@ -935,12 +666,12 @@ data:
         ]
       },
       "time": {
-        "from": "now-24h",
+        "from": "now-14d",
         "to": "now"
       },
       "timepicker": {},
       "timezone": "",
       "title": "Konflux Alerts",
       "uid": "abpr2yy9lt0183",
-      "version": 10
+      "version": 25
     }
