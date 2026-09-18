@@ -13,9 +13,13 @@ type IntegrationSLO30d struct {
 
 // newIntegrationSLO30d initializes integration 30d SLO metrics
 func newIntegrationSLO30d(sloConfig *SLOConfig) *IntegrationSLO30d {
+	return newIntegrationSLO30dWithTiers(sloConfig, nil, nil)
+}
+
+func newIntegrationSLO30dWithTiers(sloConfig *SLOConfig, tierConfig *TierConfig, tierPins *TierPins) *IntegrationSLO30d {
 	labels := []string{"cluster", "namespace", "application", "component", "scenario", "optional", "test_type", "event_type"}
 	return &IntegrationSLO30d{
-		SLOGaugeSet: newSLOGaugeSet("konflux_integration", "integration test", labels, sloConfig, metricIntegrationDuration),
+		SLOGaugeSet: newSLOGaugeSet("konflux_integration", "integration test", labels, sloConfig, tierConfig, tierPins, metricIntegrationDuration),
 	}
 }
 

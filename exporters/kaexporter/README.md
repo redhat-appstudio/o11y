@@ -24,7 +24,8 @@ Exposes mean duration and success rate metrics over a rolling 30-day window usin
 | `KA_MAX_RETRIES` | No | `3` | Max retries per failed KubeArchive request (exponential backoff). |
 | `KA_INITIAL_RETRY_DELAY_MS` | No | `100` | Initial retry delay in milliseconds. |
 | `KA_MAX_RETRY_DELAY_MS` | No | `5000` | Maximum retry delay cap in milliseconds. |
-| `KA_CONFIG_FILE` | No | *(empty)* | Path to YAML config file. Controls namespace exclusions and per-tenant SLO threshold overrides. When unset, no namespaces are excluded and default SLO thresholds are used. |
+| `KA_CONFIG_FILE` | No | *(empty)* | Path to YAML config file. Controls namespace exclusions and custom per-tenant SLO threshold overrides. When unset, no namespaces are excluded and no customSLO overrides are loaded; baseline tiers are controlled separately by `KA_SLO_TIERS_FILE`. |
+| `KA_SLO_TIERS_FILE` | No | `/etc/kaexporter/slo-tiers.yaml` | Path to the YAML file containing baseline-tiered duration thresholds. Invalid or missing configuration falls back to custom SLO thresholds and the statistical threshold. |
 | `EXPORTER_PORT` | No | `9101` | HTTP listen port. |
 
 ### Configuration file
@@ -38,17 +39,17 @@ excludeNamespaces:
   - "konflux-perfscale-*-tenant"
 ```
 
-If the file is specified but cannot be read or parsed, the exporter fails to start. When `KA_CONFIG_FILE` is not set, no namespaces are excluded and default SLO thresholds are used.
+If the file is specified but cannot be read or parsed, the exporter fails to start. When `KA_CONFIG_FILE` is not set, no namespaces are excluded or customSLO overrides are loaded. Baseline-tier configuration is independent and is controlled by `KA_SLO_TIERS_FILE`.
 
 #### Custom SLO thresholds
 
-The same config file supports a `customSLO` section for per-tenant, per-application, or per-component SLO threshold overrides. Values cascade from the most specific level upward: component overrides application, application overrides tenant, tenant overrides built-in defaults (k=2 stddev, 5% breach percentage).
+The same config file supports a `customSLO` section for per-tenant, per-application, or per-component SLO threshold overrides. Values cascade from the most specific level upward: component overrides application, application overrides tenant, and tenant overrides the baseline tier or statistical fallback. The built-in breach percentage is 5%.
 
 At each level, domain-specific keys can be set:
 
 | Key | Description |
 |-----|-------------|
-| `build_duration_threshold_seconds` | Fixed build duration threshold in seconds. Replaces the computed mean + 2*stddev. |
+| `build_duration_threshold_seconds` | Fixed build duration threshold in seconds. Takes priority over baseline tiers and the statistical fallback. |
 | `build_duration_breach_percentage` | Fraction of daily means that must exceed the threshold to trigger breach (default: 0.05). |
 | `integration_duration_threshold_seconds` | Fixed integration test duration threshold. |
 | `integration_duration_breach_percentage` | Integration breach percentage override. |
@@ -71,9 +72,9 @@ integration_duration_threshold_seconds:
       value: 900
 ```
 
-Match fields (`scenario`, `event_type`, `build_type`, `automated`) are compared against the metric's label set. Empty fields act as wildcards. Matches are evaluated in YAML order; the first match wins. When no match hits, `default` is used. When `default` is also absent, the value falls through to the parent hierarchy level or the built-in defaults.
+Match fields (`scenario`, `event_type`, `build_type`, `automated`, `test_type`) are compared against the metric's label set. Empty fields act as wildcards. Matches are evaluated in YAML order; the first match wins. When no match hits, `default` is used. When `default` is also absent, the value falls through to the parent hierarchy level or the built-in defaults.
 
-When `duration_threshold_seconds` is set, the breach evaluation uses that fixed value directly instead of computing `mean + 2*stddev`. When omitted, the statistical baseline is used. Breach percentages must be in the range (0, 1]. Thresholds must be > 0. Invalid values are logged as warnings at startup and ignored -- the exporter starts normally and the affected overrides fall back to built-in defaults.
+When a matching `*_duration_threshold_seconds` is set, the breach evaluation uses that fixed value with priority over a baseline tier. When omitted or invalid, the exporter uses the component's pinned tier when available, or the statistical baseline. Breach percentages must be in the range (0, 1]. Thresholds must be > 0. Invalid values are logged as warnings at startup and ignored; the affected override falls through to the next applicable threshold source.
 
 ```yaml
 excludeNamespaces:
@@ -104,9 +105,51 @@ customSLO:
 In this example:
 - `slow-builder` uses a fixed 7200s build threshold and inherits the 10% integration breach percentage from `heavy-app`
 - `tested-component` uses different integration thresholds depending on the scenario: 300s for EC checks, 5400s for a specific long-running scenario on push events, and 1800s for everything else
-- All other components in `heavy-app` use the default stddev-based build threshold but the relaxed 10% integration breach percentage
+- All other components in `heavy-app` use a baseline tier when configured, or the statistical fallback, with the relaxed 10% integration breach percentage
 - All components in `a-team-tenant` use a fixed 3600s integration threshold unless overridden at a lower level
-- Tenants not listed use the built-in defaults
+- Tenants not listed use baseline tiers when configured, or the statistical fallback and built-in breach percentage
+
+#### Baseline-tiered SLO thresholds
+
+The exporter loads cluster-specific duration tiers from the YAML file configured by `KA_SLO_TIERS_FILE`. Top-level keys use the duration domains `build_duration`, `integration_duration`, and `release_duration`.
+
+```yaml
+build_duration:
+  tiers:
+    - { name: fast, baseline_max: 300, threshold: 600 }
+    - { name: medium, baseline_max: 900, threshold: 1800 }
+    - { name: slow, baseline_max: 2100, threshold: 3600 }
+    - { name: heavy, baseline_max: null, threshold: 7200 }
+
+integration_duration:
+  tiers:
+    - { name: fast, baseline_max: 300, threshold: 600 }
+    - { name: medium, baseline_max: 1200, threshold: 2700 }
+    - { name: slow, baseline_max: 3600, threshold: 7200 }
+    - { name: heavy, baseline_max: null, threshold: 10800 }
+  overrides:
+    - match: { test_type: ec }
+      tiers:
+        - { name: ec, baseline_max: null, threshold: 600 }
+
+release_duration:
+  tiers:
+    - { name: fast, baseline_max: 600, threshold: 1200 }
+    - { name: medium, baseline_max: 1800, threshold: 3600 }
+    - { name: slow, baseline_max: null, threshold: 5400 }
+```
+
+Durations are in seconds. Each tier list must have increasing `baseline_max` values and exactly one final `null` catch-all. Thresholds must be positive. Tier override selectors are domain-specific: `build_duration` supports `build_type` and `event_type`; `integration_duration` supports `scenario`, `test_type`, and `event_type`; `release_duration` supports `automated` and `event_type`. Selectors not populated by the domain are ignored with a startup warning. The first valid matching override wins.
+
+After a metric series has at least 10 successful observations across at least 3 days, its 30-day successful-duration mean selects a tier. That tier and threshold remain pinned for the exporter process lifetime, including when the rolling mean later changes. Pins are rebuilt after a pod restart. The tier file is read once at startup, so changing it also requires a pod restart. Invalid domains and overrides are ignored with warnings, active sanitized tiers are logged at startup, and a missing or unparseable file does not prevent startup.
+
+Threshold precedence is:
+
+1. Matching `customSLO` duration threshold (`tier="custom"`)
+2. Process-lifetime pinned baseline tier (`tier="fast"`, `tier="medium"`, and so on)
+3. 30-day mean + 2 standard deviations (`tier="statistical"`)
+
+Existing `customSLO` breach-percentage overrides continue to apply with every threshold source.
 
 ### Cold start behavior
 
@@ -136,19 +179,19 @@ All metrics are **Gauges** over a rolling 30-day window of daily aggregated buck
 | `konflux_build_total_count_30d` | build | `cluster, namespace, application, component, build_type, event_type` |
 | `konflux_build_success_count_30d` | build | `cluster, namespace, application, component, build_type, event_type` |
 | `konflux_build_failure_count_30d` | build | `cluster, namespace, application, component, build_type, event_type, reason` |
-| `konflux_build_duration_slo_breach` | build | `cluster, namespace, application, component, build_type, event_type` |
+| `konflux_build_duration_slo_breach` | build | `cluster, namespace, application, component, build_type, event_type, tier` |
 | `konflux_integration_mean_duration_seconds_30d` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type` |
 | `konflux_integration_mean_wait_seconds_30d` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type` |
 | `konflux_integration_total_count_30d` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type` |
 | `konflux_integration_success_count_30d` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type` |
 | `konflux_integration_failure_count_30d` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type, reason` |
-| `konflux_integration_duration_slo_breach` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type` |
+| `konflux_integration_duration_slo_breach` | integration | `cluster, namespace, application, component, scenario, optional, test_type, event_type, tier` |
 | `konflux_release_cr_mean_duration_seconds_30d` | release | `cluster, namespace, application, component, automated, event_type` |
 | `konflux_release_cr_mean_wait_seconds_30d` | release | `cluster, namespace, application, component, automated, event_type` |
 | `konflux_release_cr_total_count_30d` | release | `cluster, namespace, application, component, automated, event_type` |
 | `konflux_release_cr_success_count_30d` | release | `cluster, namespace, application, component, automated, event_type` |
 | `konflux_release_cr_failure_count_30d` | release | `cluster, namespace, application, component, automated, event_type, reason` |
-| `konflux_release_cr_duration_slo_breach` | release | `cluster, namespace, application, component, automated, event_type` |
+| `konflux_release_cr_duration_slo_breach` | release | `cluster, namespace, application, component, automated, event_type, tier` |
 
 **Metric definitions**:
 - **Duration metrics** (`mean_duration_seconds_30d`): Mean execution time for **successful workloads only** (startTime to completionTime for PipelineRuns; startTime to completionTime for Releases). Failed workloads are excluded from this average.
@@ -156,7 +199,7 @@ All metrics are **Gauges** over a rolling 30-day window of daily aggregated buck
 - **Total count** (`total_count_30d`): Count of all completed workloads (successful + failed) in the rolling window
 - **Success count** (`success_count_30d`): Count of successful workloads in the rolling window. Enables correct volume-weighted aggregation across dimensions: `sum(success_count) / sum(total_count)`.
 - **Failure count** (`failure_count_30d`): Count of failed workloads, broken down by failure reason. Useful for root cause analysis.
-- **Duration SLO breach** (`duration_slo_breach`): 1 if the component's duration SLO is breached, 0 otherwise. Not emitted when data is insufficient (success_count < 10 or days_with_data < 3). By default, a component is in breach when >=5% of its daily mean durations over the past 30 days exceed the 30-day mean + 2 standard deviations. Thresholds and breach percentages can be overridden per tenant/application/component via the config file (see [Custom SLO thresholds](#custom-slo-thresholds)).
+- **Duration SLO breach** (`duration_slo_breach`): 1 if the component's duration SLO is breached, 0 otherwise. Not emitted when data is insufficient (success_count < 10 or days_with_data < 3). A configured custom threshold takes priority; otherwise a valid tier configuration supplies a process-lifetime pinned threshold. When neither applies, the exporter uses the 30-day mean + 2 standard deviations. A breach occurs when at least the configured percentage (5% by default) of daily means exceeds that threshold.
 
 **Derived metrics** (can be computed from the above):
 - **Success rate**: `success_count_30d / total_count_30d` (or 0 when total_count_30d == 0)
@@ -189,6 +232,7 @@ For Releases:
 | `optional` | `test.appstudio.openshift.io/optional` | `true` (non-blocking), `false` (required) | integration only |
 | `test_type` | Derived from pipeline labels | `ec` (Enterprise Contract), `integration` | integration only |
 | `automated` | `release.appstudio.openshift.io/automated` | `true`, `false` | release only |
+| `tier` | Pinned tier or threshold source | Configured tier name, `custom`, `statistical` | duration SLO breach metrics only |
 
 **Self-monitoring**:
 

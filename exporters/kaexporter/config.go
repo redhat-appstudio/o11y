@@ -24,16 +24,25 @@ type ThresholdMatch struct {
 	EventType string  `yaml:"event_type,omitempty"`
 	BuildType string  `yaml:"build_type,omitempty"`
 	Automated string  `yaml:"automated,omitempty"`
+	TestType  string  `yaml:"test_type,omitempty"`
 	Value     float64 `yaml:"value"`
+}
+
+func matchLabelSet(ls LabelSet, scenario, eventType, buildType, automated, testType string) bool {
+	return (scenario == "" || scenario == ls.Scenario) &&
+		(eventType == "" || eventType == ls.EventType) &&
+		(buildType == "" || buildType == ls.BuildType) &&
+		(automated == "" || automated == ls.Automated) &&
+		(testType == "" || testType == ls.TestType)
 }
 
 // ThresholdValue supports two YAML forms:
 //   - simple scalar:  build_duration_threshold_seconds: 7200
 //   - object form:    build_duration_threshold_seconds:
-//                       default: 7200
-//                       matches:
-//                         - event_type: push
-//                           value: 5400
+//     default: 7200
+//     matches:
+//   - event_type: push
+//     value: 5400
 type ThresholdValue struct {
 	Default *float64         `yaml:"default,omitempty"`
 	Matches []ThresholdMatch `yaml:"matches,omitempty"`
@@ -59,16 +68,7 @@ func (tv *ThresholdValue) ResolveValue(ls LabelSet) (float64, bool) {
 		return 0, false
 	}
 	for _, m := range tv.Matches {
-		if m.Scenario != "" && m.Scenario != ls.Scenario {
-			continue
-		}
-		if m.EventType != "" && m.EventType != ls.EventType {
-			continue
-		}
-		if m.BuildType != "" && m.BuildType != ls.BuildType {
-			continue
-		}
-		if m.Automated != "" && m.Automated != ls.Automated {
+		if !matchLabelSet(ls, m.Scenario, m.EventType, m.BuildType, m.Automated, m.TestType) {
 			continue
 		}
 		return m.Value, true
@@ -180,31 +180,61 @@ func (c *SLOConfig) Sanitize() {
 
 func (t *SLOThresholds) sanitize(prefix string) {
 	thresholds := []*struct {
-		name string
-		val  **ThresholdValue
+		domain string
+		name   string
+		val    **ThresholdValue
 	}{
-		{"build_duration_threshold_seconds", &t.BuildDurationThresholdSeconds},
-		{"integration_duration_threshold_seconds", &t.IntegrationDurationThresholdSeconds},
-		{"release_duration_threshold_seconds", &t.ReleaseDurationThresholdSeconds},
+		{metricBuildDuration, "build_duration_threshold_seconds", &t.BuildDurationThresholdSeconds},
+		{metricIntegrationDuration, "integration_duration_threshold_seconds", &t.IntegrationDurationThresholdSeconds},
+		{metricReleaseDuration, "release_duration_threshold_seconds", &t.ReleaseDurationThresholdSeconds},
 	}
 	for _, th := range thresholds {
-		sanitizeThresholdValue(th.val, prefix, th.name, func(v float64) bool { return v > 0 }, "must be > 0")
+		sanitizeThresholdValue(th.val, prefix, th.domain, th.name, func(v float64) bool { return v > 0 }, "must be > 0")
 	}
 
 	percentages := []*struct {
-		name string
-		val  **ThresholdValue
+		domain string
+		name   string
+		val    **ThresholdValue
 	}{
-		{"build_duration_breach_percentage", &t.BuildDurationBreachPercentage},
-		{"integration_duration_breach_percentage", &t.IntegrationDurationBreachPercentage},
-		{"release_duration_breach_percentage", &t.ReleaseDurationBreachPercentage},
+		{metricBuildDuration, "build_duration_breach_percentage", &t.BuildDurationBreachPercentage},
+		{metricIntegrationDuration, "integration_duration_breach_percentage", &t.IntegrationDurationBreachPercentage},
+		{metricReleaseDuration, "release_duration_breach_percentage", &t.ReleaseDurationBreachPercentage},
 	}
 	for _, pct := range percentages {
-		sanitizeThresholdValue(pct.val, prefix, pct.name, func(v float64) bool { return v > 0 && v <= 1 }, "must be in (0, 1]")
+		sanitizeThresholdValue(pct.val, prefix, pct.domain, pct.name, func(v float64) bool { return v > 0 && v <= 1 }, "must be in (0, 1]")
 	}
 }
 
-func sanitizeThresholdValue(tvp **ThresholdValue, prefix, name string, valid func(float64) bool, rule string) {
+func validateThresholdMatch(domain string, match ThresholdMatch) error {
+	filters := []struct {
+		key   string
+		value string
+	}{
+		{"scenario", match.Scenario},
+		{"event_type", match.EventType},
+		{"build_type", match.BuildType},
+		{"automated", match.Automated},
+		{"test_type", match.TestType},
+	}
+
+	hasFilter := false
+	for _, filter := range filters {
+		if filter.value == "" {
+			continue
+		}
+		hasFilter = true
+		if !domainMatchKeyAllowed(domain, filter.key) {
+			return fmt.Errorf("label %q is not populated for domain %q", filter.key, domain)
+		}
+	}
+	if !hasFilter {
+		return fmt.Errorf("match entry has no filter fields (matches everything); use 'default' instead")
+	}
+	return nil
+}
+
+func sanitizeThresholdValue(tvp **ThresholdValue, prefix, domain, name string, valid func(float64) bool, rule string) {
 	tv := *tvp
 	if tv == nil {
 		return
@@ -219,8 +249,8 @@ func sanitizeThresholdValue(tvp **ThresholdValue, prefix, name string, valid fun
 			log.Printf("WARNING: %s.%s: match %s, got %g; ignoring match entry", prefix, name, rule, m.Value)
 			continue
 		}
-		if m.Scenario == "" && m.EventType == "" && m.BuildType == "" && m.Automated == "" {
-			log.Printf("WARNING: %s.%s: match entry has no filter fields (matches everything); use 'default' instead; ignoring match entry", prefix, name)
+		if err := validateThresholdMatch(domain, m); err != nil {
+			log.Printf("WARNING: %s.%s: %v; ignoring match entry", prefix, name, err)
 			continue
 		}
 		validMatches = append(validMatches, m)
@@ -311,6 +341,9 @@ func logSLOOverrides(c *SLOConfig) {
 			}
 			if m.Automated != "" {
 				filters = append(filters, "automated="+m.Automated)
+			}
+			if m.TestType != "" {
+				filters = append(filters, "test_type="+m.TestType)
 			}
 			log.Printf("  SLO override: %s.%s [%s] = %g", prefix, name, strings.Join(filters, ", "), m.Value)
 		}

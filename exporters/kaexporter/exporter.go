@@ -21,13 +21,15 @@ import (
 // ── Environment variable names and configuration ──────────────────────────────
 
 const (
-	kaHostEnvVar    = "KA_HOST"
-	kaTokenEnvVar   = "KA_TOKEN"
-	clusterEnvVar   = "CLUSTER_NAME"
-	namespaceEnvVar = "TENANT_NAMESPACE"
-	portEnvVar      = "EXPORTER_PORT"
-	defaultPort     = "9101"
-	kaConfigFileEnv = "KA_CONFIG_FILE"
+	kaHostEnvVar        = "KA_HOST"
+	kaTokenEnvVar       = "KA_TOKEN"
+	clusterEnvVar       = "CLUSTER_NAME"
+	namespaceEnvVar     = "TENANT_NAMESPACE"
+	portEnvVar          = "EXPORTER_PORT"
+	defaultPort         = "9101"
+	kaConfigFileEnv     = "KA_CONFIG_FILE"
+	kaSLOTiersFileEnv   = "KA_SLO_TIERS_FILE"
+	defaultSLOTiersFile = "/etc/kaexporter/slo-tiers.yaml"
 
 	// 30-day SLO rolling window configuration
 	// NOTE: seenPLRRetentionHours is now calculated dynamically in NewKAExporter()
@@ -38,14 +40,14 @@ const (
 	tenantLabelValue = "tenant"
 
 	// Build and Integration PipelineRun labels
-	labelAppStudioApp     = "appstudio.openshift.io/application"
-	labelAppStudioComp    = "appstudio.openshift.io/component"
-	labelTestScenario     = "test.appstudio.openshift.io/scenario"
-	labelTestOptional     = "test.appstudio.openshift.io/optional"       // "true" if test can fail without blocking release
-	labelEventType        = "pipelinesascode.tekton.dev/event-type"      // Event type for builds
-	labelPACEventType     = "pac.test.appstudio.openshift.io/event-type" // Shared PAC event type label, used by both integration tests and releases
-	labelPipelinesType    = "pipelines.appstudio.openshift.io/type"
-	labelTektonPipeline   = "tekton.dev/pipeline"
+	labelAppStudioApp   = "appstudio.openshift.io/application"
+	labelAppStudioComp  = "appstudio.openshift.io/component"
+	labelTestScenario   = "test.appstudio.openshift.io/scenario"
+	labelTestOptional   = "test.appstudio.openshift.io/optional"       // "true" if test can fail without blocking release
+	labelEventType      = "pipelinesascode.tekton.dev/event-type"      // Event type for builds
+	labelPACEventType   = "pac.test.appstudio.openshift.io/event-type" // Shared PAC event type label, used by both integration tests and releases
+	labelPipelinesType  = "pipelines.appstudio.openshift.io/type"
+	labelTektonPipeline = "tekton.dev/pipeline"
 
 	// Release CR labels
 	labelReleaseAutomated = "release.appstudio.openshift.io/automated" // "true" for automated releases, "false" for manual
@@ -251,6 +253,8 @@ type KAExporter struct {
 
 	// 30-day SLO rolling aggregates (in-memory only, no persistence).
 	rollingStore   *Store
+	tierConfig     *TierConfig
+	tierPins       *TierPins
 	buildSLO       *BuildSLO30d
 	integrationSLO *IntegrationSLO30d
 	releaseSLO     *ReleaseSLO30d
@@ -389,6 +393,24 @@ func NewKAExporter() (*KAExporter, error) {
 		log.Printf("Namespace filter: no config file specified, no namespaces excluded")
 	}
 
+	tierConfigFile := strings.TrimSpace(os.Getenv(kaSLOTiersFileEnv))
+	if tierConfigFile == "" {
+		tierConfigFile = defaultSLOTiersFile
+	}
+	tierConfig, err := loadTierConfigFile(tierConfigFile)
+	if err != nil {
+		log.Printf("WARNING: SLO tiers: cannot load configuration from %s: %v; custom SLO thresholds and statistical fallback remain active", tierConfigFile, err)
+		tierConfig = nil
+	} else {
+		tierConfig.Sanitize()
+		if len(tierConfig.ByDomain) == 0 {
+			log.Printf("WARNING: SLO tiers: %s has no valid domains; custom SLO thresholds and statistical fallback remain active", tierConfigFile)
+			tierConfig = nil
+		} else {
+			logActiveTierConfig(tierConfig, tierConfigFile)
+		}
+	}
+
 	var k8sClient kubernetes.Interface
 	if fixedNS == "" {
 		cfg, err := kubeRESTConfig()
@@ -476,10 +498,12 @@ func NewKAExporter() (*KAExporter, error) {
 		),
 	}
 
-	// Initialize 30d SLO metric modules
-	e.buildSLO = newBuildSLO30d(sloConfig)
-	e.integrationSLO = newIntegrationSLO30d(sloConfig)
-	e.releaseSLO = newReleaseSLO30d(sloConfig)
+	// Initialize 30d SLO metric modules and process-lifetime tier pins.
+	e.tierConfig = tierConfig
+	e.tierPins = newTierPins()
+	e.buildSLO = newBuildSLO30dWithTiers(sloConfig, tierConfig, e.tierPins)
+	e.integrationSLO = newIntegrationSLO30dWithTiers(sloConfig, tierConfig, e.tierPins)
+	e.releaseSLO = newReleaseSLO30dWithTiers(sloConfig, tierConfig, e.tierPins)
 
 	// Initialize rolling store (in-memory only, no persistence)
 	e.rollingStore = NewStore()
