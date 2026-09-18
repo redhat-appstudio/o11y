@@ -13,9 +13,13 @@ type BuildSLO30d struct {
 
 // newBuildSLO30d initializes build 30d SLO metrics
 func newBuildSLO30d(sloConfig *SLOConfig) *BuildSLO30d {
+	return newBuildSLO30dWithTiers(sloConfig, nil, nil)
+}
+
+func newBuildSLO30dWithTiers(sloConfig *SLOConfig, tierConfig *TierConfig, tierPins *TierPins) *BuildSLO30d {
 	labels := []string{"cluster", "namespace", "application", "component", "build_type", "event_type"}
 	return &BuildSLO30d{
-		SLOGaugeSet: newSLOGaugeSet("konflux_build", "build", labels, sloConfig, metricBuildDuration),
+		SLOGaugeSet: newSLOGaugeSet("konflux_build", "build", labels, sloConfig, tierConfig, tierPins, metricBuildDuration),
 	}
 }
 

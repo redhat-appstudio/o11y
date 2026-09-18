@@ -713,7 +713,7 @@ func TestCountBreachingDays(t *testing.T) {
 		}
 
 		store.ForEachWindow(metricBuildDuration, func(ls LabelSet, window *MetricWindow) {
-			breaching, total := window.CountBreachingDays(testCutoff(),500.0)
+			breaching, total := window.CountBreachingDays(testCutoff(), 500.0)
 			assertEqual(t, "breachingDays", breaching, 0)
 			assertEqual(t, "totalDays", total, 10)
 		})
@@ -736,7 +736,7 @@ func TestCountBreachingDays(t *testing.T) {
 		}
 
 		store.ForEachWindow(metricBuildDuration, func(ls LabelSet, window *MetricWindow) {
-			breaching, total := window.CountBreachingDays(testCutoff(),400.0)
+			breaching, total := window.CountBreachingDays(testCutoff(), 400.0)
 			assertEqual(t, "breachingDays", breaching, 2)
 			assertEqual(t, "totalDays", total, 7)
 		})
@@ -772,7 +772,7 @@ func TestCountBreachingDays(t *testing.T) {
 			now.Add(-24*time.Hour), labels, 0, 0, false, "Failed")
 
 		store.ForEachWindow(metricBuildDuration, func(ls LabelSet, window *MetricWindow) {
-			breaching, total := window.CountBreachingDays(testCutoff(),500.0)
+			breaching, total := window.CountBreachingDays(testCutoff(), 500.0)
 			assertEqual(t, "breachingDays", breaching, 0)
 			assertEqual(t, "totalDays", total, 1) // Only 1 day has successful observations
 		})
@@ -806,7 +806,7 @@ func TestBuildDurationSLOBreach(t *testing.T) {
 			stddev30d := window.ComputeSuccessStdDev(testCutoff())
 			threshold := mean30d + sloThresholdK*stddev30d
 
-			breachingDays, totalDays := window.CountBreachingDays(testCutoff(),threshold)
+			breachingDays, totalDays := window.CountBreachingDays(testCutoff(), threshold)
 			if totalDays < minDaysWithDataForSLO {
 				t.Fatalf("expected >= %d days with data, got %d", minDaysWithDataForSLO, totalDays)
 			}
@@ -822,7 +822,7 @@ func TestBuildDurationSLOBreach(t *testing.T) {
 		buildSLO.updateGauges(store, nil)
 
 		m := &dto.Metric{}
-		buildSLO.durationSLOBreach.WithLabelValues("c", "ns", "app", "comp", "docker-builds", "push").Write(m) //nolint:errcheck
+		buildSLO.durationSLOBreach.WithLabelValues("c", "ns", "app", "comp", "docker-builds", "push", statisticalTierLabel).Write(m) //nolint:errcheck
 		if m.GetGauge().GetValue() != 1 {
 			t.Errorf("expected breach gauge=1, got %v", m.GetGauge().GetValue())
 		}
@@ -846,7 +846,7 @@ func TestBuildDurationSLOBreach(t *testing.T) {
 			assertFloat(t, "stddev", stddev30d, 0.0)
 			assertFloat(t, "threshold", threshold, mean30d)
 
-			breachingDays, totalDays := window.CountBreachingDays(testCutoff(),threshold)
+			breachingDays, totalDays := window.CountBreachingDays(testCutoff(), threshold)
 			assertEqual(t, "breachingDays", breachingDays, 0)
 			if totalDays < minDaysWithDataForSLO {
 				t.Fatalf("expected >= %d days with data, got %d", minDaysWithDataForSLO, totalDays)
@@ -857,7 +857,7 @@ func TestBuildDurationSLOBreach(t *testing.T) {
 		buildSLO.updateGauges(store, nil)
 
 		m := &dto.Metric{}
-		buildSLO.durationSLOBreach.WithLabelValues("c", "ns", "app", "comp", "docker-builds", "push").Write(m) //nolint:errcheck
+		buildSLO.durationSLOBreach.WithLabelValues("c", "ns", "app", "comp", "docker-builds", "push", statisticalTierLabel).Write(m) //nolint:errcheck
 		if m.GetGauge().GetValue() != 0 {
 			t.Errorf("expected breach gauge=0, got %v", m.GetGauge().GetValue())
 		}
@@ -886,7 +886,7 @@ func TestBuildDurationSLOBreach(t *testing.T) {
 		buildSLO.updateGauges(store, nil)
 
 		m := &dto.Metric{}
-		buildSLO.durationSLOBreach.WithLabelValues("c", "ns", "app", "comp", "docker-builds", "push").Write(m) //nolint:errcheck
+		buildSLO.durationSLOBreach.WithLabelValues("c", "ns", "app", "comp", "docker-builds", "push", statisticalTierLabel).Write(m) //nolint:errcheck
 		if m.GetGauge().GetValue() != 0 {
 			t.Errorf("expected breach=0 with k=2 (daily means between mean+1*stddev and mean+2*stddev should not breach), got %v",
 				m.GetGauge().GetValue())
@@ -913,7 +913,7 @@ func TestBuildDurationSLOBreach(t *testing.T) {
 			mean30d := window.ComputeSuccessMean(testCutoff())
 			stddev30d := window.ComputeSuccessStdDev(testCutoff())
 			threshold := mean30d + sloThresholdK*stddev30d
-			_, totalDays := window.CountBreachingDays(testCutoff(),threshold)
+			_, totalDays := window.CountBreachingDays(testCutoff(), threshold)
 			if totalDays >= minDaysWithDataForSLO {
 				t.Errorf("expected < %d days with data, got %d", minDaysWithDataForSLO, totalDays)
 			}
@@ -990,7 +990,7 @@ func TestBuildDurationSLOBreach(t *testing.T) {
 		buildSLO.updateGauges(store, nil)
 
 		m := &dto.Metric{}
-		buildSLO.durationSLOBreach.WithLabelValues("c", "ns", "app", "comp", "docker-builds", "push").Write(m) //nolint:errcheck
+		buildSLO.durationSLOBreach.WithLabelValues("c", "ns", "app", "comp", "docker-builds", "push", customTierLabel).Write(m) //nolint:errcheck
 		if m.GetGauge().GetValue() != 1 {
 			t.Errorf("expected breach=1 at exact boundary (1/20=5%%), got %v", m.GetGauge().GetValue())
 		}
@@ -1017,7 +1017,7 @@ func TestBuildDurationSLOBreach(t *testing.T) {
 		buildSLO.updateGauges(store, nil)
 
 		m := &dto.Metric{}
-		buildSLO.durationSLOBreach.WithLabelValues("c", "ns", "app", "comp", "docker-builds", "push").Write(m) //nolint:errcheck
+		buildSLO.durationSLOBreach.WithLabelValues("c", "ns", "app", "comp", "docker-builds", "push", customTierLabel).Write(m) //nolint:errcheck
 		if m.GetGauge().GetValue() != 0 {
 			t.Errorf("expected breach=0 below boundary (0/20=0%%), got %v", m.GetGauge().GetValue())
 		}
@@ -1217,7 +1217,7 @@ func TestIntegrationDurationSLOBreach(t *testing.T) {
 			mean30d := window.ComputeSuccessMean(testCutoff())
 			stddev30d := window.ComputeSuccessStdDev(testCutoff())
 			threshold := mean30d + sloThresholdK*stddev30d
-			breachingDays, totalDays := window.CountBreachingDays(testCutoff(),threshold)
+			breachingDays, totalDays := window.CountBreachingDays(testCutoff(), threshold)
 			breachFraction := float64(breachingDays) / float64(totalDays)
 			if breachFraction < sloBreachPercentage {
 				t.Errorf("expected breach: %d/%d = %.1f%% >= %.1f%%",
@@ -1229,7 +1229,7 @@ func TestIntegrationDurationSLOBreach(t *testing.T) {
 		slo.updateGauges(store, nil)
 
 		m := &dto.Metric{}
-		slo.durationSLOBreach.WithLabelValues("c", "ns", "app", "comp", "my-scenario", "false", "integration", "push").Write(m) //nolint:errcheck
+		slo.durationSLOBreach.WithLabelValues("c", "ns", "app", "comp", "my-scenario", "false", "integration", "push", statisticalTierLabel).Write(m) //nolint:errcheck
 		if m.GetGauge().GetValue() != 1 {
 			t.Errorf("expected breach gauge=1, got %v", m.GetGauge().GetValue())
 		}
@@ -1253,7 +1253,7 @@ func TestIntegrationDurationSLOBreach(t *testing.T) {
 		slo.updateGauges(store, nil)
 
 		m := &dto.Metric{}
-		slo.durationSLOBreach.WithLabelValues("c", "ns", "app", "comp", "my-scenario", "false", "integration", "push").Write(m) //nolint:errcheck
+		slo.durationSLOBreach.WithLabelValues("c", "ns", "app", "comp", "my-scenario", "false", "integration", "push", statisticalTierLabel).Write(m) //nolint:errcheck
 		if m.GetGauge().GetValue() != 0 {
 			t.Errorf("expected breach gauge=0, got %v", m.GetGauge().GetValue())
 		}
@@ -1307,7 +1307,7 @@ func TestReleaseDurationSLOBreach(t *testing.T) {
 			mean30d := window.ComputeSuccessMean(testCutoff())
 			stddev30d := window.ComputeSuccessStdDev(testCutoff())
 			threshold := mean30d + sloThresholdK*stddev30d
-			breachingDays, totalDays := window.CountBreachingDays(testCutoff(),threshold)
+			breachingDays, totalDays := window.CountBreachingDays(testCutoff(), threshold)
 			breachFraction := float64(breachingDays) / float64(totalDays)
 			if breachFraction < sloBreachPercentage {
 				t.Errorf("expected breach: %d/%d = %.1f%% >= %.1f%%",
@@ -1319,7 +1319,7 @@ func TestReleaseDurationSLOBreach(t *testing.T) {
 		slo.updateGauges(store, nil)
 
 		m := &dto.Metric{}
-		slo.durationSLOBreach.WithLabelValues("c", "ns", "app", "comp", "true", "push").Write(m) //nolint:errcheck
+		slo.durationSLOBreach.WithLabelValues("c", "ns", "app", "comp", "true", "push", statisticalTierLabel).Write(m) //nolint:errcheck
 		if m.GetGauge().GetValue() != 1 {
 			t.Errorf("expected breach gauge=1, got %v", m.GetGauge().GetValue())
 		}
@@ -1338,7 +1338,7 @@ func TestReleaseDurationSLOBreach(t *testing.T) {
 		slo.updateGauges(store, nil)
 
 		m := &dto.Metric{}
-		slo.durationSLOBreach.WithLabelValues("c", "ns", "app", "comp", "true", "push").Write(m) //nolint:errcheck
+		slo.durationSLOBreach.WithLabelValues("c", "ns", "app", "comp", "true", "push", statisticalTierLabel).Write(m) //nolint:errcheck
 		if m.GetGauge().GetValue() != 0 {
 			t.Errorf("expected breach gauge=0, got %v", m.GetGauge().GetValue())
 		}
@@ -1380,11 +1380,11 @@ func TestSLOBreachWithConfigOverrides(t *testing.T) {
 
 	// Table-driven: consistent 300s builds, varying config hierarchy level and threshold
 	hierarchyTests := []struct {
-		name        string
-		cfg         *SLOConfig
-		wantBreach  float64
-		addOtherNS  bool        // also populate other-tenant (no override)
-		wantOther   float64     // expected breach for other-tenant when addOtherNS=true
+		name       string
+		cfg        *SLOConfig
+		wantBreach float64
+		addOtherNS bool    // also populate other-tenant (no override)
+		wantOther  float64 // expected breach for other-tenant when addOtherNS=true
 	}{
 		{
 			name: "global threshold exceeded",
@@ -1444,14 +1444,14 @@ func TestSLOBreachWithConfigOverrides(t *testing.T) {
 			slo.updateGauges(store, nil)
 
 			m := &dto.Metric{}
-			slo.durationSLOBreach.WithLabelValues("c", "my-tenant", "my-app", "my-comp", "docker-builds", "push").Write(m) //nolint:errcheck
+			slo.durationSLOBreach.WithLabelValues("c", "my-tenant", "my-app", "my-comp", "docker-builds", "push", customTierLabel).Write(m) //nolint:errcheck
 			if m.GetGauge().GetValue() != tt.wantBreach {
 				t.Errorf("my-tenant: expected breach=%v, got %v", tt.wantBreach, m.GetGauge().GetValue())
 			}
 
 			if tt.addOtherNS {
 				m = &dto.Metric{}
-				slo.durationSLOBreach.WithLabelValues("c", "other-tenant", "my-app", "my-comp", "docker-builds", "push").Write(m) //nolint:errcheck
+				slo.durationSLOBreach.WithLabelValues("c", "other-tenant", "my-app", "my-comp", "docker-builds", "push", statisticalTierLabel).Write(m) //nolint:errcheck
 				if m.GetGauge().GetValue() != tt.wantOther {
 					t.Errorf("other-tenant: expected breach=%v, got %v", tt.wantOther, m.GetGauge().GetValue())
 				}
@@ -1483,7 +1483,7 @@ func TestSLOBreachWithConfigOverrides(t *testing.T) {
 		slo.updateGauges(store, nil)
 
 		m := &dto.Metric{}
-		slo.durationSLOBreach.WithLabelValues("c", "my-tenant", "my-app", "my-comp", "docker-builds", "push").Write(m) //nolint:errcheck
+		slo.durationSLOBreach.WithLabelValues("c", "my-tenant", "my-app", "my-comp", "docker-builds", "push", statisticalTierLabel).Write(m) //nolint:errcheck
 		if m.GetGauge().GetValue() != 0 {
 			t.Errorf("expected breach=0 with 20%% override (15%% < 20%%), got %v", m.GetGauge().GetValue())
 		}
@@ -1508,7 +1508,7 @@ func TestSLOBreachWithConfigOverrides(t *testing.T) {
 		slo.updateGauges(store, nil)
 
 		m := &dto.Metric{}
-		slo.durationSLOBreach.WithLabelValues("c", "my-tenant", "my-app", "my-comp", "docker-builds", "push").Write(m) //nolint:errcheck
+		slo.durationSLOBreach.WithLabelValues("c", "my-tenant", "my-app", "my-comp", "docker-builds", "push", statisticalTierLabel).Write(m) //nolint:errcheck
 		if m.GetGauge().GetValue() != 0 {
 			t.Errorf("expected breach=0 (integration override should not affect build domain), got %v", m.GetGauge().GetValue())
 		}
@@ -1571,6 +1571,7 @@ func TestSLOBreachWithMatchBasedConfig(t *testing.T) {
 			labels := []string{ls.Cluster, ls.Namespace, ls.Application, ls.Component, ls.Scenario, ls.Optional, ls.TestType, ls.EventType}
 
 			m := &dto.Metric{}
+			labels = append(labels, customTierLabel)
 			slo.durationSLOBreach.WithLabelValues(labels...).Write(m) //nolint:errcheck
 			results = append(results, breachResult{
 				scenario:  ls.Scenario,
@@ -1633,6 +1634,7 @@ func TestSLOBreachWithMatchBasedConfig(t *testing.T) {
 			found = true
 			labels := []string{ls.Cluster, ls.Namespace, ls.Application, ls.Component, ls.Scenario, ls.Optional, ls.TestType, ls.EventType}
 			m := &dto.Metric{}
+			labels = append(labels, customTierLabel)
 			slo.durationSLOBreach.WithLabelValues(labels...).Write(m) //nolint:errcheck
 			if m.GetGauge().GetValue() != 1 {
 				t.Errorf("uncovered-scenario: expected breach=1 (800s > 120s default), got %v", m.GetGauge().GetValue())
@@ -1671,6 +1673,7 @@ func TestSLOBreachWithMatchBasedConfig(t *testing.T) {
 			}
 			labels := []string{ls.Cluster, ls.Namespace, ls.Application, ls.Component, ls.Scenario, ls.Optional, ls.TestType, ls.EventType}
 			m := &dto.Metric{}
+			labels = append(labels, customTierLabel)
 			slo.durationSLOBreach.WithLabelValues(labels...).Write(m) //nolint:errcheck
 			// 800s vs tenant threshold 5000 (preserved because component match didn't fire) -> no breach
 			if m.GetGauge().GetValue() != 0 {
@@ -1712,6 +1715,11 @@ func TestSLOBreachWithMatchBasedConfig(t *testing.T) {
 
 		store.ForEachWindow(metricIntegrationDuration, func(ls LabelSet, window *MetricWindow) {
 			labels := []string{ls.Cluster, ls.Namespace, ls.Application, ls.Component, ls.Scenario, ls.Optional, ls.TestType, ls.EventType}
+			tierLabel := statisticalTierLabel
+			if cfg.Resolve(ls, metricIntegrationDuration).DurationThreshold != nil {
+				tierLabel = customTierLabel
+			}
+			labels = append(labels, tierLabel)
 			m := &dto.Metric{}
 			slo.durationSLOBreach.WithLabelValues(labels...).Write(m) //nolint:errcheck
 
@@ -1942,4 +1950,3 @@ func assertFloat(t *testing.T, name string, got, want float64) {
 		t.Errorf("%s = %f, want %f", name, got, want)
 	}
 }
-
