@@ -39,13 +39,56 @@ tests:
         alertname: PipelineRunStuckWithChainsFinalizer
         exp_alerts: []
 
-  # Test 3: Results finalizer — stuck PipelineRun fires alert
+  # Test 3: Results finalizer — 21 stuck PipelineRuns fire one cluster aggregate
   - interval: 1m
     input_series:
-      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-results-stuck", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[results.tekton.dev/pipelinerun]"}
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-results-1", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[results.tekton.dev/pipelinerun]", source_cluster="c1"}
         values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-results-2", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[results.tekton.dev/pipelinerun]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-results-3", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[results.tekton.dev/pipelinerun]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-results-4", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[results.tekton.dev/pipelinerun]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-results-5", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[results.tekton.dev/pipelinerun]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-results-6", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[results.tekton.dev/pipelinerun]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-results-7", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[results.tekton.dev/pipelinerun]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-results-8", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[results.tekton.dev/pipelinerun]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-results-9", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[results.tekton.dev/pipelinerun]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-results-10", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[results.tekton.dev/pipelinerun]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-results-11", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[results.tekton.dev/pipelinerun]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-results-12", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[results.tekton.dev/pipelinerun]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-results-13", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[results.tekton.dev/pipelinerun]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-results-14", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[results.tekton.dev/pipelinerun]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-results-15", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[results.tekton.dev/pipelinerun]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-results-16", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[results.tekton.dev/pipelinerun]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-results-17", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[results.tekton.dev/pipelinerun]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-results-18", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[results.tekton.dev/pipelinerun]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-results-19", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[results.tekton.dev/pipelinerun]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-results-20", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[results.tekton.dev/pipelinerun]", source_cluster="c1"}
+        values: '1+0x50'
+      - series: kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{pipelinerun="pr-results-21", namespace="tenant-ns", pipeline="build-pipeline", finalizers="[results.tekton.dev/pipelinerun]", source_cluster="c1"}
+        values: '1+0x45 stale'
 
     alert_rule_test:
+      - eval_time: 39m
+        alertname: PipelineRunStuckWithResultsFinalizer
+        exp_alerts: []
       - eval_time: 45m
         alertname: PipelineRunStuckWithResultsFinalizer
         exp_alerts:
@@ -53,15 +96,15 @@ tests:
               severity: warning
               component: tekton-results
               slo: "false"
-              pipelinerun: pr-results-stuck
-              namespace: tenant-ns
-              pipeline: build-pipeline
-              finalizers: "[results.tekton.dev/pipelinerun]"
+              source_cluster: c1
             exp_annotations:
-              summary: "PipelineRun pr-results-stuck stuck with Tekton Results finalizer in namespace tenant-ns"
-              description: "PipelineRun pr-results-stuck (pipeline: build-pipeline) in namespace tenant-ns has had deletionTimestamp set for more than 30 minutes and still has finalizers: [results.tekton.dev/pipelinerun]."
+              summary: "21 PipelineRun(s) on c1 stuck with Tekton Results finalizer"
+              description: "21 PipelineRun(s) on c1 have had deletionTimestamp set for more than 40 minutes and still have the Tekton Results finalizer, blocking PipelineRun deletion."
               alert_routing_key: pipelines
               team: pipelines
+      - eval_time: 47m
+        alertname: PipelineRunStuckWithResultsFinalizer
+        exp_alerts: []
 
   # Test 4: PAC finalizer — 1 stuck PipelineRun for >40m fires alert with count=1
   - interval: 1m
@@ -342,20 +385,7 @@ tests:
               team: pipelines
       - eval_time: 45m
         alertname: PipelineRunStuckWithResultsFinalizer
-        exp_alerts:
-          - exp_labels:
-              severity: warning
-              component: tekton-results
-              slo: "false"
-              pipelinerun: pr-multi-stuck
-              namespace: tenant-ns
-              pipeline: rh-advisories
-              finalizers: "[appstudio.redhat.com/release-finalizer results.tekton.dev/pipelinerun chains.tekton.dev/pipelinerun]"
-            exp_annotations:
-              summary: "PipelineRun pr-multi-stuck stuck with Tekton Results finalizer in namespace tenant-ns"
-              description: "PipelineRun pr-multi-stuck (pipeline: rh-advisories) in namespace tenant-ns has had deletionTimestamp set for more than 30 minutes and still has finalizers: [appstudio.redhat.com/release-finalizer results.tekton.dev/pipelinerun chains.tekton.dev/pipelinerun]."
-              alert_routing_key: pipelines
-              team: pipelines
+        exp_alerts: []
       - eval_time: 45m
         alertname: PipelineRunStuckWithReleaseFinalizer
         exp_alerts: []

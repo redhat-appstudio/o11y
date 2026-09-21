@@ -1,0 +1,16 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-cluster-upgrade
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: cluster_upgrade
+      interval: 1m
+      rules:
+        - record: cluster_upgrade_ongoing
+          expr: |
+            max by (source_cluster) (
+              ALERTS{alertname="ClusterUpgradeOngoing", alertstate="firing"}
+            )

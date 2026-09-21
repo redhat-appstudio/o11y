@@ -32,21 +32,25 @@ spec:
 
     - alert: PipelineRunStuckWithResultsFinalizer
       expr: |
-        kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{
-          finalizers=~".*results.tekton.dev/pipelinerun.*",
-        } > 0
-        and
-        (time() - kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{
-          finalizers=~".*results.tekton.dev/pipelinerun.*",
-        }) > 1800
-      for: 10m
+        count by (source_cluster) (
+          kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{
+            finalizers=~".*results.tekton.dev/pipelinerun.*",
+          } > 0
+          and
+          (
+            time() - kube_customresource_konflux_pipelinerun_deletion_timestamp_seconds{
+              finalizers=~".*results.tekton.dev/pipelinerun.*",
+            }
+          ) > 2400
+        ) > 20
+      for: 1s
       labels:
         severity: warning
         component: tekton-results
         slo: "false"
       annotations:
-        summary: "PipelineRun {{ $labels.pipelinerun }} stuck with Tekton Results finalizer in namespace {{ $labels.namespace }}"
-        description: "PipelineRun {{ $labels.pipelinerun }} (pipeline: {{ $labels.pipeline }}) in namespace {{ $labels.namespace }} has had deletionTimestamp set for more than 30 minutes and still has finalizers: {{ $labels.finalizers }}."
+        summary: "{{ $value }} PipelineRun(s) on {{ $labels.source_cluster }} stuck with Tekton Results finalizer"
+        description: "{{ $value }} PipelineRun(s) on {{ $labels.source_cluster }} have had deletionTimestamp set for more than 40 minutes and still have the Tekton Results finalizer, blocking PipelineRun deletion."
         alert_routing_key: pipelines
         team: pipelines
 

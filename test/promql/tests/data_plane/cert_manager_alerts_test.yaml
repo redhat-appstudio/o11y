@@ -45,11 +45,11 @@ tests:
 
   # --- CertManagerCertificateExpiringSoon ---
 
-  # Positive: cert expiring in 15 days (< 21), should fire
+  # Positive: cert expiring in 8 days (< 10), should fire
   - interval: 1m
     input_series:
       - series: 'certmanager_certificate_expiration_timestamp_seconds{name="expiring-cert", exported_namespace="my-ns", source_cluster="stone-prod-p01", issuer_name="letsencrypt", issuer_kind="ClusterIssuer"}'
-        values: '1296000+0x35'
+        values: '691200+0x35'
 
     alert_rule_test:
       - alertname: CertManagerCertificateExpiringSoon
@@ -65,12 +65,25 @@ tests:
               issuer_name: letsencrypt
               issuer_kind: ClusterIssuer
             exp_annotations:
-              summary: "Certificate expiring-cert in namespace my-ns expires in less than 21 days on cluster stone-prod-p01."
-              description: "Certificate expiring-cert in namespace my-ns on cluster stone-prod-p01 expires in 15 days. Investigate why cert-manager has not renewed it."
+              summary: "Certificate expiring-cert in namespace my-ns expires in less than 10 days on cluster stone-prod-p01."
+              description: "Certificate expiring-cert in namespace my-ns on cluster stone-prod-p01 expires in 8 days. Investigate why cert-manager has not renewed it."
               alert_routing_key: spreandinfra
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-cert-manager.md
 
-  # Negative: cert expiring in 60 days (> 21), should NOT fire
+  # Negative: cert expiring in 15 days (> 10, still within a typical 15-day
+  # renewBefore window) - should NOT fire. Regression test for the false
+  # alarm this threshold change fixes (was firing at <21 days before).
+  - interval: 1m
+    input_series:
+      - series: 'certmanager_certificate_expiration_timestamp_seconds{name="not-yet-due-cert", exported_namespace="caching", source_cluster="stone-prd-rh01", issuer_name="caching-ca-issuer", issuer_kind="ClusterIssuer"}'
+        values: '1296000+0x35'
+
+    alert_rule_test:
+      - alertname: CertManagerCertificateExpiringSoon
+        eval_time: 31m
+        exp_alerts: []
+
+  # Negative: cert expiring in 60 days (> 10), should NOT fire
   - interval: 1m
     input_series:
       - series: 'certmanager_certificate_expiration_timestamp_seconds{name="healthy-cert", exported_namespace="my-ns", source_cluster="stone-prod-p01", issuer_name="letsencrypt", issuer_kind="ClusterIssuer"}'

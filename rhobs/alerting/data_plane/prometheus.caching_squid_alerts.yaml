@@ -28,3 +28,22 @@ spec:
         alert_team_handle: <!subteam^S07NDQV6A4D>
         team: vanguard
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/vanguard/sre/caching-squid-down.md
+
+    - alert: ContainerImageProxyDown
+      expr: |
+        konflux_up{namespace="container-image-proxy", service="squid", check="squid-proxy"} == 0
+      for: 5m
+      labels:
+        severity: critical
+        slo: "true"
+        component: container-image-proxy
+      annotations:
+        html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.caching_squid_alerts.yaml#L32
+        summary: >-
+          Container Image Squid proxy is down
+        description: >-
+          Squid exporter cannot scrape the Squid proxy successfully in namespace container-image-proxy.
+          The proxy has been down for 5 minutes in cluster {{ $labels.source_cluster }}.
+        alert_team_handle: <!subteam^S07NDQV6A4D>
+        team: vanguard
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/vanguard/sre/caching-squid-down.md
