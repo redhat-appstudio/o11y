@@ -12,7 +12,7 @@ spec:
 
       - alert: ProbeAlert
         expr: |
-          konflux_up{check="probe", service!~".*-vpn|.*static-host|.*pwvs", severity!="high"} != 1
+          konflux_up{check="probe", service!~".*-vpn|.*static-host|.*pwvs|rekor-.*", severity!="high"} != 1
           and on(instance, job)
           (multicluster_probe_up == 1)
         for: 25m
@@ -30,7 +30,7 @@ spec:
 
       - alert: ProbeAlertHigh
         expr: |
-          konflux_up{check="probe", service!~".*-vpn|.*static-host|.*pwvs", severity="high"} != 1
+          konflux_up{check="probe", service!~".*-vpn|.*static-host|.*pwvs|rekor-.*", severity="high"} != 1
           and on(instance, job)
           (multicluster_probe_up == 1)
         for: 25m
@@ -49,7 +49,7 @@ spec:
         expr: |
           multicluster_probe_up{
           check="probe-multicluster",
-          service!~".*-vpn|.*static-host|.*pwvs|quay|api-server|openshift-ui|konflux-ui"
+          service!~".*-vpn|.*static-host|.*pwvs|quay|api-server|openshift-ui|konflux-ui|rekor-.*"
           } != 1
         for: 25m
         labels:
@@ -139,3 +139,37 @@ spec:
              Probe alert for job {{ $labels.job }} and target {{ $labels.target }} on cluster {{ $labels.source_cluster }}.
           alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
           runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/vpn_probe_alerts.md
+
+      - alert: RekorSingleClusterProbeDown
+        expr: |
+          konflux_up{check="probe", service=~"rekor-.*"} != 1
+          and on(job, instance)
+          (max by (job, instance) (konflux_up{check="probe", service=~"rekor-.*"}) == 1)
+        for: 10m
+        labels:
+          severity: high
+          slo: "false"
+        annotations:
+          html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.probe_alerts.yaml#L143
+          summary: >-
+             Rekor probe down on {{ $labels.source_cluster }}.
+          description: >-
+             Rekor probe ({{ $labels.job }}) on {{ $labels.source_cluster }} has been down for 10 minutes. At least one other cluster can still reach Rekor.
+          alert_routing_key: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/rekor-triage-and-escalation.md
+
+      - alert: RekorAllClustersProbeDown
+        expr: |
+          max by (job, instance) (konflux_up{check="probe", service=~"rekor-.*"}) == 0
+        for: 10m
+        labels:
+          severity: critical
+          slo: "true"
+        annotations:
+          html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.probe_alerts.yaml#L163
+          summary: >-
+             Rekor probe down on ALL clusters.
+          description: >-
+             Rekor probe ({{ $labels.job }}) is failing on all monitored clusters for the last 10 minutes. Complete Rekor outage — signing and verification will be impacted.
+          alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/rekor-triage-and-escalation.md
