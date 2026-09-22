@@ -39,7 +39,7 @@ spec:
             phase=~"Pending|Unknown|Failed",
             namespace="internal-services"
           } == 1
-          unless on (namespace, pod) (
+          unless on (namespace, pod, source_cluster) (
             kube_pod_owner{owner_kind="Job", namespace="internal-services"} == 1
           )
           unless ignoring (phase) (
