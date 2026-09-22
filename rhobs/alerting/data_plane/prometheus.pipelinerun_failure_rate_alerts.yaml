@@ -1,0 +1,32 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-konflux-pipeline-failures-alerting-rules
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: konflux-pipeline-failures-warning
+    interval: 1m
+    rules:
+    - alert: KonfluxTenantHighPipelineFailureRate
+      expr: |
+        (
+          sum by (source_cluster, tenant_id) (increase(tekton_pipelines_controller_pipelinerun_total{status="failed"}[1h]))
+          / on (source_cluster, tenant_id)
+          sum by (source_cluster, tenant_id) (increase(tekton_pipelines_controller_pipelinerun_total[1h]))
+        ) > 0.6
+        and
+        sum by (source_cluster, tenant_id) (increase(tekton_pipelines_controller_pipelinerun_total{status="failed"}[1h])) >= 5
+      for: 15m
+      labels:
+        severity: warning
+        slo: "false"
+        component: konflux-pipelines
+      annotations:
+        summary: >-
+          High pipeline failure rate detected for tenant in cluster {{ $labels.source_cluster }}
+        description: >
+          Tenant {{ $labels.tenant_id }} on cluster {{ $labels.source_cluster }} has a failure rate exceeding 60% with at least 5 failed pipelines over the last hour.
+        team: konflux-spre
+        alert_routing_key: "<!subteam^S06V06A36F5>"
