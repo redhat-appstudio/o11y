@@ -223,6 +223,20 @@ tests:
       - series: 'kube_pod_status_unschedulable{namespace="clusters", pod="create-cluster-21d2ff92-52d1-426d-8aaa-77b40aa1616d-fxb8f", source_cluster="cluster01"}'
         values: '0x29'
 
+      # Pod is in the Failed state and scheduled, but it's in the 'internal-services' namespace so it's ignored.
+      - series: 'kube_pod_status_phase{pod="signing-pod-abc123", namespace="internal-services", phase="Failed"}'
+        values: '1x29'
+      - series: 'kube_pod_status_unschedulable{namespace="internal-services", pod="signing-pod-abc123", source_cluster="cluster01"}'
+        values: '0x29'
+
+      # Pod is in the Pending state and scheduled, but it's owned by a Job (CronJob) so it's ignored.
+      - series: 'kube_pod_status_phase{pod="cleanup-cronjob-29831230-52ltg", namespace="ns-10", phase="Pending"}'
+        values: '1x29'
+      - series: 'kube_pod_status_unschedulable{namespace="ns-10", pod="cleanup-cronjob-29831230-52ltg", source_cluster="cluster01"}'
+        values: '0x29'
+      - series: 'kube_pod_owner{namespace="ns-10", pod="cleanup-cronjob-29831230-52ltg", owner_kind="Job", owner_name="cleanup-cronjob-29831230"}'
+        values: '1x29'
+
     alert_rule_test:
       - eval_time: 30m
         alertname: PodNotReady
