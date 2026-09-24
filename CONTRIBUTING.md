@@ -86,7 +86,7 @@ of the code within the PR lifecycle (e.g. no `addressing comments` commit messag
 the commit message standard.
 
 If the commit message (also applicable to PR names and branch names) includes a Jira
-ticket identifier (e.g. STONEO11Y-123), then it will automatically be referenced within
+ticket identifier {JIRA_PROJECT}-{JIRA_ID} (e.g. `PVO11Y-123`), then it will automatically be referenced within
 the Jira ticket.
 
 Commit messages should be descriptive:
@@ -98,7 +98,7 @@ Commit messages should be descriptive:
 
 Example:
 ```
-chore(STONEO11Y-21): add network egress metric and tests
+chore(PVO11Y-123): add network egress metric and tests
 
 - Create a new rule for getting the network transmit in bytes
 and add the label_pipelines_appstudio_openshift_io_type to it.

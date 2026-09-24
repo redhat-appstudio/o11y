@@ -22,7 +22,7 @@ spec:
         alert_routing_key: '{{ $labels.namespace }}'
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-unschedualablePods.md
     - alert: CrashLoopBackOff
-      expr: max_over_time(kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff", namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-templates-e2e|multi-platform-.*|appstudio-probe-monitoring-grafana|clusters-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|tekton-kueue)"}[5m]) >= 1
+      expr: max_over_time(kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff", namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-templates-e2e|multi-platform-.*|clusters-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|tekton-kueue)"}[5m]) >= 1
       for: 15m
       labels:
         severity: warning
@@ -36,7 +36,7 @@ spec:
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-crashLoopBackOff.md
     - alert: PodNotReady
       expr: |
-            kube_pod_status_phase{phase=~"Pending|Unknown|Failed", namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-templates-e2e|konflux-ci|mintmaker|multi-platform-.*|appstudio-probe-monitoring-grafana|clusters|clusters-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|tekton-kueue)"} == 1
+            kube_pod_status_phase{phase=~"Pending|Unknown|Failed", namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-templates-e2e|konflux-ci|mintmaker|multi-platform-.*|appstudio-kanary-exporter|clusters|clusters-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|tekton-kueue)"} == 1
             unless ignoring (phase) (kube_pod_status_unschedulable == 1)
       for: 30m
       labels:
@@ -52,10 +52,21 @@ spec:
 
     - alert: PodMemoryUsageExceedsRequested
       expr: |
-        avg_over_time(container_memory_usage_bytes{namespace="appstudio-grafana"}[5m])
+        sum by (namespace, pod, container, source_cluster) (
+          container_memory_usage_bytes{
+            namespace="appstudio-grafana",
+            container!="",
+            container!="POD"
+          }
+        )
         > on(namespace, pod, container, source_cluster)
-        kube_pod_container_resource_requests{resource="memory", namespace="appstudio-grafana"}
-      for: 5m
+        sum by (namespace, pod, container, source_cluster) (
+          kube_pod_container_resource_requests{
+            resource="memory",
+            namespace="appstudio-grafana"
+          }
+        )
+      for: 10m
       labels:
         severity: warning
       annotations:
@@ -70,9 +81,21 @@ spec:
 
     - alert: PodCPUUsageExceedsRequested
       expr: |
-        avg_over_time(container_cpu_usage_seconds_total{namespace="appstudio-grafana"}[5m])
+        sum by (namespace, pod, container, source_cluster) (
+          rate(container_cpu_usage_seconds_total{
+            namespace="appstudio-grafana",
+            container!="",
+            container!="POD"
+          }[5m])
+        )
         > on(namespace, pod, container, source_cluster)
-        kube_pod_container_resource_requests{resource="cpu", namespace="appstudio-grafana"}
+        sum by (namespace, pod, container, source_cluster) (
+          kube_pod_container_resource_requests{
+            resource="cpu",
+            unit="core",
+            namespace="appstudio-grafana"
+          }
+        )
       for: 5m
       labels:
         severity: warning
@@ -109,6 +132,7 @@ spec:
         reason: "OOMKilled"
         slo: "true"
       annotations:
+        html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.pod_alerts.yaml#L103
         summary: "Pod {{ $labels.pod }} ran out of memory - OOMKilled."
         description: "Pod {{ $labels.pod }} in Namespace {{ $labels.namespace }} was killed due to OOM."
         alert_team_handle: >- # testing

@@ -1,0 +1,55 @@
+---
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.konflux_operator_alerts.yaml
+
+tests:
+# Platform not ready — alert should fire after 10m
+- interval: 1m
+  input_series:
+    - series: 'konflux_up{service="konflux-operator", check="konflux-ready", source_cluster="c1"}'
+      values: '0 0 0 0 0 0 0 0 0 0'
+    - series: 'konflux_up{service="konflux-operator", check="konflux-ready", source_cluster="c2"}'
+      values: '1 1 1 1 1 1 1 1 1 1'
+
+  alert_rule_test:
+    - eval_time: 10m
+      alertname: KonfluxOperatorNotReady
+      exp_alerts:
+        - exp_labels:
+            severity: warning
+            slo: "false"
+            component: konflux-operator
+            service: konflux-operator
+            check: konflux-ready
+            source_cluster: c1
+          exp_annotations:
+            summary: >-
+              Konflux operator is not ready in cluster c1
+            description: >-
+              The Konflux operator reports the platform is not ready for 10min in cluster c1. One or more sub-component readiness conditions are not True.
+            alert_routing_key: 'konflux-operator'
+            team: konflux-operator
+
+# Platform healthy — no alert should fire
+- interval: 1m
+  input_series:
+    - series: 'konflux_up{service="konflux-operator", check="konflux-ready", source_cluster="c1"}'
+      values: '1 1 1 1 1 1 1 1 1 1'
+
+  alert_rule_test:
+    - eval_time: 10m
+      alertname: KonfluxOperatorNotReady
+      exp_alerts: []
+
+# Platform recovers before for duration — no alert should fire
+- interval: 1m
+  input_series:
+    - series: 'konflux_up{service="konflux-operator", check="konflux-ready", source_cluster="c1"}'
+      values: '0 0 0 0 0 0 0 1 1 1'
+
+  alert_rule_test:
+    - eval_time: 10m
+      alertname: KonfluxOperatorNotReady
+      exp_alerts: []

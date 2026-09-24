@@ -22,6 +22,7 @@ spec:
         component: tekton-kueue
         slo: "true"
       annotations:
+        html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.kueue_alerts.yaml#L12
         summary: "Tekton Kueue controller is down"
         description: "The Tekton Kueue controller has no available replicas in cluster {{ $labels.source_cluster }}. PipelineRuns will be created in Pending state but cannot be processed, resulting in stuck builds."
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueueControllerDown.md
@@ -41,6 +42,7 @@ spec:
         component: tekton-kueue
         slo: "true"
       annotations:
+        html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.kueue_alerts.yaml#L32
         summary: "Tekton Kueue webhook is down"
         description: "The Tekton Kueue webhook has no available replicas in cluster {{ $labels.source_cluster }}. PipelineRuns may not be created with Pending state and Workload resources, bypassing Kueue admission control."
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueueWebhookDown.md
@@ -96,7 +98,6 @@ spec:
       annotations:
         summary: "Tekton Kueue pod is stuck in Pending: {{ $labels.pod }}"
         description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} has been in Pending state for more than 5 minutes. This may indicate a scheduling issue, resource constraint, or unresolvable volume."
-        # runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueuePodStuckInPending.md
         alert_routing_key: infra
         team: konflux-infra
 
@@ -106,6 +107,11 @@ spec:
           namespace="tekton-kueue",
           reason="ContainerCreating"
         } == 1
+        unless on (pod, namespace, source_cluster)
+        kube_pod_status_phase{
+          namespace="tekton-kueue",
+          phase="Running"
+        } == 1
       for: 5m
       labels:
         severity: high
@@ -113,7 +119,6 @@ spec:
       annotations:
         summary: "Tekton Kueue pod is stuck in ContainerCreating: {{ $labels.pod }}"
         description: "Container {{ $labels.container }} in pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} is stuck in ContainerCreating for more than 5 minutes. This typically points to infrastructure issues like Volume/Storage mounting failures or Network attachment delays."
-        # runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueuePodStuckInCreation.md
         alert_routing_key: infra
         team: konflux-infra
 
@@ -135,7 +140,6 @@ spec:
       annotations:
         summary: "Tekton Kueue pod was OOMKilled: {{ $labels.pod }}"
         description: "Container {{ $labels.container }} in pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} was terminated due to OOM. Memory limits may need to be increased in the deployment spec."
-        # runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueuePodOOMKilled.md
         alert_routing_key: infra
         team: konflux-infra
 
@@ -147,6 +151,7 @@ spec:
         component: tekton-kueue
         slo: "true"
       annotations:
+        html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.kueue_alerts.yaml#L146
         summary: "Tekton Kueue CEL evaluation failures detected"
         description: "{{ $value }} CEL evaluation failures occurred in the last 5 minutes in cluster {{ $labels.source_cluster }}"
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-KueueCELEvaluationFailures.md?ref_type=heads
@@ -205,45 +210,192 @@ spec:
         component: kueue
         slo: "true"
       annotations:
+        html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.kueue_alerts.yaml#L205
         summary: "Kueue cluster queue is not active"
         description: "Cluster queue 'cluster-pipeline-queue' is not in active state in cluster {{ $labels.source_cluster }}"
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md?ref_type=heads
         alert_team_handle: <!subteam^S05Q1P4Q2TG>
         team: konflux-infra
 
-    - alert: KueueHighAdmissionWaitTimePreMerge
+    # =========================================================================
+    # Tier A: Standard Clusters (excluding stone-prod-p02 & stone-prd-rh01)
+    # =========================================================================
+
+    - alert: KueueAdmissionWaitTimePreMergeTierAWarning
       expr: |
-        histogram_quantile(0.99, sum(increase(kueue_admission_wait_time_seconds_bucket{
+        histogram_quantile(0.95, sum(increase(kueue_admission_wait_time_seconds_bucket{
           cluster_queue="cluster-pipeline-queue",
-          priority_class=~"konflux-pre-merge-.*"
-        }[10m])) by (le, source_cluster)) > 900
-      for: 40m
+          priority_class=~"konflux-pre-merge-.*",
+          source_cluster!~"stone-prod-p02|stone-prd-rh01"
+        }[10m])) by (le, source_cluster)) > 300
+      for: 15m
       labels:
-        severity: high
+        severity: warning
         component: kueue
+        slo: "false"
+        tier: A
+        pipeline_type: PreMerge
       annotations:
-        summary: "High admission wait time for Pre-merge builds"
-        description: "99th percentile admission wait time for Pre-merge is {{ $value | humanizeDuration }}, which is above 15 minutes in cluster {{ $labels.source_cluster }}"
+        summary: "High admission wait time for Pre-merge builds (Tier A)"
+        description: "P95 admission wait time for Pre-merge builds is above 5 minutes on cluster {{ $labels.source_cluster }}."
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
         alert_routing_key: infra
         team: konflux-infra
 
-    - alert: KueueHighAdmissionWaitTimePostMerge
+    - alert: KueueAdmissionWaitTimePreMergeTierACritical
       expr: |
-        histogram_quantile(0.99, sum(increase(kueue_admission_wait_time_seconds_bucket{
+        histogram_quantile(0.95, sum(increase(kueue_admission_wait_time_seconds_bucket{
           cluster_queue="cluster-pipeline-queue",
-          priority_class=~"konflux-post-merge-.*"
-        }[10m])) by (le, source_cluster)) > 900
-      for: 45m
+          priority_class=~"konflux-pre-merge-.*",
+          source_cluster!~"stone-prod-p02|stone-prd-rh01"
+        }[10m])) by (le, source_cluster)) > 1200
+      for: 15m
       labels:
         severity: high
         component: kueue
+        slo: "false"
+        tier: A
+        pipeline_type: PreMerge
       annotations:
-        summary: "High admission wait time for Post-merge builds"
-        description: "99th percentile admission wait time for Post-merge is {{ $value | humanizeDuration }}, which is above 15 minutes in cluster {{ $labels.source_cluster }}"
+        summary: "Critical admission wait time for Pre-merge builds (Tier A)"
+        description: "P95 admission wait time for Pre-merge builds is above 20 minutes on cluster {{ $labels.source_cluster }}."
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
+        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        team: konflux-infra
+
+    - alert: KueueAdmissionWaitTimePostMergeTierAWarning
+      expr: |
+        histogram_quantile(0.95, sum(increase(kueue_admission_wait_time_seconds_bucket{
+          cluster_queue="cluster-pipeline-queue",
+          priority_class=~"konflux-post-merge-.*",
+          source_cluster!~"stone-prod-p02|stone-prd-rh01"
+        }[10m])) by (le, source_cluster)) > 1200
+      for: 20m
+      labels:
+        severity: warning
+        component: kueue
+        slo: "false"
+        tier: A
+        pipeline_type: PostMerge
+      annotations:
+        summary: "High admission wait time for Post-merge builds (Tier A)"
+        description: "P95 admission wait time for Post-merge builds is above 20 minutes on cluster {{ $labels.source_cluster }}."
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
         alert_routing_key: infra
         team: konflux-infra
+
+    - alert: KueueAdmissionWaitTimePostMergeTierACritical
+      expr: |
+        histogram_quantile(0.95, sum(increase(kueue_admission_wait_time_seconds_bucket{
+          cluster_queue="cluster-pipeline-queue",
+          priority_class=~"konflux-post-merge-.*",
+          source_cluster!~"stone-prod-p02|stone-prd-rh01"
+        }[10m])) by (le, source_cluster)) > 5400
+      for: 15m
+      labels:
+        severity: high
+        component: kueue
+        slo: "false"
+        tier: A
+        pipeline_type: PostMerge
+      annotations:
+        summary: "Critical admission wait time for Post-merge builds (Tier A)"
+        description: "P95 admission wait time for Post-merge builds is above 1.5 hours on cluster {{ $labels.source_cluster }}."
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
+        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        team: konflux-infra
+
+    # =========================================================================
+    # Tier B: Constrained Clusters (stone-prod-p02 & stone-prd-rh01)
+    # =========================================================================
+
+    - alert: KueueAdmissionWaitTimePreMergeTierBWarning
+      expr: |
+        histogram_quantile(0.95, sum(increase(kueue_admission_wait_time_seconds_bucket{
+          cluster_queue="cluster-pipeline-queue",
+          priority_class=~"konflux-pre-merge-.*",
+          source_cluster=~"stone-prod-p02|stone-prd-rh01"
+        }[10m])) by (le, source_cluster)) > 1800
+      for: 15m
+      labels:
+        severity: warning
+        component: kueue
+        slo: "false"
+        tier: B
+        pipeline_type: PreMerge
+      annotations:
+        summary: "High admission wait time for Pre-merge builds (Tier B - Constrained)"
+        description: "P95 admission wait time for Pre-merge builds is above 30 minutes on constrained cluster {{ $labels.source_cluster }}."
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
+        alert_routing_key: infra
+        team: konflux-infra
+
+    - alert: KueueAdmissionWaitTimePreMergeTierBCritical
+      expr: |
+        histogram_quantile(0.95, sum(increase(kueue_admission_wait_time_seconds_bucket{
+          cluster_queue="cluster-pipeline-queue",
+          priority_class=~"konflux-pre-merge-.*",
+          source_cluster=~"stone-prod-p02|stone-prd-rh01"
+        }[10m])) by (le, source_cluster)) > 5400
+      for: 15m
+      labels:
+        severity: high
+        component: kueue
+        slo: "false"
+        tier: B
+        pipeline_type: PreMerge
+      annotations:
+        summary: "Critical admission wait time for Pre-merge builds (Tier B - Constrained)"
+        description: "P95 admission wait time for Pre-merge builds is above 1.5 hours on constrained cluster {{ $labels.source_cluster }}."
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
+        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        team: konflux-infra
+
+    - alert: KueueAdmissionWaitTimePostMergeTierBWarning
+      expr: |
+        histogram_quantile(0.95, sum(increase(kueue_admission_wait_time_seconds_bucket{
+          cluster_queue="cluster-pipeline-queue",
+          priority_class=~"konflux-post-merge-.*",
+          source_cluster=~"stone-prod-p02|stone-prd-rh01"
+        }[10m])) by (le, source_cluster)) > 7200
+      for: 30m
+      labels:
+        severity: warning
+        component: kueue
+        slo: "false"
+        tier: B
+        pipeline_type: PostMerge
+      annotations:
+        summary: "High admission wait time for Post-merge builds (Tier B - Constrained)"
+        description: "P95 admission wait time for Post-merge builds is above 2 hours on constrained cluster {{ $labels.source_cluster }}."
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
+        alert_routing_key: infra
+        team: konflux-infra
+
+    - alert: KueueAdmissionWaitTimePostMergeTierBCritical
+      expr: |
+        histogram_quantile(0.95, sum(increase(kueue_admission_wait_time_seconds_bucket{
+          cluster_queue="cluster-pipeline-queue",
+          priority_class=~"konflux-post-merge-.*",
+          source_cluster=~"stone-prod-p02|stone-prd-rh01"
+        }[10m])) by (le, source_cluster)) > 14400
+      for: 15m
+      labels:
+        severity: high
+        component: kueue
+        slo: "false"
+        tier: B
+        pipeline_type: PostMerge
+      annotations:
+        summary: "Critical admission wait time for Post-merge builds (Tier B - Constrained)"
+        description: "P95 admission wait time for Post-merge builds is above 4 hours on constrained cluster {{ $labels.source_cluster }}."
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
+        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        team: konflux-infra
+
+    # =========================================================================
+    # Other Workload Alerts
+    # =========================================================================
 
     - alert: KueueHighAdmissionWaitTimeMintmaker
       expr: |
@@ -262,23 +414,6 @@ spec:
         alert_routing_key: infra
         team: konflux-infra
 
-    - alert: KueueHighAdmissionWaitTimeDefault
-      expr: |
-        histogram_quantile(0.99, sum(increase(kueue_admission_wait_time_seconds_bucket{
-          cluster_queue="cluster-pipeline-queue",
-          priority_class!~"konflux-pre-merge-.*|konflux-post-merge-.*|konflux-dependency-update|konflux-release|konflux-tenant-release"
-        }[10m])) by (le, source_cluster)) > 7200
-      for: 5m
-      labels:
-        severity: warning
-        component: kueue
-      annotations:
-        summary: "High admission wait time for other workloads"
-        description: "99th percentile admission wait time for other workloads is {{ $value | humanizeDuration }}, which is above 2 hours in cluster {{ $labels.source_cluster }}"
-        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
-        alert_routing_key: infra
-        team: konflux-infra
-
     - alert: KueueHighAdmissionWaitTimeReleases
       expr: |
         histogram_quantile(0.99, sum(increase(kueue_admission_wait_time_seconds_bucket{
@@ -291,6 +426,7 @@ spec:
         component: kueue
         slo: "true"
       annotations:
+        html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.kueue_alerts.yaml#L271
         summary: "High admission wait time for Release workloads"
         description: "99th percentile admission wait time for konflux and tenant release workloads is {{ $value | humanizeDuration }}, which is above 1.33 hours in cluster {{ $labels.source_cluster }}"
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md

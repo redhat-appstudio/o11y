@@ -1,0 +1,111 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-ux-slo-aggregate
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    # Fraction of tenants with at least one component breaching duration SLO
+    # per cluster and domain. A tenant counts as breaching if any of its
+    # app/component combinations has breach=1.
+    # Output: 0-1 fraction per source_cluster, labeled by domain.
+    - name: ux_slo_tenant_breach_percentage
+      interval: 5m
+      rules:
+        - record: konflux:tenant_performance_slo_breach_percentage
+          expr: |
+            sum by (source_cluster) (
+              max by (source_cluster, exported_namespace) (
+                konflux_build_duration_slo_breach
+              ) == bool 1
+            )
+            /
+            count by (source_cluster) (
+              group by (source_cluster, exported_namespace) (
+                konflux_build_duration_slo_breach
+              )
+            )
+          labels:
+            domain: build
+
+        - record: konflux:tenant_performance_slo_breach_percentage
+          expr: |
+            sum by (source_cluster) (
+              max by (source_cluster, exported_namespace) (
+                konflux_integration_duration_slo_breach
+              ) == bool 1
+            )
+            /
+            count by (source_cluster) (
+              group by (source_cluster, exported_namespace) (
+                konflux_integration_duration_slo_breach
+              )
+            )
+          labels:
+            domain: integration
+
+        - record: konflux:tenant_performance_slo_breach_percentage
+          expr: |
+            sum by (source_cluster) (
+              max by (source_cluster, exported_namespace) (
+                konflux_release_cr_duration_slo_breach
+              ) == bool 1
+            )
+            /
+            count by (source_cluster) (
+              group by (source_cluster, exported_namespace) (
+                konflux_release_cr_duration_slo_breach
+              )
+            )
+          labels:
+            domain: release_cr
+
+    # Aggregate tenant breach: 1 if >= 5% of tenants on a cluster are breaching
+    # their duration SLO in any domain (build, integration, or release_cr).
+    - name: ux_slo_aggregate_breach
+      interval: 5m
+      rules:
+        - record: konflux:aggregate_performance_slo_breach
+          expr: |
+            (
+              sum by (source_cluster) (
+                max by (source_cluster, exported_namespace) (
+                  konflux_build_duration_slo_breach
+                    or
+                  konflux_integration_duration_slo_breach
+                    or
+                  konflux_release_cr_duration_slo_breach
+                ) == bool 1
+              )
+              /
+              count by (source_cluster) (
+                group by (source_cluster, exported_namespace) (
+                  konflux_build_duration_slo_breach
+                    or
+                  konflux_integration_duration_slo_breach
+                    or
+                  konflux_release_cr_duration_slo_breach
+                )
+              )
+            ) >= bool 0.05
+
+    # Composite cluster UX SLO: 1 if either the aggregate tenant breach
+    # is firing or any kueue priority class has saturation >= 5%.
+    # Zero-fill arms ensure clusters emit 0 even when only one data source exists.
+    - name: ux_slo_cluster_breach
+      interval: 5m
+      rules:
+        - record: konflux:cluster_ux_slo_breach
+          expr: |
+            (konflux:aggregate_performance_slo_breach == 1)
+              or
+            (
+              max without (priority_class) (
+                konflux_cluster:kueue_admission_wait_time_seconds:saturation_7d >= bool 0.05
+              ) == 1
+            )
+              or
+            (konflux:aggregate_performance_slo_breach * 0)
+              or
+            (max without (priority_class) (konflux_cluster:kueue_admission_wait_time_seconds:saturation_7d) * 0)

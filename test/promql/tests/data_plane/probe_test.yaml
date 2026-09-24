@@ -15,7 +15,7 @@ tests:
         values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
       - series: konflux_up{job="web-server",instance="instance01",target="target01",source_cluster="cluster04",check="probe",service="web-server"}
         values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
-      - series: multicluster_probe_up{instance="instance01",check="probe-multicluster",service="web-server"}
+      - series: multicluster_probe_up{instance="instance01",job="web-server",check="probe-multicluster",service="web-server"}
         values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1
     alert_rule_test:
       - eval_time: 39m
@@ -31,14 +31,70 @@ tests:
               service: web-server
               slo: "true"
             exp_annotations:
+              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.probe_alerts.yaml#L13
               description: 'Probe on cluster01 is unable to connect to instance01 (web-server) for the last 25 minutes. At least 80% of Konflux clusters successfully connect to instance01.'
               summary: Probe alert web-server.
               alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/exporters/blackbox/probe-alerts.md
 
+  # Partition boundary: severity="high" series must NOT fire the critical ProbeAlert
   - interval: 1m
     input_series:
-      - series: multicluster_probe_up{instance="instance01",check="probe-multicluster",service="web-server"}
+      - series: konflux_up{job="critical-service",instance="instance02",target="target02",source_cluster="cluster01",check="probe",service="critical-service",severity="high"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+      - series: multicluster_probe_up{instance="instance02",job="critical-service",check="probe-multicluster",service="critical-service"}
+        values: 1x55
+    alert_rule_test:
+      - eval_time: 39m
+        alertname: ProbeAlert
+        exp_alerts: []
+
+  # ProbeAlertHigh: service with severity="high" metric label fires at high severity (not SLO)
+  - interval: 1m
+    input_series:
+      - series: konflux_up{job="critical-service",instance="instance02",target="target02",source_cluster="cluster01",check="probe",service="critical-service",severity="high"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+      - series: konflux_up{job="critical-service",instance="instance02",target="target02",source_cluster="cluster02",check="probe",service="critical-service",severity="high"}
+        values: 1x44
+      - series: multicluster_probe_up{instance="instance02",job="critical-service",check="probe-multicluster",service="critical-service"}
+        values: 1x55
+    alert_rule_test:
+      - eval_time: 39m
+        alertname: ProbeAlertHigh
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              instance: instance02
+              job: critical-service
+              target: target02
+              source_cluster: cluster01
+              check: probe
+              service: critical-service
+              slo: "false"
+            exp_annotations:
+              description: 'Probe on cluster01 is unable to connect to instance02 (critical-service) for the last 25 minutes. At least 80% of Konflux clusters successfully connect to instance02.'
+              summary: Probe alert critical-service.
+              alert_routing_key: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/exporters/blackbox/probe-alerts.md
+
+  # Shared instance across jobs (e.g. github-actions vs github-webhooks on githubstatus.com):
+  # when one job is down multicluster-wide, ProbeAlert must not fire via another job's healthy multicluster_probe_up.
+  - interval: 1m
+    input_series:
+      - series: konflux_up{job="github-actions",instance="https://www.githubstatus.com/api/v2/components.json",target="github-actions",source_cluster="cluster01",check="probe",service="github-actions"}
+        values: 0x44
+      - series: multicluster_probe_up{instance="https://www.githubstatus.com/api/v2/components.json",job="github-actions",check="probe-multicluster",service="github-actions"}
+        values: 0x55
+      - series: multicluster_probe_up{instance="https://www.githubstatus.com/api/v2/components.json",job="github-webhooks",check="probe-multicluster",service="github-webhooks"}
+        values: 1x55
+    alert_rule_test:
+      - eval_time: 39m
+        alertname: ProbeAlert
+        exp_alerts: []
+
+  - interval: 1m
+    input_series:
+      - series: multicluster_probe_up{instance="instance01",job="web-server",check="probe-multicluster",service="web-server"}
         values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
     alert_rule_test:
       - eval_time: 39m
@@ -47,14 +103,27 @@ tests:
           - exp_labels:
               severity: critical
               instance: instance01
+              job: web-server
               slo: "true"
               check: probe-multicluster
               service: web-server
             exp_annotations:
-              description: 'More than 20% of Konflux cluster probes are failing to connect to instance01 for the last 25 minutes.'
-              summary: Probe alert instance01 in multiple clusters.
+              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.probe_alerts.yaml#L48
+              description: 'More than 20% of Konflux cluster probes are failing to connect to instance01 (web-server) for the last 25 minutes.'
+              summary: Probe alert web-server (instance01) in multiple clusters.
               alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/exporters/blackbox/probe-alerts.md
+
+  # konflux-ui is a per-cluster service; a single-cluster outage must not fire the
+  # fleet-wide MultiClusterProbeAlert.
+  - interval: 1m
+    input_series:
+      - series: multicluster_probe_up{instance="instance01",job="konflux-ui",check="probe-multicluster",service="konflux-ui"}
+        values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+    alert_rule_test:
+      - eval_time: 39m
+        alertname: MultiClusterProbeAlert
+        exp_alerts: []
 
   - interval: 1m
     input_series:
@@ -71,6 +140,7 @@ tests:
               check: probe-multicluster
               service: quay
             exp_annotations:
+              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.probe_alerts.yaml#L67
               description: 'Quay probes from more than 20% of Konflux clusters are unable to connect to instance01 for the last 20 minutes.'
               summary: Quay Probe alert instance01 in multiple clusters.
               alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG> <!subteam^S01B3J0AEEL>'
@@ -93,11 +163,11 @@ tests:
               service: s390x-static-host
               slo: 'true'
             exp_annotations:
+              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.probe_alerts.yaml#L86
               description: 'Probe alert for job s390x-static-host on cluster cluster01.'
               summary: Infra S390x Static Host Probe alert s390x-static-host.
               alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/static_host_probe_alerts.md
-
 
   - interval: 1m
     input_series:
@@ -116,6 +186,7 @@ tests:
               service: ppc-static-host
               slo: 'true'
             exp_annotations:
+              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.probe_alerts.yaml#L106
               description: 'Probe alert for job ppc-static-host on cluster cluster01.'
               summary: Infra PPC Static Host Probe alert ppc-static-host.
               alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
@@ -127,6 +198,11 @@ tests:
         values: 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 
     alert_rule_test:
+      # Boundary check at 33m (19m after drop): strictly less than for: 20m -> must NOT fire
+      - eval_time: 33m
+        alertname: PWVSProbeAlert
+        exp_alerts: []
+      # Fire check at 35m (21m after drop): exceeds for: 20m -> MUST fire
       - eval_time: 35m
         alertname: PWVSProbeAlert
         exp_alerts:
@@ -139,7 +215,42 @@ tests:
               service: pwvs
               slo: 'true'
             exp_annotations:
+              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.probe_alerts.yaml#L126
               description: 'Probe alert for job pwvs and target net01 on cluster cluster01.'
               summary: PWVS Probe alert pwvs.
               alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/vpn_probe_alerts.md
+
+  # =========================================================================
+  # NEW TEST: PWVS Recording Rule - Smoothing and Threshold-Boundary Test
+  # =========================================================================
+  - interval: 1m
+    input_series:
+      # Target 1 (Smoothing): Fails for only 2 minutes out of 10.
+      # 10m average is 0.8. Since 0.8 >= 0.7, konflux_up should remain 1.
+      - series: probe_success{job="pwvs", target="net01", source_cluster="cluster01"}
+        values: 1x8 0x2 1x5
+
+      # Target 2 (Failing-sample): 10m lookback at eval_time 12m contains 7 failures.
+      # 10m average drops to 0.3. Since 0.3 < 0.7, konflux_up should drop to 0.
+      - series: probe_success{job="pwvs", target="net02", source_cluster="cluster01"}
+        values: 1x6 0x9
+
+    promql_expr_test:
+      - expr: |
+          clamp_max(
+            label_replace(
+              label_replace(
+                  sum by (job,target,source_cluster) (avg_over_time(probe_success{job=~".*pwvs"}[10m])) / count by (job,target,source_cluster) (avg_over_time(probe_success{job=~".*pwvs"}[10m])) >= bool 0.7
+                , "check", "probe-pwvs", "",""
+              ), "service", "$1", "job", "(.*)"
+            ), 1
+          )
+        eval_time: 12m
+        exp_samples:
+          # Assert Target 1 stayed UP (absorbed the transient blip)
+          - labels: '{job="pwvs", target="net01", source_cluster="cluster01", check="probe-pwvs", service="pwvs"}'
+            value: 1
+          # Assert Target 2 went DOWN (caught the sustained outage)
+          - labels: '{job="pwvs", target="net02", source_cluster="cluster01", check="probe-pwvs", service="pwvs"}'
+            value: 0

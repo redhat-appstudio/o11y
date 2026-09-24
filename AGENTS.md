@@ -38,5 +38,5 @@ See docs/CICD.md for details.
 
 ## Conventions
 
-- Commit messages follow [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) — include Jira ticket ID (e.g. `STONEO11Y-123`) when applicable
+- Commit messages follow [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) — include Jira ticket ID {JIRA_PROJECT}-{JIRA_ID} (e.g. `PVO11Y-123`) when applicable
 - Review channel: `#forum-konflux-o11y` on Slack, tag `@konflux-o11y-ic`

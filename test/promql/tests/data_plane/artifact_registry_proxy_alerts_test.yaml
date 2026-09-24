@@ -25,6 +25,7 @@ tests:
               service: artifact-registry-proxy
               source_cluster: cluster01
             exp_annotations:
+              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.artifact_registry_proxy_alerts.yaml#L13
               summary: "Artifact Registry Nginx proxy is down"
               description: "Access log exporter cannot scrape the artifact registry proxy successfully in namespace caching. The proxy has been down for 5 minutes in cluster cluster01."
               alert_team_handle: "<!subteam^S07NDQV6A4D>"
@@ -52,6 +53,43 @@ tests:
     alert_rule_test:
       - eval_time: 7m
         alertname: NginxProxyDown
+        exp_alerts: []
+
+  - name: ArtifactRegistryProxyDown_Firing
+    interval: 1m
+    input_series:
+      - series: 'konflux_up{namespace="artifact-registry-proxy", service="artifact-registry-proxy", check="nginx-proxy", source_cluster="cluster03"}'
+        values: '0x10'
+
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: ArtifactRegistryProxyDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              component: artifact-registry-proxy
+              check: nginx-proxy
+              namespace: artifact-registry-proxy
+              service: artifact-registry-proxy
+              source_cluster: cluster03
+            exp_annotations:
+              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.artifact_registry_proxy_alerts.yaml#L32
+              summary: "Artifact Registry proxy is down"
+              description: "Access log exporter cannot scrape the artifact registry proxy successfully in namespace artifact-registry-proxy. The proxy has been down for 5 minutes in cluster cluster03."
+              alert_team_handle: "<!subteam^S07NDQV6A4D>"
+              team: vanguard
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/vanguard/sre/artifact-registry-proxy-down.md
+
+  - name: ArtifactRegistryProxyDown_NotFiring
+    interval: 1m
+    input_series:
+      - series: 'konflux_up{namespace="artifact-registry-proxy", service="artifact-registry-proxy", check="nginx-proxy", source_cluster="cluster03"}'
+        values: '1x10'
+
+    alert_rule_test:
+      - eval_time: 7m
+        alertname: ArtifactRegistryProxyDown
         exp_alerts: []
 
   # ========================================
@@ -107,6 +145,32 @@ tests:
       - eval_time: 15m
         alertname: NginxHighErrorRate
         exp_alerts: []
+
+  - name: NginxHighErrorRate_IndependentNamespace_Firing
+    interval: 1m
+    input_series:
+      - series: 'artifact_registry_proxy:http_requests:rate5m{namespace="artifact-registry-proxy", service="artifact-registry-proxy", source_cluster="cluster03"}'
+        values: '0 0.5 0.5 0.5 0.5 0.5 0.5+0x20'
+      - series: 'artifact_registry_proxy:http_errors:rate5m{namespace="artifact-registry-proxy", service="artifact-registry-proxy", source_cluster="cluster03"}'
+        values: '0 0.05 0.05 0.05 0.05 0.05 0.05+0x20'
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: NginxHighErrorRate
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              slo: "false"
+              component: artifact-registry-proxy
+              source_cluster: cluster03
+              namespace: artifact-registry-proxy
+              service: artifact-registry-proxy
+            exp_annotations:
+              summary: "Artifact Registry Nginx proxy has high error rate"
+              description: "More than 5% of requests to the artifact registry proxy are returning 5xx errors in cluster cluster03. Current error rate: 10%."
+              alert_team_handle: "<!subteam^S07NDQV6A4D>"
+              team: vanguard
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/vanguard/sre/artifact-registry-proxy-high-error-rate.md
 
   - name: NginxHighErrorRate_NotFiring_NoErrors
     interval: 1m

@@ -1,0 +1,1140 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-konflux-ux-slo
+  labels:
+    grafana_dashboard: "true"
+  annotations:
+    grafana-folder: /grafana-dashboard-definitions/RHTAP
+data:
+  grafana-dashboard-konflux-ux-slo.json: |-
+    {
+      "annotations": {
+        "list": [
+          {
+            "builtIn": 1,
+            "datasource": {
+              "type": "grafana",
+              "uid": "-- Grafana --"
+            },
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "type": "dashboard"
+          }
+        ]
+      },
+      "id": null,
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 0,
+      "links": [],
+      "panels": [
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          },
+          "id": 100,
+          "panels": [],
+          "title": "UX SLO Overview",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${Datasource}"
+          },
+          "description": "Composite cluster UX SLO: 1 if either >= 5% of tenants are breaching or kueue saturation exceeds 5%.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "noValue": "0",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 5,
+            "x": 0,
+            "y": 1
+          },
+          "id": 101,
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.6.11",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${Datasource}"
+              },
+              "expr": "konflux:cluster_ux_slo_breach{source_cluster=~\"$Cluster\"}",
+              "instant": true,
+              "legendFormat": "{{source_cluster}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Cluster UX SLO Breach",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${Datasource}"
+          },
+          "description": "1 if >= 5% of tenants on a cluster are breaching their duration SLO in any domain.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "noValue": "0",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 5,
+            "x": 5,
+            "y": 1
+          },
+          "id": 105,
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.6.11",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${Datasource}"
+              },
+              "expr": "konflux:aggregate_performance_slo_breach{source_cluster=~\"$Cluster\"}",
+              "instant": true,
+              "legendFormat": "{{source_cluster}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Aggregate Tenant Breach",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${Datasource}"
+          },
+          "description": "Fraction of tenants in breach of build duration SLO per cluster.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "max": 1,
+              "min": 0,
+              "noValue": "0%",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 0.01
+                  },
+                  {
+                    "color": "red",
+                    "value": 0.05
+                  }
+                ]
+              },
+              "unit": "percentunit"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 5,
+            "x": 10,
+            "y": 1
+          },
+          "id": 102,
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.6.11",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${Datasource}"
+              },
+              "expr": "konflux:tenant_performance_slo_breach_percentage{domain=\"build\", source_cluster=~\"$Cluster\"}",
+              "instant": true,
+              "legendFormat": "{{source_cluster}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Tenants: Build Breach",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${Datasource}"
+          },
+          "description": "Fraction of tenants in breach of integration duration SLO per cluster.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "max": 1,
+              "min": 0,
+              "noValue": "0%",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 0.01
+                  },
+                  {
+                    "color": "red",
+                    "value": 0.05
+                  }
+                ]
+              },
+              "unit": "percentunit"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 5,
+            "x": 15,
+            "y": 1
+          },
+          "id": 103,
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.6.11",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${Datasource}"
+              },
+              "expr": "konflux:tenant_performance_slo_breach_percentage{domain=\"integration\", source_cluster=~\"$Cluster\"}",
+              "instant": true,
+              "legendFormat": "{{source_cluster}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Tenants: Integration Breach",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${Datasource}"
+          },
+          "description": "Fraction of tenants in breach of release CR duration SLO per cluster.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "max": 1,
+              "min": 0,
+              "noValue": "0%",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "yellow",
+                    "value": 0.01
+                  },
+                  {
+                    "color": "red",
+                    "value": 0.05
+                  }
+                ]
+              },
+              "unit": "percentunit"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 6,
+            "w": 4,
+            "x": 20,
+            "y": 1
+          },
+          "id": 104,
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.6.11",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${Datasource}"
+              },
+              "expr": "konflux:tenant_performance_slo_breach_percentage{domain=\"release_cr\", source_cluster=~\"$Cluster\"}",
+              "instant": true,
+              "legendFormat": "{{source_cluster}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Tenants: Release Breach",
+          "type": "stat"
+        },
+        {
+          "collapsed": true,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 7
+          },
+          "id": 1,
+          "panels": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${Datasource}"
+              },
+              "description": "Fraction of the past 7 days where P95 wait time exceeded the statistical baseline (avg + 1σ). >5% indicates sustained degradation.",
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "thresholds"
+                  },
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green"
+                      },
+                      {
+                        "color": "yellow",
+                        "value": 0.04
+                      },
+                      {
+                        "color": "red",
+                        "value": 0.05
+                      }
+                    ]
+                  },
+                  "unit": "percentunit"
+                },
+                "overrides": []
+              },
+              "gridPos": {
+                "h": 6,
+                "w": 24,
+                "x": 0,
+                "y": 8
+              },
+              "id": 2,
+              "options": {
+                "colorMode": "background",
+                "graphMode": "none",
+                "justifyMode": "auto",
+                "orientation": "auto",
+                "reduceOptions": {
+                  "calcs": [
+                    "lastNotNull"
+                  ],
+                  "fields": "",
+                  "values": false
+                },
+                "textMode": "auto"
+              },
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${Datasource}"
+                  },
+                  "expr": "konflux_cluster:kueue_admission_wait_time_seconds:saturation_7d{source_cluster=\"$Cluster\"}",
+                  "instant": true,
+                  "legendFormat": "{{priority_class}}",
+                  "refId": "A"
+                }
+              ],
+              "title": "7-Day Saturation Ratio by Priority Class",
+              "type": "stat"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${Datasource}"
+              },
+              "description": "P95 admission wait time (1h window) with the statistical baseline threshold (avg + 1σ) overlaid.",
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "palette-classic"
+                  },
+                  "custom": {
+                    "axisBorderShow": false,
+                    "drawStyle": "line",
+                    "fillOpacity": 0,
+                    "lineWidth": 1,
+                    "pointSize": 5,
+                    "showPoints": "auto",
+                    "spanNulls": false
+                  },
+                  "unit": "s"
+                },
+                "overrides": [
+                  {
+                    "matcher": {
+                      "id": "byRegexp",
+                      "options": ".*threshold.*"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.lineStyle",
+                        "value": {
+                          "dash": [
+                            10,
+                            10
+                          ],
+                          "fill": "dash"
+                        }
+                      },
+                      {
+                        "id": "custom.fillOpacity",
+                        "value": 10
+                      },
+                      {
+                        "id": "color",
+                        "value": {
+                          "fixedColor": "red",
+                          "mode": "fixed"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              "gridPos": {
+                "h": 8,
+                "w": 24,
+                "x": 0,
+                "y": 14
+              },
+              "id": 3,
+              "options": {
+                "legend": {
+                  "calcs": [],
+                  "displayMode": "list",
+                  "placement": "bottom"
+                },
+                "tooltip": {
+                  "mode": "multi",
+                  "sort": "desc"
+                }
+              },
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${Datasource}"
+                  },
+                  "expr": "konflux_cluster:kueue_admission_wait_time_seconds:p95_1h{source_cluster=\"$Cluster\"}",
+                  "legendFormat": "{{priority_class}} - p95",
+                  "refId": "A"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${Datasource}"
+                  },
+                  "expr": "konflux_cluster:kueue_admission_wait_time_seconds:p95_1h_7d_avg{source_cluster=\"$Cluster\"}\n+\nkonflux_cluster:kueue_admission_wait_time_seconds:p95_1h_7d_stddev{source_cluster=\"$Cluster\"}",
+                  "legendFormat": "{{priority_class}} - threshold (avg+1σ)",
+                  "refId": "B"
+                }
+              ],
+              "title": "P95 Wait Time vs Baseline Threshold",
+              "type": "timeseries"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${Datasource}"
+              },
+              "description": "State timeline showing when each priority class is saturated (P95 > avg+1σ). One lane per priority class — red = saturated, green = normal.",
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "thresholds"
+                  },
+                  "mappings": [
+                    {
+                      "options": {
+                        "0": {
+                          "color": "green",
+                          "index": 0,
+                          "text": "Normal"
+                        },
+                        "1": {
+                          "color": "red",
+                          "index": 1,
+                          "text": "Saturated"
+                        }
+                      },
+                      "type": "value"
+                    }
+                  ],
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "green"
+                      },
+                      {
+                        "color": "red",
+                        "value": 1
+                      }
+                    ]
+                  }
+                },
+                "overrides": []
+              },
+              "gridPos": {
+                "h": 8,
+                "w": 24,
+                "x": 0,
+                "y": 22
+              },
+              "id": 5,
+              "options": {
+                "alignValue": "left",
+                "legend": {
+                  "displayMode": "list",
+                  "placement": "bottom"
+                },
+                "mergeValues": true,
+                "rowHeight": 0.8,
+                "showValue": "never",
+                "tooltip": {
+                  "mode": "single",
+                  "sort": "none"
+                }
+              },
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${Datasource}"
+                  },
+                  "expr": "konflux_cluster:kueue_admission_wait_time_seconds:saturated{source_cluster=\"$Cluster\"}",
+                  "legendFormat": "{{priority_class}}",
+                  "refId": "A"
+                }
+              ],
+              "title": "Saturation State Timeline",
+              "type": "state-timeline"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${Datasource}"
+              },
+              "description": "Per-tenant breach summary. Shows the fraction of components breaching in each domain. Yellow at >= 1%, red at >= 5%.",
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "thresholds"
+                  },
+                  "custom": {
+                    "align": "auto",
+                    "cellOptions": {
+                      "type": "auto"
+                    },
+                    "inspect": false
+                  },
+                  "mappings": [
+                    {
+                      "options": {
+                        "match": "null",
+                        "result": {
+                          "color": "transparent",
+                          "index": 0,
+                          "text": ""
+                        }
+                      },
+                      "type": "special"
+                    }
+                  ],
+                  "noValue": "",
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "transparent"
+                      },
+                      {
+                        "color": "green",
+                        "value": 0
+                      },
+                      {
+                        "color": "yellow",
+                        "value": 0.01
+                      },
+                      {
+                        "color": "red",
+                        "value": 0.05
+                      }
+                    ]
+                  },
+                  "unit": "percentunit"
+                },
+                "overrides": [
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Tenant"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 250
+                      },
+                      {
+                        "id": "unit",
+                        "value": "string"
+                      },
+                      {
+                        "id": "thresholds",
+                        "value": {
+                          "mode": "absolute",
+                          "steps": [
+                            {
+                              "color": "text"
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Build"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.cellOptions",
+                        "value": {
+                          "mode": "basic",
+                          "type": "gauge",
+                          "valueDisplayMode": "color"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Integration"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.cellOptions",
+                        "value": {
+                          "mode": "basic",
+                          "type": "gauge",
+                          "valueDisplayMode": "color"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Release"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.cellOptions",
+                        "value": {
+                          "mode": "basic",
+                          "type": "gauge",
+                          "valueDisplayMode": "color"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              "gridPos": {
+                "h": 10,
+                "w": 24,
+                "x": 0,
+                "y": 30
+              },
+              "id": 11,
+              "options": {
+                "cellHeight": "sm",
+                "footer": {
+                  "countRows": false,
+                  "fields": "",
+                  "reducer": [
+                    "sum"
+                  ],
+                  "show": false
+                },
+                "showHeader": true,
+                "sortBy": []
+              },
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${Datasource}"
+                  },
+                  "expr": "avg by (exported_namespace) (\n  max by (exported_namespace, application, component) (\n    konflux_build_duration_slo_breach{source_cluster=\"$Cluster\", exported_namespace=~\"$Tenant\"} == bool 1\n  )\n)",
+                  "format": "table",
+                  "instant": true,
+                  "legendFormat": "",
+                  "refId": "Build"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${Datasource}"
+                  },
+                  "expr": "avg by (exported_namespace) (\n  max by (exported_namespace, application, component) (\n    konflux_integration_duration_slo_breach{source_cluster=\"$Cluster\", exported_namespace=~\"$Tenant\"} == bool 1\n  )\n)",
+                  "format": "table",
+                  "instant": true,
+                  "legendFormat": "",
+                  "refId": "Integration"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${Datasource}"
+                  },
+                  "expr": "avg by (exported_namespace) (\n  max by (exported_namespace, application, component) (\n    konflux_release_cr_duration_slo_breach{source_cluster=\"$Cluster\", exported_namespace=~\"$Tenant\"} == bool 1\n  )\n)",
+                  "format": "table",
+                  "instant": true,
+                  "legendFormat": "",
+                  "refId": "Release"
+                }
+              ],
+              "title": "Tenant Breach Summary",
+              "transformations": [
+                {
+                  "id": "merge",
+                  "options": {}
+                },
+                {
+                  "id": "organize",
+                  "options": {
+                    "excludeByName": {
+                      "Time": true
+                    },
+                    "renameByName": {
+                      "exported_namespace": "Tenant",
+                      "Value #Build": "Build",
+                      "Value #Integration": "Integration",
+                      "Value #Release": "Release"
+                    }
+                  }
+                },
+                {
+                  "id": "sortBy",
+                  "options": {
+                    "fields": {},
+                    "sort": [
+                      {
+                        "desc": true,
+                        "field": "Build"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "type": "table"
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${Datasource}"
+              },
+              "description": "Per-component breach detail for the selected tenant. Each cell shows 1 (breaching, red) or 0 (healthy, green).",
+              "fieldConfig": {
+                "defaults": {
+                  "color": {
+                    "mode": "thresholds"
+                  },
+                  "custom": {
+                    "align": "auto",
+                    "cellOptions": {
+                      "type": "color-background",
+                      "mode": "basic"
+                    },
+                    "inspect": false
+                  },
+                  "mappings": [
+                    {
+                      "options": {
+                        "0": {
+                          "color": "green",
+                          "index": 0,
+                          "text": "OK"
+                        },
+                        "1": {
+                          "color": "red",
+                          "index": 1,
+                          "text": "BREACH"
+                        }
+                      },
+                      "type": "value"
+                    },
+                    {
+                      "options": {
+                        "match": "null",
+                        "result": {
+                          "color": "transparent",
+                          "index": 2,
+                          "text": ""
+                        }
+                      },
+                      "type": "special"
+                    }
+                  ],
+                  "noValue": "",
+                  "thresholds": {
+                    "mode": "absolute",
+                    "steps": [
+                      {
+                        "color": "transparent"
+                      },
+                      {
+                        "color": "green",
+                        "value": 0
+                      },
+                      {
+                        "color": "red",
+                        "value": 1
+                      }
+                    ]
+                  }
+                },
+                "overrides": [
+                  {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Component"
+                    },
+                    "properties": [
+                      {
+                        "id": "custom.width",
+                        "value": 250
+                      },
+                      {
+                        "id": "custom.cellOptions",
+                        "value": {
+                          "type": "auto"
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              "gridPos": {
+                "h": 10,
+                "w": 24,
+                "x": 0,
+                "y": 40
+              },
+              "id": 14,
+              "options": {
+                "cellHeight": "sm",
+                "footer": {
+                  "countRows": false,
+                  "fields": "",
+                  "reducer": [
+                    "sum"
+                  ],
+                  "show": false
+                },
+                "showHeader": true,
+                "sortBy": []
+              },
+              "targets": [
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${Datasource}"
+                  },
+                  "expr": "max by (exported_namespace, application, component) (konflux_build_duration_slo_breach{source_cluster=\"$Cluster\", exported_namespace=~\"$Tenant\"})",
+                  "format": "table",
+                  "instant": true,
+                  "legendFormat": "",
+                  "refId": "Build"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${Datasource}"
+                  },
+                  "expr": "max by (exported_namespace, application, component) (konflux_integration_duration_slo_breach{source_cluster=\"$Cluster\", exported_namespace=~\"$Tenant\"})",
+                  "format": "table",
+                  "instant": true,
+                  "legendFormat": "",
+                  "refId": "Integration"
+                },
+                {
+                  "datasource": {
+                    "type": "prometheus",
+                    "uid": "${Datasource}"
+                  },
+                  "expr": "max by (exported_namespace, application, component) (konflux_release_cr_duration_slo_breach{source_cluster=\"$Cluster\", exported_namespace=~\"$Tenant\"})",
+                  "format": "table",
+                  "instant": true,
+                  "legendFormat": "",
+                  "refId": "Release"
+                }
+              ],
+              "title": "Component Breach Detail - ${Tenant}",
+              "transformations": [
+                {
+                  "id": "merge",
+                  "options": {}
+                },
+                {
+                  "id": "organize",
+                  "options": {
+                    "excludeByName": {
+                      "Time": true
+                    },
+                    "renameByName": {
+                      "exported_namespace": "Tenant",
+                      "application": "Application",
+                      "component": "Component",
+                      "Value #Build": "Build",
+                      "Value #Integration": "Integration",
+                      "Value #Release": "Release"
+                    },
+                    "indexByName": {
+                      "exported_namespace": 0,
+                      "application": 1,
+                      "component": 2,
+                      "Value #Build": 3,
+                      "Value #Integration": 4,
+                      "Value #Release": 5
+                    }
+                  }
+                },
+                {
+                  "id": "sortBy",
+                  "options": {
+                    "fields": {},
+                    "sort": [
+                      {
+                        "desc": true,
+                        "field": "Build"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "type": "table"
+            }
+          ],
+          "repeat": "Cluster",
+          "title": "Cluster UX SLO - ${Cluster}",
+          "type": "row"
+        }
+      ],
+      "preload": false,
+      "schemaVersion": 41,
+      "tags": [],
+      "templating": {
+        "list": [
+          {
+            "allowCustomValue": false,
+            "current": {},
+            "name": "Datasource",
+            "options": [],
+            "query": "prometheus",
+            "refresh": 1,
+            "regex": "rhtap-.*",
+            "type": "datasource"
+          },
+          {
+            "allowCustomValue": false,
+            "current": {},
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${Datasource}"
+            },
+            "definition": "label_values(konflux_cluster:kueue_admission_wait_time_seconds:p95_1h, source_cluster)",
+            "includeAll": true,
+            "multi": true,
+            "name": "Cluster",
+            "options": [],
+            "query": {
+              "qryType": 1,
+              "query": "label_values(konflux_cluster:kueue_admission_wait_time_seconds:p95_1h, source_cluster)",
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "refresh": 1,
+            "regex": "",
+            "type": "query"
+          },
+          {
+            "allowCustomValue": false,
+            "current": {},
+            "datasource": {
+              "type": "prometheus",
+              "uid": "${Datasource}"
+            },
+            "definition": "label_values(konflux_build_duration_slo_breach{source_cluster=~\"$Cluster\"}, exported_namespace)",
+            "includeAll": true,
+            "multi": true,
+            "name": "Tenant",
+            "options": [],
+            "query": {
+              "qryType": 1,
+              "query": "label_values(konflux_build_duration_slo_breach{source_cluster=~\"$Cluster\"}, exported_namespace)",
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "refresh": 1,
+            "regex": "",
+            "sort": 1,
+            "type": "query"
+          }
+        ]
+      },
+      "time": {
+        "from": "now-7d",
+        "to": "now"
+      },
+      "timepicker": {},
+      "timezone": "UTC",
+      "title": "Konflux UX SLO",
+      "uid": "konflux-ux-slo"
+    }

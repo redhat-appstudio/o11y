@@ -43,3 +43,30 @@ spec:
 
         - record: nginx_otel_http_request_errors:rate24h_stddev
           expr: stddev_over_time(nginx_otel_http_request_errors:rate5m[24h])
+
+        # Konflux UI proxy (Caddy) HTTP 4xx/5xx rates from histogram _count.
+        # label_replace maps code → status for alert matchers (status=~"5..", etc.).
+        # Caddy increments _count once per middleware handler for the same request —
+        # max without (handler, method, server) collapses that to one request-level rate,
+        # then sum across pods/instances by (job, status, source_cluster).
+        - record: caddy_http_request_errors:rate5m
+          expr: |
+            sum by (job, status, source_cluster) (
+              max without (handler, method, server) (
+                label_replace(
+                  rate(
+                    caddy_http_request_duration_seconds_count{
+                      namespace="konflux-ui",
+                      code=~"4..|5.."
+                    }[5m]
+                  ),
+                  "status", "$1", "code", "(.*)"
+                )
+              )
+            )
+
+        - record: caddy_http_request_errors:rate24h_avg
+          expr: avg_over_time(caddy_http_request_errors:rate5m[24h])
+
+        - record: caddy_http_request_errors:rate24h_stddev
+          expr: stddev_over_time(caddy_http_request_errors:rate5m[24h])

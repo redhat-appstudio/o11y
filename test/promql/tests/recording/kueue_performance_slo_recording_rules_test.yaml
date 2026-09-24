@@ -1,0 +1,76 @@
+evaluation_interval: 5m
+
+rule_files:
+  - kueue_performance_slo_recording_rules.yaml
+
+tests:
+  - name: KueuePerformanceSloP95ComputationTest
+    interval: 5m
+    input_series:
+      - series: 'kueue_admission_wait_time_seconds_bucket{le="60", priority_class="test-priority", cluster_queue="cluster-pipeline-queue", source_cluster="test-cluster"}'
+        values: "0x15"
+      - series: 'kueue_admission_wait_time_seconds_bucket{le="120", priority_class="test-priority", cluster_queue="cluster-pipeline-queue", source_cluster="test-cluster"}'
+        values: "0+1x15"
+      - series: 'kueue_admission_wait_time_seconds_bucket{le="300", priority_class="test-priority", cluster_queue="cluster-pipeline-queue", source_cluster="test-cluster"}'
+        values: "0+1x15"
+      - series: 'kueue_admission_wait_time_seconds_bucket{le="+Inf", priority_class="test-priority", cluster_queue="cluster-pipeline-queue", source_cluster="test-cluster"}'
+        values: "0+1x15"
+    promql_expr_test:
+      - expr: konflux_cluster:kueue_admission_wait_time_seconds:p95_1h
+        eval_time: 60m
+        exp_samples:
+          - labels: 'konflux_cluster:kueue_admission_wait_time_seconds:p95_1h{priority_class="test-priority", source_cluster="test-cluster"}'
+            value: 117
+
+  - name: KueuePerformanceSloNoOutputForNonMatchingQueueTest
+    interval: 5m
+    input_series:
+      - series: 'kueue_admission_wait_time_seconds_bucket{le="60", priority_class="test-priority", cluster_queue="other-queue", source_cluster="test-cluster"}'
+        values: "0x15"
+      - series: 'kueue_admission_wait_time_seconds_bucket{le="120", priority_class="test-priority", cluster_queue="other-queue", source_cluster="test-cluster"}'
+        values: "0+1x15"
+      - series: 'kueue_admission_wait_time_seconds_bucket{le="+Inf", priority_class="test-priority", cluster_queue="other-queue", source_cluster="test-cluster"}'
+        values: "0+1x15"
+    promql_expr_test:
+      - expr: konflux_cluster:kueue_admission_wait_time_seconds:p95_1h
+        eval_time: 60m
+        exp_samples: []
+
+  - name: KueuePerformanceSloBaselineAndSaturationChainTest
+    interval: 5m
+    input_series:
+      - series: 'konflux_cluster:kueue_admission_wait_time_seconds:p95_1h{priority_class="test-priority", source_cluster="test-cluster"}'
+        values: "100x130"
+    promql_expr_test:
+      - expr: konflux_cluster:kueue_admission_wait_time_seconds:p95_1h_7d_avg
+        eval_time: 600m
+        exp_samples:
+          - labels: 'konflux_cluster:kueue_admission_wait_time_seconds:p95_1h_7d_avg{priority_class="test-priority", source_cluster="test-cluster"}'
+            value: 100
+      - expr: konflux_cluster:kueue_admission_wait_time_seconds:p95_1h_7d_stddev
+        eval_time: 600m
+        exp_samples:
+          - labels: 'konflux_cluster:kueue_admission_wait_time_seconds:p95_1h_7d_stddev{priority_class="test-priority", source_cluster="test-cluster"}'
+            value: 0
+      - expr: konflux_cluster:kueue_admission_wait_time_seconds:saturated
+        eval_time: 600m
+        exp_samples:
+          - labels: 'konflux_cluster:kueue_admission_wait_time_seconds:saturated{priority_class="test-priority", source_cluster="test-cluster"}'
+            value: 0
+      - expr: konflux_cluster:kueue_admission_wait_time_seconds:saturation_7d
+        eval_time: 600m
+        exp_samples:
+          - labels: 'konflux_cluster:kueue_admission_wait_time_seconds:saturation_7d{priority_class="test-priority", source_cluster="test-cluster"}'
+            value: 0
+
+  - name: KueuePerformanceSloSaturatedIndicatorFiresTest
+    interval: 5m
+    input_series:
+      - series: 'konflux_cluster:kueue_admission_wait_time_seconds:p95_1h{priority_class="test-priority", source_cluster="test-cluster"}'
+        values: "100x100 500x30"
+    promql_expr_test:
+      - expr: konflux_cluster:kueue_admission_wait_time_seconds:saturated
+        eval_time: 505m
+        exp_samples:
+          - labels: 'konflux_cluster:kueue_admission_wait_time_seconds:saturated{priority_class="test-priority", source_cluster="test-cluster"}'
+            value: 1

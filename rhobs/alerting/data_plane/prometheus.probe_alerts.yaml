@@ -12,14 +12,15 @@ spec:
 
       - alert: ProbeAlert
         expr: |
-          konflux_up{check="probe", service!~".*-vpn|.*static-host|.*pwvs"} != 1
-          and on(instance)
+          konflux_up{check="probe", service!~".*-vpn|.*static-host|.*pwvs", severity!="high"} != 1
+          and on(instance, job)
           (multicluster_probe_up == 1)
         for: 25m
         labels:
           severity: critical
           slo: "true"
         annotations:
+          html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.probe_alerts.yaml#L13
           summary: >-
              Probe alert {{ $labels.job }}.
           description: >-
@@ -27,21 +28,39 @@ spec:
           alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
           runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/exporters/blackbox/probe-alerts.md
 
+      - alert: ProbeAlertHigh
+        expr: |
+          konflux_up{check="probe", service!~".*-vpn|.*static-host|.*pwvs", severity="high"} != 1
+          and on(instance, job)
+          (multicluster_probe_up == 1)
+        for: 25m
+        labels:
+          severity: high
+          slo: "false"
+        annotations:
+          summary: >-
+             Probe alert {{ $labels.job }}.
+          description: >-
+             Probe on {{ $labels.source_cluster }} is unable to connect to {{ $labels.instance }} ({{ $labels.job }}) for the last 25 minutes. At least 80% of Konflux clusters successfully connect to {{ $labels.instance }}.
+          alert_routing_key: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/exporters/blackbox/probe-alerts.md
+
       - alert: MultiClusterProbeAlert
         expr: |
           multicluster_probe_up{
           check="probe-multicluster",
-          service!~".*-vpn|.*static-host|.*pwvs|quay|api-server|openshift-ui"
+          service!~".*-vpn|.*static-host|.*pwvs|quay|api-server|openshift-ui|konflux-ui"
           } != 1
         for: 25m
         labels:
           severity: critical
           slo: "true"
         annotations:
+          html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.probe_alerts.yaml#L48
           summary: >-
-             Probe alert {{ $labels.instance }} in multiple clusters.
+             Probe alert {{ $labels.job }} ({{ $labels.instance }}) in multiple clusters.
           description: >-
-             More than 20% of Konflux cluster probes are failing to connect to {{ $labels.instance }} for the last 25 minutes.
+             More than 20% of Konflux cluster probes are failing to connect to {{ $labels.instance }} ({{ $labels.job }}) for the last 25 minutes.
           alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
           runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/exporters/blackbox/probe-alerts.md
 
@@ -56,6 +75,7 @@ spec:
           severity: critical
           slo: "true"
         annotations:
+          html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.probe_alerts.yaml#L67
           summary: >-
              Quay Probe alert {{ $labels.instance }} in multiple clusters.
           description: >-
@@ -74,13 +94,13 @@ spec:
           severity: critical
           slo: "true"
         annotations:
+          html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.probe_alerts.yaml#L86
           summary: >-
              Infra S390x Static Host Probe alert {{ $labels.job }}.
           description: >-
              Probe alert for job {{ $labels.job }} on cluster {{ $labels.source_cluster }}.
           alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
           runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/static_host_probe_alerts.md
-
 
       - alert: PPCStaticHostProbeAlert
         expr: |
@@ -93,6 +113,7 @@ spec:
           severity: critical
           slo: "true"
         annotations:
+          html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.probe_alerts.yaml#L106
           summary: >-
              Infra PPC Static Host Probe alert {{ $labels.job }}.
           description: >-
@@ -100,18 +121,18 @@ spec:
           alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
           runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/static_host_probe_alerts.md
 
-
       - alert: PWVSProbeAlert
         expr: |
           konflux_up{
           check="probe-pwvs",
           service=~".*pwvs"
           } != 1
-        for: 15m
+        for: 20m
         labels:
           severity: critical
           slo: "true"
         annotations:
+          html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.probe_alerts.yaml#L126
           summary: >-
              PWVS Probe alert {{ $labels.job }}.
           description: >-

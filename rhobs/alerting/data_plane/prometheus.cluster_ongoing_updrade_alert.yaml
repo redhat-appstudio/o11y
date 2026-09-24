@@ -12,9 +12,12 @@ spec:
       rules:
         - alert: ClusterUpgradeOngoing
           expr: >-
-            (aus_cluster_version_remaining_soak_days <= -2 >= -3)
-            * on(cluster_uuid) group_left(cluster_name, current_version)
-            aus_cluster_upgrade_policy_info{org_name="RHTAP"}
+            label_replace(
+              (aus_cluster_version_remaining_soak_days <= -2 >= -3)
+              * on(cluster_uuid) group_left(cluster_name, current_version)
+              aus_cluster_upgrade_policy_info{org_name="RHTAP"},
+              "source_cluster", "$1", "cluster_name", "(.*)"
+            )
           for: 1m
           labels:
             severity: info

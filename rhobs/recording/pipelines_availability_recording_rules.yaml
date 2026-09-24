@@ -18,8 +18,16 @@ spec:
                 label_replace(
                   floor(
                     kube_deployment_status_replicas_available{
-                      namespace=~"openshift-pipelines|tekton-results"
-                    } / clamp_min(kube_deployment_spec_replicas{namespace=~"openshift-pipelines|tekton-results"}, 1)
+                      namespace=~"openshift-pipelines|tekton-results",
+                      # Disable recording the konflux_up signal for deployments which are scaled to zero
+                      deployment!~"tekton-events-controller|tekton-results-retention-policy-agent"
+                    } /
+                    clamp_min(
+                      kube_deployment_spec_replicas{
+                        namespace=~"openshift-pipelines|tekton-results"
+                      },
+                      1
+                    )
                   ), "check", "replicas-available", "",""
                 ), "service", "$1", "deployment","(.*)"
               ), 1
@@ -33,8 +41,14 @@ spec:
                 label_replace(
                   floor(
                     kube_statefulset_status_replicas_available{
-                      namespace=~"openshift-pipelines|tekton-results"
-                    } / clamp_min(kube_statefulset_replicas{namespace=~"openshift-pipelines|tekton-results"},1)
+                      namespace=~"openshift-pipelines|tekton-results",
+                    } /
+                    clamp_min(
+                        kube_statefulset_replicas{
+                          namespace=~"openshift-pipelines|tekton-results"
+                        },
+                      1
+                    )
                   ), "check", "replicas-available", "",""
                 ), "service", "$1", "statefulset","(.*)"
               ), 1

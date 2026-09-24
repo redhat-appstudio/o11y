@@ -1,0 +1,430 @@
+evaluation_interval: 5m
+
+rule_files:
+  - ux_slo_aggregate_recording_rules.yaml
+
+tests:
+  # --- Layer 1: Per-domain breach percentage ---
+
+  - name: BuildBreachPercentageWithSomeTenantsBreaching
+    interval: 5m
+    input_series:
+      # Tenant A: 2 components, one breaching
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-a", application="app1", component="comp1"}'
+        values: "1x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-a", application="app1", component="comp2"}'
+        values: "0x5"
+      # Tenant B: not breaching
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-b", application="app1", component="comp1"}'
+        values: "0x5"
+      # Tenant C: not breaching
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-c", application="app1", component="comp1"}'
+        values: "0x5"
+    promql_expr_test:
+      # 1 out of 3 tenants breaching = 0.333
+      - expr: konflux:tenant_performance_slo_breach_percentage{domain="build"}
+        eval_time: 5m
+        exp_samples:
+          - labels: 'konflux:tenant_performance_slo_breach_percentage{domain="build", source_cluster="cluster-1"}'
+            value: 0.3333333333333333
+
+  - name: BuildBreachPercentageMultiClusterIsolation
+    interval: 5m
+    input_series:
+      # Cluster-1: 1 of 2 tenants breaching = 0.5
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-a", application="app1", component="comp1"}'
+        values: "1x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-b", application="app1", component="comp1"}'
+        values: "0x5"
+      # Cluster-2: 0 of 3 tenants breaching = 0
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-2", exported_namespace="tenant-c", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-2", exported_namespace="tenant-d", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-2", exported_namespace="tenant-e", application="app1", component="comp1"}'
+        values: "0x5"
+    promql_expr_test:
+      - expr: konflux:tenant_performance_slo_breach_percentage{domain="build"}
+        eval_time: 5m
+        exp_samples:
+          - labels: 'konflux:tenant_performance_slo_breach_percentage{domain="build", source_cluster="cluster-1"}'
+            value: 0.5
+          - labels: 'konflux:tenant_performance_slo_breach_percentage{domain="build", source_cluster="cluster-2"}'
+            value: 0
+
+  - name: BuildBreachPercentageNoTenantsBreaching
+    interval: 5m
+    input_series:
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-a", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-b", application="app1", component="comp1"}'
+        values: "0x5"
+    promql_expr_test:
+      # No tenants breaching -> 0/2 = 0
+      - expr: konflux:tenant_performance_slo_breach_percentage{domain="build"}
+        eval_time: 5m
+        exp_samples:
+          - labels: 'konflux:tenant_performance_slo_breach_percentage{domain="build", source_cluster="cluster-1"}'
+            value: 0
+
+  - name: IntegrationBreachPercentageTest
+    interval: 5m
+    input_series:
+      - series: 'konflux_integration_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-a", application="app1", component="comp1", scenario="sc1"}'
+        values: "1x5"
+      - series: 'konflux_integration_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-b", application="app1", component="comp1", scenario="sc1"}'
+        values: "1x5"
+    promql_expr_test:
+      # 2 out of 2 tenants breaching = 1.0
+      - expr: konflux:tenant_performance_slo_breach_percentage{domain="integration"}
+        eval_time: 5m
+        exp_samples:
+          - labels: 'konflux:tenant_performance_slo_breach_percentage{domain="integration", source_cluster="cluster-1"}'
+            value: 1
+
+  - name: ReleaseBreachPercentageTest
+    interval: 5m
+    input_series:
+      - series: 'konflux_release_cr_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-a", application="app1", component="comp1"}'
+        values: "1x5"
+      - series: 'konflux_release_cr_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-b", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_release_cr_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-c", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_release_cr_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-d", application="app1", component="comp1"}'
+        values: "0x5"
+    promql_expr_test:
+      # 1 out of 4 tenants breaching = 0.25
+      - expr: konflux:tenant_performance_slo_breach_percentage{domain="release_cr"}
+        eval_time: 5m
+        exp_samples:
+          - labels: 'konflux:tenant_performance_slo_breach_percentage{domain="release_cr", source_cluster="cluster-1"}'
+            value: 0.25
+
+  # --- Layer 2: Aggregate performance SLO breach ---
+
+  - name: AggregatePerformanceSloBreachFiresAbove5Percent
+    interval: 5m
+    input_series:
+      # 1 tenant breaching build out of 10 = 10% -> should fire
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-01", application="app1", component="comp1"}'
+        values: "1x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-02", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-03", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-04", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-05", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-06", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-07", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-08", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-09", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-10", application="app1", component="comp1"}'
+        values: "0x5"
+      # Integration and release: all healthy
+      - series: 'konflux_integration_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-01", application="app1", component="comp1", scenario="sc1"}'
+        values: "0x5"
+      - series: 'konflux_release_cr_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-01", application="app1", component="comp1"}'
+        values: "0x5"
+    promql_expr_test:
+      # 1/10 = 10% >= 5% -> breach = 1
+      - expr: konflux:aggregate_performance_slo_breach
+        eval_time: 5m
+        exp_samples:
+          - labels: 'konflux:aggregate_performance_slo_breach{source_cluster="cluster-1"}'
+            value: 1
+
+  - name: AggregatePerformanceSloBreachWithBuildOnly
+    interval: 5m
+    input_series:
+      # Cluster with only build data, no integration or release metrics
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-a", application="app1", component="comp1"}'
+        values: "1x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-b", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-c", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-d", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-e", application="app1", component="comp1"}'
+        values: "0x5"
+    promql_expr_test:
+      # 1/5 = 20% >= 5% -> breach = 1
+      - expr: konflux:aggregate_performance_slo_breach
+        eval_time: 5m
+        exp_samples:
+          - labels: 'konflux:aggregate_performance_slo_breach{source_cluster="cluster-1"}'
+            value: 1
+
+  - name: AggregatePerformanceSloNoBreachBelow5Percent
+    interval: 5m
+    input_series:
+      # 1 tenant breaching out of 21 = 4.76% < 5% -> should NOT fire
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-01", application="app1", component="comp1"}'
+        values: "1x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-02", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-03", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-04", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-05", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-06", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-07", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-08", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-09", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-10", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-11", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-12", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-13", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-14", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-15", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-16", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-17", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-18", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-19", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-20", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-21", application="app1", component="comp1"}'
+        values: "0x5"
+    promql_expr_test:
+      # 1/21 = 4.76% < 5% -> breach = 0
+      - expr: konflux:aggregate_performance_slo_breach
+        eval_time: 5m
+        exp_samples:
+          - labels: 'konflux:aggregate_performance_slo_breach{source_cluster="cluster-1"}'
+            value: 0
+
+  - name: AggregatePerformanceSloBreachAtExact5PercentBoundary
+    interval: 5m
+    input_series:
+      # 1 tenant breaching out of 20 = exactly 5% -> should fire (>= 0.05)
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-01", application="app1", component="comp1"}'
+        values: "1x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-02", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-03", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-04", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-05", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-06", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-07", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-08", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-09", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-10", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-11", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-12", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-13", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-14", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-15", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-16", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-17", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-18", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-19", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-20", application="app1", component="comp1"}'
+        values: "0x5"
+    promql_expr_test:
+      # 1/20 = 5.0% >= 5% -> breach = 1
+      - expr: konflux:aggregate_performance_slo_breach
+        eval_time: 5m
+        exp_samples:
+          - labels: 'konflux:aggregate_performance_slo_breach{source_cluster="cluster-1"}'
+            value: 1
+
+  - name: AggregatePerformanceSloBreachFromIntegrationDomain
+    interval: 5m
+    input_series:
+      # All build healthy, but 1 integration breaching out of 5 tenants = 20%
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-a", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-b", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-c", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-d", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-e", application="app1", component="comp1"}'
+        values: "0x5"
+      - series: 'konflux_integration_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-a", application="app1", component="comp1", scenario="sc1"}'
+        values: "1x5"
+      - series: 'konflux_integration_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-b", application="app1", component="comp1", scenario="sc1"}'
+        values: "0x5"
+    promql_expr_test:
+      # 1/5 = 20% >= 5% -> breach = 1
+      - expr: konflux:aggregate_performance_slo_breach
+        eval_time: 5m
+        exp_samples:
+          - labels: 'konflux:aggregate_performance_slo_breach{source_cluster="cluster-1"}'
+            value: 1
+
+  - name: AggregatePerformanceSloBreachFromReleaseDomain
+    interval: 5m
+    input_series:
+      # All build healthy, 1 release_cr breaching out of 5 tenants = 20%
+      # Domain-specific labels (build_type, automated) ensure or doesn't dedup
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-a", application="app1", component="comp1", build_type="docker", event_type="push"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-b", application="app1", component="comp1", build_type="docker", event_type="push"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-c", application="app1", component="comp1", build_type="docker", event_type="push"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-d", application="app1", component="comp1", build_type="docker", event_type="push"}'
+        values: "0x5"
+      - series: 'konflux_build_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-e", application="app1", component="comp1", build_type="docker", event_type="push"}'
+        values: "0x5"
+      - series: 'konflux_release_cr_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-a", application="app1", component="comp1", automated="true", event_type="push"}'
+        values: "1x5"
+      - series: 'konflux_release_cr_duration_slo_breach{source_cluster="cluster-1", exported_namespace="tenant-b", application="app1", component="comp1", automated="true", event_type="push"}'
+        values: "0x5"
+    promql_expr_test:
+      # 1/5 = 20% >= 5% -> breach = 1
+      - expr: konflux:aggregate_performance_slo_breach
+        eval_time: 5m
+        exp_samples:
+          - labels: 'konflux:aggregate_performance_slo_breach{source_cluster="cluster-1"}'
+            value: 1
+
+  # --- Layer 3: Cluster-level breach ---
+
+  - name: ClusterUxSloBreachFromAggregateOnly
+    interval: 5m
+    input_series:
+      - series: 'konflux:aggregate_performance_slo_breach{source_cluster="cluster-1"}'
+        values: "1x5"
+      - series: 'konflux_cluster:kueue_admission_wait_time_seconds:saturation_7d{priority_class="pre-merge-build", source_cluster="cluster-1"}'
+        values: "0.03x5"
+    promql_expr_test:
+      - expr: konflux:cluster_ux_slo_breach
+        eval_time: 5m
+        exp_samples:
+          - labels: 'konflux:cluster_ux_slo_breach{source_cluster="cluster-1"}'
+            value: 1
+
+  - name: ClusterUxSloBreachFromKueueOnly
+    interval: 5m
+    input_series:
+      # One priority class above threshold, one below -- max should pick up the breach
+      - series: 'konflux:aggregate_performance_slo_breach{source_cluster="cluster-1"}'
+        values: "0x5"
+      - series: 'konflux_cluster:kueue_admission_wait_time_seconds:saturation_7d{priority_class="pre-merge-build", source_cluster="cluster-1"}'
+        values: "0.03x5"
+      - series: 'konflux_cluster:kueue_admission_wait_time_seconds:saturation_7d{priority_class="post-merge-build", source_cluster="cluster-1"}'
+        values: "0.06x5"
+    promql_expr_test:
+      - expr: konflux:cluster_ux_slo_breach
+        eval_time: 5m
+        exp_samples:
+          - labels: 'konflux:cluster_ux_slo_breach{source_cluster="cluster-1"}'
+            value: 1
+
+  - name: ClusterUxSloBreachFromBothSources
+    interval: 5m
+    input_series:
+      - series: 'konflux:aggregate_performance_slo_breach{source_cluster="cluster-1"}'
+        values: "1x5"
+      - series: 'konflux_cluster:kueue_admission_wait_time_seconds:saturation_7d{priority_class="pre-merge-build", source_cluster="cluster-1"}'
+        values: "0.06x5"
+    promql_expr_test:
+      - expr: konflux:cluster_ux_slo_breach
+        eval_time: 5m
+        exp_samples:
+          - labels: 'konflux:cluster_ux_slo_breach{source_cluster="cluster-1"}'
+            value: 1
+
+  - name: ClusterUxSloEmitsZeroForKueueOnlyCluster
+    interval: 5m
+    input_series:
+      # Cluster with kueue data but no tenant breach data
+      - series: 'konflux_cluster:kueue_admission_wait_time_seconds:saturation_7d{priority_class="pre-merge-build", source_cluster="cluster-1"}'
+        values: "0.03x5"
+    promql_expr_test:
+      - expr: konflux:cluster_ux_slo_breach
+        eval_time: 5m
+        exp_samples:
+          - labels: 'konflux:cluster_ux_slo_breach{source_cluster="cluster-1"}'
+            value: 0
+
+  - name: ClusterUxSloBreachFromKueueOnlyCluster
+    interval: 5m
+    input_series:
+      # Cluster with kueue data only (no tenant breach data), kueue breaching
+      - series: 'konflux_cluster:kueue_admission_wait_time_seconds:saturation_7d{priority_class="pre-merge-build", source_cluster="cluster-1"}'
+        values: "0.06x5"
+    promql_expr_test:
+      - expr: konflux:cluster_ux_slo_breach
+        eval_time: 5m
+        exp_samples:
+          - labels: 'konflux:cluster_ux_slo_breach{source_cluster="cluster-1"}'
+            value: 1
+
+  - name: ClusterUxSloWithTenantIdLabelCollision
+    interval: 5m
+    input_series:
+      # Simulates RHOBS injecting tenant_id into all metrics.
+      # max by (source_cluster) drops tenant_id from kueue, causing label
+      # mismatch with aggregate (which keeps tenant_id). The or chain then
+      # produces two series for the same source_cluster that collide after
+      # rule labels are applied.
+      - series: 'konflux:aggregate_performance_slo_breach{source_cluster="cluster-1", tenant_id="rhobs-tenant"}'
+        values: "1x5"
+      - series: 'konflux_cluster:kueue_admission_wait_time_seconds:saturation_7d{priority_class="pre-merge-build", source_cluster="cluster-1", tenant_id="rhobs-tenant"}'
+        values: "0.03x5"
+    promql_expr_test:
+      # Should produce exactly ONE series. With max by (source_cluster), it
+      # produces TWO (one with tenant_id, one without) which is the bug.
+      - expr: konflux:cluster_ux_slo_breach
+        eval_time: 5m
+        exp_samples:
+          - labels: 'konflux:cluster_ux_slo_breach{source_cluster="cluster-1", tenant_id="rhobs-tenant"}'
+            value: 1
+
+  - name: ClusterUxSloNoBreachWhenBothHealthy
+    interval: 5m
+    input_series:
+      - series: 'konflux:aggregate_performance_slo_breach{source_cluster="cluster-1"}'
+        values: "0x5"
+      - series: 'konflux_cluster:kueue_admission_wait_time_seconds:saturation_7d{priority_class="pre-merge-build", source_cluster="cluster-1"}'
+        values: "0.04x5"
+    promql_expr_test:
+      - expr: konflux:cluster_ux_slo_breach
+        eval_time: 5m
+        exp_samples:
+          - labels: 'konflux:cluster_ux_slo_breach{source_cluster="cluster-1"}'
+            value: 0

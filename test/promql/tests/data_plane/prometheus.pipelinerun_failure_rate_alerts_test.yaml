@@ -1,0 +1,33 @@
+evaluation_interval: 1m
+
+rule_files:
+  - "prometheus.pipelinerun_failure_rate_alerts.yaml"
+
+tests:
+  - interval: 1m
+    input_series:
+      # Series 1: Failed pipelines (increases by 2 every minute)
+      - series: 'tekton_pipelines_controller_pipelinerun_total{status="failed", source_cluster="cluster-1", tenant_id="tenant-a"}'
+        values: '0 2 4 6 8 10 12 14 16 18 20 22 24 26 28 30 32 34 36 38 40'
+
+      # Series 2: Successful pipelines (stays at 0 to ensure failure rate > 60%)
+      - series: 'tekton_pipelines_controller_pipelinerun_total{status="success", source_cluster="cluster-1", tenant_id="tenant-a"}'
+        values: '0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0'
+
+    alert_rule_test:
+      # Evaluate at 20m to give the `for: 15m` condition enough time to fully fire
+      - eval_time: 20m
+        alertname: KonfluxTenantHighPipelineFailureRate
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              component: konflux-pipelines
+              source_cluster: cluster-1
+              tenant_id: tenant-a
+            exp_annotations:
+              summary: High pipeline failure rate detected for tenant in cluster cluster-1
+              description: >
+                Tenant tenant-a on cluster cluster-1 has a failure rate exceeding 60% with at least 5 failed pipelines over the last hour.
+              team: konflux-spre
+              alert_routing_key: "<!subteam^S06V06A36F5>"

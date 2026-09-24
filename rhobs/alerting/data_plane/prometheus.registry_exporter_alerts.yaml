@@ -11,19 +11,45 @@ spec:
     rules:
     - alert: RegistryExporterDown
       expr: |
-        konflux_up{service="registry-exporter"} != 1
-      for: 15m
+        max by (source_cluster) (up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor"}) == 0
+      for: 5m
       labels:
         severity: critical
         slo: "true"
         component: registry-exporter
       annotations:
+        html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.registry_exporter_alerts.yaml#L12
         summary: >-
-          Registry exporter check failed for registry {{ $labels.check }} in cluster {{ $labels.source_cluster }}
+          Registry exporter is down in cluster {{ $labels.source_cluster }}
         description: >-
-          The registry exporter has failed to successfully test registry {{ $labels.check }} in cluster {{ $labels.source_cluster }}.
-          All registry test operations (pull, push, metadata, authentication) have been failing for 15 minutes.
+          All registry exporter pods are unscrapable in cluster {{ $labels.source_cluster }}.
+          Prometheus has been unable to scrape any registry exporter pod for 5 minutes.
         alert_team_handle: '<!subteam^S06LGCC3C2V>'
+        team: o11y
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
+
+  - name: registry-outage-cluster-wide
+    interval: 1m
+    rules:
+    - alert: RegistryOutageClusterWide
+      expr: |
+        (konflux_up{service="registry-exporter"} != 1)
+        and on (source_cluster)
+        (max by (source_cluster) (
+          up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor"}
+        ) == 1)
+      for: 10m
+      labels:
+        severity: critical
+        slo: "true"
+        component: registry-exporter
+      annotations:
+        html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.registry_exporter_alerts.yaml#L34
+        summary: >-
+          Registry {{ $labels.check }} outage in cluster {{ $labels.source_cluster }}
+        description: >-
+          Registry exporter is healthy but all tests for registry {{ $labels.check }} in cluster {{ $labels.source_cluster }} have been failing for 10 minutes.
+        alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S06LGCC3C2V>'
         team: o11y
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
 
@@ -52,17 +78,25 @@ spec:
         alert_routing_key: o11y
         team: o11y
 
-  # Notify o11y team when there are issues with individual nodes, but cluster-level check is still passing.
+  # Notify o11y team when a significant percentage of nodes are failing, but cluster-level check is still passing.
   - name: registry-exporter-node-availability
     interval: 1m
     rules:
     - alert: RegistryExporterNodeFailure
       expr: |
-        min by(source_cluster, tested_registry, node) (
-          registry_exporter_success
-          unless on(source_cluster, tested_registry, type)
-            (max by(source_cluster, tested_registry, type) (registry_exporter_success) == 0)
-        ) == 0
+        (
+          count by(source_cluster, tested_registry) (
+            min by(source_cluster, tested_registry, node) (
+              registry_exporter_success
+              unless on(source_cluster, tested_registry, type)
+                (max by(source_cluster, tested_registry, type) (registry_exporter_success) == 0)
+            ) == 0
+          )
+          /
+          count by(source_cluster, tested_registry) (
+            min by(source_cluster, tested_registry, node) (registry_exporter_success)
+          )
+        ) > 0.50
         and on(source_cluster, tested_registry)
           label_replace(
             konflux_up{service="registry-exporter"} == 1,
@@ -75,10 +109,11 @@ spec:
         component: registry-exporter
       annotations:
         summary: >-
-          Registry exporter running tests on node {{ $labels.node }} for registry {{ $labels.tested_registry }} in cluster {{ $labels.source_cluster }} is failing.
+          Over 50% of registry exporter nodes in cluster {{ $labels.source_cluster }} are failing tests for registry {{ $labels.tested_registry }}.
         description: >-
-          Registry exporter running tests on node {{ $labels.node }} for registry {{ $labels.tested_registry }} in cluster {{ $labels.source_cluster }} is failing.
-          At least one test type (pull, push, metadata, or authentication) has been failing for 15 minutes.
-          The cluster-level check for this registry is still passing, indicating this is a node-specific issue.
+          {{ $value | humanizePercentage }} of registry exporter nodes in cluster {{ $labels.source_cluster }} are failing tests for registry {{ $labels.tested_registry }}.
+          Over 50% of nodes have had at least one failing test type (pull, push, metadata, or authentication); this condition has persisted for 15 minutes.
+          The cluster-level check is still passing, indicating this is not a total outage.
+          Single-node failures from rolling node replacements will not trigger this alert.
         alert_routing_key: o11y
         team: o11y

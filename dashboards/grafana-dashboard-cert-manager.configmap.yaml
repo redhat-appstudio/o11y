@@ -1,0 +1,663 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-cert-manager.configmap
+  labels:
+    grafana_dashboard: "true"
+  annotations:
+    grafana-folder: /grafana-dashboard-definitions/RHTAP
+data:
+  cert-manager-dashboard.json: |-
+    {
+      "annotations": {
+        "list": [
+          {
+            "builtIn": 1,
+            "datasource": {
+              "type": "grafana",
+              "uid": "-- Grafana --"
+            },
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "type": "dashboard"
+          }
+        ]
+      },
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 0,
+      "id": null,
+      "links": [],
+      "panels": [
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+          "id": 1,
+          "panels": [],
+          "title": "Certificate Inventory",
+          "type": "row"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "description": "Total number of certificates managed by cert-manager",
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green" }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 6, "w": 6, "x": 0, "y": 1 },
+          "id": 2,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "reduceOptions": { "calcs": ["last"], "fields": "", "values": false },
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "expr": "count(certmanager_certificate_ready_status{condition=\"True\", source_cluster=~\"$cluster\"})",
+              "legendFormat": "Total Certificates",
+              "refId": "A"
+            }
+          ],
+          "title": "Total Certificates",
+          "type": "stat"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "description": "Certificates in Ready=True state",
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green" }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 6, "w": 6, "x": 6, "y": 1 },
+          "id": 3,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "reduceOptions": { "calcs": ["last"], "fields": "", "values": false },
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "expr": "count(certmanager_certificate_ready_status{condition=\"True\", source_cluster=~\"$cluster\"} == 1)",
+              "legendFormat": "Ready",
+              "refId": "A"
+            }
+          ],
+          "title": "Certificates Ready",
+          "type": "stat"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "description": "Certificates in Ready=False state",
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green" },
+                  { "color": "red", "value": 1 }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 6, "w": 6, "x": 12, "y": 1 },
+          "id": 4,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "reduceOptions": { "calcs": ["last"], "fields": "", "values": false },
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "expr": "count(certmanager_certificate_ready_status{condition=\"True\", source_cluster=~\"$cluster\"} == 0) or vector(0)",
+              "legendFormat": "Not Ready",
+              "refId": "A"
+            }
+          ],
+          "title": "Certificates Not Ready",
+          "type": "stat"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "description": "Certificates in Unknown state",
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "green" },
+                  { "color": "orange", "value": 1 }
+                ]
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 6, "w": 6, "x": 18, "y": 1 },
+          "id": 16,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "reduceOptions": { "calcs": ["last"], "fields": "", "values": false },
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "expr": "count(certmanager_certificate_ready_status{condition=\"Unknown\", source_cluster=~\"$cluster\"} == 1) or vector(0)",
+              "legendFormat": "Unknown",
+              "refId": "A"
+            }
+          ],
+          "title": "Certificates Unknown",
+          "type": "stat"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "description": "Certificate readiness over time",
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "lineWidth": 1,
+                "pointSize": 5,
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": { "group": "A", "mode": "none" }
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 6, "w": 12, "x": 0, "y": 7 },
+          "id": 5,
+          "options": {
+            "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+            "tooltip": { "mode": "single", "sort": "none" }
+          },
+          "targets": [
+            {
+              "expr": "count(certmanager_certificate_ready_status{condition=\"True\", source_cluster=~\"$cluster\"} == 1)",
+              "legendFormat": "Ready",
+              "refId": "A"
+            },
+            {
+              "expr": "count(certmanager_certificate_ready_status{condition=\"True\", source_cluster=~\"$cluster\"} == 0) or vector(0)",
+              "legendFormat": "Not Ready",
+              "refId": "B"
+            }
+          ],
+          "title": "Certificate Readiness Over Time",
+          "type": "timeseries"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "description": "Days until the soonest certificate expires across all clusters",
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red", "value": 0 },
+                  { "color": "orange", "value": 7 },
+                  { "color": "yellow", "value": 30 },
+                  { "color": "green", "value": 60 }
+                ]
+              },
+              "unit": "d",
+              "decimals": 0,
+              "min": 0,
+              "max": 365
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 6, "w": 12, "x": 12, "y": 7 },
+          "id": 17,
+          "options": {
+            "reduceOptions": { "calcs": ["last"], "fields": "", "values": false },
+            "showThresholdLabels": false,
+            "showThresholdMarkers": true
+          },
+          "targets": [
+            {
+              "expr": "min((certmanager_certificate_expiration_timestamp_seconds{source_cluster=~\"$cluster\"} - time()) / 86400)",
+              "legendFormat": "Soonest Expiry",
+              "refId": "A"
+            }
+          ],
+          "title": "Soonest Certificate Expiry",
+          "type": "gauge"
+        },
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 13 },
+          "id": 6,
+          "panels": [],
+          "title": "Certificate Expiry Timeline",
+          "type": "row"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "description": "Days until each certificate expires. Sorted by soonest expiry.",
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red", "value": 0 },
+                  { "color": "orange", "value": 7 },
+                  { "color": "yellow", "value": 30 },
+                  { "color": "green", "value": 60 }
+                ]
+              },
+              "unit": "d",
+              "decimals": 0
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 10, "w": 24, "x": 0, "y": 14 },
+          "id": 7,
+          "options": {
+            "showHeader": true,
+            "sortBy": [
+              { "displayName": "Days Until Expiry", "desc": false }
+            ]
+          },
+          "targets": [
+            {
+              "expr": "(certmanager_certificate_expiration_timestamp_seconds{source_cluster=~\"$cluster\"} - time()) / 86400",
+              "legendFormat": "{{exported_namespace}}/{{name}} ({{issuer_name}})",
+              "refId": "A",
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "title": "Certificate Expiry (days remaining)",
+          "type": "table",
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true,
+                  "__name__": true,
+                  "container": true,
+                  "endpoint": true,
+                  "instance": true,
+                  "job": true,
+                  "namespace": true,
+                  "pod": true,
+                  "prometheus": true,
+                  "service": true,
+                  "source_environment": true,
+                  "condition": true,
+                  "issuer_group": true,
+                  "receive": true,
+                  "tenant_id": true
+                },
+                "renameByName": {
+                  "Value": "Days Until Expiry",
+                  "exported_namespace": "Certificate Namespace",
+                  "name": "Certificate Name",
+                  "issuer_name": "Issuer",
+                  "issuer_kind": "Issuer Kind",
+                  "source_cluster": "Cluster"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 24 },
+          "id": 8,
+          "panels": [],
+          "title": "Issuer Health",
+          "type": "row"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "description": "ClusterIssuer readiness status",
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red" },
+                  { "color": "green", "value": 1 }
+                ]
+              },
+              "mappings": [
+                { "options": { "0": { "text": "Not Ready", "color": "red" }, "1": { "text": "Ready", "color": "green" } }, "type": "value" }
+              ]
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 6, "w": 12, "x": 0, "y": 25 },
+          "id": 9,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "reduceOptions": { "calcs": ["last"], "fields": "", "values": false },
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "expr": "certmanager_clusterissuer_ready_status{condition=\"True\", source_cluster=~\"$cluster\"}",
+              "legendFormat": "{{name}}",
+              "refId": "A"
+            }
+          ],
+          "title": "ClusterIssuer Readiness",
+          "type": "stat"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "description": "Issuer readiness status per namespace",
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red" },
+                  { "color": "green", "value": 1 }
+                ]
+              },
+              "mappings": [
+                { "options": { "0": { "text": "Not Ready", "color": "red" }, "1": { "text": "Ready", "color": "green" } }, "type": "value" }
+              ]
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 6, "w": 12, "x": 12, "y": 25 },
+          "id": 10,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "reduceOptions": { "calcs": ["last"], "fields": "", "values": false },
+            "textMode": "auto"
+          },
+          "targets": [
+            {
+              "expr": "certmanager_issuer_ready_status{condition=\"True\", source_cluster=~\"$cluster\"}",
+              "legendFormat": "{{exported_namespace}}/{{name}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Issuer Readiness",
+          "type": "stat"
+        },
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 31 },
+          "id": 11,
+          "panels": [],
+          "title": "Controller Health",
+          "type": "row"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "description": "Rate of controller sync calls per controller type",
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "ops",
+              "custom": {
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "lineWidth": 1,
+                "pointSize": 5,
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": { "group": "A", "mode": "none" }
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 32 },
+          "id": 12,
+          "options": {
+            "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+            "tooltip": { "mode": "single", "sort": "none" }
+          },
+          "targets": [
+            {
+              "expr": "sum by(controller) (rate(certmanager_controller_sync_call_count{source_cluster=~\"$cluster\"}[5m]))",
+              "legendFormat": "{{controller}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Controller Sync Rate",
+          "type": "timeseries"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "description": "Rate of controller sync errors. Non-zero values indicate controller issues.",
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "unit": "ops",
+              "custom": {
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "lineWidth": 1,
+                "pointSize": 5,
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": { "group": "A", "mode": "none" }
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 32 },
+          "id": 13,
+          "options": {
+            "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+            "tooltip": { "mode": "single", "sort": "none" }
+          },
+          "targets": [
+            {
+              "expr": "sum by(controller) (rate(certmanager_controller_sync_error_count{source_cluster=~\"$cluster\"}[5m]))",
+              "legendFormat": "{{controller}}",
+              "refId": "A"
+            }
+          ],
+          "title": "Controller Sync Errors",
+          "type": "timeseries"
+        },
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 40 },
+          "id": 14,
+          "panels": [],
+          "title": "Deployment Health",
+          "type": "row"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "description": "cert-manager deployment replica status",
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "palette-classic" },
+              "custom": {
+                "drawStyle": "line",
+                "fillOpacity": 10,
+                "lineWidth": 1,
+                "pointSize": 5,
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": { "group": "A", "mode": "none" }
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 8, "w": 24, "x": 0, "y": 41 },
+          "id": 15,
+          "options": {
+            "legend": { "displayMode": "list", "placement": "bottom", "showLegend": true },
+            "tooltip": { "mode": "single", "sort": "none" }
+          },
+          "targets": [
+            {
+              "expr": "kube_deployment_spec_replicas{namespace=\"cert-manager\", source_cluster=~\"$cluster\"}",
+              "legendFormat": "{{deployment}} desired",
+              "refId": "A"
+            },
+            {
+              "expr": "kube_deployment_status_replicas_ready{namespace=\"cert-manager\", source_cluster=~\"$cluster\"}",
+              "legendFormat": "{{deployment}} ready",
+              "refId": "B"
+            }
+          ],
+          "title": "Deployment Replicas (desired vs ready)",
+          "type": "timeseries"
+        },
+        {
+          "collapsed": false,
+          "gridPos": { "h": 1, "w": 24, "x": 0, "y": 49 },
+          "id": 20,
+          "panels": [],
+          "title": "Certificate Renewal",
+          "type": "row"
+        },
+        {
+          "datasource": { "type": "prometheus", "uid": "${datasource}" },
+          "description": "Next scheduled renewal time for each certificate",
+          "fieldConfig": {
+            "defaults": {
+              "color": { "mode": "thresholds" },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  { "color": "red", "value": 0 },
+                  { "color": "orange", "value": 7 },
+                  { "color": "yellow", "value": 14 },
+                  { "color": "green", "value": 30 }
+                ]
+              },
+              "unit": "d",
+              "decimals": 0
+            },
+            "overrides": []
+          },
+          "gridPos": { "h": 10, "w": 24, "x": 0, "y": 50 },
+          "id": 21,
+          "options": {
+            "showHeader": true,
+            "sortBy": [
+              { "displayName": "Days Until Renewal", "desc": false }
+            ]
+          },
+          "targets": [
+            {
+              "expr": "(certmanager_certificate_renewal_timestamp_seconds{source_cluster=~\"$cluster\"} - time()) / 86400",
+              "legendFormat": "{{exported_namespace}}/{{name}}",
+              "refId": "A",
+              "format": "table",
+              "instant": true
+            }
+          ],
+          "title": "Certificate Renewal Timeline",
+          "type": "table",
+          "transformations": [
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true,
+                  "__name__": true,
+                  "container": true,
+                  "endpoint": true,
+                  "instance": true,
+                  "job": true,
+                  "namespace": true,
+                  "pod": true,
+                  "prometheus": true,
+                  "service": true,
+                  "source_environment": true,
+                  "condition": true,
+                  "issuer_group": true,
+                  "receive": true,
+                  "tenant_id": true
+                },
+                "renameByName": {
+                  "Value": "Days Until Renewal",
+                  "exported_namespace": "Namespace",
+                  "name": "Certificate",
+                  "issuer_name": "Issuer",
+                  "issuer_kind": "Issuer Kind",
+                  "source_cluster": "Cluster"
+                }
+              }
+            }
+          ]
+        }
+      ],
+      "schemaVersion": 39,
+      "tags": ["cert-manager"],
+      "templating": {
+        "list": [
+          {
+            "name": "datasource",
+            "type": "datasource",
+            "query": "prometheus",
+            "regex": "/rhtap*/",
+            "refresh": 1
+          },
+          {
+            "datasource": { "type": "prometheus", "uid": "${datasource}" },
+            "definition": "label_values(source_cluster)",
+            "description": "Choose a source cluster",
+            "includeAll": true,
+            "label": "Cluster",
+            "multi": true,
+            "name": "cluster",
+            "options": [],
+            "query": {
+              "qryType": 1,
+              "query": "label_values(source_cluster)",
+              "refId": "PrometheusVariableQueryEditor-VariableQuery"
+            },
+            "refresh": 1,
+            "regex": "",
+            "sort": 3,
+            "type": "query"
+          }
+        ]
+      },
+      "time": {
+        "from": "now-6h",
+        "to": "now"
+      },
+      "timepicker": {},
+      "timezone": "UTC",
+      "title": "cert-manager Dashboard",
+      "uid": "spre-cert-manager-dashboard",
+      "version": 0
+    }

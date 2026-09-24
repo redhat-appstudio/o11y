@@ -70,7 +70,7 @@ spec:
             clamp_max(
               label_replace(
                 label_replace(
-                    sum by (job,target,source_cluster) (probe_success{job=~".*pwvs"}) / count by (job,target,source_cluster) (probe_success{job=~".*pwvs"}) >= bool 0.7
+                    sum by (job,target,source_cluster) (avg_over_time(probe_success{job=~".*pwvs"}[10m])) / count by (job,target,source_cluster) (avg_over_time(probe_success{job=~".*pwvs"}[10m])) >= bool 0.7
                   , "check", "probe-pwvs", "",""
                 ), "service", "$1", "job", "(.*)"
               ), 1
