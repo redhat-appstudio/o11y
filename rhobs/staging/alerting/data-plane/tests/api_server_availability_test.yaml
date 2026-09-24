@@ -1,0 +1,187 @@
+# `evaluation_interval` is not a valid top-level key.
+# `rule_files` is correct.
+rule_files:
+  - 'prometheus.api_server_alerts.yaml'
+
+tests:
+  # Start of a new test case. The interval and input series must be under this item.
+  - name: Test KonfluxAPIServerHighErrorRate
+    interval: 1m # Correct placement and spelling of interval
+    input_series:
+      - series: 'code:apiserver_request_total:rate5m{code="503", source_cluster="kflux-prd-es01"}'
+        values: '0+10x60'
+      - series: 'code:apiserver_request_total:rate5m{code="429", source_cluster="kflux-prd-es01"}'
+        values: '0+5x60'
+      - series: 'code:apiserver_request_total:rate5m{code="200", source_cluster="kflux-prd-es01"}'
+        values: '0+50x60'
+
+    # This block tests the alert's state (PENDING/FIRING).
+    alert_rule_test:
+      # This checks for a FIRING alert. It must be checked AFTER the 'for' duration.
+      - eval_time: 16m
+        alertname: KonfluxAPIServerHighErrorRate
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              component: api-server
+              source_cluster: "kflux-prd-es01"
+            exp_annotations:
+              summary: "API Server 5XX error count in cluster kflux-prd-es01"
+              description: "API Server is experiencing 10% of 5XX failures based on the total requests for 15min in cluster kflux-prd-es01"
+              alert_team_handle: "<!subteam^S05Q1P4Q2TG>"
+              team: konflux-infra
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/api_server_error_rate_alert.md
+
+
+  # High CPU usage - firing
+  #- name: Test KonfluxAPIServerHighCPUUsage
+  #  interval: 1m
+  #  input_series:
+  #    - series: 'process_cpu_seconds_total{job="apiserver",source_cluster="cluster01"}'
+  #      # Value that produces a rate of 500/min.
+  #      values: '0 500 1000 1500 2000 2500 3000 3500 4000 4500'
+  #    - series: 'node_cpu_seconds_total{mode="idle",source_cluster="cluster01"}'
+  #      # Value that produces a rate of 550/min. Ratio is ~91%, which is > 80%.
+  #      values: '0 550 1100 1650 2200 2750 3300 3850 4400 4950'
+
+  # alert_rule_test:
+  #    - alertname: KonfluxAPIServerHighCPUUsage
+  #      eval_time: 10m
+  #      exp_alerts:
+  #        - exp_labels:
+  #            severity: critical
+  #            slo: "true"
+  #            source_cluster: "cluster01"
+  #          exp_annotations:
+  #            summary: API Server CPU usage is above 80% in cluster01
+  #            description: >-
+  #              API Server process CPU consumption is above 80% for 5 minutes in cluster cluster01.
+  #            alert_team_handle: <!subteam^S05Q1P4Q2TG>
+  #            team: konflux-infra
+  #            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/apiserver_HighCPUUsage.md
+
+
+  ## High CPU usage - NOT firing
+  #- name: Test KonfluxAPIServerHighCPUUsage
+  #  interval: 1m
+  #  input_series:
+  #    - series: 'process_cpu_seconds_total{job="apiserver",source_cluster="cluster01"}'
+  #      values: '0 0 0 0 0 0 0 0 0 0'
+  #    - series: 'node_cpu_seconds_total{mode="idle",source_cluster="cluster01"}'
+  #      values: '0 1 2 3 4 5 6 7 8 9'
+  #  alert_rule_test:
+  #    - alertname: KonfluxAPIServerHighCPUUsage
+  #      eval_time: 10m
+  #      exp_alerts: []
+
+# High memory usage - firing
+  - name: Test KonfluxAPIServerHighMemoryUsageFiring
+    interval: 1m
+    input_series:
+      - series: 'process_resident_memory_bytes{job="apiserver",source_cluster="cluster01"}'
+        values: '60x60'
+      - series: 'node_memory_MemTotal_bytes{source_cluster="cluster01"}'
+        values: '70x60'
+    alert_rule_test:
+      - alertname: KonfluxAPIServerHighMemoryUsage
+        eval_time: 10m
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              component: api-server
+              source_cluster: "cluster01"
+            exp_annotations:
+              summary: API Server memory usage is above 80% in cluster01
+              description: >-
+                API Server process memory consumption is above 80% for 5 minutes in cluster cluster01.
+              alert_team_handle: <!subteam^S05Q1P4Q2TG>
+              team: konflux-infra
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/apiserver_HighMemoryUsage.md
+
+  # High memory usage - NOT firing
+  - name: Test KonfluxAPIServerHighMemoryUsage
+    interval: 1m
+    input_series:
+      - series: 'process_resident_memory_bytes{job="apiserver",source_cluster="cluster01"}'
+        values: '6e10x10'
+      - series: 'node_memory_MemTotal_bytes{source_cluster="cluster01"}'
+        values: '1e11x10'
+    alert_rule_test:
+      - alertname: KonfluxAPIServerHighMemoryUsage
+        eval_time: 10m
+        exp_alerts: []
+
+  # Latency SLO Warning - 98% of requests complete within 1s, below 99% SLO
+  - name: KonfluxAPIServerLatencyWarning
+    interval: 1m
+    input_series:
+      - series: 'apiserver_request_duration_seconds_bucket{le="1.0", verb="GET", source_cluster="cluster01"}'
+        values: '0+98x20'
+      - series: 'apiserver_request_duration_seconds_count{verb="GET", source_cluster="cluster01"}'
+        values: '0+100x20'
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: KonfluxAPIServerLatencyWarning
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              component: api-server
+              team: konflux-infra
+              source_cluster: "cluster01"
+            exp_annotations:
+              summary: "API Server high latency detected in cluster cluster01"
+              description: "More than 1% of requests exceeded 1s for 15m. Impact: Slow CLI/UI response. Action: Check for Control Plane load or resource pressure."
+              alert_routing_key: "infra"
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/apiserver_HighP99Latency.md
+
+  # Latency SLO Warning - 100% of requests complete within 1s, alert should not fire
+  - name: KonfluxAPIServerLatencyWarning not firing
+    interval: 1m
+    input_series:
+      - series: 'apiserver_request_duration_seconds_bucket{le="1.0", verb="GET", source_cluster="cluster01"}'
+        values: '0+100x20'
+      - series: 'apiserver_request_duration_seconds_count{verb="GET", source_cluster="cluster01"}'
+        values: '0+100x20'
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: KonfluxAPIServerLatencyWarning
+        exp_alerts: []
+
+  # Latency SLO Critical - 90% of requests complete within 1s, below 95% in both 5m and 1h windows
+  - name: KonfluxAPIServerLatencySLOCritical
+    interval: 1m
+    input_series:
+      - series: 'apiserver_request_duration_seconds_bucket{le="1.0", verb="GET", source_cluster="cluster01"}'
+        values: '0+90x70'
+      - series: 'apiserver_request_duration_seconds_count{verb="GET", source_cluster="cluster01"}'
+        values: '0+100x70'
+    alert_rule_test:
+      - eval_time: 66m
+        alertname: KonfluxAPIServerLatencySLOCritical
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              component: api-server
+              team: konflux-infra
+              source_cluster: "cluster01"
+            exp_annotations:
+              summary: "API Server Latency: Critical SLO Breach (cluster01)"
+              description: "More than 5% of API requests exceeded 1s latency over the last 1h and 5m. Impact: High risk of system-wide timeouts. Action: Immediate check of Etcd health and admission webhooks."
+              alert_team_handle: "<!subteam^S05Q1P4Q2TG>"
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/apiserver_HighP99Latency.md
+
+  # Latency SLO Critical - 100% of requests complete within 1s, alert should not fire
+  - name: KonfluxAPIServerLatencySLOCritical not firing
+    interval: 1m
+    input_series:
+      - series: 'apiserver_request_duration_seconds_bucket{le="1.0", verb="GET", source_cluster="cluster01"}'
+        values: '0+100x70'
+      - series: 'apiserver_request_duration_seconds_count{verb="GET", source_cluster="cluster01"}'
+        values: '0+100x70'
+    alert_rule_test:
+      - eval_time: 66m
+        alertname: KonfluxAPIServerLatencySLOCritical
+        exp_alerts: []

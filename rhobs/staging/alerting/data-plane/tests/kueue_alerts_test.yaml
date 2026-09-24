@@ -1,0 +1,366 @@
+evaluation_interval: 1m
+rule_files:
+  - 'prometheus.kueue_alerts.yaml'
+
+tests:
+  # KueueHighAdmissionWaitTimeMintmaker - should fire: 99th percentile wait time above 12h
+  - interval: 1m
+    input_series:
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-dependency-update", le="43200.0", source_cluster="c1"}'
+        values: '0+0x20'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-dependency-update", le="50400.0", source_cluster="c1"}'
+        values: '0+0x20'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-dependency-update", le="+Inf", source_cluster="c1"}'
+        values: '0 10 20 30 40 50 60 70 80 90 100 110 120 130 140'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: KueueHighAdmissionWaitTimeMintmaker
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              component: kueue
+              source_cluster: c1
+            exp_annotations:
+              summary: "High admission wait time for Mintmaker"
+              description: "99th percentile admission wait time for Mintmaker is 14h 0m 0s, which is above 12 hours in cluster c1"
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
+              alert_routing_key: infra
+              team: konflux-infra
+
+  # KueueHighAdmissionWaitTimePreMerge - should fire: 99th percentile wait time above 15m for 40m
+  - interval: 1m
+    input_series:
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-pre-merge-test", le="900.0", source_cluster="c1"}'
+        values: '0+0x60'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-pre-merge-test", le="1000.0", source_cluster="c1"}'
+        values: '0+0x60'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-pre-merge-test", le="+Inf", source_cluster="c1"}'
+        values: '0+10x60'
+    alert_rule_test:
+      - eval_time: 45m
+        alertname: KueueHighAdmissionWaitTimePreMerge
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              component: kueue
+              source_cluster: c1
+            exp_annotations:
+              summary: "High admission wait time for Pre-merge builds"
+              description: "99th percentile admission wait time for Pre-merge is 16m 40s, which is above 15 minutes in cluster c1"
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
+              alert_routing_key: infra
+              team: konflux-infra
+
+  # KueueHighAdmissionWaitTimePreMerge - should NOT fire: eval time (35m) is less than 'for' duration (40m)
+  - interval: 1m
+    input_series:
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-pre-merge-test", le="900.0", source_cluster="c1"}'
+        values: '0+0x60'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-pre-merge-test", le="1000.0", source_cluster="c1"}'
+        values: '0+0x60'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-pre-merge-test", le="+Inf", source_cluster="c1"}'
+        values: '0+10x60'
+    alert_rule_test:
+      - eval_time: 35m
+        alertname: KueueHighAdmissionWaitTimePreMerge
+        exp_alerts: []
+
+  # KueueHighAdmissionWaitTimePostMerge - should fire: 99th percentile wait time above 15m for 45m
+  - interval: 1m
+    input_series:
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-post-merge-build", le="900.0", source_cluster="c1"}'
+        values: '0+0x70'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-post-merge-build", le="1000.0", source_cluster="c1"}'
+        values: '0+0x70'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-post-merge-build", le="+Inf", source_cluster="c1"}'
+        values: '0+10x70'
+    alert_rule_test:
+      - eval_time: 50m
+        alertname: KueueHighAdmissionWaitTimePostMerge
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              component: kueue
+              source_cluster: c1
+            exp_annotations:
+              summary: "High admission wait time for Post-merge builds"
+              description: "99th percentile admission wait time for Post-merge is 16m 40s, which is above 15 minutes in cluster c1"
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
+              alert_routing_key: infra
+              team: konflux-infra
+
+  # KueueHighAdmissionWaitTimePostMerge - should NOT fire: eval time (40m) is less than 'for' duration (45m)
+  - interval: 1m
+    input_series:
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-post-merge-build", le="900.0", source_cluster="c1"}'
+        values: '0+0x70'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-post-merge-build", le="1000.0", source_cluster="c1"}'
+        values: '0+0x70'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-post-merge-build", le="+Inf", source_cluster="c1"}'
+        values: '0+10x70'
+    alert_rule_test:
+      - eval_time: 40m
+        alertname: KueueHighAdmissionWaitTimePostMerge
+        exp_alerts: []
+
+  # TektonKueuePodsCrashLoopBackOff - should fire: pod in CrashLoopBackOff
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_waiting_reason{namespace="tekton-kueue", reason="CrashLoopBackOff", pod="tekton-kueue-controller-manager-abc123", source_cluster="c1"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: TektonKueuePodsCrashLoopBackOff
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              component: tekton-kueue
+              slo: "false"
+              namespace: tekton-kueue
+              reason: CrashLoopBackOff
+              pod: tekton-kueue-controller-manager-abc123
+              source_cluster: c1
+            exp_annotations:
+              summary: "Tekton Kueue pod is in a crash loop: tekton-kueue-controller-manager-abc123"
+              description: "Pod tekton-kueue-controller-manager-abc123 in namespace tekton-kueue on cluster c1 is in CrashLoopBackOff and is not starting up."
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueuePodsCrashLoopBackOff.md
+              alert_routing_key: infra
+              team: konflux-infra
+
+  # TektonKueuePodsCrashLoopBackOff - should NOT fire: pod not in CrashLoopBackOff
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_waiting_reason{namespace="tekton-kueue", reason="CrashLoopBackOff", pod="tekton-kueue-controller-manager-abc123", source_cluster="c1"}'
+        values: '0+0x10'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: TektonKueuePodsCrashLoopBackOff
+        exp_alerts: []
+
+  # TektonKueueRolloutStuck - should fire: rollout stuck for 20m
+  - interval: 1m
+    input_series:
+      - series: 'kube_deployment_spec_replicas{namespace="tekton-kueue", deployment="tekton-kueue-controller-manager", source_cluster="c1"}'
+        values: '2+0x25'
+      - series: 'kube_deployment_status_replicas_updated{namespace="tekton-kueue", deployment="tekton-kueue-controller-manager", source_cluster="c1"}'
+        values: '1+0x25'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: TektonKueueRolloutStuck
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              component: tekton-kueue
+              namespace: tekton-kueue
+              deployment: tekton-kueue-controller-manager
+              source_cluster: c1
+            exp_annotations:
+              summary: "Tekton Kueue rollout stuck: tekton-kueue-controller-manager"
+              description: "Deployment tekton-kueue-controller-manager in namespace tekton-kueue on cluster c1 update is delayed or stuck (no full health for 20m). Check pod events and logs for the deployment and its ReplicaSets."
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueueRolloutStuck.md
+              alert_routing_key: infra
+              team: konflux-infra
+
+  # TektonKueueRolloutStuck - should NOT fire: replicas updated matches spec
+  - interval: 1m
+    input_series:
+      - series: 'kube_deployment_spec_replicas{namespace="tekton-kueue", deployment="tekton-kueue-controller-manager", source_cluster="c1"}'
+        values: '2+0x25'
+      - series: 'kube_deployment_status_replicas_updated{namespace="tekton-kueue", deployment="tekton-kueue-controller-manager", source_cluster="c1"}'
+        values: '2+0x25'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: TektonKueueRolloutStuck
+        exp_alerts: []
+
+  # TektonKueuePodStuckInPending - should fire: pod in Pending for 5m
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_status_phase{namespace="tekton-kueue", phase="Pending", pod="tekton-kueue-controller-manager-abc123", source_cluster="c1"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: TektonKueuePodStuckInPending
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              component: tekton-kueue
+              namespace: tekton-kueue
+              phase: Pending
+              pod: tekton-kueue-controller-manager-abc123
+              source_cluster: c1
+            exp_annotations:
+              summary: "Tekton Kueue pod is stuck in Pending: tekton-kueue-controller-manager-abc123"
+              description: "Pod tekton-kueue-controller-manager-abc123 in namespace tekton-kueue on cluster c1 has been in Pending state for more than 5 minutes. This may indicate a scheduling issue, resource constraint, or unresolvable volume."
+              alert_routing_key: infra
+              team: konflux-infra
+
+  # TektonKueuePodStuckInPending - should NOT fire: pod not in Pending
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_status_phase{namespace="tekton-kueue", phase="Pending", pod="tekton-kueue-controller-manager-abc123", source_cluster="c1"}'
+        values: '0+0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: TektonKueuePodStuckInPending
+        exp_alerts: []
+
+  # TektonKueuePodStuckInPending - should NOT fire: eval time (4m) is less than 'for' duration (5m)
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_status_phase{namespace="tekton-kueue", phase="Pending", pod="tekton-kueue-controller-manager-abc123", source_cluster="c1"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: TektonKueuePodStuckInPending
+        exp_alerts: []
+
+  # TektonKueuePodStuckInCreation - should fire: pod in ContainerCreating for 5m and NOT Running
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_waiting_reason{namespace="tekton-kueue", reason="ContainerCreating", pod="tekton-kueue-controller-manager-abc123", container="manager", source_cluster="c1"}'
+        values: '1+0x10'
+      - series: 'kube_pod_status_phase{namespace="tekton-kueue", phase="Pending", pod="tekton-kueue-controller-manager-abc123", source_cluster="c1"}'
+        values: '1+0x10'
+      - series: 'kube_pod_status_phase{namespace="tekton-kueue", phase="Running", pod="tekton-kueue-controller-manager-abc123", source_cluster="c1"}'
+        values: '0+0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: TektonKueuePodStuckInCreation
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              component: tekton-kueue
+              namespace: tekton-kueue
+              reason: ContainerCreating
+              pod: tekton-kueue-controller-manager-abc123
+              container: manager
+              source_cluster: c1
+            exp_annotations:
+              summary: "Tekton Kueue pod is stuck in ContainerCreating: tekton-kueue-controller-manager-abc123"
+              description: "Container manager in pod tekton-kueue-controller-manager-abc123 in namespace tekton-kueue on cluster c1 is stuck in ContainerCreating for more than 5 minutes. This typically points to infrastructure issues like Volume/Storage mounting failures or Network attachment delays."
+              alert_routing_key: infra
+              team: konflux-infra
+
+  # TektonKueuePodStuckInCreation - should NOT fire: pod not in ContainerCreating
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_waiting_reason{namespace="tekton-kueue", reason="ContainerCreating", pod="tekton-kueue-controller-manager-abc123", container="manager", source_cluster="c1"}'
+        values: '0+0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: TektonKueuePodStuckInCreation
+        exp_alerts: []
+
+  # TektonKueuePodStuckInCreation - should NOT fire: stale ContainerCreating metric while pod is Running
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_waiting_reason{namespace="tekton-kueue", reason="ContainerCreating", pod="tekton-kueue-controller-manager-abc123", container="manager", source_cluster="c1"}'
+        values: '1+0x10'
+      - series: 'kube_pod_status_phase{namespace="tekton-kueue", phase="Running", pod="tekton-kueue-controller-manager-abc123", source_cluster="c1"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: TektonKueuePodStuckInCreation
+        exp_alerts: []
+
+  # TektonKueuePodOOMKilled - should fire: pod OOMKilled
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_restarts_total{namespace="tekton-kueue", pod="tekton-kueue-controller-manager-abc123", container="manager", source_cluster="c1"}'
+        values: '0 1 1 1 1 1 1 1 1 1 1'
+      - series: 'kube_pod_container_status_last_terminated_reason{namespace="tekton-kueue", reason="OOMKilled", pod="tekton-kueue-controller-manager-abc123", container="manager", source_cluster="c1"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: TektonKueuePodOOMKilled
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              component: tekton-kueue
+              namespace: tekton-kueue
+              reason: OOMKilled
+              pod: tekton-kueue-controller-manager-abc123
+              container: manager
+              source_cluster: c1
+            exp_annotations:
+              summary: "Tekton Kueue pod was OOMKilled: tekton-kueue-controller-manager-abc123"
+              description: "Container manager in pod tekton-kueue-controller-manager-abc123 in namespace tekton-kueue on cluster c1 was terminated due to OOM. Memory limits may need to be increased in the deployment spec."
+              alert_routing_key: infra
+              team: konflux-infra
+
+  # TektonKueuePodOOMKilled - should NOT fire: pod not OOMKilled
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_restarts_total{namespace="tekton-kueue", pod="tekton-kueue-controller-manager-abc123", container="manager", source_cluster="c1"}'
+        values: '0+0x10'
+      - series: 'kube_pod_container_status_last_terminated_reason{namespace="tekton-kueue", reason="OOMKilled", pod="tekton-kueue-controller-manager-abc123", container="manager", source_cluster="c1"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: TektonKueuePodOOMKilled
+        exp_alerts: []
+
+  # TektonKueueRolloutStuck - should NOT fire: eval time (10m) is less than 'for' duration (20m)
+  - interval: 1m
+    input_series:
+      - series: 'kube_deployment_spec_replicas{namespace="tekton-kueue", deployment="tekton-kueue-controller-manager", source_cluster="c1"}'
+        values: '2+0x15'
+      - series: 'kube_deployment_status_replicas_updated{namespace="tekton-kueue", deployment="tekton-kueue-controller-manager", source_cluster="c1"}'
+        values: '1+0x15'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: TektonKueueRolloutStuck
+        exp_alerts: []
+
+  # KueueHighAdmissionWaitTimeReleases - should fire: 99th percentile wait time above 1.33h (4800s) for 20m
+  - interval: 1m
+    input_series:
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-release", le="4800.0", source_cluster="c1"}'
+        values: '0+0x30'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-release", le="5000.0", source_cluster="c1"}'
+        values: '0+0x30'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-release", le="+Inf", source_cluster="c1"}'
+        values: '0+10x30'
+    alert_rule_test:
+      - eval_time: 25m
+        alertname: KueueHighAdmissionWaitTimeReleases
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              component: kueue
+              slo: "true"
+              source_cluster: c1
+            exp_annotations:
+              summary: "High admission wait time for Release workloads"
+              description: "99th percentile admission wait time for konflux and tenant release workloads is 1h 23m 20s, which is above 1.33 hours in cluster c1"
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
+              alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
+
+  # KueueHighAdmissionWaitTimeReleases - should NOT fire: eval time (15m) is less than 'for' duration (20m)
+  - interval: 1m
+    input_series:
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-tenant-release", le="4800.0", source_cluster="c1"}'
+        values: '0+0x30'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-tenant-release", le="5000.0", source_cluster="c1"}'
+        values: '0+0x30'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-tenant-release", le="+Inf", source_cluster="c1"}'
+        values: '0+10x30'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: KueueHighAdmissionWaitTimeReleases
+        exp_alerts: []
+
+  # KueueHighAdmissionWaitTimeReleases - should NOT fire: wait time below threshold (4800s)
+  - interval: 1m
+    input_series:
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-release", le="4000.0", source_cluster="c1"}'
+        values: '0+0x30'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-release", le="4800.0", source_cluster="c1"}'
+        values: '0+0x30'
+      - series: 'kueue_admission_wait_time_seconds_bucket{cluster_queue="cluster-pipeline-queue", priority_class="konflux-release", le="+Inf", source_cluster="c1"}'
+        values: '0+10x30'
+    alert_rule_test:
+      - eval_time: 25m
+        alertname: KueueHighAdmissionWaitTimeReleases
+        exp_alerts: []

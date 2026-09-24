@@ -1,0 +1,78 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-performance-alerting
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: performance_alerts
+      interval: 1m
+      rules:
+        # ETCD alerts
+        - alert: EtcdFsyncLatency
+          expr: |
+            avg_over_time(histogram_quantile(0.99, rate(etcd_disk_wal_fsync_duration_seconds_bucket[2m]))[10m:]) > 0.04
+          for: 10m
+          labels:
+            severity: warning
+            component: etcd
+          annotations:
+            summary: >-
+              ETCD slow file system synchronization.
+            description: >-
+              10 minutes avg. 99th etcd fsync latency on {{$labels.pod}} higher than 40ms in cluster {{ $labels.source_cluster }}.
+            alert_routing_key: perfandscale
+
+        - alert: EtcdCommitLatency
+          expr: |
+            avg_over_time(histogram_quantile(0.99, rate(etcd_disk_backend_commit_duration_seconds_bucket{source_cluster!=""}[2m]))[15m:]) > 0.04
+          for: 15m
+          labels:
+            severity: warning
+            component: etcd
+          annotations:
+            summary: >-
+              ETCD slow writes observed.
+            description: >-
+              15 minutes avg. 99th etcd commit latency on {{$labels.pod}} higher than 40ms in cluster {{ $labels.source_cluster }}.
+            alert_routing_key: perfandscale
+
+        - alert: EtcdProposalFailures
+          expr: |
+            max by (source_cluster) (rate(etcd_server_proposals_failed_total[1h])) > 0.10
+          for: 15m
+          labels:
+            severity: warning
+            component: etcd
+          annotations:
+            summary: >-
+              ETCD raft proposal failures.
+            description: >-
+              Etcd high number of failed proposals on some etcd pod in cluster {{ $labels.source_cluster }}.
+            alert_routing_key: spreandinfra
+
+        - alert: EtcdSlowNetworkRTT
+          expr: |
+            (
+              count by (source_cluster) (
+                histogram_quantile(
+                  0.99,
+                  rate(etcd_network_peer_round_trip_time_seconds_bucket[5m])
+                ) > 0.15
+              ) >= 2
+            )
+            and on(source_cluster)
+            (
+              increase(etcd_server_proposals_failed_total[5m]) > 0
+            )
+          for: 15m
+          labels:
+            severity: warning
+            component: etcd
+          annotations:
+            summary: >-
+              High RTT latency on ETCD cluster member requests.
+            description: >-
+              99th etcd RTT latency is higher than 0.15 on at least 2 members, with proposal failures increasing in cluster {{ $labels.source_cluster }}.
+            alert_routing_key: perfandscale
