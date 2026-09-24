@@ -47,17 +47,44 @@ tests:
       - series: 'kube_pod_status_unschedulable{namespace="build-templates-e2e", pod="test-pod", source_cluster="cluster01"}'
         values: '1x60'
 
+      # proactive-scaler balloon pods — intentionally unschedulable by design, ignored
+      - series: 'kube_pod_status_unschedulable{namespace="proactive-scaler", pod="m6i-8xlarge-abc-xyz", source_cluster="kflux-osp-p01"}'
+        values: '1x60'
+
+      # HyperShift hosted-cluster UUID namespace — ephemeral EaaS lifecycle, ignored
+      - series: 'kube_pod_status_unschedulable{namespace="clusters-1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d", pod="capi-provider-pod", source_cluster="kflux-prd-es01"}'
+        values: '1x60'
+
+      # HyperShift clusters namespace — ephemeral EaaS lifecycle, ignored
+      - series: 'kube_pod_status_unschedulable{namespace="clusters", pod="cluster-create-job", source_cluster="kflux-prd-es01"}'
+        values: '1x60'
+
+      # EaaS provision namespace — transient CI/test pod, ignored
+      - series: 'kube_pod_status_unschedulable{namespace="my-app-provision-namespace-eaas", pod="provision-pod", source_cluster="kflux-ocp-p01"}'
+        values: '1x60'
+
+      # EaaS ephemeral deploy namespace — transient CI/test pod, ignored
+      - series: 'kube_pod_status_unschedulable{namespace="ci-test-deploy-ephemeral-run1", pod="deploy-pod", source_cluster="kflux-ocp-p01"}'
+        values: '1x60'
+
+      # min_over_time: pod unschedulable 25m then recovers — must NOT alert (never continuously unschedulable for 30m)
+      - series: 'kube_pod_status_unschedulable{namespace="prod", pod="recovered-pod", source_cluster="cluster08"}'
+        values: '1x25'
+
     alert_rule_test:
       - eval_time: 60m
         alertname: UnschedulablePods
         exp_alerts:
           - exp_labels:
               severity: warning
+              slo: "false"
+              team: o11y
+              component: kube-state-metrics
               namespace: prod-test
               pod: prod-pod-2
               source_cluster: cluster02
             exp_annotations:
-              summary: Pod prod-pod-2 cannot be scheduled.
+              summary: Pod prod-test/prod-pod-2 on cluster02 cannot be scheduled.
               description: >-
                 Pod prod-pod-2 for namespace prod-test on cluster cluster02 is
                 unscheduled for more than 30 minutes.
