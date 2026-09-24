@@ -1,0 +1,41 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-prometheus-memory-usage-alert
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: prometheus_memory_usage_alert
+    interval: 1m
+    rules:
+    - alert: PrometheusMemoryUsageHigh
+      expr: |
+        (
+          sum by (source_cluster, namespace, pod) (
+            node_namespace_pod_container:container_memory_working_set_bytes{
+              namespace=~"openshift-monitoring|openshift-user-workload-monitoring|appstudio-monitoring",
+              container="prometheus"
+            }
+          )
+          /
+          on (source_cluster, namespace, pod)
+          sum by (source_cluster, namespace, pod) (
+            cluster:namespace:pod_memory:active:kube_pod_container_resource_limits{
+              namespace=~"openshift-monitoring|openshift-user-workload-monitoring|appstudio-monitoring",
+              container="prometheus",
+              resource="memory"
+            }
+          )
+        ) > 0.80
+      for: 5m
+      labels:
+        severity: warning
+        component: prometheus
+        slo: "false"
+      annotations:
+        summary: "Prometheus pod {{ $labels.pod }} has high memory usage on cluster {{ $labels.source_cluster }}"
+        description: "Prometheus pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} is using {{ $value | humanizePercentage }} of its memory limit. High memory usage can lead to OOM kills and monitoring gaps."
+        alert_routing_key: o11y
+        team: o11y
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-prometheus-memory-usage.md

@@ -1,0 +1,28 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-prometheus-federation-delay-alert
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: prometheus_federation_delay_alert
+    interval: 1m
+    rules:
+    - alert: PrometheusFederationDelayHigh
+      expr: |
+        (time() - prometheus_remote_storage_queue_highest_sent_timestamp_seconds{
+          namespace=~"openshift-monitoring|openshift-user-workload-monitoring|appstudio-monitoring",
+          job=~"prometheus.*"
+        }) > 300
+      for: 5m
+      labels:
+        severity: warning
+        component: prometheus
+        slo: "false"
+      annotations:
+        summary: "Prometheus federation delay high for {{ $labels.pod }} on cluster {{ $labels.source_cluster }}"
+        description: "Prometheus instance {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} has a federation delay of {{ $value | humanizeDuration }}. Data is not being sent to RHOBS in a timely manner, which may delay alerting."
+        alert_routing_key: o11y
+        team: o11y
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-prometheus-federation-delay.md

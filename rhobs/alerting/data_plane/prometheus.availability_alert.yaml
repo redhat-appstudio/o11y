@@ -1,0 +1,28 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-prometheus-availability-alert
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: prometheus_availability_alert
+    interval: 1m
+    rules:
+    - alert: PrometheusUnavailable
+      expr: |
+        up{
+          namespace=~"openshift-monitoring|openshift-user-workload-monitoring|appstudio-monitoring",
+          job=~"prometheus.*"
+        } == 0
+      for: 2m
+      labels:
+        severity: critical
+        component: prometheus
+        slo: "true"
+      annotations:
+        summary: "Prometheus instance {{ $labels.pod }} is unavailable on cluster {{ $labels.source_cluster }}"
+        description: "Prometheus instance {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} has been unavailable for more than 2 minutes."
+        alert_team_handle: "<!subteam^S06LGCC3C2V>"
+        team: o11y
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-prometheus-unavailable.md

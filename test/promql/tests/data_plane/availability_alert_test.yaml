@@ -1,0 +1,71 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.availability_alert.yaml
+
+tests:
+  # Positive test: Alert fires when Prometheus is down for 2+ minutes
+  - interval: 1m
+    input_series:
+      - series: 'up{job="prometheus-k8s",namespace="openshift-monitoring",pod="prometheus-k8s-0",source_cluster="cluster01"}'
+        values: '0x3'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: PrometheusUnavailable
+        exp_alerts:
+          - exp_labels:
+              component: prometheus
+              job: prometheus-k8s
+              namespace: openshift-monitoring
+              pod: prometheus-k8s-0
+              severity: critical
+              slo: "true"
+              source_cluster: cluster01
+            exp_annotations:
+              summary: 'Prometheus instance prometheus-k8s-0 is unavailable on cluster cluster01'
+              description: 'Prometheus instance prometheus-k8s-0 in namespace openshift-monitoring on cluster cluster01 has been unavailable for more than 2 minutes.'
+              alert_team_handle: "<!subteam^S06LGCC3C2V>"
+              team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-prometheus-unavailable.md
+
+  # Negative test: No alert when Prometheus is up
+  - interval: 1m
+    input_series:
+      - series: 'up{job="prometheus-k8s",namespace="openshift-monitoring",pod="prometheus-k8s-0",source_cluster="cluster01"}'
+        values: '1x3'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: PrometheusUnavailable
+
+  # Duration test: No alert if down for only 1 minute
+  - interval: 1m
+    input_series:
+      - series: 'up{job="prometheus-k8s",namespace="openshift-monitoring",pod="prometheus-k8s-0",source_cluster="cluster01"}'
+        values: '0x2 1x1'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: PrometheusUnavailable
+
+  # Multiple namespaces test: Alert works for user-workload-monitoring
+  - interval: 1m
+    input_series:
+      - series: 'up{job="prometheus-user-workload",namespace="openshift-user-workload-monitoring",pod="prometheus-user-workload-0",source_cluster="cluster02"}'
+        values: '0x3'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: PrometheusUnavailable
+        exp_alerts:
+          - exp_labels:
+              component: prometheus
+              job: prometheus-user-workload
+              namespace: openshift-user-workload-monitoring
+              pod: prometheus-user-workload-0
+              severity: critical
+              slo: "true"
+              source_cluster: cluster02
+            exp_annotations:
+              summary: 'Prometheus instance prometheus-user-workload-0 is unavailable on cluster cluster02'
+              description: 'Prometheus instance prometheus-user-workload-0 in namespace openshift-user-workload-monitoring on cluster cluster02 has been unavailable for more than 2 minutes.'
+              alert_team_handle: "<!subteam^S06LGCC3C2V>"
+              team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-prometheus-unavailable.md
