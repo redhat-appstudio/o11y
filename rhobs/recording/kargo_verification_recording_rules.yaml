@@ -1,0 +1,25 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-kargo-verification
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: kargo_verification
+      interval: 1m
+      rules:
+        # Count of live AnalysisRuns per Kargo project, component, ring, and phase.
+        # Collapses the unique AnalysisRun name (promotion-id.freight-sha) to avoid
+        # cardinality explosion.
+        - record: kargo:verification:count
+          expr: |
+            sum by (exported_namespace, component, stage, phase) (
+              label_replace(
+                label_replace(
+                  analysis_run_phase{namespace="argo-rollouts"},
+                  "component", "$1", "name", "ring-[0-9]+-([^.]+)\\..*"
+                ),
+                "stage", "$1", "name", "(ring-[0-9]+)-.*"
+              )
+            )
