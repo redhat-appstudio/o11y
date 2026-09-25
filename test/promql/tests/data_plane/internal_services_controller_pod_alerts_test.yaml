@@ -1,0 +1,125 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.internal_services_controller_pod_alerts.yaml
+
+tests:
+  # ---- Positive: controller pod in Pending state fires alert ----
+
+  - name: ControllerPodPendingAlerts
+    interval: 1m
+    input_series:
+      - series: 'kube_pod_status_phase{pod="internal-services-controller-manager-abc123", namespace="internal-services", phase="Pending", source_cluster="cluster01"}'
+        values: '1x14'
+      - series: 'kube_pod_status_phase{pod="internal-services-controller-manager-abc123", namespace="internal-services", phase="Unknown", source_cluster="cluster01"}'
+        values: '0x14'
+      - series: 'kube_pod_status_phase{pod="internal-services-controller-manager-abc123", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '0x14'
+      - series: 'kube_pod_status_unschedulable{namespace="internal-services", pod="internal-services-controller-manager-abc123", source_cluster="cluster01"}'
+        values: '0x14'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: InternalServicesControllerPodNotReady
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              namespace: internal-services
+              pod: internal-services-controller-manager-abc123
+              phase: Pending
+              source_cluster: cluster01
+            exp_annotations:
+              summary: >-
+                Controller pod internal-services-controller-manager-abc123 in internal-services is not ready
+              description: >-
+                Controller pod internal-services-controller-manager-abc123 in namespace internal-services
+                on cluster cluster01 is not ready for more than
+                15 minutes.
+              alert_routing_key: internal-services
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-PodNotReady.md
+
+  # ---- Positive: manager pod in Failed state fires alert ----
+
+  - name: ManagerPodFailedAlerts
+    interval: 1m
+    input_series:
+      - series: 'kube_pod_status_phase{pod="release-manager-xyz789", namespace="internal-services", phase="Failed", source_cluster="cluster02"}'
+        values: '1x14'
+      - series: 'kube_pod_status_phase{pod="release-manager-xyz789", namespace="internal-services", phase="Pending", source_cluster="cluster02"}'
+        values: '0x14'
+      - series: 'kube_pod_status_unschedulable{namespace="internal-services", pod="release-manager-xyz789", source_cluster="cluster02"}'
+        values: '0x14'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: InternalServicesControllerPodNotReady
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              namespace: internal-services
+              pod: release-manager-xyz789
+              phase: Failed
+              source_cluster: cluster02
+            exp_annotations:
+              summary: >-
+                Controller pod release-manager-xyz789 in internal-services is not ready
+              description: >-
+                Controller pod release-manager-xyz789 in namespace internal-services
+                on cluster cluster02 is not ready for more than
+                15 minutes.
+              alert_routing_key: internal-services
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-PodNotReady.md
+
+  # ---- Negative: non-controller pod does not fire ----
+
+  - name: NonControllerPodDoesNotAlert
+    interval: 1m
+    input_series:
+      - series: 'kube_pod_status_phase{pod="signing-pod-abc123", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x14'
+      - series: 'kube_pod_status_unschedulable{namespace="internal-services", pod="signing-pod-abc123", source_cluster="cluster01"}'
+        values: '0x14'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: InternalServicesControllerPodNotReady
+        exp_alerts: []
+
+  # ---- Negative: unschedulable controller pod does not fire ----
+
+  - name: UnschedulableControllerDoesNotAlert
+    interval: 1m
+    input_series:
+      - series: 'kube_pod_status_phase{pod="internal-services-controller-manager-abc123", namespace="internal-services", phase="Pending", source_cluster="cluster01"}'
+        values: '1x14'
+      - series: 'kube_pod_status_unschedulable{namespace="internal-services", pod="internal-services-controller-manager-abc123", source_cluster="cluster01"}'
+        values: '1x14'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: InternalServicesControllerPodNotReady
+        exp_alerts: []
+
+  # ---- Negative: controller pod in wrong namespace does not fire ----
+
+  - name: WrongNamespaceDoesNotAlert
+    interval: 1m
+    input_series:
+      - series: 'kube_pod_status_phase{pod="some-controller-manager-abc123", namespace="release-service", phase="Failed", source_cluster="cluster01"}'
+        values: '1x14'
+      - series: 'kube_pod_status_unschedulable{namespace="release-service", pod="some-controller-manager-abc123", source_cluster="cluster01"}'
+        values: '0x14'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: InternalServicesControllerPodNotReady
+        exp_alerts: []
+
+  # ---- Negative: alert does not fire before 15m threshold ----
+
+  - name: DoesNotFireBefore15m
+    interval: 1m
+    input_series:
+      - series: 'kube_pod_status_phase{pod="internal-services-controller-manager-abc123", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x13'
+      - series: 'kube_pod_status_unschedulable{namespace="internal-services", pod="internal-services-controller-manager-abc123", source_cluster="cluster01"}'
+        values: '0x13'
+    alert_rule_test:
+      - eval_time: 14m
+        alertname: InternalServicesControllerPodNotReady
+        exp_alerts: []
