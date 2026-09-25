@@ -10,12 +10,15 @@ spec:
     interval: 1m
     rules:
     - alert: UnschedulablePods
-      expr: last_over_time(kube_pod_status_unschedulable{namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-templates-e2e|multi-platform-.*)"}[5m]) == 1
+      expr: min_over_time(kube_pod_status_unschedulable{namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-templates-e2e|multi-platform-.*|clusters-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|clusters|proactive-scaler|.*-provision-namespace-.*|.*-provision-eaas-space-.*|.*-provision-env-.*|.*-deploy-ephemeral-.*)"}[5m]) == 1
       for: 30m
       labels:
         severity: warning
+        slo: "false"
+        team: o11y
+        component: kube-state-metrics
       annotations:
-        summary: Pod {{ $labels.pod }} cannot be scheduled.
+        summary: Pod {{ $labels.namespace }}/{{ $labels.pod }} on {{ $labels.source_cluster }} cannot be scheduled.
         description: >-
           Pod {{ $labels.pod }} for namespace {{ $labels.namespace }} on cluster
           {{ $labels.source_cluster }} is unscheduled for more than 30 minutes.
