@@ -67,9 +67,10 @@ tests:
       - series: 'kube_pod_status_unschedulable{namespace="ci-test-deploy-ephemeral-run1", pod="deploy-pod", source_cluster="kflux-ocp-p01"}'
         values: '1x60'
 
-      # min_over_time: pod unschedulable 25m then recovers — must NOT alert (never continuously unschedulable for 30m)
+      # min_over_time: pod unschedulable 25m then explicitly recovers (value=0) and stays recovered.
+      # Series remains present through evaluation to prove absence is not causing the test to pass.
       - series: 'kube_pod_status_unschedulable{namespace="prod", pod="recovered-pod", source_cluster="cluster08"}'
-        values: '1x25'
+        values: '1x25 0x35'
 
     alert_rule_test:
       - eval_time: 60m
