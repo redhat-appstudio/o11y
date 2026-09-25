@@ -279,6 +279,290 @@ tests:
               team: o11y
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
 
+  # Registry exporter multi-cluster availability tests
+  # Push fails on every node in two clusters while pull succeeds (read-only/write-outage signal).
+  - interval: 1m
+    input_series:
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c1-node1", source_cluster="c1"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c1-node2", source_cluster="c1"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c2-node1", source_cluster="c2"}'
+        values: "1x11"
+      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
+        values: "1x11"
+      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c2"}'
+        values: "1x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c1"}'
+        values: "0x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="push", source_cluster="c1"}'
+        values: "0x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="pull", source_cluster="c1"}'
+        values: "1x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="pull", source_cluster="c1"}'
+        values: "1x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c2"}'
+        values: "0x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="pull", source_cluster="c2"}'
+        values: "1x11"
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: RegistryExporterMultiClusterPushFailure
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              tested_registry: quay.io
+              slo: "false"
+              component: registry-exporter
+            exp_annotations:
+              summary: >-
+                Push tests are failing across multiple clusters for quay.io while pull tests succeed
+              description: >-
+                Push tests have failed across all nodes in more than 20% of reporting clusters for 10 minutes while pull tests remain successful.
+                The registry may be in read-only mode or experiencing a write outage.
+              alert_routing_key: o11y
+              team: o11y
+
+  # A push failure in one of six reporting clusters does not exceed 20%.
+  - interval: 1m
+    input_series:
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c1", source_cluster="c1"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c2", source_cluster="c2"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c3", source_cluster="c3"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c4", source_cluster="c4"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c5", source_cluster="c5"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c6", source_cluster="c6"}'
+        values: "1x11"
+      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
+        values: "1x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c1"}'
+        values: "0x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="pull", source_cluster="c1"}'
+        values: "1x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c2"}'
+        values: "1x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c3"}'
+        values: "1x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c4"}'
+        values: "1x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c5"}'
+        values: "1x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c6"}'
+        values: "1x11"
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: RegistryExporterMultiClusterPushFailure
+        exp_alerts: []
+
+  # Push and pull fail on every node in two clusters (registry-wide outage signal).
+  - interval: 1m
+    input_series:
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c1-node1", source_cluster="c1"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c1-node2", source_cluster="c1"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c2", source_cluster="c2"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c3", source_cluster="c3"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c4", source_cluster="c4"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c5", source_cluster="c5"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c6", source_cluster="c6"}'
+        values: "1x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c1"}'
+        values: "0x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="push", source_cluster="c1"}'
+        values: "0x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="pull", source_cluster="c1"}'
+        values: "0x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="pull", source_cluster="c1"}'
+        values: "0x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c2"}'
+        values: "0x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="pull", source_cluster="c2"}'
+        values: "0x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c3"}'
+        values: "1x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c4"}'
+        values: "1x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c5"}'
+        values: "1x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c6"}'
+        values: "1x11"
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: RegistryExporterMultiClusterPushPullFailure
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              tested_registry: quay.io
+              slo: "false"
+              component: registry-exporter
+            exp_annotations:
+              summary: >-
+                Push and pull tests are failing across multiple clusters for quay.io
+              description: >-
+                Push and pull tests have both failed across all nodes in more than 20% of reporting clusters for 10 minutes.
+                This indicates a possible registry-wide outage.
+              alert_routing_key: o11y
+              team: o11y
+
+  # Missing one operation result must not be interpreted as a complete outage,
+  # even when every discovered exporter node reports some telemetry.
+  - interval: 1m
+    input_series:
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c1-node1", source_cluster="c1"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c1-node2", source_cluster="c1"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c2", source_cluster="c2"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c3", source_cluster="c3"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c4", source_cluster="c4"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c5", source_cluster="c5"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c6", source_cluster="c6"}'
+        values: "1x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c1"}'
+        values: "0x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="push", source_cluster="c1"}'
+        values: "0x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="pull", source_cluster="c1"}'
+        values: "0x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c2"}'
+        values: "0x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="pull", source_cluster="c2"}'
+        values: "0x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c3"}'
+        values: "1x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c4"}'
+        values: "1x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c5"}'
+        values: "1x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c6"}'
+        values: "1x11"
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: RegistryExporterMultiClusterPushPullFailure
+        exp_alerts: []
+
+  # A discovered exporter node with no operation telemetry must not be
+  # interpreted as a complete outage, even when all reporting nodes provide
+  # paired push and pull failures.
+  - interval: 1m
+    input_series:
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c1-node1", source_cluster="c1"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c1-node2", source_cluster="c1"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c1-silent", source_cluster="c1"}'
+        values: "0x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c2", source_cluster="c2"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c3", source_cluster="c3"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c4", source_cluster="c4"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c5", source_cluster="c5"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c6", source_cluster="c6"}'
+        values: "1x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c1"}'
+        values: "0x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="pull", source_cluster="c1"}'
+        values: "0x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="push", source_cluster="c1"}'
+        values: "0x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node2", type="pull", source_cluster="c1"}'
+        values: "0x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c2"}'
+        values: "0x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="pull", source_cluster="c2"}'
+        values: "0x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c3"}'
+        values: "1x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c4"}'
+        values: "1x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c5"}'
+        values: "1x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c6"}'
+        values: "1x11"
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: RegistryExporterMultiClusterPushPullFailure
+        exp_alerts: []
+
+  # Exactly 20% failing (2 of 10 clusters) does not exceed the fleet-wide threshold.
+  - interval: 1m
+    input_series:
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c1", source_cluster="c1"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c2", source_cluster="c2"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c3", source_cluster="c3"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c4", source_cluster="c4"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c5", source_cluster="c5"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c6", source_cluster="c6"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c7", source_cluster="c7"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c8", source_cluster="c8"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c9", source_cluster="c9"}'
+        values: "1x11"
+      - series: 'up{namespace="appstudio-registry-exporter", job="appstudio-registry-exporter/registry-exporter-ds-podmonitor", pod="exporter-c10", source_cluster="c10"}'
+        values: "1x11"
+      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c1"}'
+        values: "1x11"
+      - series: 'konflux_up{service="registry-exporter", check="quay.io", source_cluster="c2"}'
+        values: "1x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c1"}'
+        values: "0x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="pull", source_cluster="c1"}'
+        values: "1x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c2"}'
+        values: "0x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="pull", source_cluster="c2"}'
+        values: "1x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c3"}'
+        values: "1x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c4"}'
+        values: "1x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c5"}'
+        values: "1x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c6"}'
+        values: "1x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c7"}'
+        values: "1x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c8"}'
+        values: "1x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c9"}'
+        values: "1x11"
+      - series: 'registry_exporter_success{tested_registry="quay.io", node="node1", type="push", source_cluster="c10"}'
+        values: "1x11"
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: RegistryExporterMultiClusterPushFailure
+        exp_alerts: []
+
   # Registry exporter test-type failure tests
   # Single test type failing on all nodes (should alert for that type)
   - interval: 1m

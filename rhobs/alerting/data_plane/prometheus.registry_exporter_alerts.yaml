@@ -78,6 +78,117 @@ spec:
         alert_routing_key: o11y
         team: o11y
 
+  # Detect a likely read-only registry when pushes fail fleet-wide but pulls remain available.
+  - name: registry-exporter-multi-cluster-availability
+    interval: 1m
+    rules:
+    - alert: RegistryExporterMultiClusterPushFailure
+      expr: |
+        count by(tested_registry) (
+          (
+            max by(source_cluster, tested_registry) (
+              registry_exporter_success{tested_registry="quay.io", type="push"}
+            ) == 0
+            and on(source_cluster, tested_registry)
+            max by(source_cluster, tested_registry) (
+              registry_exporter_success{tested_registry="quay.io", type="pull"}
+            ) == 1
+          )
+          and on(source_cluster)
+          (
+            count by(source_cluster) (
+              count by(source_cluster, node) (
+                registry_exporter_success{tested_registry="quay.io", type=~"push|pull"}
+              ) == 2
+            )
+            ==
+            count by(source_cluster) (
+              up{
+                namespace="appstudio-registry-exporter",
+                job="appstudio-registry-exporter/registry-exporter-ds-podmonitor"
+              }
+            )
+          )
+          and on(source_cluster, tested_registry)
+            label_replace(
+              konflux_up{service="registry-exporter", check="quay.io"} == 1,
+              "tested_registry", "$1", "check", "(.*)"
+            )
+        )
+        /
+        count by(tested_registry) (
+          max by(source_cluster, tested_registry) (
+            registry_exporter_success{tested_registry="quay.io", type=~"push|pull"}
+          )
+        ) > 0.20
+      for: 10m
+      labels:
+        severity: critical
+        slo: "false"
+        component: registry-exporter
+      annotations:
+        summary: >-
+          Push tests are failing across multiple clusters for {{ $labels.tested_registry }} while pull tests succeed
+        description: >-
+          Push tests have failed across all nodes in more than 20% of reporting clusters for 10 minutes while pull tests remain successful.
+          The registry may be in read-only mode or experiencing a write outage.
+        alert_routing_key: o11y
+        team: o11y
+
+    - alert: RegistryExporterMultiClusterPushPullFailure
+      expr: |
+        count by(tested_registry) (
+          (
+            min by(source_cluster, tested_registry) (
+              (
+                count by(source_cluster, tested_registry, node) (
+                  registry_exporter_success{tested_registry="quay.io", type=~"push|pull"}
+                ) == bool 2
+              )
+              *
+              (
+                max by(source_cluster, tested_registry, node) (
+                  registry_exporter_success{tested_registry="quay.io", type=~"push|pull"}
+                ) == bool 0
+              )
+            ) == 1
+          )
+          and on(source_cluster)
+          (
+            count by(source_cluster) (
+              count by(source_cluster, node) (
+                registry_exporter_success{tested_registry="quay.io", type=~"push|pull"}
+              ) == 2
+            )
+            ==
+            count by(source_cluster) (
+              up{
+                namespace="appstudio-registry-exporter",
+                job="appstudio-registry-exporter/registry-exporter-ds-podmonitor"
+              }
+            )
+          )
+        )
+        /
+        count by(tested_registry) (
+          max by(source_cluster, tested_registry) (
+            registry_exporter_success{tested_registry="quay.io", type=~"push|pull"}
+          )
+        ) > 0.20
+      for: 10m
+      labels:
+        severity: critical
+        slo: "false"
+        component: registry-exporter
+      annotations:
+        summary: >-
+          Push and pull tests are failing across multiple clusters for {{ $labels.tested_registry }}
+        description: >-
+          Push and pull tests have both failed across all nodes in more than 20% of reporting clusters for 10 minutes.
+          This indicates a possible registry-wide outage.
+        alert_routing_key: o11y
+        team: o11y
+
   # Notify o11y team when a significant percentage of nodes are failing, but cluster-level check is still passing.
   - name: registry-exporter-node-availability
     interval: 1m
