@@ -1,0 +1,448 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.internal_services_pod_alerts.yaml
+
+tests:
+  # ---- InternalServicesControllerPodNotReady ----
+
+  - name: ControllerPodPendingAlerts
+    interval: 1m
+    input_series:
+      # Controller pod in Pending state - should alert
+      - series: 'kube_pod_status_phase{pod="internal-services-controller-manager-abc123", namespace="internal-services", phase="Pending", source_cluster="cluster01"}'
+        values: '1x14'
+      - series: 'kube_pod_status_phase{pod="internal-services-controller-manager-abc123", namespace="internal-services", phase="Unknown", source_cluster="cluster01"}'
+        values: '0x14'
+      - series: 'kube_pod_status_phase{pod="internal-services-controller-manager-abc123", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '0x14'
+      - series: 'kube_pod_status_unschedulable{namespace="internal-services", pod="internal-services-controller-manager-abc123", source_cluster="cluster01"}'
+        values: '0x14'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: InternalServicesControllerPodNotReady
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              component: internal-services
+              namespace: internal-services
+              pod: internal-services-controller-manager-abc123
+              phase: Pending
+              source_cluster: cluster01
+            exp_annotations:
+              summary: >-
+                Controller pod internal-services-controller-manager-abc123 in internal-services is not ready
+              description: >-
+                Controller pod internal-services-controller-manager-abc123 in namespace internal-services
+                on cluster cluster01 is not ready for more than
+                15 minutes.
+              alert_routing_key: internal-services
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-PodNotReady.md
+              team: release
+
+  - name: ControllerPodFailedAlerts
+    interval: 1m
+    input_series:
+      # Manager pod in Failed state - should alert
+      - series: 'kube_pod_status_phase{pod="release-manager-xyz789", namespace="internal-services", phase="Failed", source_cluster="cluster02"}'
+        values: '1x14'
+      - series: 'kube_pod_status_phase{pod="release-manager-xyz789", namespace="internal-services", phase="Pending", source_cluster="cluster02"}'
+        values: '0x14'
+      - series: 'kube_pod_status_unschedulable{namespace="internal-services", pod="release-manager-xyz789", source_cluster="cluster02"}'
+        values: '0x14'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: InternalServicesControllerPodNotReady
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              component: internal-services
+              namespace: internal-services
+              pod: release-manager-xyz789
+              phase: Failed
+              source_cluster: cluster02
+            exp_annotations:
+              summary: >-
+                Controller pod release-manager-xyz789 in internal-services is not ready
+              description: >-
+                Controller pod release-manager-xyz789 in namespace internal-services
+                on cluster cluster02 is not ready for more than
+                15 minutes.
+              alert_routing_key: internal-services
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-PodNotReady.md
+              team: release
+
+  - name: NonControllerPodDoesNotTriggerControllerAlert
+    interval: 1m
+    input_series:
+      # Signing pod (not controller/manager) in Failed state - should NOT alert
+      - series: 'kube_pod_status_phase{pod="signing-pod-abc123", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x14'
+      - series: 'kube_pod_status_unschedulable{namespace="internal-services", pod="signing-pod-abc123", source_cluster="cluster01"}'
+        values: '0x14'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: InternalServicesControllerPodNotReady
+        exp_alerts: []
+
+  - name: ControllerPodUnschedulableDoesNotAlert
+    interval: 1m
+    input_series:
+      # Controller pod that is unschedulable - should NOT alert
+      - series: 'kube_pod_status_phase{pod="internal-services-controller-manager-abc123", namespace="internal-services", phase="Pending", source_cluster="cluster01"}'
+        values: '1x14'
+      - series: 'kube_pod_status_unschedulable{namespace="internal-services", pod="internal-services-controller-manager-abc123", source_cluster="cluster01"}'
+        values: '1x14'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: InternalServicesControllerPodNotReady
+        exp_alerts: []
+
+  - name: WrongNamespaceDoesNotTriggerControllerAlert
+    interval: 1m
+    input_series:
+      # Controller pod in wrong namespace - should NOT alert
+      - series: 'kube_pod_status_phase{pod="some-controller-manager-abc123", namespace="release-service", phase="Failed", source_cluster="cluster01"}'
+        values: '1x14'
+      - series: 'kube_pod_status_unschedulable{namespace="release-service", pod="some-controller-manager-abc123", source_cluster="cluster01"}'
+        values: '0x14'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: InternalServicesControllerPodNotReady
+        exp_alerts: []
+
+  # ---- InternalServicesHighPodFailureCount ----
+
+  - name: HighPodFailureCountAlerts
+    interval: 1m
+    input_series:
+      # 21 non-Job pods in Failed state - should alert (threshold > 20)
+      - series: 'kube_pod_status_phase{pod="signing-pod-01", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="signing-pod-02", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="signing-pod-03", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="signing-pod-04", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="signing-pod-05", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="signing-pod-06", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="signing-pod-07", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="signing-pod-08", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="signing-pod-09", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="signing-pod-10", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="signing-pod-11", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="signing-pod-12", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="signing-pod-13", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="signing-pod-14", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="signing-pod-15", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="signing-pod-16", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="signing-pod-17", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="signing-pod-18", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="signing-pod-19", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="signing-pod-20", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="signing-pod-21", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      # All owned by ReplicaSet (not Job)
+      - series: 'kube_pod_owner{namespace="internal-services", pod="signing-pod-01", owner_kind="ReplicaSet", owner_name="signing-rs", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="signing-pod-02", owner_kind="ReplicaSet", owner_name="signing-rs", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="signing-pod-03", owner_kind="ReplicaSet", owner_name="signing-rs", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="signing-pod-04", owner_kind="ReplicaSet", owner_name="signing-rs", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="signing-pod-05", owner_kind="ReplicaSet", owner_name="signing-rs", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="signing-pod-06", owner_kind="ReplicaSet", owner_name="signing-rs", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="signing-pod-07", owner_kind="ReplicaSet", owner_name="signing-rs", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="signing-pod-08", owner_kind="ReplicaSet", owner_name="signing-rs", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="signing-pod-09", owner_kind="ReplicaSet", owner_name="signing-rs", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="signing-pod-10", owner_kind="ReplicaSet", owner_name="signing-rs", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="signing-pod-11", owner_kind="ReplicaSet", owner_name="signing-rs", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="signing-pod-12", owner_kind="ReplicaSet", owner_name="signing-rs", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="signing-pod-13", owner_kind="ReplicaSet", owner_name="signing-rs", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="signing-pod-14", owner_kind="ReplicaSet", owner_name="signing-rs", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="signing-pod-15", owner_kind="ReplicaSet", owner_name="signing-rs", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="signing-pod-16", owner_kind="ReplicaSet", owner_name="signing-rs", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="signing-pod-17", owner_kind="ReplicaSet", owner_name="signing-rs", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="signing-pod-18", owner_kind="ReplicaSet", owner_name="signing-rs", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="signing-pod-19", owner_kind="ReplicaSet", owner_name="signing-rs", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="signing-pod-20", owner_kind="ReplicaSet", owner_name="signing-rs", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="signing-pod-21", owner_kind="ReplicaSet", owner_name="signing-rs", source_cluster="cluster01"}'
+        values: '1x29'
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: InternalServicesHighPodFailureCount
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              component: internal-services
+              source_cluster: cluster01
+              namespace: internal-services
+            exp_annotations:
+              summary: >-
+                High number of failed pods in internal-services namespace
+              description: >-
+                More than 20 non-Job pods in namespace internal-services on
+                cluster cluster01 are in a non-ready state for
+                more than 30 minutes. This may indicate a systemic issue with
+                signing workflows or resource constraints.
+              alert_routing_key: internal-services
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-PodNotReady.md
+              team: release
+
+  - name: BelowThresholdDoesNotAlert
+    interval: 1m
+    input_series:
+      # 5 non-Job pods in Failed state - should NOT alert (below threshold of 20)
+      - series: 'kube_pod_status_phase{pod="signing-pod-01", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="signing-pod-02", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="signing-pod-03", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="signing-pod-04", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="signing-pod-05", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: InternalServicesHighPodFailureCount
+        exp_alerts: []
+
+  - name: JobPodsExcludedFromCount
+    interval: 1m
+    input_series:
+      # 21 pods in Failed state but all Job-owned - should NOT alert
+      - series: 'kube_pod_status_phase{pod="cleanup-job-01", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="cleanup-job-02", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="cleanup-job-03", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="cleanup-job-04", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="cleanup-job-05", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="cleanup-job-06", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="cleanup-job-07", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="cleanup-job-08", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="cleanup-job-09", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="cleanup-job-10", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="cleanup-job-11", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="cleanup-job-12", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="cleanup-job-13", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="cleanup-job-14", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="cleanup-job-15", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="cleanup-job-16", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="cleanup-job-17", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="cleanup-job-18", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="cleanup-job-19", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="cleanup-job-20", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="cleanup-job-21", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      # All owned by Job
+      - series: 'kube_pod_owner{namespace="internal-services", pod="cleanup-job-01", owner_kind="Job", owner_name="cleanup-29831230", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="cleanup-job-02", owner_kind="Job", owner_name="cleanup-29831230", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="cleanup-job-03", owner_kind="Job", owner_name="cleanup-29831230", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="cleanup-job-04", owner_kind="Job", owner_name="cleanup-29831230", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="cleanup-job-05", owner_kind="Job", owner_name="cleanup-29831230", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="cleanup-job-06", owner_kind="Job", owner_name="cleanup-29831230", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="cleanup-job-07", owner_kind="Job", owner_name="cleanup-29831230", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="cleanup-job-08", owner_kind="Job", owner_name="cleanup-29831230", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="cleanup-job-09", owner_kind="Job", owner_name="cleanup-29831230", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="cleanup-job-10", owner_kind="Job", owner_name="cleanup-29831230", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="cleanup-job-11", owner_kind="Job", owner_name="cleanup-29831230", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="cleanup-job-12", owner_kind="Job", owner_name="cleanup-29831230", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="cleanup-job-13", owner_kind="Job", owner_name="cleanup-29831230", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="cleanup-job-14", owner_kind="Job", owner_name="cleanup-29831230", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="cleanup-job-15", owner_kind="Job", owner_name="cleanup-29831230", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="cleanup-job-16", owner_kind="Job", owner_name="cleanup-29831230", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="cleanup-job-17", owner_kind="Job", owner_name="cleanup-29831230", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="cleanup-job-18", owner_kind="Job", owner_name="cleanup-29831230", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="cleanup-job-19", owner_kind="Job", owner_name="cleanup-29831230", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="cleanup-job-20", owner_kind="Job", owner_name="cleanup-29831230", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="cleanup-job-21", owner_kind="Job", owner_name="cleanup-29831230", source_cluster="cluster01"}'
+        values: '1x29'
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: InternalServicesHighPodFailureCount
+        exp_alerts: []
+
+  - name: CrossClusterJobOwnerDoesNotSuppressFailure
+    interval: 1m
+    input_series:
+      # 21 non-Job pods failing on cluster01, but same-named Job-owned pods
+      # exist on cluster02 — cross-cluster owner must NOT suppress the alert.
+      - series: 'kube_pod_status_phase{pod="shared-name-01", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="shared-name-02", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="shared-name-03", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="shared-name-04", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="shared-name-05", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="shared-name-06", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="shared-name-07", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="shared-name-08", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="shared-name-09", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="shared-name-10", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="shared-name-11", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="shared-name-12", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="shared-name-13", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="shared-name-14", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="shared-name-15", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="shared-name-16", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="shared-name-17", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="shared-name-18", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="shared-name-19", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="shared-name-20", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      - series: 'kube_pod_status_phase{pod="shared-name-21", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+        values: '1x29'
+      # Job owners on cluster02 only — must not suppress cluster01 pods
+      - series: 'kube_pod_owner{namespace="internal-services", pod="shared-name-01", owner_kind="Job", owner_name="some-job", source_cluster="cluster02"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="shared-name-02", owner_kind="Job", owner_name="some-job", source_cluster="cluster02"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="shared-name-03", owner_kind="Job", owner_name="some-job", source_cluster="cluster02"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="shared-name-04", owner_kind="Job", owner_name="some-job", source_cluster="cluster02"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="shared-name-05", owner_kind="Job", owner_name="some-job", source_cluster="cluster02"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="shared-name-06", owner_kind="Job", owner_name="some-job", source_cluster="cluster02"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="shared-name-07", owner_kind="Job", owner_name="some-job", source_cluster="cluster02"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="shared-name-08", owner_kind="Job", owner_name="some-job", source_cluster="cluster02"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="shared-name-09", owner_kind="Job", owner_name="some-job", source_cluster="cluster02"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="shared-name-10", owner_kind="Job", owner_name="some-job", source_cluster="cluster02"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="shared-name-11", owner_kind="Job", owner_name="some-job", source_cluster="cluster02"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="shared-name-12", owner_kind="Job", owner_name="some-job", source_cluster="cluster02"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="shared-name-13", owner_kind="Job", owner_name="some-job", source_cluster="cluster02"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="shared-name-14", owner_kind="Job", owner_name="some-job", source_cluster="cluster02"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="shared-name-15", owner_kind="Job", owner_name="some-job", source_cluster="cluster02"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="shared-name-16", owner_kind="Job", owner_name="some-job", source_cluster="cluster02"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="shared-name-17", owner_kind="Job", owner_name="some-job", source_cluster="cluster02"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="shared-name-18", owner_kind="Job", owner_name="some-job", source_cluster="cluster02"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="shared-name-19", owner_kind="Job", owner_name="some-job", source_cluster="cluster02"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="shared-name-20", owner_kind="Job", owner_name="some-job", source_cluster="cluster02"}'
+        values: '1x29'
+      - series: 'kube_pod_owner{namespace="internal-services", pod="shared-name-21", owner_kind="Job", owner_name="some-job", source_cluster="cluster02"}'
+        values: '1x29'
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: InternalServicesHighPodFailureCount
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              component: internal-services
+              source_cluster: cluster01
+              namespace: internal-services
+            exp_annotations:
+              summary: >-
+                High number of failed pods in internal-services namespace
+              description: >-
+                More than 20 non-Job pods in namespace internal-services on
+                cluster cluster01 are in a non-ready state for
+                more than 30 minutes. This may indicate a systemic issue with
+                signing workflows or resource constraints.
+              alert_routing_key: internal-services
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-PodNotReady.md
+              team: release
