@@ -254,3 +254,93 @@ tests:
           # Assert Target 2 went DOWN (caught the sustained outage)
           - labels: '{job="pwvs", target="net02", source_cluster="cluster01", check="probe-pwvs", service="pwvs"}'
             value: 0
+
+  # =========================================================================
+  # Rekor Probe Alerts
+  # =========================================================================
+
+  # RekorSingleClusterProbeDown: fires when one cluster is down but another is up
+  - interval: 1m
+    input_series:
+      - series: konflux_up{job="rekor-prod",instance="rekor-prod-endpoint",target="log",source_cluster="stone-prod-p01",check="probe",service="rekor-prod"}
+        values: 1x5 0x30
+      - series: konflux_up{job="rekor-prod",instance="rekor-prod-endpoint",target="log",source_cluster="stone-prod-p02",check="probe",service="rekor-prod"}
+        values: 1x35
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: RekorSingleClusterProbeDown
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              slo: "false"
+              job: rekor-prod
+              instance: rekor-prod-endpoint
+              target: log
+              source_cluster: stone-prod-p01
+              check: probe
+              service: rekor-prod
+            exp_annotations:
+              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.probe_alerts.yaml#L143
+              summary: Rekor probe down on stone-prod-p01.
+              description: Rekor probe (rekor-prod) on stone-prod-p01 has been down for 10 minutes. At least one other cluster can still reach Rekor.
+              alert_routing_key: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/rekor-triage-and-escalation.md
+
+  # RekorSingleClusterProbeDown: does NOT fire when ALL clusters are down (critical takes over)
+  - interval: 1m
+    input_series:
+      - series: konflux_up{job="rekor-prod",instance="rekor-prod-endpoint",target="log",source_cluster="stone-prod-p01",check="probe",service="rekor-prod"}
+        values: 1x5 0x30
+      - series: konflux_up{job="rekor-prod",instance="rekor-prod-endpoint",target="log",source_cluster="stone-prod-p02",check="probe",service="rekor-prod"}
+        values: 1x5 0x30
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: RekorSingleClusterProbeDown
+        exp_alerts: []
+
+  # RekorAllClustersProbeDown: fires when all clusters are down
+  - interval: 1m
+    input_series:
+      - series: konflux_up{job="rekor-prod",instance="rekor-prod-endpoint",target="log",source_cluster="stone-prod-p01",check="probe",service="rekor-prod"}
+        values: 1x5 0x30
+      - series: konflux_up{job="rekor-prod",instance="rekor-prod-endpoint",target="log",source_cluster="stone-prod-p02",check="probe",service="rekor-prod"}
+        values: 1x5 0x30
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: RekorAllClustersProbeDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              job: rekor-prod
+              instance: rekor-prod-endpoint
+            exp_annotations:
+              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.probe_alerts.yaml#L163
+              summary: Rekor probe down on ALL clusters.
+              description: Rekor probe (rekor-prod) is failing on all monitored clusters for the last 10 minutes. Complete Rekor outage — signing and verification will be impacted.
+              alert_team_handle: '<!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>'
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/rekor-triage-and-escalation.md
+
+  # RekorAllClustersProbeDown: does NOT fire for partial outage
+  - interval: 1m
+    input_series:
+      - series: konflux_up{job="rekor-prod",instance="rekor-prod-endpoint",target="log",source_cluster="stone-prod-p01",check="probe",service="rekor-prod"}
+        values: 1x5 0x30
+      - series: konflux_up{job="rekor-prod",instance="rekor-prod-endpoint",target="log",source_cluster="stone-prod-p02",check="probe",service="rekor-prod"}
+        values: 1x35
+    alert_rule_test:
+      - eval_time: 16m
+        alertname: RekorAllClustersProbeDown
+        exp_alerts: []
+
+  # Generic ProbeAlert does NOT fire for rekor (exclusion works)
+  - interval: 1m
+    input_series:
+      - series: konflux_up{job="rekor-prod",instance="rekor-prod-endpoint",target="log",source_cluster="stone-prod-p01",check="probe",service="rekor-prod"}
+        values: 1x5 0x40
+      - series: multicluster_probe_up{instance="rekor-prod-endpoint",job="rekor-prod",check="probe-multicluster",service="rekor-prod"}
+        values: 1x45
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: ProbeAlert
+        exp_alerts: []
