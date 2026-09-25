@@ -59,8 +59,16 @@ tests:
       - series: 'kube_pod_status_unschedulable{namespace="clusters", pod="cluster-create-job", source_cluster="kflux-prd-es01"}'
         values: '1x60'
 
-      # EaaS provision namespace — transient CI/test pod, ignored
+      # EaaS provision-namespace namespace — transient CI/test pod, ignored
       - series: 'kube_pod_status_unschedulable{namespace="my-app-provision-namespace-eaas", pod="provision-pod", source_cluster="kflux-ocp-p01"}'
+        values: '1x60'
+
+      # EaaS provision-eaas-space namespace — transient CI/test pod, ignored
+      - series: 'kube_pod_status_unschedulable{namespace="my-app-provision-eaas-space-abc123", pod="eaas-space-pod", source_cluster="kflux-ocp-p01"}'
+        values: '1x60'
+
+      # EaaS provision-env namespace — transient CI/test pod, ignored
+      - series: 'kube_pod_status_unschedulable{namespace="my-app-provision-env-dev", pod="env-provision-pod", source_cluster="kflux-ocp-p01"}'
         values: '1x60'
 
       # EaaS ephemeral deploy namespace — transient CI/test pod, ignored
