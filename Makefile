@@ -17,7 +17,16 @@ endif
 all: check-and-test check-alert-conventions sync_pipenv lint_yamls kustomize-build
 
 kustomize:
-	curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash
+	@for i in 1 2 3; do \
+		echo "Attempt $$i: installing kustomize..."; \
+		if curl --fail --silent --show-error "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash; then \
+			exit 0; \
+		fi; \
+		echo "Attempt $$i failed."; \
+		if [ $$i -lt 3 ]; then sleep 5; fi; \
+	done; \
+	echo "ERROR: failed to install kustomize after 3 attempts"; \
+	exit 1
 
 .PHONY: check-and-test
 check-and-test:
