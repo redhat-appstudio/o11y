@@ -1,0 +1,113 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.memory_usage_alert.yaml
+
+tests:
+  # Positive test: Alert fires at 81% for 5+ minutes
+  - interval: 1m
+    input_series:
+      - series: 'node_namespace_pod_container:container_memory_working_set_bytes{namespace="openshift-monitoring",pod="prometheus-k8s-0",container="prometheus",source_cluster="cluster01"}'
+        values: '0.81+0x10'
+      - series: 'cluster:namespace:pod_memory:active:kube_pod_container_resource_limits{namespace="openshift-monitoring",pod="prometheus-k8s-0",container="prometheus",resource="memory",source_cluster="cluster01"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: PrometheusMemoryUsageHigh
+        exp_alerts:
+          - exp_labels:
+              component: prometheus
+              namespace: openshift-monitoring
+              pod: prometheus-k8s-0
+              severity: warning
+              slo: "false"
+              source_cluster: cluster01
+            exp_annotations:
+              summary: 'Prometheus pod prometheus-k8s-0 has high memory usage on cluster cluster01'
+              description: 'Prometheus pod prometheus-k8s-0 in namespace openshift-monitoring on cluster cluster01 is using 81% of its memory limit. High memory usage can lead to OOM kills and monitoring gaps.'
+              alert_routing_key: o11y
+              team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-prometheus-memory-usage.md
+
+  # Negative test: No alert at 79%
+  - interval: 1m
+    input_series:
+      - series: 'node_namespace_pod_container:container_memory_working_set_bytes{namespace="openshift-monitoring",pod="prometheus-k8s-0",container="prometheus",source_cluster="cluster01"}'
+        values: '0.79+0x10'
+      - series: 'cluster:namespace:pod_memory:active:kube_pod_container_resource_limits{namespace="openshift-monitoring",pod="prometheus-k8s-0",container="prometheus",resource="memory",source_cluster="cluster01"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: PrometheusMemoryUsageHigh
+
+  # Edge case: No alert when exactly at 80% (expression uses > not >=)
+  - interval: 1m
+    input_series:
+      - series: 'node_namespace_pod_container:container_memory_working_set_bytes{namespace="openshift-monitoring",pod="prometheus-k8s-0",container="prometheus",source_cluster="cluster01"}'
+        values: '0.80+0x10'
+      - series: 'cluster:namespace:pod_memory:active:kube_pod_container_resource_limits{namespace="openshift-monitoring",pod="prometheus-k8s-0",container="prometheus",resource="memory",source_cluster="cluster01"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: PrometheusMemoryUsageHigh
+
+  # Duration test: No alert if high usage lasts only 4 minutes
+  - interval: 1m
+    input_series:
+      - series: 'node_namespace_pod_container:container_memory_working_set_bytes{namespace="openshift-monitoring",pod="prometheus-k8s-0",container="prometheus",source_cluster="cluster01"}'
+        values: '0.85+0x4 0.75+0x6'
+      - series: 'cluster:namespace:pod_memory:active:kube_pod_container_resource_limits{namespace="openshift-monitoring",pod="prometheus-k8s-0",container="prometheus",resource="memory",source_cluster="cluster01"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: PrometheusMemoryUsageHigh
+
+  # Multiple namespaces test: user-workload-monitoring
+  - interval: 1m
+    input_series:
+      - series: 'node_namespace_pod_container:container_memory_working_set_bytes{namespace="openshift-user-workload-monitoring",pod="prometheus-user-workload-0",container="prometheus",source_cluster="cluster02"}'
+        values: '0.85+0x10'
+      - series: 'cluster:namespace:pod_memory:active:kube_pod_container_resource_limits{namespace="openshift-user-workload-monitoring",pod="prometheus-user-workload-0",container="prometheus",resource="memory",source_cluster="cluster02"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: PrometheusMemoryUsageHigh
+        exp_alerts:
+          - exp_labels:
+              component: prometheus
+              namespace: openshift-user-workload-monitoring
+              pod: prometheus-user-workload-0
+              severity: warning
+              slo: "false"
+              source_cluster: cluster02
+            exp_annotations:
+              summary: 'Prometheus pod prometheus-user-workload-0 has high memory usage on cluster cluster02'
+              description: 'Prometheus pod prometheus-user-workload-0 in namespace openshift-user-workload-monitoring on cluster cluster02 is using 85% of its memory limit. High memory usage can lead to OOM kills and monitoring gaps.'
+              alert_routing_key: o11y
+              team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-prometheus-memory-usage.md
+
+  # appstudio-monitoring namespace test
+  - interval: 1m
+    input_series:
+      - series: 'node_namespace_pod_container:container_memory_working_set_bytes{namespace="appstudio-monitoring",pod="prometheus-appstudio-0",container="prometheus",source_cluster="cluster03"}'
+        values: '0.90+0x10'
+      - series: 'cluster:namespace:pod_memory:active:kube_pod_container_resource_limits{namespace="appstudio-monitoring",pod="prometheus-appstudio-0",container="prometheus",resource="memory",source_cluster="cluster03"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: PrometheusMemoryUsageHigh
+        exp_alerts:
+          - exp_labels:
+              component: prometheus
+              namespace: appstudio-monitoring
+              pod: prometheus-appstudio-0
+              severity: warning
+              slo: "false"
+              source_cluster: cluster03
+            exp_annotations:
+              summary: 'Prometheus pod prometheus-appstudio-0 has high memory usage on cluster cluster03'
+              description: 'Prometheus pod prometheus-appstudio-0 in namespace appstudio-monitoring on cluster cluster03 is using 90% of its memory limit. High memory usage can lead to OOM kills and monitoring gaps.'
+              alert_routing_key: o11y
+              team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-prometheus-memory-usage.md
