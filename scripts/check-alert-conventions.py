@@ -4,13 +4,16 @@ import glob
 import sys
 import yaml
 
-ALERT_DIR = "rhobs/alerting"
+ALERT_DIRS = ["rhobs/alerting", "rhobs/staging/alerting", "rhobs/production/alerting"]
 VALID_SEVERITIES = {"critical", "high", "warning", "info"}
 
 def check_rules(path):
     errors = []
     with open(path) as f:
         doc = yaml.safe_load(f)
+
+    if doc is None:
+        return errors
 
     for group in doc.get("spec", {}).get("groups", []):
         for rule in group.get("rules", []):
@@ -29,9 +32,11 @@ def check_rules(path):
     return errors
 
 def main():
-    files = sorted(glob.glob(f"{ALERT_DIR}/**/*.yaml", recursive=True))
+    files = []
+    for alert_dir in ALERT_DIRS:
+        files.extend(sorted(glob.glob(f"{alert_dir}/**/*.yaml", recursive=True)))
     if not files:
-        print(f"No alert files found in {ALERT_DIR}/")
+        print(f"No alert files found in {ALERT_DIRS}")
         sys.exit(1)
 
     all_errors = []

@@ -1,0 +1,20 @@
+# drift:ignore-file generated per-environment by generate-cluster-monitoring-alerts.sh
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-cluster-monitoring-absent
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: cluster_monitoring_absent
+    interval: 1m
+    rules:
+    - alert: ClusterMonitoringAbsent
+      expr: absent({source_cluster="stone-stg-rh01"})
+      for: 5m
+      labels:
+        severity: critical
+        slo: "true"
+      annotations:
+        summary: "Cluster stone-stg-rh01 is not writing metrics"

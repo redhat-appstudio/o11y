@@ -1,0 +1,29 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-quota-alerting-rules
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: quota_alerts
+    interval: 1m
+    rules:
+    - alert: QuotaExceeded
+      expr: |
+        kube_resourcequota{type="used", namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-templates-e2e)"} /
+        ignoring (type)
+        (kube_resourcequota{type="hard", namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-templates-e2e)"} > 0) > 1
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: >-
+          Resource {{ $labels.resource }} in namespace {{ $labels.namespace }} exceeded
+          quota {{ $labels.resourcequota }}
+        description: >-
+          Resource {{ $labels.resource }} in namespace {{ $labels.namespace }}
+          on cluster {{ $labels.source_cluster }} exceeded quota
+          {{ $labels.resourcequota }}.
+        alert_routing_key: '{{ $labels.namespace }}'
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-QuotaExceeded.md

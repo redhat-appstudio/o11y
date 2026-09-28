@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-cluster-monitoring-absent
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: cluster_monitoring_absent
+    interval: 1m
+    rules:
+    - alert: ClusterMonitoringAbsent
+      expr: absent({source_cluster="stone-prod-p02"})
+      for: 10m
+      labels:
+        severity: warning
+        slo: "false"
+      annotations:
+        summary: "Completely different summary for production"

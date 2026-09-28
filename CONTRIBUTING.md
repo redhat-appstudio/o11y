@@ -38,10 +38,10 @@ container image used by the CI or when testing locally with `make`.
 PromQL unit tests are stored in YAML files under [`test/promql/tests`](test/promql/tests).
 
 Those tests reference the rule files to test via the `rule_files` attribute.
-This attribute has to list the names of files in the [`rhobs/alerting`](rhobs/alerting) directory.
+This attribute has to list the names of files in the alert rules directories (`rhobs/staging/alerting/`, `rhobs/production/alerting/`).
 
-For example, if a test file, relies on rules in files `rhobs/alerting/some-rules.yaml`
-and `rhobs/alerting/more-rules.yaml`, the test file needs to references the rules
+For example, if a test file relies on rules in files `rhobs/staging/alerting/some-rules.yaml`
+and `rhobs/staging/alerting/more-rules.yaml`, the test file needs to reference the rules
 in the following way:
 ```
 rule_files:

@@ -16,7 +16,7 @@ make all
 
 Prometheus rules are deployed into RHOBS (Red Hat Observability Service) via app-interface repository; exporters run as containers in Konflux clusters and are deployed via infra-deployments repository; Grafana dashboards are deployed via app-interface into app-sre Grafana instances. The App-sre Grafana instances use RHOBS as a datasource.
 
-### Alert rules (`rhobs/alerting/`, `test/` and `scripts/`)
+### Alert rules (`rhobs/staging/`, `rhobs/production/`, `test/` and `scripts/`)
 
 See docs/ALERTS.md for component details.
 

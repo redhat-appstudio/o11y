@@ -1,0 +1,15 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-recording-rules
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: availability_recording
+    interval: 1m
+    rules:
+    - record: api_server:availability:rate5m
+      expr: avg_over_time(up{job="api-server"}[10m])
+      labels:
+        severity: info

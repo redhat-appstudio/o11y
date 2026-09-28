@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-runner-alerting-rules
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: runner_alerts
+    interval: 1m
+    rules:
+    - alert: RunnerPoolExhausted
+      expr: gitlab_runner_jobs_total{state="running"} >= 50
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: Runner pool is exhausted

@@ -1,0 +1,57 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.cluster_ongoing_updrade_alert.yaml
+
+tests:
+  - name: ClusterUpgradeOngoingFiring
+    interval: 1m
+    input_series:
+      - series: 'aus_cluster_version_remaining_soak_days{cluster_uuid="uuid-1"}'
+        values: '-2.5x10'
+      - series: 'aus_cluster_upgrade_policy_info{cluster_uuid="uuid-1", cluster_name="prod-cluster", org_name="RHTAP", current_version="4.14.1"}'
+        values: '1x10'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: ClusterUpgradeOngoing
+        exp_alerts:
+          - exp_labels:
+              severity: info
+              slo: "false"
+              cluster_uuid: "uuid-1"
+              cluster_name: "prod-cluster"
+              current_version: "4.14.1"
+              alertname: ClusterUpgradeOngoing
+            exp_annotations:
+              summary: "Cluster prod-cluster is currently undergoing an upgrade."
+              description: "Cluster prod-cluster is currently undergoing an upgrade. Current version: 4.14.1"
+              alert_routing_key: "<!subteam^S06V06A36F5>"
+              team: konflux-spre
+              runbook_url: "https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/alert-ongoing-cluster-upgrades.md"
+
+  - name: ClusterUpgradeOngoingNotFiring
+    interval: 1m
+    input_series:
+      - series: 'aus_cluster_version_remaining_soak_days{cluster_uuid="uuid-1"}'
+        values: '5x10'
+      - series: 'aus_cluster_upgrade_policy_info{cluster_uuid="uuid-1", cluster_name="prod-cluster", org_name="RHTAP", current_version="4.14.1"}'
+        values: '1x10'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: ClusterUpgradeOngoing
+        exp_alerts: []
+
+  - name: ClusterUpgradeOngoingNotFiringCloseToLimit
+    interval: 1m
+    input_series:
+      - series: 'aus_cluster_version_remaining_soak_days{cluster_uuid="uuid-1"}'
+        values: '-1x10'
+      - series: 'aus_cluster_upgrade_policy_info{cluster_uuid="uuid-1", cluster_name="prod-cluster", org_name="RHTAP", current_version="4.14.1"}'
+        values: '1x10'
+
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: ClusterUpgradeOngoing
+        exp_alerts: []

@@ -1,0 +1,29 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-cluster-ongoing-upgrade-alert
+  labels:
+    role: alert-rules
+    tenant: rhtap
+spec:
+  groups:
+    - name: cluster_upgrade_alerts
+      interval: 1m
+      rules:
+        - alert: ClusterUpgradeOngoing
+          expr: >-
+            (aus_cluster_version_remaining_soak_days <= -2 >= -3)
+            * on(cluster_uuid) group_left(cluster_name, current_version)
+            aus_cluster_upgrade_policy_info{org_name="RHTAP"}
+          for: 1m
+          labels:
+            severity: info
+            slo: "false"
+          annotations:
+            summary: "Cluster {{ $labels.cluster_name }} is currently undergoing an upgrade."
+            description: >-
+              Cluster {{ $labels.cluster_name }} is currently undergoing an upgrade.
+              Current version: {{ $labels.current_version }}
+            alert_routing_key: "<!subteam^S06V06A36F5>"
+            team: konflux-spre
+            runbook_url: "https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/alert-ongoing-cluster-upgrades.md"

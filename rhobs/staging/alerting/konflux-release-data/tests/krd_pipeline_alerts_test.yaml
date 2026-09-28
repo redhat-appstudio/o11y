@@ -1,0 +1,43 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.krd_pipeline_alerts.yaml
+
+tests:
+  # ==================== KRDPipelineJobFailed ====================
+  - interval: 1m
+    input_series:
+      # Job in failed status — should fire
+      - series: 'gitlab_ci_pipeline_job_status{namespace="krd-gitlab-runner--pipeline", project="konflux-release-data", ref="main", job_name="test", status="failed", failure_reason="script_failure", source_cluster="cluster01"}'
+        values: "1x10"
+
+      # Job in success status — should NOT fire
+      - series: 'gitlab_ci_pipeline_job_status{namespace="krd-gitlab-runner--pipeline", project="konflux-release-data", ref="main", job_name="build", status="success", failure_reason="", source_cluster="cluster01"}'
+        values: "1x10"
+
+      # Failed job in different namespace — should NOT fire
+      - series: 'gitlab_ci_pipeline_job_status{namespace="other-namespace", project="other-project", ref="main", job_name="deploy", status="failed", failure_reason="script_failure", source_cluster="cluster01"}'
+        values: "1x10"
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: KRDPipelineJobFailed
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              component: krd-pipeline
+              namespace: krd-gitlab-runner--pipeline
+              project: konflux-release-data
+              ref: main
+              job_name: test
+              status: failed
+              failure_reason: script_failure
+              source_cluster: cluster01
+            exp_annotations:
+              summary: >-
+                KRD pipeline job test is failing the main branch pipeline.
+              description: >-
+                GitLab CI job test in project konflux-release-data has been in failed status for more than 5 minutes. Failure reason: script_failure.
+              alert_routing_key: krd-releng
+              team: releng

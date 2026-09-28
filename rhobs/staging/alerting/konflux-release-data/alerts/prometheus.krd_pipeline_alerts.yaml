@@ -1,0 +1,30 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-krd-pipeline-alerting
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: krd-pipeline-status
+      interval: 1m
+      rules:
+        - alert: KRDPipelineJobFailed
+          expr: |
+            gitlab_ci_pipeline_job_status{
+              namespace="krd-gitlab-runner--pipeline",
+              status="failed"
+            } == 1
+          for: 5m
+          labels:
+            severity: warning
+            slo: "false"
+            component: krd-pipeline
+          annotations:
+            summary: >-
+              KRD pipeline job {{ $labels.job_name }} is failing the {{ $labels.ref }} branch pipeline.
+            description: >-
+              GitLab CI job {{ $labels.job_name }} in project {{ $labels.project }} has been in failed status
+              for more than 5 minutes. Failure reason: {{ $labels.failure_reason }}.
+            alert_routing_key: krd-releng
+            team: releng

@@ -1,0 +1,26 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-smee-availability
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: smee_availability
+      interval: 1m
+      rules:
+        # recorded value: 0 if spec is higher than available, 1 otherwise
+        # labels: check=replicas-available, service=<deployment-name>
+        - record: konflux_up
+          expr: |
+            clamp_max(
+              label_replace(
+                label_replace(
+                  floor(
+                    kube_deployment_status_replicas_available{
+                      namespace=~"smee|smee-client"
+                    } / kube_deployment_spec_replicas
+                  ), "check", "replicas-available", "",""
+                ), "service", "$1", "deployment","(.*)"
+              ), 1
+            )

@@ -1,0 +1,39 @@
+name: Weekly Drift Report
+
+"on":
+  schedule:
+    - cron: '0 8 * * 1'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  full-drift-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - run: pip install pyyaml
+
+      - name: Run full drift scan with age analysis
+        run: |
+          if [ ! -d rhobs/staging ] || [ ! -d rhobs/production ]; then
+            echo "Skipped — waiting for both rhobs/staging/ and rhobs/production/"
+            echo "# Drift report skipped — environment directories not yet created" > drift-report.md
+            exit 0
+          fi
+          python3 scripts/check-env-drift.py --report > drift-report.md
+
+      - name: Upload drift report
+        uses: actions/upload-artifact@v4
+        with:
+          name: drift-report-${{ github.run_id }}
+          path: drift-report.md
+          retention-days: 90

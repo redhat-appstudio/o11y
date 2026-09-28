@@ -1,0 +1,94 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-multiplatform-availability-alerting-rules
+  labels:
+    tenant: rhtap
+
+spec:
+  groups:
+  - name: multi-platform-controller-availability
+    interval: 1m
+    rules:
+    - alert: MultiPlatformControllerDown
+      expr: |
+        konflux_up{
+          namespace="multi-platform-controller",
+          check="replicas-available",
+          service="multi-platform-controller"
+        } != 1
+      for: 5m
+      labels:
+        severity: critical
+        slo: "true"
+        component: multi-platform-controller
+      annotations:
+        summary: >-
+          Multiplatform controller is down in cluster {{ $labels.source_cluster }}
+        description: >
+          The multi-platform-controller pod has been down for 5min in cluster {{ $labels.source_cluster }}
+        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        team: konflux-infra
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-MultiPlatformControllerDown.md
+
+  - name: multi-platform-otp-availability
+    interval: 1m
+    rules:
+    - alert: MultiPlatformOTPDown
+      expr: |
+        konflux_up{
+          namespace="multi-platform-controller",
+          check="replicas-available",
+          service="multi-platform-otp-server"
+        } != 1
+      for: 5m
+      labels:
+        severity: critical
+        slo: "true"
+        component: multi-platform-controller
+      annotations:
+        summary: >-
+          Multiplatform OTP is down in cluster {{ $labels.source_cluster }}
+        description: >
+          The multi-platform otp pod has been down for 5min in cluster {{ $labels.source_cluster }}
+        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        team: konflux-infra
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-MultiPlatformOTPDown.md
+
+  - name: multi-platform-controller-platform-health
+    interval: 1m
+    rules:
+    - alert: MultiPlatformControllerPlatformUnhealthy
+      expr: |
+        (increase(multi_platform_controller_provisioning_successes[15m]) / (increase(multi_platform_controller_provisioning_successes[15m]) + increase(multi_platform_controller_provisioning_failures[15m]))) * 100 < 50
+      for: 5m
+      labels:
+        severity: high
+        slo: "false"
+        component: multi-platform-controller
+      annotations:
+        summary: >-
+          Multi-platform controller platform {{ $labels.platform }} health check failed in cluster {{ $labels.source_cluster }}
+        description: >
+          The multi-platform controller platform health check "{{ $labels.platform }}" has more than 50% provisioning failures for the last 15 minutes in cluster {{ $labels.source_cluster }}
+        alert_routing_key: infra
+        team: konflux-infra
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-MultiPlatformControllerPlatformUnhealthy.md
+
+  - name: multi-platform-controller-metrics-health
+    interval: 30s
+    rules:
+    - alert: MultiPlatformControllerMetricsUnhealthy
+      expr: |
+        count by (source_cluster) (multi_platform_controller_running_tasks < 0 or multi_platform_controller_waiting_tasks < 0) > 0
+      for: 1m
+      labels:
+        severity: warning
+        component: multi-platform-controller
+      annotations:
+        summary: >-
+          Multi-platform controller metrics are unhealthy in cluster {{ $labels.source_cluster }}
+        description: >-
+          The multi-platform controller Gauge metrics are showing negative values for the last 1 minute in cluster {{ $labels.source_cluster }}
+        alert_routing_key: infra
+        team: konflux-infra
