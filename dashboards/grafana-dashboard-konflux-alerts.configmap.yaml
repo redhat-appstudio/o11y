@@ -104,7 +104,7 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum(changes(alerts_for_state_firing{severity=~\"$severity\",alertname=~\"$alertname\",source_cluster=~\"$cluster\",component=~\"$component\"}[$__range]) + 1 ) by (alertname,severity)",
+              "expr": "sum(changes(alerts_for_state_firing{severity=~\"$severity\",alertname=~\"$alertname\",source_cluster=~\"$cluster\"}[$__range]) + 1 ) by (alertname,severity)",
               "format": "time_series",
               "hide": false,
               "instant": false,
@@ -118,7 +118,7 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum(changes(alerts_for_state_firing{severity=~\"$severity\",check=~\"probe-multicluster\",alertname=~\"$alertname\",component=~\"$component\"}[$__range]) + 1 ) by (job,alertname,severity)",
+              "expr": "sum(changes(alerts_for_state_firing{severity=~\"$severity\",check=~\"probe-multicluster\",alertname=~\"$alertname\"}[$__range]) + 1 ) by (job,alertname,severity)",
               "hide": false,
               "instant": false,
               "legendFormat": "{{alertname}} {{job}}",
@@ -235,7 +235,7 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum(changes(alerts_for_state_firing{severity=~\"$severity\",check=~\"probe-multicluster\",alertname=~\"$alertname\",component=~\"$component\"}[$__range]) + 1) by(job) or sum(changes(alerts_for_state_firing{severity=~\"$severity\",alertname=~\"$alertname\",source_cluster=~\"$cluster\",component=~\"$component\"}[$__range]) + 1) by(source_cluster)",
+              "expr": "sum(changes(alerts_for_state_firing{severity=~\"$severity\",check=~\"probe-multicluster\",alertname=~\"$alertname\"}[$__range]) + 1) by(job) or sum(changes(alerts_for_state_firing{severity=~\"$severity\",alertname=~\"$alertname\",source_cluster=~\"$cluster\"}[$__range]) + 1) by(source_cluster)",
               "hide": false,
               "instant": false,
               "legendFormat": "{{source_cluster}} {{job}}",
@@ -326,11 +326,11 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum(changes(alerts_for_state_firing{severity=~\"$severity\",alertname=~\"$alertname\",source_cluster=~\"$cluster\",component=~\"$component\"}[$__range]) + 1 ) by (severity)",
+              "expr": "sum(changes(alerts_for_state_firing{severity=~\"$severity\",alertname=~\"$alertname\",source_cluster=~\"$cluster\"}[$__range]) + 1 ) by (severity)",
               "format": "time_series",
               "hide": false,
               "instant": false,
-              "legendFormat": "{{alertname}}",
+              "legendFormat": "{{severity}}",
               "range": true,
               "refId": "A"
             },
@@ -340,10 +340,10 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum(changes(alerts_for_state_firing{severity=~\"$severity\",check=~\"probe-multicluster\",alertname=~\"$alertname\",component=~\"$component\"}[$__range]) + 1 ) by (alertname,severity)",
+              "expr": "sum(changes(alerts_for_state_firing{severity=~\"$severity\",check=~\"probe-multicluster\",alertname=~\"$alertname\"}[$__range]) + 1 ) by (alertname,severity)",
               "hide": false,
               "instant": false,
-              "legendFormat": "{{alertname}} {{job}}",
+              "legendFormat": "{{alertname}}",
               "range": true,
               "refId": "B"
             }
@@ -433,7 +433,7 @@ data:
                 "uid": "${datasource}"
               },
               "editorMode": "code",
-              "expr": "sum by (severity) (\n  changes(\n    alerts_for_state_firing{\n      severity=~\"$severity\",\n      alertname=~\"$alertname\",\n      source_cluster=~\"$cluster\",\n      component=~\"$component\"\n    }[$__range]\n  ) + 1\n) ",
+              "expr": "sum by (severity) (\n  changes(\n    alerts_for_state_firing{\n      severity=~\"$severity\",\n      alertname=~\"$alertname\",\n      source_cluster=~\"$cluster\"\n    }[$__range]\n  ) + 1\n) ",
               "hide": false,
               "instant": false,
               "legendFormat": "__auto",
@@ -666,7 +666,7 @@ data:
         ]
       },
       "time": {
-        "from": "now-14d",
+        "from": "now-24h",
         "to": "now"
       },
       "timepicker": {},
