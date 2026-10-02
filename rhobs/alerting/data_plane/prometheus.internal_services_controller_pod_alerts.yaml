@@ -1,0 +1,44 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-internal-services-controller-pod-alerting-rules
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: internal_services_controller_pod_alerts
+    interval: 1m
+    rules:
+    - alert: InternalServicesControllerPodNotReady
+      expr: |
+        count(
+          kube_pod_status_phase{
+            phase=~"Pending|Unknown|Failed",
+            namespace="internal-services",
+            pod=~".*controller.*|.*manager.*"
+          } == 1
+          unless ignoring(phase) (
+            kube_pod_status_unschedulable{namespace="internal-services"} == 1
+          )
+        )
+        /
+        count(
+          group by(pod) (
+            kube_pod_status_phase{
+              namespace="internal-services",
+              pod=~".*controller.*|.*manager.*"
+            }
+          )
+        )
+        > 0.6
+      for: 15m
+      labels:
+        severity: warning
+      annotations:
+        summary: >-
+          More than 60% of controller pods in internal-services are not ready
+        description: >-
+          More than 60% of controller/manager pods in namespace
+          internal-services are in a non-ready state for more than 15 minutes.
+        alert_routing_key: internal-services
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-PodNotReady.md
