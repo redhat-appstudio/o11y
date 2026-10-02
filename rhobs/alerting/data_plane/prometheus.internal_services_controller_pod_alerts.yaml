@@ -23,10 +23,12 @@ spec:
         )
         /
         count(
-          kube_pod_info{
-            namespace="internal-services",
-            pod=~".*controller.*|.*manager.*"
-          }
+          group by(pod) (
+            kube_pod_status_phase{
+              namespace="internal-services",
+              pod=~".*controller.*|.*manager.*"
+            }
+          )
         )
         > 0.6
       for: 15m
