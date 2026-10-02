@@ -9,13 +9,13 @@ tests:
   - name: ControllerPodPendingAlerts
     interval: 1m
     input_series:
-      - series: 'kube_pod_status_phase{pod="internal-services-controller-manager-abc123", namespace="internal-services", phase="Pending", source_cluster="cluster01"}'
+      - series: 'kube_pod_status_phase{pod="internal-services-controller-manager-abc123", namespace="stonesoup-int-srvc", phase="Pending", source_cluster="cluster01"}'
         values: '1x14'
-      - series: 'kube_pod_status_phase{pod="internal-services-controller-manager-abc123", namespace="internal-services", phase="Unknown", source_cluster="cluster01"}'
+      - series: 'kube_pod_status_phase{pod="internal-services-controller-manager-abc123", namespace="stonesoup-int-srvc", phase="Unknown", source_cluster="cluster01"}'
         values: '0x14'
-      - series: 'kube_pod_status_phase{pod="internal-services-controller-manager-abc123", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+      - series: 'kube_pod_status_phase{pod="internal-services-controller-manager-abc123", namespace="stonesoup-int-srvc", phase="Failed", source_cluster="cluster01"}'
         values: '0x14'
-      - series: 'kube_pod_status_unschedulable{namespace="internal-services", pod="internal-services-controller-manager-abc123", source_cluster="cluster01"}'
+      - series: 'kube_pod_status_unschedulable{namespace="stonesoup-int-srvc", pod="internal-services-controller-manager-abc123", source_cluster="cluster01"}'
         values: '0x14'
     alert_rule_test:
       - eval_time: 15m
@@ -23,15 +23,15 @@ tests:
         exp_alerts:
           - exp_labels:
               severity: high
-              namespace: internal-services
+              namespace: stonesoup-int-srvc
               pod: internal-services-controller-manager-abc123
               phase: Pending
               source_cluster: cluster01
             exp_annotations:
               summary: >-
-                Controller pod internal-services-controller-manager-abc123 in internal-services is not ready
+                Controller pod internal-services-controller-manager-abc123 in stonesoup-int-srvc is not ready
               description: >-
-                Controller pod internal-services-controller-manager-abc123 in namespace internal-services
+                Controller pod internal-services-controller-manager-abc123 in namespace stonesoup-int-srvc
                 on cluster cluster01 is not ready for more than
                 15 minutes.
               alert_routing_key: internal-services
@@ -42,11 +42,11 @@ tests:
   - name: ManagerPodFailedAlerts
     interval: 1m
     input_series:
-      - series: 'kube_pod_status_phase{pod="release-manager-xyz789", namespace="internal-services", phase="Failed", source_cluster="cluster02"}'
+      - series: 'kube_pod_status_phase{pod="release-manager-xyz789", namespace="stonesoup-int-srvc", phase="Failed", source_cluster="cluster02"}'
         values: '1x14'
-      - series: 'kube_pod_status_phase{pod="release-manager-xyz789", namespace="internal-services", phase="Pending", source_cluster="cluster02"}'
+      - series: 'kube_pod_status_phase{pod="release-manager-xyz789", namespace="stonesoup-int-srvc", phase="Pending", source_cluster="cluster02"}'
         values: '0x14'
-      - series: 'kube_pod_status_unschedulable{namespace="internal-services", pod="release-manager-xyz789", source_cluster="cluster02"}'
+      - series: 'kube_pod_status_unschedulable{namespace="stonesoup-int-srvc", pod="release-manager-xyz789", source_cluster="cluster02"}'
         values: '0x14'
     alert_rule_test:
       - eval_time: 15m
@@ -54,15 +54,15 @@ tests:
         exp_alerts:
           - exp_labels:
               severity: high
-              namespace: internal-services
+              namespace: stonesoup-int-srvc
               pod: release-manager-xyz789
               phase: Failed
               source_cluster: cluster02
             exp_annotations:
               summary: >-
-                Controller pod release-manager-xyz789 in internal-services is not ready
+                Controller pod release-manager-xyz789 in stonesoup-int-srvc is not ready
               description: >-
-                Controller pod release-manager-xyz789 in namespace internal-services
+                Controller pod release-manager-xyz789 in namespace stonesoup-int-srvc
                 on cluster cluster02 is not ready for more than
                 15 minutes.
               alert_routing_key: internal-services
@@ -73,9 +73,9 @@ tests:
   - name: NonControllerPodDoesNotAlert
     interval: 1m
     input_series:
-      - series: 'kube_pod_status_phase{pod="signing-pod-abc123", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+      - series: 'kube_pod_status_phase{pod="signing-pod-abc123", namespace="stonesoup-int-srvc", phase="Failed", source_cluster="cluster01"}'
         values: '1x14'
-      - series: 'kube_pod_status_unschedulable{namespace="internal-services", pod="signing-pod-abc123", source_cluster="cluster01"}'
+      - series: 'kube_pod_status_unschedulable{namespace="stonesoup-int-srvc", pod="signing-pod-abc123", source_cluster="cluster01"}'
         values: '0x14'
     alert_rule_test:
       - eval_time: 15m
@@ -87,9 +87,9 @@ tests:
   - name: UnschedulableControllerDoesNotAlert
     interval: 1m
     input_series:
-      - series: 'kube_pod_status_phase{pod="internal-services-controller-manager-abc123", namespace="internal-services", phase="Pending", source_cluster="cluster01"}'
+      - series: 'kube_pod_status_phase{pod="internal-services-controller-manager-abc123", namespace="stonesoup-int-srvc", phase="Pending", source_cluster="cluster01"}'
         values: '1x14'
-      - series: 'kube_pod_status_unschedulable{namespace="internal-services", pod="internal-services-controller-manager-abc123", source_cluster="cluster01"}'
+      - series: 'kube_pod_status_unschedulable{namespace="stonesoup-int-srvc", pod="internal-services-controller-manager-abc123", source_cluster="cluster01"}'
         values: '1x14'
     alert_rule_test:
       - eval_time: 15m
@@ -115,9 +115,9 @@ tests:
   - name: DoesNotFireBefore15m
     interval: 1m
     input_series:
-      - series: 'kube_pod_status_phase{pod="internal-services-controller-manager-abc123", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+      - series: 'kube_pod_status_phase{pod="internal-services-controller-manager-abc123", namespace="stonesoup-int-srvc", phase="Failed", source_cluster="cluster01"}'
         values: '1x13'
-      - series: 'kube_pod_status_unschedulable{namespace="internal-services", pod="internal-services-controller-manager-abc123", source_cluster="cluster01"}'
+      - series: 'kube_pod_status_unschedulable{namespace="stonesoup-int-srvc", pod="internal-services-controller-manager-abc123", source_cluster="cluster01"}'
         values: '0x13'
     alert_rule_test:
       - eval_time: 14m
