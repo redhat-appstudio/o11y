@@ -103,7 +103,7 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "sum(konflux:mttb:execute_seconds:mean_5m{namespace=~\"$namespace\"})",
+              "expr": "sum(konflux:mttb:execute_seconds:mean_5m{exported_namespace=~\"$exported_namespace\"})",
               "legendFormat": "aggregate MTTB",
               "refId": "A"
             }
@@ -183,8 +183,8 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "konflux:mttb:execute_seconds:mean_5m{namespace=~\"$namespace\"}",
-              "legendFormat": "{{cicd_pipeline_action_name}} {{namespace}}",
+              "expr": "konflux:mttb:execute_seconds:mean_5m{exported_namespace=~\"$exported_namespace\"}",
+              "legendFormat": "{{cicd_pipeline_action_name}} {{exported_namespace}}",
               "refId": "A"
             }
           ],
@@ -263,8 +263,8 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "konflux:mttb:execute_seconds:p95_5m{namespace=~\"$namespace\"}",
-              "legendFormat": "{{cicd_pipeline_action_name}} {{namespace}}",
+              "expr": "konflux:mttb:execute_seconds:p95_5m{exported_namespace=~\"$exported_namespace\"}",
+              "legendFormat": "{{cicd_pipeline_action_name}} {{exported_namespace}}",
               "refId": "A"
             }
           ],
@@ -343,8 +343,8 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "konflux:mttb:wait_seconds:mean_5m{namespace=~\"$namespace\"}",
-              "legendFormat": "{{cicd_pipeline_action_name}} {{namespace}}",
+              "expr": "konflux:mttb:wait_seconds:mean_5m{exported_namespace=~\"$exported_namespace\"}",
+              "legendFormat": "{{cicd_pipeline_action_name}} {{exported_namespace}}",
               "refId": "A"
             }
           ],
@@ -425,8 +425,8 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "konflux:mttb:success_ratio:5m{namespace=~\"$namespace\"}",
-              "legendFormat": "{{cicd_pipeline_action_name}} {{namespace}}",
+              "expr": "konflux:mttb:success_ratio:5m{exported_namespace=~\"$exported_namespace\"}",
+              "legendFormat": "{{cicd_pipeline_action_name}} {{exported_namespace}}",
               "refId": "A"
             }
           ],
@@ -505,8 +505,8 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "sum by (cicd_pipeline_action_name, namespace, cicd_pipeline_result) (konflux:mttb:calls:rate_5m{namespace=~\"$namespace\"})",
-              "legendFormat": "{{cicd_pipeline_action_name}} {{namespace}} {{cicd_pipeline_result}}",
+              "expr": "sum by (cicd_pipeline_action_name, exported_namespace, cicd_pipeline_result) (konflux:mttb:calls:rate_5m{exported_namespace=~\"$exported_namespace\"})",
+              "legendFormat": "{{cicd_pipeline_action_name}} {{exported_namespace}} {{cicd_pipeline_result}}",
               "refId": "A"
             }
           ],
@@ -574,14 +574,14 @@ data:
               "type": "prometheus",
               "uid": "${datasource}"
             },
-            "definition": "label_values(konflux:mttb:execute_seconds:mean_5m, namespace)",
+            "definition": "label_values(konflux:mttb:execute_seconds:mean_5m, exported_namespace)",
             "includeAll": true,
             "multi": true,
-            "name": "namespace",
+            "name": "exported_namespace",
             "options": [],
             "query": {
               "qryType": 1,
-              "query": "label_values(konflux:mttb:execute_seconds:mean_5m, namespace)",
+              "query": "label_values(konflux:mttb:execute_seconds:mean_5m, exported_namespace)",
               "refId": "PrometheusVariableQueryEditor-VariableQuery"
             },
             "refresh": 2,
