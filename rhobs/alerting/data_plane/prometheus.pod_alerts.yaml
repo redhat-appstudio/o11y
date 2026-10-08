@@ -114,7 +114,13 @@ spec:
 
     - alert: PodOOMKilled
       expr: |
-        count(kube_pod_container_status_terminated_reason{reason="OOMKilled",namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-templates-e2e|konflux-ci|mintmaker|tekton-kueue)"}) by (source_cluster,namespace,container,pod) >= 1
+        (
+          count(kube_pod_container_status_terminated_reason{reason="OOMKilled",namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-templates-e2e|konflux-ci|mintmaker|tekton-kueue)"}) by (source_cluster,namespace,container,pod) >= 1
+        )
+        unless on (source_cluster, namespace, container, pod)
+        (
+          kube_pod_container_status_terminated_reason{reason="OOMKilled",namespace="internal-services",source_cluster=~"kflux-c-prd-i01|kflux-c-prd-e01|kflux-c-stg-i01|kflux-c-stg-e01",pod=~".*controller.*|.*manager.*"}
+        )
       for: 5m
       labels:
         severity: warning
@@ -128,7 +134,7 @@ spec:
 
     - alert: ControllerPodOOMKilled
       expr: |
-        count(kube_pod_container_status_terminated_reason{reason="OOMKilled",namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-templates-e2e|konflux-ci|mintmaker|tekton-kueue)", pod=~".*controller.*|.*manager.*"}) by (source_cluster,namespace,container,pod) >= 1
+        count(kube_pod_container_status_terminated_reason{reason="OOMKilled",namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-templates-e2e|konflux-ci|mintmaker|tekton-kueue|internal-services)", pod=~".*controller.*|.*manager.*"}) by (source_cluster,namespace,container,pod) >= 1
       for: 5m
       labels:
         severity: critical
@@ -141,3 +147,19 @@ spec:
         alert_team_handle: >- # testing
           <!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>
         runbook_url: 'https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-OOMKilledAlert.md'
+
+    - alert: InternalServicesControllerPodOOMKilled
+      expr: |
+        count(kube_pod_container_status_terminated_reason{reason="OOMKilled",namespace="internal-services",source_cluster=~"kflux-c-prd-i01|kflux-c-prd-e01|kflux-c-stg-i01|kflux-c-stg-e01",pod=~".*controller.*|.*manager.*"}) by (source_cluster,namespace,container,pod) >= 1
+      for: 5m
+      labels:
+        severity: critical
+        reason: "OOMKilled"
+        slo: "true"
+      annotations:
+        html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.pod_alerts.yaml#L151
+        summary: "Pod {{ $labels.pod }} ran out of memory - OOMKilled."
+        description: "Pod {{ $labels.pod }} in Namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} was killed due to OOM."
+        alert_team_handle: '<!subteam^S03SVBS426R>'
+        team: release
+        runbook_url: 'https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/release-service/sre/alert-InternalServicesControllerPodOOMKilled.md'
