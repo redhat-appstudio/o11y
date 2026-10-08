@@ -22,6 +22,7 @@ func (e *KAExporter) Describe(ch chan<- *prometheus.Desc) {
 	e.integrationSLO.Describe(ch)
 	e.releaseSLO.Describe(ch)
 	e.signingSLO.Describe(ch)
+	e.releaseInFlight.Describe(ch)
 
 	e.scrapeErrorsTotal.Describe(ch)
 	e.lastScrapeSuccessGauge.Describe(ch)
@@ -43,6 +44,7 @@ func (e *KAExporter) Collect(ch chan<- prometheus.Metric) {
 	e.integrationSLO.Collect(ch)
 	e.releaseSLO.Collect(ch)
 	e.signingSLO.Collect(ch)
+	e.releaseInFlight.Collect(ch)
 
 	e.scrapeErrorsTotal.Collect(ch)
 	e.lastScrapeSuccessGauge.Collect(ch)
@@ -122,6 +124,7 @@ func (e *KAExporter) runCollection() {
 		e.integrationSLO.updateGauges(e.rollingStore, skipBreach)
 		e.releaseSLO.updateGauges(e.rollingStore, skipBreach)
 		e.signingSLO.updateGauges(e.rollingStore, skipBreach)
+		e.releaseInFlight.updateGauges()
 
 		// coldStart flag now managed per-namespace; check if all namespaces are bootstrapped
 		if e.coldStart {
@@ -320,11 +323,18 @@ func (e *KAExporter) collectMetrics(ctx context.Context) (*releaseIndex, error) 
 	}
 
 	// Record all release observations into 30d SLO store
-	e.releaseSLO.recordAllFromIndex(e.rollingStore, e.cluster, releaseIdx)
+	e.releaseSLO.recordAllFromIndex(e.rollingStore, e.cluster, releaseIdx, e.releaseInFlight)
 
 	// Signing TaskRuns are collected separately from the tenant namespace loop:
 	// they live in the managed release namespaces and are selected by task label.
 	signingCount := e.collectSigningNamespaces(ctx, releaseSince, releaseMaxItems, concurrency)
+
+	// Releases that are still running are not in the archive at all, so they
+	// are read from the live API instead.
+	if err := e.collectInFlightReleases(ctx, namespaces); err != nil {
+		log.Printf("in-flight releases: %v", err)
+		e.scrapeErrorsTotal.WithLabelValues(e.cluster, "releases_live").Inc()
+	}
 
 	// Gap-fill pass: fill truncated namespaces in parallel (post-steady-state)
 	// Only run gap-fill if main collection had some successes (avoid piling on during KubeArchive outages)

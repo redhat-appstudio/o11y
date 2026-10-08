@@ -45,11 +45,12 @@ type Release struct {
 		Namespace         string            `json:"namespace,omitempty"`
 		Labels            map[string]string `json:"labels"`
 		CreationTimestamp string            `json:"creationTimestamp"`
+		DeletionTimestamp string            `json:"deletionTimestamp,omitempty"`
 	} `json:"metadata"`
 	Spec struct {
-        ReleasePlan string `json:"releasePlan"`
-        Snapshot    string `json:"snapshot"`
-    } `json:"spec"`
+		ReleasePlan string `json:"releasePlan"`
+		Snapshot    string `json:"snapshot"`
+	} `json:"spec"`
 	Status struct {
 		StartTime      string      `json:"startTime"`
 		CompletionTime string      `json:"completionTime"`

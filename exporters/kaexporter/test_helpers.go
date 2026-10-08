@@ -145,6 +145,7 @@ func NewRelease() *ReleaseBuilder {
 			Namespace         string            `json:"namespace,omitempty"`
 			Labels            map[string]string `json:"labels"`
 			CreationTimestamp string            `json:"creationTimestamp"`
+			DeletionTimestamp string            `json:"deletionTimestamp,omitempty"`
 		}{
 			Labels: make(map[string]string),
 		},
@@ -249,6 +250,11 @@ func (b *ReleaseBuilder) Failed(reason string) *ReleaseBuilder {
 
 func (b *ReleaseBuilder) Progressing() *ReleaseBuilder {
 	b.rel.Status.Conditions = []Condition{{Type: "Released", Status: "False", Reason: "Progressing"}}
+	return b
+}
+
+func (b *ReleaseBuilder) DeletedAt(ts string) *ReleaseBuilder {
+	b.rel.Metadata.DeletionTimestamp = ts
 	return b
 }
 

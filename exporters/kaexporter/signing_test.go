@@ -168,6 +168,37 @@ func collectGauge(t *testing.T, g *prometheus.GaugeVec) map[string]float64 {
 	return out
 }
 
+// gaugeValue looks up one series by label name and value, independent of the
+// order in which the client library emits label values.
+func gaugeValue(t *testing.T, g *prometheus.GaugeVec, want map[string]string) (float64, bool) {
+	t.Helper()
+	ch := make(chan prometheus.Metric, 64)
+	g.Collect(ch)
+	close(ch)
+
+	for m := range ch {
+		var pb dto.Metric
+		if err := m.Write(&pb); err != nil {
+			t.Fatalf("write metric: %v", err)
+		}
+		got := make(map[string]string, len(pb.Label))
+		for _, l := range pb.Label {
+			got[l.GetName()] = l.GetValue()
+		}
+		match := len(got) == len(want)
+		for k, v := range want {
+			if got[k] != v {
+				match = false
+				break
+			}
+		}
+		if match {
+			return pb.GetGauge().GetValue(), true
+		}
+	}
+	return 0, false
+}
+
 func gaugeValueFor(t *testing.T, g *prometheus.GaugeVec, cluster, namespace, task, pipeline string) float64 {
 	t.Helper()
 	// Label values are emitted in alphabetical label-name order:

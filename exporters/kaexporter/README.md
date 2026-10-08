@@ -201,6 +201,9 @@ All metrics are **Gauges** over a rolling 30-day window of daily aggregated buck
 | `konflux_signing_failure_count_30d` | signing | `cluster, namespace, task, pipeline, reason` |
 | `konflux_signing_duration_slo_breach` | signing | `cluster, namespace, task, pipeline, tier` |
 | `konflux_signing_last_success_timestamp_seconds` | signing | `cluster, namespace, task, pipeline` |
+| `konflux_release_in_progress_count` | release | `cluster, namespace` |
+| `konflux_release_oldest_in_progress_age_seconds` | release | `cluster, namespace` |
+| `konflux_release_never_completed_count_30d` | release | `cluster, namespace, application, component` |
 
 **Metric definitions**:
 - **Duration metrics** (`mean_duration_seconds_30d`): Mean execution time for **successful workloads only** (startTime to completionTime for PipelineRuns; startTime to completionTime for Releases). Failed workloads are excluded from this average.
@@ -278,6 +281,31 @@ an outage takes, which is what `SigningPipelineNoRecentSuccess` alerts on.
 **Scope note**: `rh-sign-image` and `sign-index-image` are deliberately absent from the default
 task list. No managed release pipeline calls them, so measuring them would measure zero.
 `rh-sign-image-cosign` creates no InternalRequest at all and is observable only here.
+
+### Releases that never complete
+
+Three metrics above are not derived from completions, and they exist because
+everything else here is.
+
+KubeArchive accepts a Release only once it has a completion time
+(`archiveWhen: has(status.completionTime)`). A Release that hangs is therefore
+absent from the archive for exactly as long as it matters, and no `release_cr`
+counter moves. During the August 2026 signing outage releases were blocked for
+four days without a single release signal changing.
+
+- `konflux_release_in_progress_count` and
+  `konflux_release_oldest_in_progress_age_seconds` are read from the **live API**
+  each collection cycle, not from KubeArchive. This is the only place a release
+  can be observed while it is still stuck. It needs `get`/`list` on
+  `releases.appstudio.redhat.com`; without that permission the collection fails
+  loudly and raises `konflux_ka_exporter_scrape_errors_total{phase="releases_live"}`
+  rather than exporting an empty metric, because a silently absent series reads
+  exactly like "nothing is stuck".
+- `konflux_release_never_completed_count_30d` counts Releases that reached the
+  archive with no completion time, meaning they were deleted while still running.
+  The grace period delays archival by days, so this is a historical measure and
+  is not suitable for alerting. It is kept out of the `release_cr` duration
+  aggregates, which measure completions and feed a live SLO.
 
 ## Build and run
 

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -269,13 +270,17 @@ type KAExporter struct {
 	nsFilter *namespaceFilter
 
 	// 30-day SLO rolling aggregates (in-memory only, no persistence).
-	rollingStore   *Store
-	tierConfig     *TierConfig
-	tierPins       *TierPins
-	buildSLO       *BuildSLO30d
-	integrationSLO *IntegrationSLO30d
-	releaseSLO     *ReleaseSLO30d
-	signingSLO     *SigningSLO30d
+	rollingStore    *Store
+	tierConfig      *TierConfig
+	tierPins        *TierPins
+	buildSLO        *BuildSLO30d
+	integrationSLO  *IntegrationSLO30d
+	releaseSLO      *ReleaseSLO30d
+	signingSLO      *SigningSLO30d
+	releaseInFlight *ReleaseInFlight
+
+	// dynClient reads Release CRs from the live API; nil when unavailable.
+	dynClient dynamic.Interface
 
 	// Scope of the signing domain: which namespaces are queried for TaskRuns
 	// and which pipeline tasks count as signing.
@@ -528,6 +533,15 @@ func NewKAExporter() (*KAExporter, error) {
 	e.integrationSLO = newIntegrationSLO30dWithTiers(sloConfig, tierConfig, e.tierPins)
 	e.releaseSLO = newReleaseSLO30dWithTiers(sloConfig, tierConfig, e.tierPins)
 	e.signingSLO = newSigningSLO30dWithTiers(sloConfig, tierConfig, e.tierPins)
+	e.releaseInFlight = newReleaseInFlight()
+
+	// The live Release lookup is best-effort at construction time: a cluster
+	// without a reachable API still serves every archive-derived metric.
+	if dynClient, err := newDynamicClient(); err != nil {
+		log.Printf("WARNING: live Release lookups disabled: %v", err)
+	} else {
+		e.dynClient = dynClient
+	}
 
 	e.signingNamespaces = splitAndTrim(os.Getenv(signingNamespacesEnv), defaultSigningNamespaces)
 	e.signingTasks = splitAndTrim(os.Getenv(signingTasksEnv), defaultSigningTasks)
