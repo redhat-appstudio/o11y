@@ -49,6 +49,23 @@ const (
 	labelPipelinesType  = "pipelines.appstudio.openshift.io/type"
 	labelTektonPipeline = "tekton.dev/pipeline"
 
+	// Signing TaskRun labels and scope.
+	//
+	// Signing is measured on the managed cluster, where the release pipeline
+	// runs the signing task — not on the internal cluster that serves the
+	// InternalRequest. Only the namespaces listed below are queried: a tenant
+	// namespace holds far more TaskRuns than PipelineRuns, so scanning every
+	// namespace would be disproportionate.
+	labelTektonPipelineTask = "tekton.dev/pipelineTask"
+
+	signingNamespacesEnv     = "KA_SIGNING_NAMESPACES"
+	defaultSigningNamespaces = "rhtap-releng-tenant"
+
+	signingTasksEnv = "KA_SIGNING_TASKS"
+	// rh-sign-image and sign-index-image are deliberately absent: no managed
+	// release pipeline calls them, so measuring them would measure zero.
+	defaultSigningTasks = "rh-direct-sign-image,direct-sign-index-image,rh-sign-rpm,sign-base64-blob,rh-sign-image-cosign"
+
 	// Release CR labels
 	labelReleaseAutomated = "release.appstudio.openshift.io/automated" // "true" for automated releases, "false" for manual
 	labelReleasePlan      = "release.appstudio.openshift.io/release-plan"
@@ -258,6 +275,12 @@ type KAExporter struct {
 	buildSLO       *BuildSLO30d
 	integrationSLO *IntegrationSLO30d
 	releaseSLO     *ReleaseSLO30d
+	signingSLO     *SigningSLO30d
+
+	// Scope of the signing domain: which namespaces are queried for TaskRuns
+	// and which pipeline tasks count as signing.
+	signingNamespaces []string
+	signingTasks      []string
 }
 
 // NewKAExporter creates a new KubeArchive exporter
@@ -504,6 +527,12 @@ func NewKAExporter() (*KAExporter, error) {
 	e.buildSLO = newBuildSLO30dWithTiers(sloConfig, tierConfig, e.tierPins)
 	e.integrationSLO = newIntegrationSLO30dWithTiers(sloConfig, tierConfig, e.tierPins)
 	e.releaseSLO = newReleaseSLO30dWithTiers(sloConfig, tierConfig, e.tierPins)
+	e.signingSLO = newSigningSLO30dWithTiers(sloConfig, tierConfig, e.tierPins)
+
+	e.signingNamespaces = splitAndTrim(os.Getenv(signingNamespacesEnv), defaultSigningNamespaces)
+	e.signingTasks = splitAndTrim(os.Getenv(signingTasksEnv), defaultSigningTasks)
+	log.Printf("Signing domain: %d namespace(s) %v, %d task(s) %v",
+		len(e.signingNamespaces), e.signingNamespaces, len(e.signingTasks), e.signingTasks)
 
 	// Initialize rolling store (in-memory only, no persistence)
 	e.rollingStore = NewStore()
