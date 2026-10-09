@@ -1,0 +1,104 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.kargo_alerts.yaml
+
+tests:
+  - interval: 1m
+    input_series:
+      # Infra shard: sustained reconciliation errors
+      - series: 'controller_runtime_reconcile_errors_total{job="kargo-controller-metrics",namespace="kargo-shard-infra-deployments-production",controller="stages",source_cluster="kflux-c-prd-i01"}'
+        values: '0+1x60'
+
+      # Main Kargo namespace: should not trigger this alert
+      - series: 'controller_runtime_reconcile_errors_total{job="kargo-controller-metrics",namespace="kargo",controller="stages",source_cluster="kflux-c-prd-i01"}'
+        values: '0+1x60'
+
+      # Infra shard: no reconciliation errors
+      - series: 'controller_runtime_reconcile_errors_total{job="kargo-controller-metrics",namespace="kargo-shard-infra-deployments-production",controller="warehouses",source_cluster="kflux-c-prd-i01"}'
+        values: '0x60'
+
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: KargoInfraShardReconcileErrors
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              component: kargo
+              slo: "false"
+              namespace: kargo-shard-infra-deployments-production
+              controller: stages
+              source_cluster: kflux-c-prd-i01
+            exp_annotations:
+              summary: Kargo infrastructure shard reconciliation errors in kflux-c-prd-i01
+              description: >-
+                Kargo controller stages in namespace
+                kargo-shard-infra-deployments-production has experienced more
+                than 5 reconciliation errors in 15 minutes, sustained
+                for 10 minutes. This may impact infrastructure
+                and ring deployments.
+              alert_routing_key: spreandinfra
+
+      # Before the 10-minute 'for' duration completes
+      - eval_time: 15m
+        alertname: KargoInfraShardReconcileErrors
+        exp_alerts: []
+
+    # Layer 1: Kargo controller availability
+  - interval: 1m
+    input_series:
+      # Main Kargo controller unavailable
+      - series: 'konflux_up{namespace="kargo",service="kargo-controller",check="replicas-available",source_cluster="kflux-c-prd-i01"}'
+        values: '0x40'
+
+      # Infrastructure shard controller unavailable
+      - series: 'konflux_up{namespace="kargo-shard-infra-deployments-production",service="kargo-controller",check="replicas-available",source_cluster="kflux-c-prd-i01"}'
+        values: '0x40'
+
+      # Healthy unrelated deployment
+      - series: 'konflux_up{namespace="kargo",service="kargo-api",check="replicas-available",source_cluster="kflux-c-prd-i01"}'
+        values: '1x40'
+
+    alert_rule_test:
+      # Both controllers should fire after 15 minutes
+      - eval_time: 20m
+        alertname: KargoDeploymentUnavailable
+        exp_alerts:
+          - exp_labels:
+              namespace: kargo
+              service: kargo-controller
+              check: replicas-available
+              source_cluster: kflux-c-prd-i01
+              severity: critical
+              slo: "true"
+              component: kargo
+            exp_annotations:
+              summary: Kargo controller unavailable in kflux-c-prd-i01
+              description: >-
+                Kargo controller in namespace kargo
+                has been unavailable for 15 minutes in cluster
+                kflux-c-prd-i01.
+              alert_team_handle: '<!subteam^S07SW2EEW3D> <!subteam^S05Q1P4Q2TG>'
+              team: konflux-infra
+
+          - exp_labels:
+              namespace: kargo-shard-infra-deployments-production
+              service: kargo-controller
+              check: replicas-available
+              source_cluster: kflux-c-prd-i01
+              severity: critical
+              slo: "true"
+              component: kargo
+            exp_annotations:
+              summary: Kargo controller unavailable in kflux-c-prd-i01
+              description: >-
+                Kargo controller in namespace kargo-shard-infra-deployments-production
+                has been unavailable for 15 minutes in cluster
+                kflux-c-prd-i01.
+              alert_team_handle: '<!subteam^S07SW2EEW3D> <!subteam^S05Q1P4Q2TG>'
+              team: konflux-infra
+
+      # Before the 15-minute duration completes
+      - eval_time: 10m
+        alertname: KargoDeploymentUnavailable
+        exp_alerts: []
