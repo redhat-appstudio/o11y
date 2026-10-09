@@ -1,0 +1,42 @@
+evaluation_interval: 1m
+
+rule_files:
+  - kargo_availability_recording_rules.yaml
+
+tests:
+  - interval: 1m
+    input_series:
+      # Healthy Kargo API deployment
+      - series: 'kube_deployment_status_replicas_available{namespace="kargo",deployment="kargo-api",source_cluster="kflux-c-prd-i01"}'
+        values: '1x10'
+      - series: 'kube_deployment_spec_replicas{namespace="kargo",deployment="kargo-api",source_cluster="kflux-c-prd-i01"}'
+        values: '1x10'
+
+      # Unavailable Kargo controller
+      - series: 'kube_deployment_status_replicas_available{namespace="kargo",deployment="kargo-controller",source_cluster="kflux-c-prd-i01"}'
+        values: '0x10'
+      - series: 'kube_deployment_spec_replicas{namespace="kargo",deployment="kargo-controller",source_cluster="kflux-c-prd-i01"}'
+        values: '1x10'
+
+      # Partially available infrastructure shard controller
+      - series: 'kube_deployment_status_replicas_available{namespace="kargo-shard-infra-deployments-production",deployment="kargo-controller",source_cluster="kflux-c-prd-i01"}'
+        values: '1x10'
+      - series: 'kube_deployment_spec_replicas{namespace="kargo-shard-infra-deployments-production",deployment="kargo-controller",source_cluster="kflux-c-prd-i01"}'
+        values: '2x10'
+
+      # Unrelated namespace should be excluded
+      - series: 'kube_deployment_status_replicas_available{namespace="other",deployment="kargo-api",source_cluster="kflux-c-prd-i01"}'
+        values: '1x10'
+      - series: 'kube_deployment_spec_replicas{namespace="other",deployment="kargo-api",source_cluster="kflux-c-prd-i01"}'
+        values: '1x10'
+
+    promql_expr_test:
+      - expr: 'konflux_up{check="replicas-available",namespace=~"kargo|kargo-shard-infra-deployments-production"}'
+        eval_time: 5m
+        exp_samples:
+          - labels: 'konflux_up{namespace="kargo",deployment="kargo-api",service="kargo-api",check="replicas-available",source_cluster="kflux-c-prd-i01"}'
+            value: 1
+          - labels: 'konflux_up{namespace="kargo",deployment="kargo-controller",service="kargo-controller",check="replicas-available",source_cluster="kflux-c-prd-i01"}'
+            value: 0
+          - labels: 'konflux_up{namespace="kargo-shard-infra-deployments-production",deployment="kargo-controller",service="kargo-controller",check="replicas-available",source_cluster="kflux-c-prd-i01"}'
+            value: 0

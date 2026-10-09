@@ -1,0 +1,32 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-kargo-availability
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: kargo_availability
+      interval: 1m
+      rules:
+        - record: konflux_up
+          expr: |
+            clamp_max(
+              label_replace(
+                label_replace(
+                  floor(
+                    kube_deployment_status_replicas_available{
+                      namespace=~"kargo|kargo-shard-infra-deployments-production",
+                      deployment=~"kargo-.*"
+                    }
+                    /
+                    on(namespace, deployment, source_cluster)
+                    kube_deployment_spec_replicas{
+                      namespace=~"kargo|kargo-shard-infra-deployments-production",
+                      deployment=~"kargo-.*"
+                    }
+                  ), "check", "replicas-available", "", ""
+                ), "service", "$1", "deployment", "(.+)"
+              ), 1
+            )
