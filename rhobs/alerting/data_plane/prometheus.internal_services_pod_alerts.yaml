@@ -1,0 +1,63 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-internal-services-pod-alerting-rules
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: internal_services_pod_alerts
+    interval: 1m
+    rules:
+    - alert: InternalServicesControllerPodNotReady
+      expr: |
+        kube_pod_status_phase{
+          phase=~"Pending|Unknown|Failed",
+          namespace="internal-services",
+          pod=~".*controller.*|.*manager.*"
+        } == 1
+        unless ignoring (phase) (kube_pod_status_unschedulable{namespace="internal-services"} == 1)
+      for: 15m
+      labels:
+        severity: high
+        component: internal-services
+      annotations:
+        summary: >-
+          Controller pod {{ $labels.pod }} in internal-services is not ready
+        description: >-
+          Controller pod {{ $labels.pod }} in namespace {{ $labels.namespace }}
+          on cluster {{ $labels.source_cluster }} is not ready for more than
+          15 minutes.
+        alert_routing_key: internal-services
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-PodNotReady.md
+        team: release
+
+    - alert: InternalServicesHighPodFailureCount
+      expr: |
+        count by (source_cluster, namespace) (
+          kube_pod_status_phase{
+            phase=~"Pending|Unknown|Failed",
+            namespace="internal-services"
+          } == 1
+          unless on (namespace, pod, source_cluster) (
+            kube_pod_owner{owner_kind="Job", namespace="internal-services"} == 1
+          )
+          unless ignoring (phase) (
+            kube_pod_status_unschedulable{namespace="internal-services"} == 1
+          )
+        ) > 20
+      for: 30m
+      labels:
+        severity: warning
+        component: internal-services
+      annotations:
+        summary: >-
+          High number of failed pods in internal-services namespace
+        description: >-
+          More than 20 non-Job pods in namespace {{ $labels.namespace }} on
+          cluster {{ $labels.source_cluster }} are in a non-ready state for
+          more than 30 minutes. This may indicate a systemic issue with
+          signing workflows or resource constraints.
+        alert_routing_key: internal-services
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-PodNotReady.md
+        team: release
