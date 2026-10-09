@@ -1,0 +1,61 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-kargo-alerting-rules
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: kargo-reconciliation-alerts
+      interval: 1m
+      rules:
+        - alert: KargoInfraShardReconcileErrors
+          expr: |
+            sum by (namespace, controller, source_cluster) (
+              increase(controller_runtime_reconcile_errors_total{
+                job="kargo-controller-metrics",
+                namespace="kargo-shard-infra-deployments-production"
+              }[15m])
+            ) > 5
+          for: 10m
+          labels:
+            severity: warning
+            component: kargo
+            slo: "false"
+          annotations:
+            summary: >-
+              Kargo infrastructure shard reconciliation errors
+              in {{ $labels.source_cluster }}
+            description: >-
+              Kargo controller {{ $labels.controller }} in namespace
+              {{ $labels.namespace }} has experienced more than
+              5 reconciliation errors in 15 minutes, sustained
+              for 10 minutes. This may impact infrastructure
+              and ring deployments.
+            alert_routing_key: spreandinfra
+    - name: kargo-availability-alerts
+      interval: 1m
+      rules:
+        - alert: KargoDeploymentUnavailable
+          expr: |
+            konflux_up{
+              namespace=~"kargo|kargo-shard-infra-deployments|kargo-shard-infra-deployments-production",
+              service="kargo-controller",
+              check="replicas-available"
+            } == 0
+          for: 15m
+          labels:
+            severity: critical
+            slo: "true"
+            component: kargo
+          annotations:
+            html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.kargo_alerts.yaml
+            summary: >-
+              Kargo controller unavailable in {{ $labels.source_cluster }}
+            description: >-
+              Kargo controller in namespace {{ $labels.namespace }}
+              has been unavailable for 15 minutes in cluster
+              {{ $labels.source_cluster }}.
+            alert_team_handle: >-
+              <!subteam^S07SW2EEW3D> <!subteam^S05Q1P4Q2TG>
+            team: konflux-infra
