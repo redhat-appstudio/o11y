@@ -50,3 +50,95 @@ tests:
               alert_team_handle: >- # testing
                 <!subteam^S06V06A36F5> <!subteam^S05Q1P4Q2TG>
               runbook_url: 'https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-OOMKilledAlert.md'
+
+  # internal-services controller on a common cluster fires only the dedicated SLO alert
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_terminated_reason{reason="OOMKilled", source_cluster="kflux-c-prd-i01", namespace="internal-services", pod="controller-manager-prod-p02", container="manager"}'
+        values: '1x60'
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: InternalServicesControllerPodOOMKilled
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              source_cluster: "kflux-c-prd-i01"
+              namespace: "internal-services"
+              pod: "controller-manager-prod-p02"
+              container: "manager"
+              reason: "OOMKilled"
+              slo: "true"
+            exp_annotations:
+              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.pod_alerts.yaml#L151
+              summary: "Pod controller-manager-prod-p02 ran out of memory - OOMKilled."
+              description: "Pod controller-manager-prod-p02 in Namespace internal-services on cluster kflux-c-prd-i01 was killed due to OOM."
+              alert_team_handle: '<!subteam^S03SVBS426R>'
+              team: release
+              runbook_url: 'https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/release-service/sre/alert-InternalServicesControllerPodOOMKilled.md'
+      - eval_time: 5m
+        alertname: ControllerPodOOMKilled
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: PodOOMKilled
+        exp_alerts: []
+
+  # a non-controller pod in internal-services on a common cluster stays on PodOOMKilled
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_terminated_reason{reason="OOMKilled", source_cluster="kflux-c-prd-i01", namespace="internal-services", pod="worker", container="worker"}'
+        values: '1x60'
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: PodOOMKilled
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              source_cluster: "kflux-c-prd-i01"
+              namespace: "internal-services"
+              pod: "worker"
+              container: "worker"
+              reason: "OOMKilled"
+              slo: "false"
+            exp_annotations:
+              summary: "Pod worker ran out of memory - OOMKilled."
+              description: "Pod worker in Namespace internal-services was killed due to OOM."
+              alert_routing_key: "internal-services"
+              runbook_url: 'https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-OOMKilledAlert.md'
+      - eval_time: 5m
+        alertname: InternalServicesControllerPodOOMKilled
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: ControllerPodOOMKilled
+        exp_alerts: []
+
+  # internal-services controller on a workload cluster is not the common-cluster alert
+  - interval: 1m
+    input_series:
+      - series: 'kube_pod_container_status_terminated_reason{reason="OOMKilled", source_cluster="stone-prod-p02", namespace="internal-services", pod="controller-manager-prod-p02", container="manager"}'
+        values: '1x60'
+
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: PodOOMKilled
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              source_cluster: "stone-prod-p02"
+              namespace: "internal-services"
+              pod: "controller-manager-prod-p02"
+              container: "manager"
+              reason: "OOMKilled"
+              slo: "false"
+            exp_annotations:
+              summary: "Pod controller-manager-prod-p02 ran out of memory - OOMKilled."
+              description: "Pod controller-manager-prod-p02 in Namespace internal-services was killed due to OOM."
+              alert_routing_key: "internal-services"
+              runbook_url: 'https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/sre/alert-rule-OOMKilledAlert.md'
+      - eval_time: 5m
+        alertname: InternalServicesControllerPodOOMKilled
+        exp_alerts: []
+      - eval_time: 5m
+        alertname: ControllerPodOOMKilled
+        exp_alerts: []
