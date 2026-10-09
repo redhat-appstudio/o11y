@@ -119,7 +119,7 @@ spec:
         )
         unless on (source_cluster, namespace, container, pod)
         (
-          kube_pod_container_status_terminated_reason{reason="OOMKilled",namespace="internal-services",source_cluster=~"kflux-c-prd-i01|kflux-c-prd-e01|kflux-c-stg-i01|kflux-c-stg-e01",pod=~".*controller.*|.*manager.*"}
+          kube_pod_container_status_terminated_reason{reason="OOMKilled",namespace="internal-services",source_cluster=~"kflux-c-.*",pod=~".*controller.*|.*manager.*"}
         )
       for: 5m
       labels:
@@ -150,7 +150,7 @@ spec:
 
     - alert: InternalServicesControllerPodOOMKilled
       expr: |
-        count(kube_pod_container_status_terminated_reason{reason="OOMKilled",namespace="internal-services",source_cluster=~"kflux-c-prd-i01|kflux-c-prd-e01|kflux-c-stg-i01|kflux-c-stg-e01",pod=~".*controller.*|.*manager.*"}) by (source_cluster,namespace,container,pod) >= 1
+        count(kube_pod_container_status_terminated_reason{reason="OOMKilled",namespace="internal-services",source_cluster=~"kflux-c-.*",pod=~".*controller.*|.*manager.*"}) by (source_cluster,namespace,container,pod) >= 1
       for: 5m
       labels:
         severity: critical
