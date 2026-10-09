@@ -17,15 +17,18 @@ spec:
                 label_replace(
                   floor(
                     kube_deployment_status_replicas_available{
-                      namespace=~"kargo|kargo-shard-infra-deployments-production",
+                      namespace=~"kargo|kargo-shard-infra-deployments|kargo-shard-infra-deployments-production",
                       deployment=~"kargo-.*"
                     }
                     /
                     on(namespace, deployment, source_cluster)
-                    kube_deployment_spec_replicas{
-                      namespace=~"kargo|kargo-shard-infra-deployments-production",
-                      deployment=~"kargo-.*"
-                    }
+                    clamp_min(
+                      kube_deployment_spec_replicas{
+                        namespace=~"kargo|kargo-shard-infra-deployments|kargo-shard-infra-deployments-production",
+                        deployment=~"kargo-.*"
+                      },
+                      1
+                    )
                   ), "check", "replicas-available", "", ""
                 ), "service", "$1", "deployment", "(.+)"
               ), 1
