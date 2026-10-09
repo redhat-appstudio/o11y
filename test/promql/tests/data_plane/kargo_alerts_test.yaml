@@ -55,6 +55,10 @@ tests:
       - series: 'konflux_up{namespace="kargo-shard-infra-deployments-production",service="kargo-controller",check="replicas-available",source_cluster="kflux-c-prd-i01"}'
         values: '0x40'
 
+      # Staging infrastructure shard controller unavailable
+      - series: 'konflux_up{namespace="kargo-shard-infra-deployments",service="kargo-controller",check="replicas-available",source_cluster="kflux-c-stg-i01"}'
+        values: '0x40'
+
       # Healthy unrelated deployment
       - series: 'konflux_up{namespace="kargo",service="kargo-api",check="replicas-available",source_cluster="kflux-c-prd-i01"}'
         values: '1x40'
@@ -95,6 +99,23 @@ tests:
                 Kargo controller in namespace kargo-shard-infra-deployments-production
                 has been unavailable for 15 minutes in cluster
                 kflux-c-prd-i01.
+              alert_team_handle: '<!subteam^S07SW2EEW3D> <!subteam^S05Q1P4Q2TG>'
+              team: konflux-infra
+
+          - exp_labels:
+              namespace: kargo-shard-infra-deployments
+              service: kargo-controller
+              check: replicas-available
+              source_cluster: kflux-c-stg-i01
+              severity: critical
+              slo: "true"
+              component: kargo
+            exp_annotations:
+              summary: Kargo controller unavailable in kflux-c-stg-i01
+              description: >-
+                Kargo controller in namespace kargo-shard-infra-deployments
+                has been unavailable for 15 minutes in cluster
+                kflux-c-stg-i01.
               alert_team_handle: '<!subteam^S07SW2EEW3D> <!subteam^S05Q1P4Q2TG>'
               team: konflux-infra
 
