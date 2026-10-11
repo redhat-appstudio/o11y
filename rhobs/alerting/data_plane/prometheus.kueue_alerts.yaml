@@ -60,6 +60,7 @@ spec:
       labels:
         severity: warning
         component: tekton-kueue
+        alert_routing_key: infra
       annotations:
         summary: "Tekton Kueue pods are repeatedly restarting"
         description: "Tekton Kueue pods have restarted {{ $value }} times in the last 5 minutes in cluster {{ $labels.source_cluster }}. This may indicate resource pressure or application issues."
@@ -78,6 +79,7 @@ spec:
         severity: high
         component: tekton-kueue
         slo: "false"
+        alert_routing_key: infra
       annotations:
         summary: "Tekton Kueue pod is in a crash loop: {{ $labels.pod }}"
         description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} is in CrashLoopBackOff and is not starting up."
@@ -95,6 +97,7 @@ spec:
       labels:
         severity: warning
         component: tekton-kueue
+        alert_routing_key: infra
       annotations:
         summary: "Tekton Kueue pod is stuck in Pending: {{ $labels.pod }}"
         description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} has been in Pending state for more than 5 minutes. This may indicate a scheduling issue, resource constraint, or unresolvable volume."
@@ -116,6 +119,7 @@ spec:
       labels:
         severity: high
         component: tekton-kueue
+        alert_routing_key: infra
       annotations:
         summary: "Tekton Kueue pod is stuck in ContainerCreating: {{ $labels.pod }}"
         description: "Container {{ $labels.container }} in pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} is stuck in ContainerCreating for more than 5 minutes. This typically points to infrastructure issues like Volume/Storage mounting failures or Network attachment delays."
@@ -137,6 +141,7 @@ spec:
       labels:
         severity: high
         component: tekton-kueue
+        alert_routing_key: infra
       annotations:
         summary: "Tekton Kueue pod was OOMKilled: {{ $labels.pod }}"
         description: "Container {{ $labels.container }} in pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} was terminated due to OOM. Memory limits may need to be increased in the deployment spec."
@@ -167,6 +172,7 @@ spec:
       labels:
         severity: warning
         component: tekton-kueue
+        alert_routing_key: infra
       annotations:
         summary: "Tekton Kueue rollout stuck: {{ $labels.deployment }}"
         description: >-
@@ -192,6 +198,7 @@ spec:
         severity: high
         component: kueue
         slo: "false"
+        alert_routing_key: infra
       annotations:
         summary: "Kueue mutating webhook success rate is below 99%"
         description: "The mutating webhook 'pipelinerun-kueue-defaulter.tekton-kueue.io' has had a success rate below 99% over the past 10 minutes in cluster {{ $labels.source_cluster }}. Possible causes include webhook errors, rejections, or unreachability (e.g., code=600)."
@@ -235,6 +242,7 @@ spec:
         slo: "false"
         tier: A
         pipeline_type: PreMerge
+        alert_routing_key: infra
       annotations:
         summary: "High admission wait time for Pre-merge builds (Tier A)"
         description: "P95 admission wait time for Pre-merge builds is above 5 minutes on cluster {{ $labels.source_cluster }}."
@@ -256,10 +264,12 @@ spec:
         slo: "false"
         tier: A
         pipeline_type: PreMerge
+        alert_routing_key: infra
       annotations:
         summary: "Critical admission wait time for Pre-merge builds (Tier A)"
         description: "P95 admission wait time for Pre-merge builds is above 20 minutes on cluster {{ $labels.source_cluster }}."
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
+        alert_routing_key: infra
         alert_team_handle: <!subteam^S05Q1P4Q2TG>
         team: konflux-infra
 
@@ -277,6 +287,7 @@ spec:
         slo: "false"
         tier: A
         pipeline_type: PostMerge
+        alert_routing_key: infra
       annotations:
         summary: "High admission wait time for Post-merge builds (Tier A)"
         description: "P95 admission wait time for Post-merge builds is above 20 minutes on cluster {{ $labels.source_cluster }}."
@@ -298,10 +309,12 @@ spec:
         slo: "false"
         tier: A
         pipeline_type: PostMerge
+        alert_routing_key: infra
       annotations:
         summary: "Critical admission wait time for Post-merge builds (Tier A)"
         description: "P95 admission wait time for Post-merge builds is above 1.5 hours on cluster {{ $labels.source_cluster }}."
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
+        alert_routing_key: infra
         alert_team_handle: <!subteam^S05Q1P4Q2TG>
         team: konflux-infra
 
@@ -323,6 +336,7 @@ spec:
         slo: "false"
         tier: B
         pipeline_type: PreMerge
+        alert_routing_key: infra
       annotations:
         summary: "High admission wait time for Pre-merge builds (Tier B - Constrained)"
         description: "P95 admission wait time for Pre-merge builds is above 30 minutes on constrained cluster {{ $labels.source_cluster }}."
@@ -344,10 +358,12 @@ spec:
         slo: "false"
         tier: B
         pipeline_type: PreMerge
+        alert_routing_key: infra
       annotations:
         summary: "Critical admission wait time for Pre-merge builds (Tier B - Constrained)"
         description: "P95 admission wait time for Pre-merge builds is above 1.5 hours on constrained cluster {{ $labels.source_cluster }}."
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
+        alert_routing_key: infra
         alert_team_handle: <!subteam^S05Q1P4Q2TG>
         team: konflux-infra
 
@@ -365,6 +381,7 @@ spec:
         slo: "false"
         tier: B
         pipeline_type: PostMerge
+        alert_routing_key: infra
       annotations:
         summary: "High admission wait time for Post-merge builds (Tier B - Constrained)"
         description: "P95 admission wait time for Post-merge builds is above 2 hours on constrained cluster {{ $labels.source_cluster }}."
@@ -386,10 +403,12 @@ spec:
         slo: "false"
         tier: B
         pipeline_type: PostMerge
+        alert_routing_key: infra
       annotations:
         summary: "Critical admission wait time for Post-merge builds (Tier B - Constrained)"
         description: "P95 admission wait time for Post-merge builds is above 4 hours on constrained cluster {{ $labels.source_cluster }}."
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
+        alert_routing_key: infra
         alert_team_handle: <!subteam^S05Q1P4Q2TG>
         team: konflux-infra
 
@@ -407,6 +426,7 @@ spec:
       labels:
         severity: high
         component: kueue
+        alert_routing_key: infra
       annotations:
         summary: "High admission wait time for Mintmaker"
         description: "99th percentile admission wait time for Mintmaker is {{ $value | humanizeDuration }}, which is above 12 hours in cluster {{ $labels.source_cluster }}"
