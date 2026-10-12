@@ -323,6 +323,7 @@ tests:
                 The registry may be in read-only mode or experiencing a write outage.
               alert_routing_key: o11y
               team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
 
   # A push failure in one of six reporting clusters does not exceed 20%.
   - interval: 1m
@@ -416,6 +417,7 @@ tests:
                 This indicates a possible registry-wide outage.
               alert_routing_key: o11y
               team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
 
   # Missing one operation result must not be interpreted as a complete outage,
   # even when every discovered exporter node reports some telemetry.
@@ -596,6 +598,7 @@ tests:
                 Tests for push for quay.io in c1 is failing for 15 minutes.
               alert_routing_key: o11y
               team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
 
   # Test type failing on some nodes but passing on others (should NOT alert)
   - interval: 1m
@@ -659,6 +662,7 @@ tests:
                 Tests for authentication for quay.io in c1 is failing for 15 minutes.
               alert_routing_key: o11y
               team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
           - exp_labels:
               severity: high
               tested_registry: quay.io
@@ -673,6 +677,7 @@ tests:
                 Tests for push for quay.io in c1 is failing for 15 minutes.
               alert_routing_key: o11y
               team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
 
   # Test type failure isolated to one registry (should only alert for that registry)
   - interval: 1m
@@ -704,6 +709,7 @@ tests:
                 Tests for pull for quay.io in c1 is failing for 15 minutes.
               alert_routing_key: o11y
               team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
 
   # Test type failure suppressed when cluster check is down (should NOT alert - covered by RegistryExporterDown)
   - interval: 1m
@@ -765,6 +771,7 @@ tests:
                 Tests for push for quay.io in c1 is failing for 15 minutes.
               alert_routing_key: o11y
               team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
       # NodeFailure does NOT fire at 15m — suppressed by the unless clause
       - eval_time: 15m
         alertname: RegistryExporterNodeFailure
@@ -804,6 +811,7 @@ tests:
                 Single-node failures from rolling node replacements will not trigger this alert.
               alert_routing_key: o11y
               team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
 
   # Exactly 50% of nodes failing (1 of 2) - should NOT alert (threshold is strictly >50%, tolerates single-node rolling update)
   - interval: 1m
@@ -913,6 +921,7 @@ tests:
                 Single-node failures from rolling node replacements will not trigger this alert.
               alert_routing_key: o11y
               team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
           - exp_labels:
               severity: warning
               tested_registry: registry.example.com
@@ -929,6 +938,7 @@ tests:
                 Single-node failures from rolling node replacements will not trigger this alert.
               alert_routing_key: o11y
               team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-RegistryExporter.md
 
   # Push fails cluster-wide + pull fails on 1 of 2 nodes (50%) - NodeFailure should NOT alert
   # (push excluded by unless clause; remaining pull failure is only 1/2 = 50%, not >50%)
