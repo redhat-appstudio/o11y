@@ -64,7 +64,7 @@ spec:
         summary: "Tekton Kueue pods are repeatedly restarting"
         description: "Tekton Kueue pods have restarted {{ $value }} times in the last 5 minutes in cluster {{ $labels.source_cluster }}. This may indicate resource pressure or application issues."
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueuePodsRepeatedRestarts.md
-        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        alert_routing_key: infra
         team: konflux-infra
 
     - alert: TektonKueuePodsCrashLoopBackOff
@@ -82,7 +82,7 @@ spec:
         summary: "Tekton Kueue pod is in a crash loop: {{ $labels.pod }}"
         description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} is in CrashLoopBackOff and is not starting up."
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueuePodsCrashLoopBackOff.md
-        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        alert_routing_key: infra
         team: konflux-infra
 
     - alert: TektonKueuePodStuckInPending
@@ -98,7 +98,7 @@ spec:
       annotations:
         summary: "Tekton Kueue pod is stuck in Pending: {{ $labels.pod }}"
         description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} has been in Pending state for more than 5 minutes. This may indicate a scheduling issue, resource constraint, or unresolvable volume."
-        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        alert_routing_key: infra
         team: konflux-infra
 
     - alert: TektonKueuePodStuckInCreation
@@ -119,7 +119,7 @@ spec:
       annotations:
         summary: "Tekton Kueue pod is stuck in ContainerCreating: {{ $labels.pod }}"
         description: "Container {{ $labels.container }} in pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} is stuck in ContainerCreating for more than 5 minutes. This typically points to infrastructure issues like Volume/Storage mounting failures or Network attachment delays."
-        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        alert_routing_key: infra
         team: konflux-infra
 
     - alert: TektonKueuePodOOMKilled
@@ -140,7 +140,7 @@ spec:
       annotations:
         summary: "Tekton Kueue pod was OOMKilled: {{ $labels.pod }}"
         description: "Container {{ $labels.container }} in pod {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} was terminated due to OOM. Memory limits may need to be increased in the deployment spec."
-        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        alert_routing_key: infra
         team: konflux-infra
 
     - alert: KueueCELEvaluationFailures
@@ -174,7 +174,7 @@ spec:
           {{ $labels.source_cluster }} update is delayed or stuck (no full health for 20m).
           Check pod events and logs for the deployment and its ReplicaSets.
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/alert-TektonKueueRolloutStuck.md
-        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        alert_routing_key: infra
         team: konflux-infra
 
     - alert: KueueMutatingWebhookLowSuccessRate
@@ -196,7 +196,7 @@ spec:
         summary: "Kueue mutating webhook success rate is below 99%"
         description: "The mutating webhook 'pipelinerun-kueue-defaulter.tekton-kueue.io' has had a success rate below 99% over the past 10 minutes in cluster {{ $labels.source_cluster }}. Possible causes include webhook errors, rejections, or unreachability (e.g., code=600)."
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md?ref_type=heads
-        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        alert_routing_key: infra
         team: konflux-infra
 
   - name: kueue.queue
@@ -239,7 +239,7 @@ spec:
         summary: "High admission wait time for Pre-merge builds (Tier A)"
         description: "P95 admission wait time for Pre-merge builds is above 5 minutes on cluster {{ $labels.source_cluster }}."
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
-        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        alert_routing_key: infra
         team: konflux-infra
 
     - alert: KueueAdmissionWaitTimePreMergeTierACritical
@@ -281,7 +281,7 @@ spec:
         summary: "High admission wait time for Post-merge builds (Tier A)"
         description: "P95 admission wait time for Post-merge builds is above 20 minutes on cluster {{ $labels.source_cluster }}."
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
-        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        alert_routing_key: infra
         team: konflux-infra
 
     - alert: KueueAdmissionWaitTimePostMergeTierACritical
@@ -327,7 +327,7 @@ spec:
         summary: "High admission wait time for Pre-merge builds (Tier B - Constrained)"
         description: "P95 admission wait time for Pre-merge builds is above 30 minutes on constrained cluster {{ $labels.source_cluster }}."
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
-        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        alert_routing_key: infra
         team: konflux-infra
 
     - alert: KueueAdmissionWaitTimePreMergeTierBCritical
@@ -369,7 +369,7 @@ spec:
         summary: "High admission wait time for Post-merge builds (Tier B - Constrained)"
         description: "P95 admission wait time for Post-merge builds is above 2 hours on constrained cluster {{ $labels.source_cluster }}."
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
-        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        alert_routing_key: infra
         team: konflux-infra
 
     - alert: KueueAdmissionWaitTimePostMergeTierBCritical
@@ -411,7 +411,7 @@ spec:
         summary: "High admission wait time for Mintmaker"
         description: "99th percentile admission wait time for Mintmaker is {{ $value | humanizeDuration }}, which is above 12 hours in cluster {{ $labels.source_cluster }}"
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/queue/queue.md
-        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        alert_routing_key: infra
         team: konflux-infra
 
     - alert: KueueHighAdmissionWaitTimeReleases
