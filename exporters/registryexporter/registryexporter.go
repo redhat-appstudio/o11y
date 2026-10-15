@@ -163,8 +163,7 @@ func setImageSize(metrics *Metrics, registryType string, testType string, sizeMB
 
 // recordDuration records the duration of a test operation in seconds.
 func recordDuration(metrics *Metrics, registryType string, testType string, duration time.Duration) {
-	durationSeconds := duration.Seconds()
-	metrics.RegistryDuration.WithLabelValues(registryType, k8sNodeName, testType).Observe(durationSeconds)
+	metrics.RegistryDuration.WithLabelValues(registryType, k8sNodeName, testType).Observe(duration.Seconds())
 }
 
 // createFileOfSize creates a file of the target size with a timestamp header for uniqueness.
@@ -202,9 +201,10 @@ func createFileOfSize(filePath string, artifactType string) error {
 	return nil
 }
 
-func executeCmdWithRetry(args []string) (output []byte, err error) {
+func executeCmdWithRetry(args []string) (output []byte, timeElapsed time.Duration, err error) {
 	for attempt := range maxRetries {
 		ctx, cancel := context.WithTimeout(context.Background(), commandTimeout)
+		startTime := time.Now()
 
 		cmd := exec.CommandContext(ctx, "oras", args...)
 
@@ -212,21 +212,31 @@ func executeCmdWithRetry(args []string) (output []byte, err error) {
 		output, err = cmd.CombinedOutput()
 		cancel()
 
+		attemptElapsed := time.Since(startTime)
+
 		if err == nil {
-			return output, nil
+			// Success, measure the time elapsed
+			timeElapsed = attemptElapsed
+			return output, timeElapsed, nil
 		}
+
+		// Log every failed attempt with its elapsed time. This surfaces slow or
+		// hanging commands (e.g. resource starvation where a command runs well
+		// past the timeout) that would otherwise be invisible.
+		log.Printf("Command %s attempt %d failed after %.2f seconds: %v, output: %s", args[0], attempt+1, attemptElapsed.Seconds(), err, string(output))
 
 		if attempt+1 < maxRetries {
-			backoff_duration := time.Duration(math.Pow(2, float64(attempt))) * time.Second
+			// Failed attempt, sleep and retry
+			backoffDuration := time.Duration(math.Pow(2, float64(attempt))) * time.Second
 
-			log.Printf("Command %s attempt %d failed: %v, output: %s", args[0], attempt+1, err, string(output))
-			log.Printf("Retrying in %v...", backoff_duration)
-			time.Sleep(backoff_duration)
+			log.Printf("Retrying in %v...", backoffDuration)
+			time.Sleep(backoffDuration)
 		} else {
-			return output, err
+			// All attempts failed, time elapsed doesn't matter as we measure only successful attempts
+			return output, 0, err
 		}
 	}
-	return output, err
+	return output, 0, err
 }
 
 func loadDockerConfig() (DockerConfig, error) {
@@ -311,7 +321,7 @@ func CreatePullTag(registryMap map[string]RegistryConfig, registryType string, s
 	if !skipCheckExisting {
 		// Check if the tag already exists in the registry
 		args = []string{"pull", registryName, "--output", pullArtifactPath}
-		if _, err := executeCmdWithRetry(args); err == nil {
+		if _, _, err := executeCmdWithRetry(args); err == nil {
 			// Check the size of the existing artifact
 			existingSizeMB, err := getFileSizeMB(pullArtifactPath)
 			if err == nil {
@@ -331,7 +341,7 @@ func CreatePullTag(registryMap map[string]RegistryConfig, registryType string, s
 	}
 
 	args = []string{"push", registryName, "--disable-path-validation", pullArtifactPath}
-	if output, err := executeCmdWithRetry(args); err != nil {
+	if output, _, err := executeCmdWithRetry(args); err != nil {
 		log.Printf("Pull tag creation failed: %v, output: %s", err, string(output))
 		return
 	}
@@ -344,8 +354,12 @@ func PullTest(metrics *Metrics, registryMap map[string]RegistryConfig, registryT
 	registryName += pullTag
 
 	args := []string{"pull", registryName, "--output", pullArtifactPath}
-	startTime := time.Now()
-	if output, err := executeCmdWithRetry(args); err != nil {
+
+	var output []byte
+	var timeElapsed time.Duration
+	var err error
+
+	if output, timeElapsed, err = executeCmdWithRetry(args); err != nil {
 		log.Printf("Pull test failed: %v, output: %s", err, string(output))
 		// Edge case that the pullTag does not exist anymore, registry error otherwise
 		if !strings.Contains(string(output), "not found") {
@@ -355,15 +369,15 @@ func PullTest(metrics *Metrics, registryMap map[string]RegistryConfig, registryT
 		log.Printf("Pull tag %s for %s not found, creating it.", pullTag, registryType)
 		CreatePullTag(registryMap, registryType, true)
 		// Retry the pull operation after re-creating the tag
-		if output, err = executeCmdWithRetry(args); err != nil {
+		if output, timeElapsed, err = executeCmdWithRetry(args); err != nil {
 			log.Printf("Pull test failed after re-creating tag: %v, output: %s", err, string(output))
 			setErrorState(metrics, registryType, "pull", output, err.Error())
 			return
 		}
 	}
-	log.Printf("Pull test for registry type %s successful.", registryType)
+	log.Printf("Pull test for registry type %s successful. Time elapsed: %.2f seconds", registryType, timeElapsed.Seconds())
 
-	recordDuration(metrics, registryType, "pull", time.Since(startTime))
+	recordDuration(metrics, registryType, "pull", timeElapsed)
 
 	if sizeMB, err := getFileSizeMB(pullArtifactPath); err == nil {
 		setImageSize(metrics, registryType, "pull", sizeMB)
@@ -391,13 +405,16 @@ func PushTest(metrics *Metrics, registryMap map[string]RegistryConfig, registryT
 	args := []string{"push", registryName, "--annotation", "quay.expires-after=30s", "--disable-path-validation"}
 	args = append(args, artifactPaths...)
 
-	startTime := time.Now()
-	if output, err := executeCmdWithRetry(args); err != nil {
+	var output []byte
+	var timeElapsed time.Duration
+	var err error
+
+	if output, timeElapsed, err = executeCmdWithRetry(args); err != nil {
 		log.Printf("Push test failed: %v, output: %s", err, string(output))
 		setErrorState(metrics, registryType, "push", output, err.Error())
 		return
 	}
-	log.Printf("Push test for registry type %s successful.", registryType)
+	log.Printf("Push test for registry type %s successful. Time elapsed: %.2f seconds", registryType, timeElapsed.Seconds())
 
 	sizeMB := 0.0
 	for _, file := range artifactPaths {
@@ -405,7 +422,7 @@ func PushTest(metrics *Metrics, registryMap map[string]RegistryConfig, registryT
 			sizeMB += fileSizeMB
 		}
 	}
-	recordDuration(metrics, registryType, "push", time.Since(startTime))
+	recordDuration(metrics, registryType, "push", timeElapsed)
 
 	setImageSize(metrics, registryType, "push", sizeMB)
 
@@ -418,7 +435,7 @@ func deleteArtifact(registryMap map[string]RegistryConfig, registryType string, 
 	registryName += tag
 
 	args := []string{"push", registryName, "--annotation", "quay.expires-after=10s", "--disable-path-validation", "/mnt/storage/pull-artifact.txt"}
-	if output, err := executeCmdWithRetry(args); err != nil {
+	if output, _, err := executeCmdWithRetry(args); err != nil {
 		log.Printf("Artifact deletion failed: %v, output: %s", err, string(output))
 		return
 	}
@@ -433,15 +450,18 @@ func MetadataTest(metrics *Metrics, registryMap map[string]RegistryConfig, regis
 
 	args := []string{"tag", sourceArtifact, strings.TrimPrefix(newTag, ":")}
 
-	startTime := time.Now()
-	if output, err := executeCmdWithRetry(args); err != nil {
+	var output []byte
+	var timeElapsed time.Duration
+	var err error
+
+	if output, timeElapsed, err = executeCmdWithRetry(args); err != nil {
 		log.Printf("Tag creation test failed: %v, output: %s", err, string(output))
 		setErrorState(metrics, registryType, "metadata", output, err.Error())
 		return
 	}
-	log.Printf("Metadata test for registry type %s successful.", registryType)
+	log.Printf("Metadata test for registry type %s successful. Time elapsed: %.2f seconds", registryType, timeElapsed.Seconds())
 
-	recordDuration(metrics, registryType, "metadata", time.Since(startTime))
+	recordDuration(metrics, registryType, "metadata", timeElapsed)
 
 	setSuccessState(metrics, registryType, "metadata")
 }
@@ -449,16 +469,20 @@ func MetadataTest(metrics *Metrics, registryMap map[string]RegistryConfig, regis
 func AuthenticationTest(metrics *Metrics, registryMap map[string]RegistryConfig, registryType string) {
 	credentials := registryMap[registryType].Credentials
 
-	startTime := time.Now()
 	args := []string{"login", registryType, "--username", credentials.Username, "--password", credentials.Password, "--registry-config", "/mnt/storage/authtest-config.json"} // new path needed not to overwrite the original config.json
-	if output, err := executeCmdWithRetry(args); err != nil {
+
+	var output []byte
+	var timeElapsed time.Duration
+	var err error
+
+	if output, timeElapsed, err = executeCmdWithRetry(args); err != nil {
 		log.Printf("Authentication test failed: %v, output: %s", err, string(output))
 		setErrorState(metrics, registryType, "authentication", output, err.Error())
 		return
 	}
-	log.Printf("Authentication test for registry type %s successful.", registryType)
+	log.Printf("Authentication test for registry type %s successful. Time elapsed: %.2f seconds", registryType, timeElapsed.Seconds())
 
-	recordDuration(metrics, registryType, "authentication", time.Since(startTime))
+	recordDuration(metrics, registryType, "authentication", timeElapsed)
 
 	setSuccessState(metrics, registryType, "authentication")
 }
