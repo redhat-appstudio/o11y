@@ -139,6 +139,12 @@ func classifyError(err error, resp *http.Response) (string, bool) {
 // pageURL appends pagination parameters and optional creation-timestamp filters to base.
 // since sets creationTimestampAfter, until sets creationTimestampBefore (for gap-filling).
 func pageURL(base, continueToken, since, until string) (string, error) {
+	return pageURLWithSelector(base, continueToken, since, until, "")
+}
+
+// pageURLWithSelector is pageURL plus an optional labelSelector. Only equality
+// selectors are used; KubeArchive's support for set-based selectors is unverified.
+func pageURLWithSelector(base, continueToken, since, until, labelSelector string) (string, error) {
 	u, err := url.Parse(base)
 	if err != nil {
 		return "", err
@@ -153,6 +159,9 @@ func pageURL(base, continueToken, since, until string) (string, error) {
 	}
 	if until != "" {
 		q.Set("creationTimestampBefore", until)
+	}
+	if labelSelector != "" {
+		q.Set("labelSelector", labelSelector)
 	}
 	u.RawQuery = q.Encode()
 	return u.String(), nil
@@ -196,13 +205,26 @@ func (e *KAExporter) bearerToken() (string, error) {
 // KubeArchive returns items newest-first
 // oldestCreationTimestamp is the Metadata.CreationTimestamp of the last item seen.
 func (e *KAExporter) streamPLRs(ctx context.Context, baseURL, since, until, namespace string, maxItems int, fn func(page []PipelineRun)) (bool, string, error) {
+	return e.streamRuns(ctx, baseURL, since, until, "", namespace, "pipelineruns", maxItems, fn)
+}
+
+// streamTaskRuns fetches TaskRuns page-by-page, calling fn once per page.
+// labelSelector is required in practice: a tenant namespace holds far more
+// TaskRuns than PipelineRuns, so only the selected tasks are worth fetching.
+func (e *KAExporter) streamTaskRuns(ctx context.Context, baseURL, since, until, labelSelector, namespace string, maxItems int, fn func(page []TaskRun)) (bool, string, error) {
+	return e.streamRuns(ctx, baseURL, since, until, labelSelector, namespace, "taskruns", maxItems, fn)
+}
+
+// streamRuns is the shared pagination loop behind streamPLRs and streamTaskRuns.
+// resource names the collection for log lines and the truncation metric.
+func (e *KAExporter) streamRuns(ctx context.Context, baseURL, since, until, labelSelector, namespace, resource string, maxItems int, fn func(page []PipelineRun)) (bool, string, error) {
 	continueToken := ""
 	total := 0
 	var oldestCreationTS string // Track oldest item's creation timestamp
 	wasTruncated := false
 
 	for {
-		u, err := pageURL(baseURL, continueToken, since, until)
+		u, err := pageURLWithSelector(baseURL, continueToken, since, until, labelSelector)
 		if err != nil {
 			return false, "", fmt.Errorf("build page URL for %s: %w", baseURL, err)
 		}
@@ -219,15 +241,15 @@ func (e *KAExporter) streamPLRs(ctx context.Context, baseURL, since, until, name
 		}
 		var page ListResponse
 		if err := json.Unmarshal(body, &page); err != nil {
-			return false, "", fmt.Errorf("unmarshal PLR page from %s: %w", baseURL, err)
+			return false, "", fmt.Errorf("unmarshal %s page from %s: %w", resource, baseURL, err)
 		}
 
 		remaining := maxItems - total
 		if remaining <= 0 {
 			// Scenario 1: Boundary hit - fetched page but already at cap
-			log.Printf("WARNING: streamPLRs %s: reached maxItems cap (%d) on boundary; stopping",
-				baseURL, maxItems)
-			e.truncationsTotal.WithLabelValues(e.cluster, "pipelineruns", namespace).Inc()
+			log.Printf("WARNING: streamRuns %s %s: reached maxItems cap (%d) on boundary; stopping",
+				resource, baseURL, maxItems)
+			e.truncationsTotal.WithLabelValues(e.cluster, resource, namespace).Inc()
 			wasTruncated = true
 			break
 		}
@@ -250,9 +272,9 @@ func (e *KAExporter) streamPLRs(ctx context.Context, baseURL, since, until, name
 
 		if truncated {
 			// Scenario 2: Partial page - processed some, dropped rest
-			log.Printf("WARNING: streamPLRs %s: reached maxItems cap (%d); processed partial page (%d/%d items)",
-				baseURL, maxItems, remaining, len(page.Items))
-			e.truncationsTotal.WithLabelValues(e.cluster, "pipelineruns", namespace).Inc()
+			log.Printf("WARNING: streamRuns %s %s: reached maxItems cap (%d); processed partial page (%d/%d items)",
+				resource, baseURL, maxItems, remaining, len(page.Items))
+			e.truncationsTotal.WithLabelValues(e.cluster, resource, namespace).Inc()
 			wasTruncated = true
 			break
 		}
@@ -262,8 +284,8 @@ func (e *KAExporter) streamPLRs(ctx context.Context, baseURL, since, until, name
 		}
 
 		continueToken = page.Metadata.Continue
-		log.Printf("streamPLRs %s: processed %d items, continuing (token len=%d)",
-			baseURL, total, len(continueToken))
+		log.Printf("streamRuns %s %s: processed %d items, continuing (token len=%d)",
+			resource, baseURL, total, len(continueToken))
 	}
 	return wasTruncated, oldestCreationTS, nil
 }
