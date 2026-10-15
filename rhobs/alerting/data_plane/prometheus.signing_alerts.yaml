@@ -1,0 +1,60 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-signing-alerting
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: signing_alerts
+    interval: 5m
+
+    rules:
+    # Detects absence of successful signing, not a rate of failures.
+    #
+    # During the Aug 17-21 2026 container signing outage (ITN-2026-00266) the
+    # release pipelines hung rather than failed. A hung Tekton TaskRun never
+    # records a completion time, so it is never archived and never appears in
+    # any success/failure count. Every failure-rate signal stayed flat for four
+    # days while releases were blocked across five product teams. Absence of
+    # success is the only form such an outage takes.
+    #
+    # Scoped to rh-direct-sign-image: it is the container signing task that
+    # broke, and the only signing task with continuous traffic on every managed
+    # cluster. The remaining signing tasks (direct-sign-index-image, rh-sign-rpm,
+    # sign-base64-blob, rh-sign-image-cosign) run intermittently; alerting on
+    # their idle periods would produce a signal that is almost always firing.
+    # They are covered by the Konflux Signing dashboard until per-task baselines
+    # exist.
+    #
+    # The 24h threshold is deliberately conservative for a first deployment. It
+    # would have paged on day 2 of the August outage instead of never. Tighten
+    # it once 30 days of konflux_signing_last_success_timestamp_seconds exist to
+    # measure against; see SPRE-6768.
+    #
+    # Note: this alert cannot fire if the series disappears entirely, e.g. when
+    # the exporter itself is down. That case is covered by the KAExporter
+    # scrape-health alerting, not here.
+    - alert: SigningPipelineNoRecentSuccess
+      expr: |
+        (
+          time() - max by (source_cluster, task) (
+            konflux_signing_last_success_timestamp_seconds{task="rh-direct-sign-image"}
+          )
+        ) > 86400
+      for: 1h
+      labels:
+        severity: critical
+        slo: "true"
+        component: release-service
+      annotations:
+        summary: >-
+          No container image has been signed successfully for over 24h in cluster {{ $labels.source_cluster }}
+        description: >-
+          The signing task {{ $labels.task }} has not completed successfully for over 24 hours
+          in cluster {{ $labels.source_cluster }}. Releases that require container signing are
+          most likely blocked. A hung signing task produces no failures, so failure-rate panels
+          may look healthy while nothing is being signed.
+        alert_team_handle: <!subteam^S03SVBS426R>
+        team: release
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/release-service/sre/signing-pipeline-no-recent-success.md
