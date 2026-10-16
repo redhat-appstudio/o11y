@@ -1,0 +1,76 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.federation_delay_alert.yaml
+
+tests:
+  # Positive test: Alert fires when delay >300s for 5+ minutes
+  # At eval_time 11m (660s from epoch), time() returns 660
+  # With timestamp at 0, delay is 660 - 0 = 660s > 300s (true)
+  # With for: 5m, alert fires at 11m (6m condition true + 5m duration)
+  - interval: 1m
+    input_series:
+      - series: 'prometheus_remote_storage_queue_highest_sent_timestamp_seconds{job="prometheus-k8s",namespace="openshift-monitoring",pod="prometheus-k8s-0",source_cluster="cluster01"}'
+        values: '0+0x15'  # Timestamp stays at 0 (very old), causing large delay
+    alert_rule_test:
+      - eval_time: 11m
+        alertname: PrometheusFederationDelayHigh
+        exp_alerts:
+          - exp_labels:
+              component: prometheus
+              job: prometheus-k8s
+              namespace: openshift-monitoring
+              pod: prometheus-k8s-0
+              severity: warning
+              slo: "false"
+              source_cluster: cluster01
+            exp_annotations:
+              summary: 'Prometheus federation delay high for prometheus-k8s-0 on cluster cluster01'
+              description: 'Prometheus instance prometheus-k8s-0 in namespace openshift-monitoring on cluster cluster01 has a federation delay of 11m0s. Data is not being sent to RHOBS in a timely manner, which may delay alerting.'
+              alert_routing_key: o11y
+              team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-prometheus-federation-delay.md
+
+  # Negative test: No alert when delay is under threshold
+  # Incrementing timestamp keeps delay small
+  - interval: 1m
+    input_series:
+      - series: 'prometheus_remote_storage_queue_highest_sent_timestamp_seconds{job="prometheus-k8s",namespace="openshift-monitoring",pod="prometheus-k8s-0",source_cluster="cluster01"}'
+        values: '1+60x15'  # Incrementing timestamp, always recent (delay ~60s)
+    alert_rule_test:
+      - eval_time: 11m
+        alertname: PrometheusFederationDelayHigh
+
+  # Duration test: No alert if delay only lasts 4 minutes
+  # High delay for 4 minutes, then recent timestamp
+  - interval: 1m
+    input_series:
+      - series: 'prometheus_remote_storage_queue_highest_sent_timestamp_seconds{job="prometheus-k8s",namespace="openshift-monitoring",pod="prometheus-k8s-0",source_cluster="cluster01"}'
+        values: '0+0x4 240+60x10'  # Old timestamps for 4min, then catch up
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: PrometheusFederationDelayHigh
+
+  # Multiple namespaces test: user-workload-monitoring
+  - interval: 1m
+    input_series:
+      - series: 'prometheus_remote_storage_queue_highest_sent_timestamp_seconds{job="prometheus-user-workload",namespace="openshift-user-workload-monitoring",pod="prometheus-user-workload-0",source_cluster="cluster02"}'
+        values: '0+0x15'
+    alert_rule_test:
+      - eval_time: 11m
+        alertname: PrometheusFederationDelayHigh
+        exp_alerts:
+          - exp_labels:
+              component: prometheus
+              job: prometheus-user-workload
+              namespace: openshift-user-workload-monitoring
+              pod: prometheus-user-workload-0
+              severity: warning
+              slo: "false"
+              source_cluster: cluster02
+            exp_annotations:
+              summary: 'Prometheus federation delay high for prometheus-user-workload-0 on cluster cluster02'
+              description: 'Prometheus instance prometheus-user-workload-0 in namespace openshift-user-workload-monitoring on cluster cluster02 has a federation delay of 11m0s. Data is not being sent to RHOBS in a timely manner, which may delay alerting.'
+              alert_routing_key: o11y
+              team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-prometheus-federation-delay.md

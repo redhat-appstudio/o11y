@@ -1,0 +1,127 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.remote_write_queue_alert.yaml
+
+tests:
+  # Positive test: Alert fires at 91% for 5+ minutes
+  - interval: 1m
+    input_series:
+      - series: 'prometheus_remote_storage_samples_pending{job="prometheus-k8s",namespace="openshift-monitoring",pod="prometheus-k8s-0",source_cluster="cluster01"}'
+        values: '0.91+0x10'
+      - series: 'prometheus_remote_storage_shard_capacity{job="prometheus-k8s",namespace="openshift-monitoring",pod="prometheus-k8s-0",source_cluster="cluster01"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: PrometheusRemoteWriteQueueHigh
+        exp_alerts:
+          - exp_labels:
+              component: prometheus
+              job: prometheus-k8s
+              namespace: openshift-monitoring
+              pod: prometheus-k8s-0
+              severity: warning
+              slo: "false"
+              source_cluster: cluster01
+            exp_annotations:
+              summary: 'Prometheus remote-write queue high for prometheus-k8s-0 on cluster cluster01'
+              description: 'Prometheus instance prometheus-k8s-0 in namespace openshift-monitoring on cluster cluster01 has a remote-write queue at 91% capacity. When the queue fills completely, samples will be dropped and data will be lost.'
+              alert_routing_key: o11y
+              team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-prometheus-remote-write-queue.md
+
+  # Negative test: No alert at 89%
+  - interval: 1m
+    input_series:
+      - series: 'prometheus_remote_storage_samples_pending{job="prometheus-k8s",namespace="openshift-monitoring",pod="prometheus-k8s-0",source_cluster="cluster01"}'
+        values: '0.89+0x10'
+      - series: 'prometheus_remote_storage_shard_capacity{job="prometheus-k8s",namespace="openshift-monitoring",pod="prometheus-k8s-0",source_cluster="cluster01"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: PrometheusRemoteWriteQueueHigh
+
+  # Edge case: No alert when exactly at 90% (expression uses > not >=)
+  - interval: 1m
+    input_series:
+      - series: 'prometheus_remote_storage_samples_pending{job="prometheus-k8s",namespace="openshift-monitoring",pod="prometheus-k8s-0",source_cluster="cluster01"}'
+        values: '0.90+0x10'
+      - series: 'prometheus_remote_storage_shard_capacity{job="prometheus-k8s",namespace="openshift-monitoring",pod="prometheus-k8s-0",source_cluster="cluster01"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: PrometheusRemoteWriteQueueHigh
+
+  # Duration test: No alert if high usage only 4 minutes
+  - interval: 1m
+    input_series:
+      - series: 'prometheus_remote_storage_samples_pending{job="prometheus-k8s",namespace="openshift-monitoring",pod="prometheus-k8s-0",source_cluster="cluster01"}'
+        values: '0.91+0x4 0.10+0x6'
+      - series: 'prometheus_remote_storage_shard_capacity{job="prometheus-k8s",namespace="openshift-monitoring",pod="prometheus-k8s-0",source_cluster="cluster01"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: PrometheusRemoteWriteQueueHigh
+
+  # Normal operation test: No alert at 5% (healthy)
+  - interval: 1m
+    input_series:
+      - series: 'prometheus_remote_storage_samples_pending{job="prometheus-k8s",namespace="openshift-monitoring",pod="prometheus-k8s-0",source_cluster="cluster01"}'
+        values: '0.05+0x10'
+      - series: 'prometheus_remote_storage_shard_capacity{job="prometheus-k8s",namespace="openshift-monitoring",pod="prometheus-k8s-0",source_cluster="cluster01"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: PrometheusRemoteWriteQueueHigh
+
+  # Edge case: Queue at 100% (full saturation)
+  - interval: 1m
+    input_series:
+      - series: 'prometheus_remote_storage_samples_pending{job="prometheus-k8s",namespace="openshift-monitoring",pod="prometheus-k8s-0",source_cluster="cluster01"}'
+        values: '1.0+0x10'
+      - series: 'prometheus_remote_storage_shard_capacity{job="prometheus-k8s",namespace="openshift-monitoring",pod="prometheus-k8s-0",source_cluster="cluster01"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: PrometheusRemoteWriteQueueHigh
+        exp_alerts:
+          - exp_labels:
+              component: prometheus
+              job: prometheus-k8s
+              namespace: openshift-monitoring
+              pod: prometheus-k8s-0
+              severity: warning
+              slo: "false"
+              source_cluster: cluster01
+            exp_annotations:
+              summary: 'Prometheus remote-write queue high for prometheus-k8s-0 on cluster cluster01'
+              description: 'Prometheus instance prometheus-k8s-0 in namespace openshift-monitoring on cluster cluster01 has a remote-write queue at 100% capacity. When the queue fills completely, samples will be dropped and data will be lost.'
+              alert_routing_key: o11y
+              team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-prometheus-remote-write-queue.md
+
+  # Multiple namespaces test: user-workload-monitoring
+  - interval: 1m
+    input_series:
+      - series: 'prometheus_remote_storage_samples_pending{job="prometheus-user-workload",namespace="openshift-user-workload-monitoring",pod="prometheus-user-workload-0",source_cluster="cluster02"}'
+        values: '0.96+0x10'
+      - series: 'prometheus_remote_storage_shard_capacity{job="prometheus-user-workload",namespace="openshift-user-workload-monitoring",pod="prometheus-user-workload-0",source_cluster="cluster02"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: PrometheusRemoteWriteQueueHigh
+        exp_alerts:
+          - exp_labels:
+              component: prometheus
+              job: prometheus-user-workload
+              namespace: openshift-user-workload-monitoring
+              pod: prometheus-user-workload-0
+              severity: warning
+              slo: "false"
+              source_cluster: cluster02
+            exp_annotations:
+              summary: 'Prometheus remote-write queue high for prometheus-user-workload-0 on cluster cluster02'
+              description: 'Prometheus instance prometheus-user-workload-0 in namespace openshift-user-workload-monitoring on cluster cluster02 has a remote-write queue at 96% capacity. When the queue fills completely, samples will be dropped and data will be lost.'
+              alert_routing_key: o11y
+              team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-prometheus-remote-write-queue.md

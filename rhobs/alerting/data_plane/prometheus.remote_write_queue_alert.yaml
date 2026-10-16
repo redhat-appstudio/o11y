@@ -1,0 +1,35 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-prometheus-remote-write-queue-alert
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: prometheus_remote_write_queue_alert
+    interval: 1m
+    rules:
+    - alert: PrometheusRemoteWriteQueueHigh
+      expr: |
+        (
+          prometheus_remote_storage_samples_pending{
+            namespace=~"openshift-monitoring|openshift-user-workload-monitoring|appstudio-monitoring",
+            job=~"prometheus.*"
+          }
+          /
+          prometheus_remote_storage_shard_capacity{
+            namespace=~"openshift-monitoring|openshift-user-workload-monitoring|appstudio-monitoring",
+            job=~"prometheus.*"
+          }
+        ) > 0.90
+      for: 5m
+      labels:
+        severity: warning
+        component: prometheus
+        slo: "false"
+      annotations:
+        summary: "Prometheus remote-write queue high for {{ $labels.pod }} on cluster {{ $labels.source_cluster }}"
+        description: "Prometheus instance {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} has a remote-write queue at {{ $value | humanizePercentage }} capacity. When the queue fills completely, samples will be dropped and data will be lost."
+        alert_routing_key: o11y
+        team: o11y
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-prometheus-remote-write-queue.md
