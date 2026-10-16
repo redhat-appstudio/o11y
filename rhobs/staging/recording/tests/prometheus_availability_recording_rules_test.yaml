@@ -1,0 +1,198 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus_availability_recording_rules.yaml
+
+tests:
+  ### Basic up test.
+  - interval: 1m
+    name: PrometheusUserspaceTest
+    input_series:
+      - series: "prometheus_ready{namespace='openshift-user-workload-monitoring', job='prometheus-user-workload', pod='prometheus-k8s-0'}"
+        values: "1 1 1 1 1"
+      - series: "prometheus_ready{namespace='openshift-user-workload-monitoring', job='prometheus-user-workload', pod='prometheus-k8s-1'}"
+        values: "1 1 1 1 1"
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples:
+          - labels: konflux_up{service='prometheus', check='prometheus_ready_user_workload', namespace='openshift-user-workload-monitoring', job='prometheus-user-workload'}
+            value: 1
+
+
+  - interval: 1m
+    name: PrometheusOpenshiftTest
+    input_series:
+      - series: "prometheus_ready{namespace='openshift-monitoring', job='prometheus-k8s', pod='prometheus-k8s-0'}"
+        values: "1 1 1 1 1"
+      - series: "prometheus_ready{namespace='openshift-monitoring', job='prometheus-k8s', pod='prometheus-k8s-1'}"
+        values: "1 1 1 1 1"
+
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples:
+          - labels: konflux_up{service='prometheus', check='prometheus_ready_openshift_monitoring', namespace='openshift-monitoring', job='prometheus-k8s'}
+            value: 1
+
+  - interval: 1m
+    name: PrometheusFederationTest
+    input_series:
+      - series: "prometheus_ready{namespace='appstudio-monitoring', job='prometheus-self', pod='prometheus-k8s-1'}"
+        values: "1 1 1 1 1"
+      - series: "prometheus_ready{namespace='appstudio-monitoring', job='prometheus-self', pod='prometheus-k8s-0'}"
+        values: "1 1 1 1 1"
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples:
+          - labels: konflux_up{service='prometheus', check='prometheus_ready_federation', namespace='appstudio-monitoring',  job='prometheus-self'}
+            value: 1
+
+  ### Down test.
+  - interval: 1m
+    name: PrometheusUserspaceTest
+    input_series:
+      - series: "prometheus_ready{namespace='openshift-user-workload-monitoring', job='prometheus-user-workload', pod='prometheus-k8s-0'}"
+        values: "0 0 0 0 0"
+      - series: "prometheus_ready{namespace='openshift-user-workload-monitoring', job='prometheus-user-workload', pod='prometheus-k8s-1'}"
+        values: "0 0 0 0 0"
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples:
+          - labels: konflux_up{service='prometheus', check='prometheus_ready_user_workload', namespace='openshift-user-workload-monitoring', job='prometheus-user-workload'}
+            value: 0
+
+  - interval: 1m
+    name: PrometheusOpenshiftTest
+    input_series:
+      - series: "prometheus_ready{namespace='openshift-monitoring', job='prometheus-k8s', pod='prometheus-k8s-0'}"
+        values: "0 0 0 0 0"
+      - series: "prometheus_ready{namespace='openshift-monitoring', job='prometheus-k8s', pod='prometheus-k8s-1'}"
+        values: "0 0 0 0 0"
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples:
+          - labels: konflux_up{service='prometheus', check='prometheus_ready_openshift_monitoring', namespace='openshift-monitoring', job='prometheus-k8s'}
+            value: 0
+
+  - interval: 1m
+    name: PrometheusFederationTest
+    input_series:
+      - series: "prometheus_ready{namespace='appstudio-monitoring', job='prometheus-self',  pod='prometheus-k8s-0'}"
+        values: "0 0 0 0 0"
+      - series: "prometheus_ready{namespace='appstudio-monitoring', job='prometheus-self',  pod='prometheus-k8s-1'}"
+        values: "0 0 0 0 0"
+
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples:
+          - labels: konflux_up{service='prometheus', check='prometheus_ready_federation', namespace='appstudio-monitoring',  job='prometheus-self'}
+            value: 0
+
+
+  ### Down test.
+  - interval: 1m
+    name: PrometheusUserspaceTest
+    input_series:
+      - series: "prometheus_ready{namespace='openshift-user-workload-monitoring', job='prometheus-user-workload', pod='prometheus-k8s-0'}"
+        values: "0 0 0 0 0"
+      - series: "prometheus_ready{namespace='openshift-user-workload-monitoring', job='prometheus-user-workload', pod='prometheus-k8s-1'}"
+        values: "1 1 1 1 1"
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples:
+          - labels: konflux_up{service='prometheus', check='prometheus_ready_user_workload', namespace='openshift-user-workload-monitoring', job='prometheus-user-workload'}
+            value: 1
+
+  - interval: 1m
+    name: PrometheusOpenshiftTest
+    input_series:
+      - series: "prometheus_ready{namespace='openshift-monitoring', job='prometheus-k8s', pod='prometheus-k8s-0'}"
+        values: "1 1 1 1 1"
+      - series: "prometheus_ready{namespace='openshift-monitoring', job='prometheus-k8s', pod='prometheus-k8s-1'}"
+        values: "0 0 0 0 0"
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples:
+          - labels: konflux_up{service='prometheus', check='prometheus_ready_openshift_monitoring', namespace='openshift-monitoring', job='prometheus-k8s'}
+            value: 1
+
+  - interval: 1m
+    name: PrometheusFederationTest
+    input_series:
+      - series: "prometheus_ready{namespace='appstudio-monitoring', job='prometheus-self',  pod='prometheus-k8s-0'}"
+        values: "0 0 0 0 0"
+      - series: "prometheus_ready{namespace='appstudio-monitoring', job='prometheus-self',  pod='prometheus-k8s-1'}"
+        values: "1 1 1 1 1"
+
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples:
+          - labels: konflux_up{service='prometheus', check='prometheus_ready_federation', namespace='appstudio-monitoring',  job='prometheus-self'}
+            value: 1
+
+  # Flaky test
+  - interval: 1m
+    name: PrometheusUserspaceTest
+    input_series:
+      - series: "prometheus_ready{namespace='openshift-user-workload-monitoring', job='prometheus-user-workload', pod='prometheus-k8s-0'}"
+        values: "1 0 1 0 1"
+      - series: "prometheus_ready{namespace='openshift-user-workload-monitoring', job='prometheus-user-workload', pod='prometheus-k8s-1'}"
+        values: "0 0 0 0 0"
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples:
+          - labels: konflux_up{service='prometheus', check='prometheus_ready_user_workload', namespace='openshift-user-workload-monitoring', job='prometheus-user-workload'}
+            value: 1
+
+  - interval: 1m
+    name: PrometheusOpenshiftTest
+    input_series:
+      - series: "prometheus_ready{namespace='openshift-monitoring', job='prometheus-k8s', pod='prometheus-k8s-0'}"
+        values: "1 0 1 0 1"
+      - series: "prometheus_ready{namespace='openshift-monitoring', job='prometheus-k8s', pod='prometheus-k8s-1'}"
+        values: "0 1 0 1 0"
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples:
+          - labels: konflux_up{service='prometheus', check='prometheus_ready_openshift_monitoring', namespace='openshift-monitoring', job='prometheus-k8s'}
+            value: 1
+
+  - interval: 1m
+    name: PrometheusFederationTest
+    input_series:
+      - series: "prometheus_ready{namespace='appstudio-monitoring', job='prometheus-self',  pod='prometheus-k8s-0'}"
+        values: "0 1 0 1 0"
+      - series: "prometheus_ready{namespace='appstudio-monitoring', job='prometheus-self',  pod='prometheus-k8s-1'}"
+        values: "0 0 1 0 0"
+
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples:
+          - labels: konflux_up{service='prometheus', check='prometheus_ready_federation', namespace='appstudio-monitoring',  job='prometheus-self'}
+            value: 0
+
+  - interval: 1m
+    name: PrometheusFederationTestFlakyDown
+    input_series:
+      - series: "prometheus_ready{namespace='appstudio-monitoring', job='prometheus-self',  pod='prometheus-k8s-0'}"
+        values: "0 0 0 1 0"
+      - series: "prometheus_ready{namespace='appstudio-monitoring', job='prometheus-self',  pod='prometheus-k8s-1'}"
+        values: "0 0 1 0 0"
+
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples:
+          - labels: konflux_up{service='prometheus', check='prometheus_ready_federation', namespace='appstudio-monitoring',  job='prometheus-self'}
+            value: 0

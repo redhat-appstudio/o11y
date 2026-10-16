@@ -9,17 +9,20 @@ make check-and-test
 Runs `obsctl-reloader-rules-checker` container against alert and recording rules + their tests. No local tool install needed — promtool and pint are bundled in the container image.
 
 ### Selective rule testing (faster iteration)
+
+After the environment split, rule files live under `rhobs/staging/` and `rhobs/production/`. Test against either environment:
+
 ```
 make selective-check-and-test \
-  RULE_FILES="rhobs/alerting/data_plane/my_alert.yaml" \
-  TEST_CASE_FILES="test/promql/tests/data_plane/my_alert_test.yaml"
+  RULE_FILES="rhobs/staging/alerting/data-plane/alerts/my_alert.yaml" \
+  TEST_CASE_FILES="rhobs/staging/alerting/data-plane/tests/my_alert_test.yaml"
 ```
 
 For KRD (Konflux Release Data) alerts:
 ```
 make selective-check-and-test \
-  RULE_FILES="rhobs/alerting/konflux-release-data/my_alert.yaml" \
-  TEST_CASE_FILES="test/promql/tests/konflux-release-data/my_alert_test.yaml"
+  RULE_FILES="rhobs/staging/alerting/konflux-release-data/alerts/my_alert.yaml" \
+  TEST_CASE_FILES="rhobs/staging/alerting/konflux-release-data/tests/my_alert_test.yaml"
 ```
 
 ### Alert convention checks
@@ -46,10 +49,20 @@ Alert rules are evaluated by RHOBS (Red Hat Observability Service), not by in-cl
 **Exception — KRD alerts:** Konflux Release Data runner and pipeline metrics are not forwarded via infra-deployments. They are scraped and forwarded by an OTEL Collector defined in [krd-monitoring](https://gitlab.cee.redhat.com/konflux/o11y/krd-monitoring). ArgoCD `argocd_app_info` metrics are forwarded via the standard Prometheus remote-write path in [app-interface](https://gitlab.cee.redhat.com/service/app-interface/-/blob/dabd5d7a2dc8cc229941b4669bb9f2fd4413f3d7/data/services/observability/cicd/saas/saas-observability-per-cluster.yaml#L457). See the [KRD monitoring SOP](https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/monitoring/konflux-release-data-monitoring.md) for full architecture and alert details.
 
 ## Deployment Model
-Changes are deployed into rhobs based on [references defined in app-interface](https://gitlab.cee.redhat.com/service/app-interface/-/blob/master/data/services/stonesoup/cicd/saas-rhtap-rules.yaml?ref_type=heads).
+Changes are deployed into RHOBS based on [references defined in app-interface](https://gitlab.cee.redhat.com/service/app-interface/-/blob/master/data/services/stonesoup/cicd/saas-rhtap-rules.yaml?ref_type=heads).
 
 - **Staging**: auto-deploys from `main` branch via app-interface.
 - **Production**: requires manually updating the commit reference. Always use the merge commit sha from `main` (not an individual branch commit) to ensure all changes are included. Check that the updated sha does not roll back already deployed changes.
+
+### Environment split
+
+Alert and recording rules are duplicated under `rhobs/staging/` and `rhobs/production/`. Each environment has its own directory tree that app-interface points at independently. This enables:
+
+- **Staged rollouts**: land a new alert in staging first, validate it, then promote to production in a follow-up PR.
+- **Environment-specific rules**: alerts that only apply to one environment (e.g. `absent()` alerts with per-env cluster lists, prod-only runner monitoring).
+- **Environment-specific thresholds**: different `for` durations or severity levels per environment when SPREs recommend it.
+
+A CI drift detection check compares the two directories on every PR and flags unacknowledged differences. See [ALERT_DRIFT.md](ALERT_DRIFT.md) for the full workflow, bypass mechanisms, and common scenarios.
 
 ## Conventions
 

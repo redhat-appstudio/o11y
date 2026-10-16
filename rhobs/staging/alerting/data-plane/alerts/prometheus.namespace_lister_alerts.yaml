@@ -1,0 +1,85 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-namespace-lister-alerting
+  labels:
+    tenant: rhtap
+
+spec:
+  groups:
+  - name: namespace_lister_unavailable
+    interval: 1m
+    rules:
+    - alert: NamespaceListerSynchronizationFailure
+      expr: |
+        increase(namespace_lister_accesscache_synch_op_total{status="failed"}[30m]) > 2
+      for: 5m
+      labels:
+        severity: warning
+        component: namespace-lister
+      annotations:
+        summary: Namespace-lister cache has reported 2 synchronization failures in 30 minutes
+        description: "Namespace-lister's cache on cluster '{{ $labels.source_cluster }}' has reported 2 synchronization failures in 30 minutes"
+        alert_routing_key: <!subteam^S06G3MJT516>
+        team: workspaces
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/namespace-lister/README.md
+    - alert: NamespaceListerInternalError
+      expr: increase(namespace_lister_api_counter{code="500"}[10m]) > 0
+      for: 10m
+      labels:
+        severity: warning
+        component: namespace-lister
+      annotations:
+        summary: Namespace-lister is reporting too many internal errors
+        description: "Namespace-lister pod '{{ $labels.pod }}' on cluster '{{ $labels.source_cluster }}' is returning internal errors"
+        alert_routing_key: <!subteam^S06G3MJT516>
+        team: workspaces
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/namespace-lister/README.md
+
+  - name: namespace-lister-availability
+    interval: 1m
+    rules:
+
+    - alert: NameSpaceListerDown
+      expr: |
+        konflux_up{
+          namespace="namespace-lister",
+          check="replicas-available",
+          service="namespace-lister"
+        } != 1
+      for: 5m
+      labels:
+        severity: critical
+        slo: "true"
+        component: namespace-lister
+      annotations:
+        summary: >-
+          namespace-lister is down in cluster {{ $labels.source_cluster }}
+        description: >
+          The namespace-lister pod has been down for 5min in cluster {{ $labels.source_cluster }}
+        alert_team_handle: <!subteam^S05Q1P4Q2TG>
+        team: konflux-infra
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/namespace-lister/README.md
+
+    - alert: NamespaceListerNotServingRequests
+      # The unless operator is binary: any nonzero 2xx rate fully suppresses the alert.
+      # This assumes health probes (/healthz, /readyz) are NOT counted in
+      # namespace_lister_api_counter. If health probes are later found to be included,
+      # switch to a ratio-based approach: rate(2xx) / rate(total) < threshold.
+      expr: |
+        sum by (source_cluster, pod) (rate(namespace_lister_api_counter[5m])) > 0
+        unless
+        sum by (source_cluster, pod) (rate(namespace_lister_api_counter{code=~"2.."}[5m])) > 0
+      for: 2m
+      labels:
+        severity: warning
+        component: namespace-lister
+      annotations:
+        summary: >-
+          namespace-lister is receiving requests but returning no successful responses in cluster {{ $labels.source_cluster }}
+        description: >
+          namespace-lister pod '{{ $labels.pod }}' on cluster '{{ $labels.source_cluster }}'
+          is receiving requests but returning no 2xx responses.
+        alert_routing_key: <!subteam^S06G3MJT516>
+        team: workspaces
+        runbook_url: null

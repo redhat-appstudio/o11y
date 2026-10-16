@@ -1,0 +1,33 @@
+evaluation_interval: 1m
+
+rule_files:
+  - 'prometheus.blackbox_exporter_alerts.yaml'
+
+tests:
+  - interval: 1m
+    input_series:
+      - series: 'konflux_up{namespace="appstudio-monitoring", check="replicas-available", deployment="blackbox-exporter-obo", service="blackbox-exporter-obo", source_cluster="c1"}'
+        values: '1x5 0x10'
+      - series: 'konflux_up{namespace="appstudio-monitoring", check="replicas-available", deployment="blackbox-exporter-obo", service="blackbox-exporter-obo", source_cluster="c2"}'
+        values: '1x5 0x4 1x6'
+
+    alert_rule_test:
+      - eval_time: 11m
+        alertname: BlackboxExporterDown
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              check: replicas-available
+              namespace: appstudio-monitoring
+              service: blackbox-exporter-obo
+              deployment: blackbox-exporter-obo
+              slo: "false"
+              source_cluster: c1
+              component: blackbox-exporter
+            exp_annotations:
+              summary: blackbox-exporter is down in cluster c1
+              description: >
+                The blackbox-exporter-obo pod has been down for 5min in cluster c1
+              alert_routing_key: o11y
+              team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/exporters/blackbox/blackbox-troubleshooting.md

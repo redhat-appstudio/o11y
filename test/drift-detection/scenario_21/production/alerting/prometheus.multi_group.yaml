@@ -1,0 +1,28 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-multi-group-rules
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: group_a
+    interval: 1m
+    rules:
+    - alert: HighErrorRate
+      expr: rate(http_errors_total[5m]) > 0.1
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: High error rate in group A
+  - name: group_b
+    interval: 1m
+    rules:
+    - alert: HighErrorRate
+      expr: rate(grpc_errors_total[5m]) > 0.5
+      for: 10m
+      labels:
+        severity: warning
+      annotations:
+        summary: High error rate in group B

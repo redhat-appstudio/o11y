@@ -1,0 +1,37 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.etcd_shield.yaml
+
+tests:
+
+  - interval: 1m
+    input_series:
+      - series: etcd_shield_alert_triggered{source_cluster="cluster01"}
+        values: 1+0x240
+
+    alert_rule_test:
+      - eval_time: 11m
+        alertname: EtcdShield
+        exp_alerts:
+          - exp_labels:
+              component: etcd
+              severity: critical
+              source_cluster: cluster01
+              slo: 'true'
+            exp_annotations:
+              description: 'Etcd Shield Alert Triggered in cluster cluster01.'
+              summary: Etcd Shield Alert Triggered
+              alert_team_handle: >-
+                <!subteam^S07SW2EEW3D> <!subteam^S05Q1P4Q2TG>
+              team: konflux-infra
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/etcd.md
+
+  - interval: 1m
+    input_series:
+      - series: etcd_shield_alert_triggered{source_cluster="cluster01"}
+        values: 0+0x240
+
+    alert_rule_test:
+      - eval_time: 11m
+        alertname: EtcdShield

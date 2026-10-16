@@ -1,0 +1,35 @@
+evaluation_interval: 1m
+
+rule_files:
+  - blackbox_exporter_availability_recording_rules.yaml
+
+tests:
+  - name: BlackboxExporterOboDownTest
+    interval: 1m
+    input_series:
+      - series: "kube_deployment_status_replicas_available{namespace='appstudio-monitoring', deployment='blackbox-exporter-obo'}"
+        values: "0 0 0 0 0"
+      - series: "kube_deployment_spec_replicas{namespace='appstudio-monitoring', deployment='blackbox-exporter-obo'}"
+        values: "1 1 1 1 1"
+
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples:
+          - labels: konflux_up{service='blackbox-exporter-obo', check='replicas-available', namespace='appstudio-monitoring', deployment='blackbox-exporter-obo'}
+            value: 0
+
+  - name: BlackboxExporterOboUpTest
+    interval: 1m
+    input_series:
+      - series: "kube_deployment_status_replicas_available{namespace='appstudio-monitoring', deployment='blackbox-exporter-obo'}"
+        values: "1 1 1 1 1"
+      - series: "kube_deployment_spec_replicas{namespace='appstudio-monitoring', deployment='blackbox-exporter-obo'}"
+        values: "1 1 1 1 1"
+
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples:
+          - labels: konflux_up{service='blackbox-exporter-obo', check='replicas-available', namespace='appstudio-monitoring', deployment='blackbox-exporter-obo'}
+            value: 1

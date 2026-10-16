@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-pod-alerting-rules
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: pod_alerts
+    interval: 1m
+    rules:
+    - alert: CrashLoopBackOff
+      expr: max_over_time(kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff"}[5m]) >= 1
+      for: 15m
+      labels:
+        severity: warning  # drift:ignore SPRE recommended different severity per env
+        slo: "false"
+      annotations:
+        summary: Pod {{ $labels.pod }} is crash looping

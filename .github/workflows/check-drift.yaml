@@ -1,0 +1,109 @@
+name: Drift Detection
+
+"on":
+  pull_request:
+    paths:
+      - 'rhobs/**'
+
+permissions:
+  contents: read
+
+jobs:
+  check-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - run: pip install pyyaml
+
+      - name: Detect changed files
+        id: changed
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          changed=$(git diff --name-only "origin/${BASE_REF}...HEAD" \
+            | grep '^rhobs/' || true)
+
+          files=$(echo "$changed" \
+            | sed -E 's#^rhobs/(staging|production)/##' \
+            | sort -u \
+            | tr '\n' ' ')
+          echo "files=$files" >> "$GITHUB_OUTPUT"
+
+          has_staging=$(echo "$changed" | grep -c '^rhobs/staging/' || true)
+          has_production=$(echo "$changed" | grep -c '^rhobs/production/' || true)
+          if [ "$has_staging" -gt 0 ] && [ "$has_production" -gt 0 ]; then
+            echo "both_envs=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "both_envs=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          echo "Changed rule files: $files"
+          echo "Both envs touched: $has_staging > 0 && $has_production > 0"
+
+      - name: Run drift detection
+        id: drift
+        env:
+          CHANGED_FILES: ${{ steps.changed.outputs.files }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          if [ ! -d rhobs/staging ] || [ ! -d rhobs/production ]; then
+            echo "check-env-drift: skipped (waiting for both rhobs/staging/ and rhobs/production/)" > drift-report.txt
+            echo "exit_code=0" >> "$GITHUB_OUTPUT"
+            echo "has_warnings=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          set +e
+          args=(python3 scripts/check-env-drift.py --diff-base "origin/${BASE_REF}")
+          if [ -n "$CHANGED_FILES" ]; then
+            read -ra file_arr <<< "$CHANGED_FILES"
+            args+=(--only "${file_arr[@]}")
+          fi
+          output=$("${args[@]}" 2>&1)
+          exit_code=$?
+          echo "$output" > drift-report.txt
+          echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"
+
+          has_warnings=false
+          if grep -q '\[WARN\]' drift-report.txt; then
+            has_warnings=true
+          fi
+          echo "has_warnings=$has_warnings" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Save PR metadata for comment workflow
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          EXIT_CODE: ${{ steps.drift.outputs.exit_code }}
+          BOTH_ENVS: ${{ steps.changed.outputs.both_envs }}
+          HAS_WARNINGS: ${{ steps.drift.outputs.has_warnings }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          mkdir -p drift-artifacts
+          cp drift-report.txt drift-artifacts/
+          echo "$PR_NUMBER" > drift-artifacts/pr_number
+          echo "$EXIT_CODE" > drift-artifacts/exit_code
+          echo "$BOTH_ENVS" > drift-artifacts/both_envs
+          echo "$HAS_WARNINGS" > drift-artifacts/has_warnings
+          echo "$HEAD_SHA" > drift-artifacts/head_sha
+          echo "$BASE_SHA" > drift-artifacts/base_sha
+
+      - name: Upload drift report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: drift-report
+          path: drift-artifacts/
+
+      - name: Fail if drift detected
+        if: steps.drift.outputs.exit_code != '0'
+        run: |
+          echo "Drift violations detected — see PR comment for details"
+          exit 1

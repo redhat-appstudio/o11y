@@ -1,0 +1,111 @@
+evaluation_interval: 1m
+
+rule_files:
+  - 'prometheus.integration_service_latency_release_creation_alerts.yaml'
+
+tests:
+  - interval: 1m
+    input_series:
+      # Simulating data from Cluster 1 (crosses the 10% threshold)
+      - series: 'integration_svc_release_latency_seconds_bucket{le="10.0", source_cluster="cluster01"}'
+        values: '0+10x15'  # 10 requests took less than 10s
+      - series: 'integration_svc_release_latency_seconds_bucket{le="+Inf", source_cluster="cluster01"}'
+        values: '0+100x15'  # 100 total occurrences in cluster01
+
+      # Simulating data from Cluster 2 (does not cross the 10% threshold)
+      - series: 'integration_svc_release_latency_seconds_bucket{le="10.0", source_cluster="cluster02"}'
+        values: '0+90x15'  # 90 requests took less than 10s
+      - series: 'integration_svc_release_latency_seconds_bucket{le="+Inf", source_cluster="cluster02"}'
+        values: '0+100x15'  # 100 total occurrences in cluster02
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: IntegrationServiceLatencyReleaseCreation
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              slo: "false"
+              component: integration-service
+              source_cluster: cluster01
+            exp_annotations:
+              summary: Latency of release creation time exceeded
+              description: >
+                Time from Snapshot marked as passed to release created has been over
+                10s for more than 10% of requests during the last 10 minutes on cluster
+                cluster01
+              # alert_team_handle: <!subteam^S05M4AG8CJH>
+              alert_routing_key: <!subteam^S05M4AG8CJH>
+              team: integration
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/sre/latency_release_creation.md
+
+  # Scenario where both clusters cross the 10% threshold
+  # Alert triggered for both clusters
+  - interval: 1m
+    input_series:
+      # Simulating data from Cluster 1 (crosses the 10% threshold)
+      - series: 'integration_svc_release_latency_seconds_bucket{le="10.0", source_cluster="cluster01"}'
+        values: '0+5x15'  # 5 requests took less than 10s
+      - series: 'integration_svc_release_latency_seconds_bucket{le="+Inf", source_cluster="cluster01"}'
+        values: '0+100x15'  # 100 total occurrences in cluster01
+
+      # Simulating data from Cluster 2 (also crosses the 10% threshold)
+      - series: 'integration_svc_release_latency_seconds_bucket{le="10.0", source_cluster="cluster02"}'
+        values: '0+5x15'  # 5 requests took less than 10s
+      - series: 'integration_svc_release_latency_seconds_bucket{le="+Inf", source_cluster="cluster02"}'
+        values: '0+100x15'  # 100 total occurrences in cluster02
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: IntegrationServiceLatencyReleaseCreation
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              slo: "false"
+              component: integration-service
+              source_cluster: cluster01
+            exp_annotations:
+              summary: Latency of release creation time exceeded
+              description: >
+                Time from Snapshot marked as passed to release created has been over
+                10s for more than 10% of requests during the last 10 minutes on cluster
+                cluster01
+              # alert_team_handle: <!subteam^S05M4AG8CJH>
+              alert_routing_key: <!subteam^S05M4AG8CJH>
+              team: integration
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/sre/latency_release_creation.md
+          - exp_labels:
+              severity: high
+              slo: "false"
+              component: integration-service
+              source_cluster: cluster02
+            exp_annotations:
+              summary: Latency of release creation time exceeded
+              description: >
+                Time from Snapshot marked as passed to release created has been over
+                10s for more than 10% of requests during the last 10 minutes on cluster
+                cluster02
+              # alert_team_handle: <!subteam^S05M4AG8CJH>
+              alert_routing_key: <!subteam^S05M4AG8CJH>
+              team: integration
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/integration-service/sre/latency_release_creation.md
+
+  # Scenario where neither cluster crosses the 10% threshold
+  # Alert not triggered
+  - interval: 1m
+    input_series:
+      # Simulating data from Cluster 1 (does not cross the 10% threshold)
+      - series: 'integration_svc_release_latency_seconds_bucket{le="10.0", source_cluster="cluster01"}'
+        values: '0+95x15'  # 95 requests took less than 10s
+      - series: 'integration_svc_release_latency_seconds_bucket{le="+Inf", source_cluster="cluster01"}'
+        values: '0+100x15'  # 100 total occurrences in cluster01
+
+      # Simulating data from Cluster 2 (does not cross the 10% threshold)
+      - series: 'integration_svc_release_latency_seconds_bucket{le="10.0", source_cluster="cluster02"}'
+        values: '0+95x15'  # 95 requests took less than 10s
+      - series: 'integration_svc_release_latency_seconds_bucket{le="+Inf", source_cluster="cluster02"}'
+        values: '0+100x15'  # 100 total occurrences in cluster02
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: IntegrationServiceLatencyReleaseCreation
+        exp_alerts: []  # No alerts are expected in this scenario

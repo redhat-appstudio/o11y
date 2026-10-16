@@ -1,0 +1,49 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-internal-requests-alerting-rules
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: internal_requests_alerts
+    interval: 1m
+    rules:
+    - alert: InternalRequestsQuotaNearLimit
+      expr: |
+        max(apiserver_storage_objects{resource="internalrequests.appstudio.redhat.com"}) > 500
+      for: 15m
+      labels:
+        severity: warning
+        component: release-service
+      annotations:
+        summary: >-
+          InternalRequests count has exceeded the threshold
+        description: >-
+          The number of InternalRequests has exceeded 500. The cleanup job may be
+          misbehaving, causing stale InternalRequests to accumulate.
+        alert_routing_key: internal-services
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/release-service/internal-requests-quota.md
+        team: release
+
+    - alert: InternalRequestsCleanupJobFailed
+      expr: |
+        sum by (source_cluster) (
+          kube_job_status_failed{
+            namespace="release-service",
+            job_name=~"cleanup-timed-out-pipelineruns-internal-requests-.*",
+          }
+        ) > 0
+      for: 1m
+      labels:
+        severity: warning
+        component: release-service
+      annotations:
+        summary: >-
+          InternalRequests cleanup job failed on cluster {{ $labels.source_cluster }}
+        description: >-
+          The InternalRequests cleanup job has failed on cluster {{ $labels.source_cluster }}.
+          Stale InternalRequests may accumulate and approach the quota limit.
+        alert_routing_key: internal-services
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/release-service/internal-requests-quota.md
+        team: release

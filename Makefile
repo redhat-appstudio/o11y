@@ -14,7 +14,7 @@ CMD := ${BASE_CMD}
 endif
 
 .PHONY: all
-all: check-and-test check-alert-conventions sync_pipenv lint_yamls kustomize-build
+all: check-and-test check-alert-conventions check-env-drift sync_pipenv lint_yamls kustomize-build
 
 kustomize:
 	curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"  | bash
@@ -24,6 +24,17 @@ check-and-test:
 	$(CMD) -t rhtap -d rhobs/alerting/data_plane -y -p --tests-dir test/promql/tests/data_plane
 	$(CMD) -t rhtap -d rhobs/alerting/konflux-release-data -y -p --tests-dir test/promql/tests/konflux-release-data
 	$(CMD) -t rhtap -d rhobs/recording -y -p --tests-dir test/promql/tests/recording
+	$(CMD) -t rhtap -d rhobs/staging/alerting/data-plane/alerts -y -p --tests-dir rhobs/staging/alerting/data-plane/tests
+	$(CMD) -t rhtap -d rhobs/staging/alerting/konflux-release-data/alerts -y -p --tests-dir rhobs/staging/alerting/konflux-release-data/tests
+	$(CMD) -t rhtap -d rhobs/staging/recording/rules -y -p --tests-dir rhobs/staging/recording/tests
+
+.PHONY: check-env-drift
+check-env-drift:
+	@if [ -d rhobs/staging ] && [ -d rhobs/production ]; then \
+		python3 scripts/check-env-drift.py; \
+	else \
+		echo "check-env-drift: skipped (waiting for both rhobs/staging/ and rhobs/production/)"; \
+	fi
 
 .PHONY: check-alert-conventions
 check-alert-conventions:
