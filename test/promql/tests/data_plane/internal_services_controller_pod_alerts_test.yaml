@@ -12,7 +12,7 @@ tests:
       # 2 of 3 controller pods in a bad phase (66% > 60%)
       - series: 'kube_pod_status_phase{pod="controller-manager-aaa", namespace="internal-services", phase="Pending", source_cluster="cluster01"}'
         values: '1x14'
-      - series: 'kube_pod_status_phase{pod="controller-manager-bbb", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+      - series: 'kube_pod_status_phase{pod="controller-manager-bbb", namespace="internal-services", phase="Unknown", source_cluster="cluster01"}'
         values: '1x14'
       - series: 'kube_pod_status_phase{pod="controller-manager-ccc", namespace="internal-services", phase="Running", source_cluster="cluster01"}'
         values: '0x14'
@@ -65,7 +65,7 @@ tests:
   - name: NonControllerPodDoesNotAlert
     interval: 1m
     input_series:
-      - series: 'kube_pod_status_phase{pod="signing-pod-abc123", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+      - series: 'kube_pod_status_phase{pod="signing-pod-abc123", namespace="internal-services", phase="Pending", source_cluster="cluster01"}'
         values: '1x14'
       - series: 'kube_pod_status_unschedulable{namespace="internal-services", pod="signing-pod-abc123", source_cluster="cluster01"}'
         values: '0x14'
@@ -102,7 +102,7 @@ tests:
   - name: WrongNamespaceDoesNotAlert
     interval: 1m
     input_series:
-      - series: 'kube_pod_status_phase{pod="controller-manager-aaa", namespace="release-service", phase="Failed", source_cluster="cluster01"}'
+      - series: 'kube_pod_status_phase{pod="controller-manager-aaa", namespace="release-service", phase="Pending", source_cluster="cluster01"}'
         values: '1x14'
       - series: 'kube_pod_status_unschedulable{namespace="release-service", pod="controller-manager-aaa", source_cluster="cluster01"}'
         values: '0x14'
@@ -116,9 +116,9 @@ tests:
   - name: DoesNotFireBefore15m
     interval: 1m
     input_series:
-      - series: 'kube_pod_status_phase{pod="controller-manager-aaa", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+      - series: 'kube_pod_status_phase{pod="controller-manager-aaa", namespace="internal-services", phase="Pending", source_cluster="cluster01"}'
         values: '1x13'
-      - series: 'kube_pod_status_phase{pod="controller-manager-bbb", namespace="internal-services", phase="Failed", source_cluster="cluster01"}'
+      - series: 'kube_pod_status_phase{pod="controller-manager-bbb", namespace="internal-services", phase="Pending", source_cluster="cluster01"}'
         values: '1x13'
       - series: 'kube_pod_status_phase{pod="controller-manager-ccc", namespace="internal-services", phase="Running", source_cluster="cluster01"}'
         values: '0x13'
