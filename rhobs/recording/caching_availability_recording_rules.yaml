@@ -11,16 +11,6 @@ spec:
       rules:
         - record: konflux_up
           expr: |
-            min by (namespace, service) (
-              squid_up{namespace="caching", service="squid"}
-            )
-        - record: konflux_up
-          expr: |
-            min by (namespace, service) (
-              nginx_up{namespace="caching", service="artifact-registry-proxy"}
-            )
-        - record: konflux_up
-          expr: |
             min by (source_cluster, namespace, service) (
               nginx_up{namespace="artifact-registry-proxy", service="artifact-registry-proxy"}
             )
@@ -38,11 +28,11 @@ spec:
       rules:
         # Record rule: calculate total request rate
         - record: artifact_registry_proxy:http_requests:rate5m
-          expr: sum by (source_cluster, namespace, service) (rate(http_requests_total{namespace=~"caching|artifact-registry-proxy", service="artifact-registry-proxy"}[5m]))
+          expr: sum by (source_cluster, namespace, service) (rate(http_requests_total{namespace="artifact-registry-proxy", service="artifact-registry-proxy"}[5m]))
 
         # Record rule: calculate error rate (5xx responses)
         - record: artifact_registry_proxy:http_errors:rate5m
-          expr: sum by (source_cluster, namespace, service) (rate(http_requests_total{namespace=~"caching|artifact-registry-proxy", service="artifact-registry-proxy", status=~"5.."}[5m]))
+          expr: sum by (source_cluster, namespace, service) (rate(http_requests_total{namespace="artifact-registry-proxy", service="artifact-registry-proxy", status=~"5.."}[5m]))
 
         # Record rule: calculate cache hit rate
         - record: artifact_registry_proxy:cache_hits:rate5m
