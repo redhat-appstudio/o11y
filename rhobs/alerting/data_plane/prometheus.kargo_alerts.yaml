@@ -64,33 +64,33 @@ spec:
       interval: 1m
       rules:
         - alert: KargoPromotionFailed
-          expr: |-
+          expr: |
             label_replace(
             (
             (
-              max by (exported_namespace, component, stage) (
+              max by (source_cluster, exported_namespace, component, stage) (
                 kargo:stage:last_promotion:finished_timestamp{phase=~"Failed|Errored"}
               )
-              unless on (exported_namespace, component, stage)
+              unless on (source_cluster, exported_namespace, component, stage)
               (
-                max by (exported_namespace, component, stage) (
+                max by (source_cluster, exported_namespace, component, stage) (
                   kargo:stage:last_promotion:finished_timestamp{phase=~"Succeeded|Aborted"}
                 )
-                >= on (exported_namespace, component, stage)
-                max by (exported_namespace, component, stage) (
+                >= on (source_cluster, exported_namespace, component, stage)
+                max by (source_cluster, exported_namespace, component, stage) (
                   kargo:stage:last_promotion:finished_timestamp{phase=~"Failed|Errored"}
                 )
               )
             )
             and
             (
-              (time() - max by (exported_namespace, component, stage) (
+              (time() - max by (source_cluster, exported_namespace, component, stage) (
                 kargo:stage:last_promotion:finished_timestamp{phase=~"Failed|Errored"}
               )) >= 0
             )
             and
             (
-              (time() - max by (exported_namespace, component, stage) (
+              (time() - max by (source_cluster, exported_namespace, component, stage) (
                 kargo:stage:last_promotion:finished_timestamp{phase=~"Failed|Errored"}
               )) < 1800
             )
@@ -99,11 +99,11 @@ spec:
             )
           for: 2m
           labels:
-            severity: critical
+            severity: high
             component: kargo
-            slo: "true"
+            slo: "false"
           annotations:
-            html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.kargo_alerts.yaml
+            html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.kargo_alerts.yaml#L66
             summary: >-
               Kargo promotion failed: {{ $labels.kargo_component }} / {{ $labels.stage }}
             description: >-
@@ -114,7 +114,7 @@ spec:
             team: konflux-infra
             runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/alert-KargoPromotionFailed.md
         - alert: KargoAutoPromotionHoldTooLong
-          expr: |-
+          expr: |
             label_replace(
             (
             (
@@ -131,7 +131,7 @@ spec:
             component: kargo
             slo: "false"
           annotations:
-            html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.kargo_alerts.yaml
+            html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.kargo_alerts.yaml#L116
             summary: >-
               Kargo auto-promotion hold exceeds 24h: {{ $labels.kargo_component }} / {{ $labels.stage }}
             description: >-
