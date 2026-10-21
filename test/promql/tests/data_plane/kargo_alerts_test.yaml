@@ -147,8 +147,9 @@ tests:
               kargo_component: etcd-shield
               stage: ring-1
               severity: critical
-              slo: "false"
+              slo: "true"
             exp_annotations:
+              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.kargo_alerts.yaml
               summary: "Kargo promotion failed: etcd-shield / ring-1"
               description: >-
                 A recent Kargo promotion failed or errored in namespace
@@ -161,6 +162,47 @@ tests:
       - eval_time: 41m
         alertname: KargoPromotionFailed
         exp_alerts: []
+
+  # Layer 3: Newer successful promotion suppresses failure alert
+  - interval: 1m
+    input_series:
+      - series: 'kargo:stage:last_promotion:finished_timestamp{exported_namespace="kargo-konflux-infrastructure",component="etcd-shield",stage="ring-1",phase="Failed"}'
+        values: '600x45'
+
+      - series: 'kargo:stage:last_promotion:finished_timestamp{exported_namespace="kargo-konflux-infrastructure",component="etcd-shield",stage="ring-1",phase="Succeeded"}'
+        values: '720x45'
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: KargoPromotionFailed
+        exp_alerts: []
+
+  # Layer 3: Errored promotion triggers Critical alert
+  - interval: 1m
+    input_series:
+      - series: 'kargo:stage:last_promotion:finished_timestamp{exported_namespace="kargo-konflux-infrastructure",component="etcd-shield",stage="ring-1",phase="Errored"}'
+        values: '600x45'
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: KargoPromotionFailed
+        exp_alerts:
+          - exp_labels:
+              exported_namespace: kargo-konflux-infrastructure
+              component: kargo
+              kargo_component: etcd-shield
+              stage: ring-1
+              severity: critical
+              slo: "true"
+            exp_annotations:
+              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.kargo_alerts.yaml
+              summary: "Kargo promotion failed: etcd-shield / ring-1"
+              description: >-
+                A recent Kargo promotion failed or errored in namespace
+                kargo-konflux-infrastructure.
+              alert_team_handle: '<!subteam^S07SW2EEW3D> <!subteam^S05Q1P4Q2TG>'
+              team: konflux-infra
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/alert-KargoPromotionFailed.md
 
   # Layer 3: Kargo auto-promotion hold exceeds 24 hours
   - interval: 1m
@@ -193,6 +235,7 @@ tests:
               severity: warning
               slo: "false"
             exp_annotations:
+              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.kargo_alerts.yaml
               summary: "Kargo auto-promotion hold exceeds 24h: etcd-shield / ring-1"
               description: >-
                 Auto-promotion hold timestamp is older than 24 hours in
