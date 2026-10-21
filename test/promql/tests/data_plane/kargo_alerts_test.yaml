@@ -129,3 +129,72 @@ tests:
       - eval_time: 10m
         alertname: KargoDeploymentUnavailable
         exp_alerts: []
+
+  # Layer 3: Kargo promotion failure
+  - interval: 1m
+    input_series:
+      - series: 'kargo:stage:last_promotion:finished_timestamp{exported_namespace="kargo-konflux-infrastructure",component="etcd-shield",stage="ring-1",phase="Failed"}'
+        values: '600x45'
+
+    alert_rule_test:
+      # Failed promotion is recent and the 2-minute pending period has passed
+      - eval_time: 15m
+        alertname: KargoPromotionFailed
+        exp_alerts:
+          - exp_labels:
+              exported_namespace: kargo-konflux-infrastructure
+              component: kargo
+              kargo_component: etcd-shield
+              stage: ring-1
+              severity: critical
+              slo: "false"
+            exp_annotations:
+              summary: "Kargo promotion failed: etcd-shield / ring-1"
+              description: >-
+                A recent Kargo promotion failed or errored in namespace
+                kargo-konflux-infrastructure.
+              alert_team_handle: '<!subteam^S07SW2EEW3D> <!subteam^S05Q1P4Q2TG>'
+              team: konflux-infra
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/alert-KargoPromotionFailed.md
+
+      # Failure timestamp is outside the 30-minute detection window
+      - eval_time: 41m
+        alertname: KargoPromotionFailed
+        exp_alerts: []
+
+  # Layer 3: Kargo auto-promotion hold exceeds 24 hours
+  - interval: 1m
+    input_series:
+      # Production hold older than 24 hours
+      - series: 'kargo:stage:effective_auto_promotion_hold:created_timestamp{exported_namespace="kargo-konflux-infrastructure",component="etcd-shield",stage="ring-1",origin_kind="Promotion",origin_name="test-promotion"}'
+        values: '0x1500'
+
+      # Playground hold must be excluded
+      - series: 'kargo:stage:effective_auto_promotion_hold:created_timestamp{exported_namespace="kargo-production-playground",component="dummy-deployment",stage="ring-1",origin_kind="Promotion",origin_name="test-promotion"}'
+        values: '0x1500'
+
+    alert_rule_test:
+      # Hold is younger than 24 hours
+      - eval_time: 23h
+        alertname: KargoAutoPromotionHoldTooLong
+        exp_alerts: []
+
+      # Hold exceeds 24 hours and the 5-minute pending period has passed
+      - eval_time: 24h10m
+        alertname: KargoAutoPromotionHoldTooLong
+        exp_alerts:
+          - exp_labels:
+              exported_namespace: kargo-konflux-infrastructure
+              component: kargo
+              kargo_component: etcd-shield
+              stage: ring-1
+              origin_kind: Promotion
+              origin_name: test-promotion
+              severity: warning
+              slo: "false"
+            exp_annotations:
+              summary: "Kargo auto-promotion hold exceeds 24h: etcd-shield / ring-1"
+              description: >-
+                Auto-promotion hold timestamp is older than 24 hours in
+                kargo-konflux-infrastructure.
+              alert_routing_key: spreandinfra
