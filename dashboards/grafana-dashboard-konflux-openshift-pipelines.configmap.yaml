@@ -486,6 +486,544 @@ data:
             "x": 0,
             "y": 1
           },
+          "id": 490,
+          "panels": [],
+          "title": "PipelineRun Latency and Duration",
+          "type": "row"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Scheduling Latency (wait time) for Build/PipelineRuns before they start executing, calculated using the scheduling duration metrics over a 6-hour rolling window.   What it measures: It calculates the weighted average wait time (in minutes/seconds) that PipelineRuns spend queued or waiting for resources (such as Kueue admission or scheduling checks) across each cluster.   Trend Analysis Purpose: This smooth, averaged view is ideal for tracking workload trends and congestion over a 24-hour cycle. For instance, it clearly highlights the operational peaks and sharp increases in scheduling delays during early morning hours, directly addressing the user-facing problem of \"stuck builds\" and resource contention.  ",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 11,
+            "w": 18,
+            "x": 0,
+            "y": 2
+          },
+          "id": 491,
+          "options": {
+            "alertThreshold": true,
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.6.11",
+          "targets": [
+            {
+              "editorMode": "code",
+              "exemplar": true,
+              "expr": "sum(rate(pipelinerun_duration_scheduled_seconds_sum{source_cluster=~\"$cluster\"}[6h])) by (source_cluster)\n/\nsum(rate(pipelinerun_duration_scheduled_seconds_count{source_cluster=~\"$cluster\"}[6h])) by (source_cluster)",
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "{{source_cluster}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "PipelineRun Scheduling Latency Average",
+          "transparent": true,
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "Scheduling Latency (wait time) for Build/PipelineRuns before they start executing, calculated using the scheduling duration metrics over a 6-hour rolling window.   What it measures: It calculates the weighted average wait time (in minutes/seconds) that PipelineRuns spend queued or waiting for resources (such as Kueue admission or scheduling checks) across each cluster.   Trend Analysis Purpose: This smooth, averaged view is ideal for tracking workload trends and congestion over a 24-hour cycle. For instance, it clearly highlights the operational peaks and sharp increases in scheduling delays during early morning hours, directly addressing the user-facing problem of \"stuck builds\" and resource contention.  ",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 600
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 11,
+            "w": 6,
+            "x": 18,
+            "y": 2
+          },
+          "id": 492,
+          "options": {
+            "displayMode": "lcd",
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": false
+            },
+            "maxVizHeight": 300,
+            "minVizHeight": 16,
+            "minVizWidth": 8,
+            "namePlacement": "auto",
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showUnfilled": true,
+            "sizing": "auto",
+            "valueMode": "color"
+          },
+          "pluginVersion": "11.6.11",
+          "targets": [
+            {
+              "editorMode": "code",
+              "exemplar": true,
+              "expr": "sum(rate(pipelinerun_duration_scheduled_seconds_sum{source_cluster=~\"$cluster\"}[6h])) by (source_cluster)\n/\nsum(rate(pipelinerun_duration_scheduled_seconds_count{source_cluster=~\"$cluster\"}[6h])) by (source_cluster)",
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "{{source_cluster}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "PipelineRun Scheduling Latency Average",
+          "transparent": true,
+          "type": "bargauge"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "What the metric shows: The graph displays the delays and time gaps (Inter-task Gaps) that occur within the pipeline run itself—specifically, the time elapsed from the moment one task finishes until the next task begins.\n\nCalculation method: Calculated as a weighted average using the rate of the sum of milliseconds divided by the rate of the count (_sum / _count) over a 6-hour window.\n\nSRE Value: Unlike the initial scheduling wait time before execution starts, this graph helps identify bottlenecks, stalls, and delays that happen during the execution of pipeline stages due to resource contention, scheduling issues, or pod provisioning delays.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "ms"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 12,
+            "w": 18,
+            "x": 0,
+            "y": 13
+          },
+          "id": 493,
+          "options": {
+            "alertThreshold": true,
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.6.11",
+          "targets": [
+            {
+              "editorMode": "code",
+              "exemplar": true,
+              "expr": "sum(rate(pipelinerun_gap_between_taskruns_milliseconds_sum{source_cluster=~\"$cluster\"}[6h])) by (source_cluster)\n/\nsum(rate(pipelinerun_gap_between_taskruns_milliseconds_count{source_cluster=~\"$cluster\"}[6h])) by (source_cluster)",
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "{{source_cluster}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "PipelineRun Inter-task Gaps Average",
+          "transparent": true,
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "What the metric shows: The graph displays the delays and time gaps (Inter-task Gaps) that occur within the pipeline run itself—specifically, the time elapsed from the moment one task finishes until the next task begins.\n\nCalculation method: Calculated as a weighted average using the rate of the sum of milliseconds divided by the rate of the count (_sum / _count) over a 6-hour window.\n\nSRE Value: Unlike the initial scheduling wait time before execution starts, this graph helps identify bottlenecks, stalls, and delays that happen during the execution of pipeline stages due to resource contention, scheduling issues, or pod provisioning delays.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 600000
+                  }
+                ]
+              },
+              "unit": "ms"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 12,
+            "w": 6,
+            "x": 18,
+            "y": 13
+          },
+          "id": 494,
+          "options": {
+            "displayMode": "lcd",
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": false
+            },
+            "maxVizHeight": 300,
+            "minVizHeight": 16,
+            "minVizWidth": 8,
+            "namePlacement": "auto",
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showUnfilled": true,
+            "sizing": "auto",
+            "valueMode": "color"
+          },
+          "pluginVersion": "11.6.11",
+          "targets": [
+            {
+              "editorMode": "code",
+              "exemplar": true,
+              "expr": "sum(rate(pipelinerun_gap_between_taskruns_milliseconds_sum{source_cluster=~\"$cluster\"}[6h])) by (source_cluster)\n/\nsum(rate(pipelinerun_gap_between_taskruns_milliseconds_count{source_cluster=~\"$cluster\"}[6h])) by (source_cluster)",
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "{{source_cluster}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "PipelineRun Inter-task Gaps Average",
+          "transparent": true,
+          "type": "bargauge"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "What the metric shows: This graph displays the total execution time of PipelineRuns from the moment they start running until they complete (success or failure).\n\nCalculation method: Calculated as a weighted average using the rate of the sum of seconds divided by the rate of the count (_sum / _count) over a 6-hour window.\n\nSRE Value: Helps distinguish whether performance bottlenecks are caused by initial queue waiting times (Scheduling Latency) or by actual slow pipeline execution.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "palette-classic"
+              },
+              "custom": {
+                "axisBorderShow": false,
+                "axisCenteredZero": false,
+                "axisColorMode": "text",
+                "axisLabel": "",
+                "axisPlacement": "auto",
+                "barAlignment": 0,
+                "barWidthFactor": 0.6,
+                "drawStyle": "line",
+                "fillOpacity": 0,
+                "gradientMode": "none",
+                "hideFrom": {
+                  "legend": false,
+                  "tooltip": false,
+                  "viz": false
+                },
+                "insertNulls": false,
+                "lineInterpolation": "linear",
+                "lineWidth": 1,
+                "pointSize": 5,
+                "scaleDistribution": {
+                  "type": "linear"
+                },
+                "showPoints": "auto",
+                "spanNulls": false,
+                "stacking": {
+                  "group": "A",
+                  "mode": "none"
+                },
+                "thresholdsStyle": {
+                  "mode": "off"
+                }
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 12,
+            "w": 18,
+            "x": 0,
+            "y": 25
+          },
+          "id": 495,
+          "options": {
+            "alertThreshold": true,
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": true
+            },
+            "tooltip": {
+              "hideZeros": false,
+              "mode": "single",
+              "sort": "none"
+            }
+          },
+          "pluginVersion": "11.6.11",
+          "targets": [
+            {
+              "editorMode": "code",
+              "exemplar": true,
+              "expr": "(\n  sum(rate(tekton_pipelines_controller_pipelinerun_duration_seconds_sum{source_cluster=~\"$cluster\"}[6h])) by (source_cluster)\n  /\n  sum(rate(tekton_pipelines_controller_pipelinerun_duration_seconds_count{source_cluster=~\"$cluster\"}[6h])) by (source_cluster)\n)",
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "{{source_cluster}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "PipelineRun Duration Average",
+          "transparent": true,
+          "type": "timeseries"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "description": "What the metric shows: This graph displays the total execution time of PipelineRuns from the moment they start running until they complete (success or failure).\n\nCalculation method: Calculated as a weighted average using the rate of the sum of seconds divided by the rate of the count (_sum / _count) over a 6-hour window.\n\nSRE Value: Helps distinguish whether performance bottlenecks are caused by initial queue waiting times (Scheduling Latency) or by actual slow pipeline execution.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green"
+                  },
+                  {
+                    "color": "red",
+                    "value": 900
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 12,
+            "w": 6,
+            "x": 18,
+            "y": 25
+          },
+          "id": 496,
+          "options": {
+            "displayMode": "lcd",
+            "legend": {
+              "calcs": [],
+              "displayMode": "list",
+              "placement": "bottom",
+              "showLegend": false
+            },
+            "maxVizHeight": 300,
+            "minVizHeight": 16,
+            "minVizWidth": 8,
+            "namePlacement": "auto",
+            "orientation": "horizontal",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showUnfilled": true,
+            "sizing": "auto",
+            "valueMode": "color"
+          },
+          "pluginVersion": "11.6.11",
+          "targets": [
+            {
+              "editorMode": "code",
+              "exemplar": true,
+              "expr": "(\n  sum(rate(tekton_pipelines_controller_pipelinerun_duration_seconds_sum{source_cluster=~\"$cluster\"}[6h])) by (source_cluster)\n  /\n  sum(rate(tekton_pipelines_controller_pipelinerun_duration_seconds_count{source_cluster=~\"$cluster\"}[6h])) by (source_cluster)\n)",
+              "interval": "",
+              "intervalFactor": 1,
+              "legendFormat": "{{source_cluster}}",
+              "range": true,
+              "refId": "A"
+            }
+          ],
+          "title": "PipelineRun Duration Average",
+          "transparent": true,
+          "type": "bargauge"
+        },
+        {
+          "collapsed": false,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 37
+          },
           "id": 484,
           "panels": [],
           "title": "Pipeline Failures & EaaS Anomalies",
@@ -556,7 +1094,7 @@ data:
             "h": 12,
             "w": 18,
             "x": 0,
-            "y": 2
+            "y": 38
           },
           "id": 487,
           "options": {
@@ -624,7 +1162,7 @@ data:
             "h": 12,
             "w": 6,
             "x": 18,
-            "y": 2
+            "y": 38
           },
           "id": 8,
           "options": {
@@ -730,7 +1268,7 @@ data:
             "h": 13,
             "w": 18,
             "x": 0,
-            "y": 14
+            "y": 50
           },
           "id": 486,
           "options": {
@@ -798,7 +1336,7 @@ data:
             "h": 13,
             "w": 6,
             "x": 18,
-            "y": 14
+            "y": 50
           },
           "id": 489,
           "options": {
@@ -845,7 +1383,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 27
+            "y": 63
           },
           "id": 4,
           "panels": [
@@ -1199,7 +1737,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 28
+            "y": 64
           },
           "id": 29,
           "panels": [
@@ -1653,7 +2191,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 29
+            "y": 65
           },
           "id": 43,
           "panels": [
@@ -1954,7 +2492,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 30
+            "y": 66
           },
           "id": 17,
           "panels": [
@@ -2160,7 +2698,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 31
+            "y": 67
           },
           "id": 49,
           "panels": [
@@ -2270,7 +2808,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 32
+            "y": 68
           },
           "id": 60,
           "panels": [
@@ -3367,7 +3905,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 33
+            "y": 69
           },
           "id": 79,
           "panels": [
@@ -3701,7 +4239,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 34
+            "y": 70
           },
           "id": 85,
           "panels": [
@@ -4097,5 +4635,5 @@ data:
       "timezone": "",
       "title": "Konflux Pipeline Service",
       "uid": "02ebfd928336b0c1300af4eed16ed6c5de684759",
-      "version": 15
+      "version": 16
     }
