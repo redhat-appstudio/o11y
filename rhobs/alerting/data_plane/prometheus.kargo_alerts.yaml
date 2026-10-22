@@ -60,3 +60,79 @@ spec:
               <!subteam^S07SW2EEW3D> <!subteam^S05Q1P4Q2TG>
             team: konflux-infra
             runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/alert-KargoDeploymentUnavailable.md
+    - name: kargo-verification-alerts
+      interval: 1m
+      rules:
+        - alert: KargoVerificationFailed
+          expr: |
+            label_replace(
+              (
+                (time() - kargo:stage:condition:last_transition_timestamp{
+                  condition="Verified",
+                  status="False",
+                  reason=~"VerificationFailed|VerificationError"
+                }) >= 0
+              )
+              and
+              (
+                (time() - kargo:stage:condition:last_transition_timestamp{
+                  condition="Verified",
+                  status="False",
+                  reason=~"VerificationFailed|VerificationError"
+                }) < 1800
+              ),
+              "kargo_component", "$1", "component", "(.+)"
+            )
+          for: 2m
+          labels:
+            severity: critical
+            component: kargo
+            slo: "true"
+          annotations:
+            html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.kargo_alerts.yaml
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/alert-KargoVerificationFailed.md
+            summary: >-
+              Kargo verification failed: {{ $labels.kargo_component }} / {{ $labels.stage }}
+            description: >-
+              Kargo Stage Verified condition transitioned to False with
+              reason VerificationFailed or VerificationError within the
+              last 30 minutes in namespace {{ $labels.exported_namespace }}.
+              This condition may not represent the latest individual
+              verification attempt.
+            alert_team_handle: >-
+              <!subteam^S07SW2EEW3D> <!subteam^S05Q1P4Q2TG>
+            team: konflux-infra
+        - alert: KargoVerificationInconclusive
+          expr: |
+            label_replace(
+              (
+                (time() - kargo:stage:condition:last_transition_timestamp{
+                  condition="Verified",
+                  status="Unknown",
+                  reason="VerificationInconclusive"
+                }) >= 0
+              )
+              and
+              (
+                (time() - kargo:stage:condition:last_transition_timestamp{
+                  condition="Verified",
+                  status="Unknown",
+                  reason="VerificationInconclusive"
+                }) < 1800
+              ),
+              "kargo_component", "$1", "component", "(.+)"
+            )
+          for: 5m
+          labels:
+            severity: warning
+            component: kargo
+            slo: "false"
+          annotations:
+            html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.kargo_alerts.yaml
+            summary: >-
+              Kargo verification inconclusive: {{ $labels.kargo_component }} / {{ $labels.stage }}
+            description: >-
+              Kargo Stage Verified condition transitioned to Unknown with
+              reason VerificationInconclusive within the last 30 minutes
+              in namespace {{ $labels.exported_namespace }}.
+            alert_routing_key: spreandinfra
