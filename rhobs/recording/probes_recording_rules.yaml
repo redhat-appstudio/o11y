@@ -23,12 +23,15 @@ spec:
     - name: multicluster_probe_up_ratio
       interval: 10m
       rules:
+        # kflux-lw-p01 is excluded temporarily: it cannot reach the RH internal network (KFLUXINFRA-4899),
+        # so it keeps the ratio for internal targets at most 5/6 and a blip on one other cluster pages (SPRE-7126).
+        # ProbeAlert still covers kflux-lw-p01. Remove once KFLUXINFRA-4899 is resolved.
         - record: multicluster_probe_up
           expr: |
             clamp_max(
               label_replace(
                 label_replace(
-                    sum by(instance,service,job) (konflux_up{check="probe", service!~".*-vpn|.*static-host|.*pwvs|api-server|openshift-ui"}) / count by(instance,service,job) (konflux_up{check="probe", service!~".*-vpn|.*static-host|.*pwvs|api-server|openshift-ui"}) >= bool 0.8
+                    sum by(instance,service,job) (konflux_up{check="probe", service!~".*-vpn|.*static-host|.*pwvs|api-server|openshift-ui", source_cluster!="kflux-lw-p01"}) / count by(instance,service,job) (konflux_up{check="probe", service!~".*-vpn|.*static-host|.*pwvs|api-server|openshift-ui", source_cluster!="kflux-lw-p01"}) >= bool 0.8
                   , "check", "probe-multicluster", "",""
                 ), "service", "$1", "job", "(.*)"
               ), 1
