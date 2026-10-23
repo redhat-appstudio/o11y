@@ -34,6 +34,11 @@ type PipelineRun struct {
 	} `json:"status"`
 }
 
+// TaskRun is a Tekton TaskRun. The exporter reads the same fields it reads from
+// a PipelineRun — labels, creation, start and completion time, and the Succeeded
+// condition — so the shape is shared. Responses are decoded with ListResponse.
+type TaskRun = PipelineRun
+
 type Release struct {
 	Metadata struct {
 		Name              string            `json:"name"`
