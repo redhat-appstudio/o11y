@@ -78,17 +78,10 @@ tests:
 
   - interval: 1m
     input_series:
-      # Pod is in the Failed state and scheduled, so it will be alerted.
-      - series: 'kube_pod_status_phase:excluding_jobs{pod="pod-1", namespace="ns-3", phase="Pending", source_cluster="cluster03"}'
-        values: '0x29'
-      - series: 'kube_pod_status_phase:excluding_jobs{pod="pod-1", namespace="ns-3", phase="Unknown", source_cluster="cluster03"}'
-        values: '0x29'
-      - series: 'kube_pod_status_phase:excluding_jobs{pod="pod-1", namespace="ns-3", phase="Failed", source_cluster="cluster03"}'
-        values: '1x29'
+      # Pod is Running and not ready - should alert (recording rule only emits
+      # Running pods that have Ready=false, so value 1 means not-ready).
       - series: 'kube_pod_status_phase:excluding_jobs{pod="pod-1", namespace="ns-3", phase="Running", source_cluster="cluster03"}'
-        values: '0x29'
-      - series: 'kube_pod_status_phase:excluding_jobs{pod="pod-1", namespace="ns-3", phase="Succeeded", source_cluster="cluster03"}'
-        values: '0x29'
+        values: '1x29'
       - series: 'kube_pod_status_unschedulable{namespace="ns-3", pod="pod-1", source_cluster="cluster03"}'
         values: '0x29'
 
@@ -100,7 +93,7 @@ tests:
               severity: warning
               namespace: ns-3
               pod: pod-1
-              phase: Failed
+              phase: Running
               source_cluster: cluster03
             exp_annotations:
               summary: >-
@@ -130,26 +123,24 @@ tests:
       - series: 'kube_pod_status_unschedulable{namespace="ns-4", pod="pod-1", source_cluster="cluster04"}'
         values: '1x0 0x28'
 
-      # Pod is in Succeeded state and scheduled, so it will not be alerted.
-      - series: 'kube_pod_status_phase:excluding_jobs{pod="pod-1", namespace="ns-5", phase="Pending"}'
-        values: '0x29'
-      - series: 'kube_pod_status_phase:excluding_jobs{pod="pod-1", namespace="ns-5", phase="Unknown"}'
-        values: '0x29'
-      - series: 'kube_pod_status_phase:excluding_jobs{pod="pod-1", namespace="ns-5", phase="Failed"}'
-        values: '0x29'
-      - series: 'kube_pod_status_phase:excluding_jobs{pod="pod-1", namespace="ns-5", phase="Running"}'
-        values: '0x29'
+      # Pod completed successfully — recording rule does not emit Succeeded
+      # or Failed phases, so no series with value 1 reaches the alert.
       - series: 'kube_pod_status_phase:excluding_jobs{pod="pod-1", namespace="ns-5", phase="Succeeded"}'
-        values: '1x29'
+        values: '0x29'
       - series: 'kube_pod_status_unschedulable{namespace="ns-5", pod="pod-1", source_cluster="cluster05"}'
         values: '0x29'
 
-      # Pod is in the Running state for the first 14 min, then it's in the Failed state
-      # for the last 1 min and unscheduled, so it will not be alerted.
+      # Pod in Failed state in a non-excluded namespace - recording rule does not
+      # emit Failed phase, so no series with value 1 reaches the alert.
+      - series: 'kube_pod_status_phase:excluding_jobs{pod="pod-1", namespace="ns-6", phase="Failed", source_cluster="cluster06"}'
+        values: '0x29'
+      - series: 'kube_pod_status_unschedulable{namespace="ns-6", pod="pod-1", source_cluster="cluster06"}'
+        values: '0x29'
+
+      # Pod was Running+NotReady for 28 min then recovered — not long enough
+      # for the 30m for clause, so it will not be alerted.
       - series: 'kube_pod_status_phase:excluding_jobs{pod="pod-1", namespace="ns-7", phase="Running"}'
         values: '1x28 0'
-      - series: 'kube_pod_status_phase:excluding_jobs{pod="pod-1", namespace="ns-7", phase="Failed"}'
-        values: '0x28 1'
       - series: 'kube_pod_status_unschedulable{namespace="ns-7", pod="pod-1",source_cluster="cluster05"}'
         values: '0x29'
 
