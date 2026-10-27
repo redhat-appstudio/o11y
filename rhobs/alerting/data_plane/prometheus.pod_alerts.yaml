@@ -10,7 +10,24 @@ spec:
     interval: 1m
     rules:
     - alert: UnschedulablePods
-      expr: min_over_time(kube_pod_status_unschedulable{namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-templates-e2e|multi-platform-.*|clusters-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|clusters|proactive-scaler|.*-provision-namespace-.*|.*-provision-eaas-space-.*|.*-provision-env-.*|.*-deploy-ephemeral-.*)"}[5m]) == 1
+      # proactive-scaler pods are expected to stay pending to create headroom and
+      # trigger the OCP cluster autoscaler. At max capacity the autoscaler cannot add
+      # nodes, so staying pending is expected (KFLUXINFRA-2956). Alert for proactive-scaler
+      # ONLY when its cluster is under max nodes (i.e. scaling genuinely failed). If the
+      # cluster is at max — or the autoscaler metrics are absent — stay suppressed, so this
+      # never re-introduces noise for the headroom pods.
+      expr: |
+        min_over_time(kube_pod_status_unschedulable{namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-templates-e2e|multi-platform-.*|clusters-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|clusters|proactive-scaler|.*-provision-namespace-.*|.*-provision-eaas-space-.*|.*-provision-env-.*|.*-deploy-ephemeral-.*)"}[5m]) == 1
+        or
+        (
+          min_over_time(kube_pod_status_unschedulable{namespace="proactive-scaler"}[5m]) == 1
+          and on (source_cluster)
+          (
+            sum by (source_cluster) (cluster_autoscaler_nodes_count)
+            < on (source_cluster)
+            max by (source_cluster) (cluster_autoscaler_max_nodes_count)
+          )
+        )
       for: 60m
       labels:
         severity: warning
