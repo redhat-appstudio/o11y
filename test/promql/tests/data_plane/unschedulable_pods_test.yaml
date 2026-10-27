@@ -47,9 +47,26 @@ tests:
       - series: 'kube_pod_status_unschedulable{namespace="build-templates-e2e", pod="test-pod", source_cluster="cluster01"}'
         values: '1x60'
 
-      # proactive-scaler balloon pods — intentionally unschedulable by design, ignored
+      # proactive-scaler balloon pods — autoscaler metrics absent for this cluster,
+      # so we cannot prove under-max -> stay suppressed (no regression, no noise). (KFLUXINFRA-2956)
       - series: 'kube_pod_status_unschedulable{namespace="proactive-scaler", pod="m6i-8xlarge-abc-xyz", source_cluster="kflux-osp-p01"}'
         values: '1x60'
+
+      # proactive-scaler pod pending while cluster is AT max nodes (150>=150) -> expected, suppressed (KFLUXINFRA-2956)
+      - series: 'kube_pod_status_unschedulable{namespace="proactive-scaler", pod="ps-maxed", source_cluster="kflux-prd-rh02"}'
+        values: '1x60'
+      - series: 'cluster_autoscaler_nodes_count{state="ready", source_cluster="kflux-prd-rh02"}'
+        values: '150x60'
+      - series: 'cluster_autoscaler_max_nodes_count{source_cluster="kflux-prd-rh02"}'
+        values: '150x60'
+
+      # proactive-scaler pod pending while cluster is UNDER max nodes (100<150) -> scaling failed, alerts (KFLUXINFRA-2956)
+      - series: 'kube_pod_status_unschedulable{namespace="proactive-scaler", pod="ps-under", source_cluster="kflux-ocp-p02"}'
+        values: '1x65'
+      - series: 'cluster_autoscaler_nodes_count{state="ready", source_cluster="kflux-ocp-p02"}'
+        values: '100x65'
+      - series: 'cluster_autoscaler_max_nodes_count{source_cluster="kflux-ocp-p02"}'
+        values: '150x65'
 
       # HyperShift hosted-cluster UUID namespace — ephemeral EaaS lifecycle, ignored
       - series: 'kube_pod_status_unschedulable{namespace="clusters-1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d", pod="capi-provider-pod", source_cluster="kflux-prd-es01"}'
@@ -101,4 +118,19 @@ tests:
                 Pod prod-pod-2 for namespace prod-test on cluster cluster02 is
                 unscheduled for more than 60 minutes.
               alert_routing_key: prod-test
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-unschedulablePods.md
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              team: o11y
+              component: pod-management
+              namespace: proactive-scaler
+              pod: ps-under
+              source_cluster: kflux-ocp-p02
+            exp_annotations:
+              summary: Pod proactive-scaler/ps-under on kflux-ocp-p02 cannot be scheduled.
+              description: >-
+                Pod ps-under for namespace proactive-scaler on cluster kflux-ocp-p02 is
+                unscheduled for more than 60 minutes.
+              alert_routing_key: proactive-scaler
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-unschedulablePods.md
