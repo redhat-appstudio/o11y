@@ -1,0 +1,171 @@
+evaluation_interval: 5m
+
+rule_files:
+  - "prometheus.konflux_30d_failure_rate_alerts.yaml"
+
+tests:
+  # Build: high failure rate fires per cluster, healthy and low-volume clusters stay silent.
+  # Multiple components are summed per cluster before computing the ratio.
+  - interval: 5m
+    input_series:
+      # cluster-1: 2 components, 400 builds total, 200 successful -> 50% failure rate
+      - series: 'konflux_build_total_count_30d{source_cluster="cluster-1", namespace="tenant-a", component="comp-a"}'
+        values: '300x14'
+      - series: 'konflux_build_success_count_30d{source_cluster="cluster-1", namespace="tenant-a", component="comp-a"}'
+        values: '120x14'
+      - series: 'konflux_build_total_count_30d{source_cluster="cluster-1", namespace="tenant-b", component="comp-b"}'
+        values: '100x14'
+      - series: 'konflux_build_success_count_30d{source_cluster="cluster-1", namespace="tenant-b", component="comp-b"}'
+        values: '80x14'
+      # cluster-2: 10% failure rate -> below threshold
+      - series: 'konflux_build_total_count_30d{source_cluster="cluster-2", namespace="tenant-c", component="comp-c"}'
+        values: '500x14'
+      - series: 'konflux_build_success_count_30d{source_cluster="cluster-2", namespace="tenant-c", component="comp-c"}'
+        values: '450x14'
+      # cluster-3: 80% failure rate but only 50 builds (e.g. right after a kaexporter restart) -> volume guard
+      - series: 'konflux_build_total_count_30d{source_cluster="cluster-3", namespace="tenant-d", component="comp-d"}'
+        values: '50x14'
+      - series: 'konflux_build_success_count_30d{source_cluster="cluster-3", namespace="tenant-d", component="comp-d"}'
+        values: '10x14'
+    alert_rule_test:
+      # Condition true, but the 1h 'for' duration is not met yet
+      - eval_time: 30m
+        alertname: KonfluxBuildFailureRate30dHigh
+        exp_alerts: []
+      - eval_time: 70m
+        alertname: KonfluxBuildFailureRate30dHigh
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              component: konflux-build
+              source_cluster: cluster-1
+            exp_annotations:
+              summary: High 30-day build failure rate in cluster cluster-1
+              description: >-
+                Build PipelineRuns on cluster cluster-1 have a failure rate of 50%
+                over the last 30 days, exceeding the 30% threshold. Check the Konflux UX Metrics dashboard for the breakdown by failure reason.
+              team: konflux-spre
+              alert_routing_key: "<!subteam^S06V06A36F5>"
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-KonfluxFailureRate30dHigh.md
+
+  # Build: exactly 30% failure rate does not fire (strict threshold), exactly 100 runs passes the volume guard
+  - interval: 5m
+    input_series:
+      - series: 'konflux_build_total_count_30d{source_cluster="cluster-1", namespace="tenant-a", component="comp-a"}'
+        values: '100x14'
+      - series: 'konflux_build_success_count_30d{source_cluster="cluster-1", namespace="tenant-a", component="comp-a"}'
+        values: '70x14'
+      - series: 'konflux_build_total_count_30d{source_cluster="cluster-2", namespace="tenant-b", component="comp-b"}'
+        values: '100x14'
+      - series: 'konflux_build_success_count_30d{source_cluster="cluster-2", namespace="tenant-b", component="comp-b"}'
+        values: '60x14'
+    alert_rule_test:
+      - eval_time: 70m
+        alertname: KonfluxBuildFailureRate30dHigh
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              component: konflux-build
+              source_cluster: cluster-2
+            exp_annotations:
+              summary: High 30-day build failure rate in cluster cluster-2
+              description: >-
+                Build PipelineRuns on cluster cluster-2 have a failure rate of 40%
+                over the last 30 days, exceeding the 30% threshold. Check the Konflux UX Metrics dashboard for the breakdown by failure reason.
+              team: konflux-spre
+              alert_routing_key: "<!subteam^S06V06A36F5>"
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-KonfluxFailureRate30dHigh.md
+
+  # Build: failure rate drops below threshold mid-window -> alert resolves
+  - interval: 5m
+    input_series:
+      - series: 'konflux_build_total_count_30d{source_cluster="cluster-1", namespace="tenant-a", component="comp-a"}'
+        values: '200x30'
+      - series: 'konflux_build_success_count_30d{source_cluster="cluster-1", namespace="tenant-a", component="comp-a"}'
+        values: '100x14 180x16'
+    alert_rule_test:
+      - eval_time: 70m
+        alertname: KonfluxBuildFailureRate30dHigh
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              component: konflux-build
+              source_cluster: cluster-1
+            exp_annotations:
+              summary: High 30-day build failure rate in cluster cluster-1
+              description: >-
+                Build PipelineRuns on cluster cluster-1 have a failure rate of 50%
+                over the last 30 days, exceeding the 30% threshold. Check the Konflux UX Metrics dashboard for the breakdown by failure reason.
+              team: konflux-spre
+              alert_routing_key: "<!subteam^S06V06A36F5>"
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-KonfluxFailureRate30dHigh.md
+      - eval_time: 80m
+        alertname: KonfluxBuildFailureRate30dHigh
+        exp_alerts: []
+
+  # Integration: high failure rate fires, low-volume cluster stays silent
+  - interval: 5m
+    input_series:
+      - series: 'konflux_integration_total_count_30d{source_cluster="cluster-1", namespace="tenant-a", component="comp-a", scenario="e2e"}'
+        values: '200x14'
+      - series: 'konflux_integration_success_count_30d{source_cluster="cluster-1", namespace="tenant-a", component="comp-a", scenario="e2e"}'
+        values: '50x14'
+      - series: 'konflux_integration_total_count_30d{source_cluster="cluster-2", namespace="tenant-b", component="comp-b", scenario="e2e"}'
+        values: '20x14'
+      - series: 'konflux_integration_success_count_30d{source_cluster="cluster-2", namespace="tenant-b", component="comp-b", scenario="e2e"}'
+        values: '0x14'
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: KonfluxIntegrationFailureRate30dHigh
+        exp_alerts: []
+      - eval_time: 70m
+        alertname: KonfluxIntegrationFailureRate30dHigh
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              component: konflux-integration
+              source_cluster: cluster-1
+            exp_annotations:
+              summary: High 30-day integration test failure rate in cluster cluster-1
+              description: >-
+                Integration test PipelineRuns on cluster cluster-1 have a failure rate of 75%
+                over the last 30 days, exceeding the 30% threshold. Check the Konflux UX Metrics dashboard for the breakdown by failure reason.
+              team: konflux-spre
+              alert_routing_key: "<!subteam^S06V06A36F5>"
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-KonfluxFailureRate30dHigh.md
+
+  # Release: high failure rate fires, healthy cluster stays silent
+  - interval: 5m
+    input_series:
+      - series: 'konflux_release_cr_total_count_30d{source_cluster="cluster-1", namespace="tenant-a", component="comp-a", automated="true"}'
+        values: '150x14'
+      - series: 'konflux_release_cr_success_count_30d{source_cluster="cluster-1", namespace="tenant-a", component="comp-a", automated="true"}'
+        values: '90x14'
+      - series: 'konflux_release_cr_total_count_30d{source_cluster="cluster-2", namespace="tenant-b", component="comp-b", automated="true"}'
+        values: '150x14'
+      - series: 'konflux_release_cr_success_count_30d{source_cluster="cluster-2", namespace="tenant-b", component="comp-b", automated="true"}'
+        values: '140x14'
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: KonfluxReleaseFailureRate30dHigh
+        exp_alerts: []
+      - eval_time: 70m
+        alertname: KonfluxReleaseFailureRate30dHigh
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              component: konflux-release
+              source_cluster: cluster-1
+            exp_annotations:
+              summary: High 30-day release failure rate in cluster cluster-1
+              description: >-
+                Releases on cluster cluster-1 have a failure rate of 40%
+                over the last 30 days, exceeding the 30% threshold. Check the Konflux UX Metrics dashboard for the breakdown by failure reason.
+              team: konflux-spre
+              alert_routing_key: "<!subteam^S06V06A36F5>"
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-KonfluxFailureRate30dHigh.md

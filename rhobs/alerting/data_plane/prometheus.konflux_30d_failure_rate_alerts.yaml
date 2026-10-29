@@ -1,0 +1,96 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-konflux-30d-failure-rate-alerting-rules
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: konflux-30d-failure-rate-warning
+    # kaexporter refreshes the *_30d gauges every 5m, evaluating more often adds nothing
+    interval: 5m
+    rules:
+    - alert: KonfluxBuildFailureRate30dHigh
+      # The minimum volume guard avoids firing on a sparse window, e.g. right after a kaexporter restart
+      expr: |
+        (
+          (
+            sum by (source_cluster) (konflux_build_total_count_30d)
+            - on (source_cluster)
+            sum by (source_cluster) (konflux_build_success_count_30d)
+          )
+          / on (source_cluster)
+          sum by (source_cluster) (konflux_build_total_count_30d)
+        ) > 0.3
+        and
+        sum by (source_cluster) (konflux_build_total_count_30d) >= 100
+      for: 1h
+      labels:
+        severity: warning
+        slo: "false"
+        component: konflux-build
+      annotations:
+        summary: >-
+          High 30-day build failure rate in cluster {{ $labels.source_cluster }}
+        description: >-
+          Build PipelineRuns on cluster {{ $labels.source_cluster }} have a failure rate of {{ $value | humanizePercentage }}
+          over the last 30 days, exceeding the 30% threshold. Check the Konflux UX Metrics dashboard for the breakdown by failure reason.
+        team: konflux-spre
+        alert_routing_key: "<!subteam^S06V06A36F5>"
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-KonfluxFailureRate30dHigh.md
+
+    - alert: KonfluxIntegrationFailureRate30dHigh
+      expr: |
+        (
+          (
+            sum by (source_cluster) (konflux_integration_total_count_30d)
+            - on (source_cluster)
+            sum by (source_cluster) (konflux_integration_success_count_30d)
+          )
+          / on (source_cluster)
+          sum by (source_cluster) (konflux_integration_total_count_30d)
+        ) > 0.3
+        and
+        sum by (source_cluster) (konflux_integration_total_count_30d) >= 100
+      for: 1h
+      labels:
+        severity: warning
+        slo: "false"
+        component: konflux-integration
+      annotations:
+        summary: >-
+          High 30-day integration test failure rate in cluster {{ $labels.source_cluster }}
+        description: >-
+          Integration test PipelineRuns on cluster {{ $labels.source_cluster }} have a failure rate of {{ $value | humanizePercentage }}
+          over the last 30 days, exceeding the 30% threshold. Check the Konflux UX Metrics dashboard for the breakdown by failure reason.
+        team: konflux-spre
+        alert_routing_key: "<!subteam^S06V06A36F5>"
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-KonfluxFailureRate30dHigh.md
+
+    - alert: KonfluxReleaseFailureRate30dHigh
+      expr: |
+        (
+          (
+            sum by (source_cluster) (konflux_release_cr_total_count_30d)
+            - on (source_cluster)
+            sum by (source_cluster) (konflux_release_cr_success_count_30d)
+          )
+          / on (source_cluster)
+          sum by (source_cluster) (konflux_release_cr_total_count_30d)
+        ) > 0.3
+        and
+        sum by (source_cluster) (konflux_release_cr_total_count_30d) >= 100
+      for: 1h
+      labels:
+        severity: warning
+        slo: "false"
+        component: konflux-release
+      annotations:
+        summary: >-
+          High 30-day release failure rate in cluster {{ $labels.source_cluster }}
+        description: >-
+          Releases on cluster {{ $labels.source_cluster }} have a failure rate of {{ $value | humanizePercentage }}
+          over the last 30 days, exceeding the 30% threshold. Check the Konflux UX Metrics dashboard for the breakdown by failure reason.
+        team: konflux-spre
+        alert_routing_key: "<!subteam^S06V06A36F5>"
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-KonfluxFailureRate30dHigh.md
