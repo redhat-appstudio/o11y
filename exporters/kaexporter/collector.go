@@ -21,6 +21,8 @@ func (e *KAExporter) Describe(ch chan<- *prometheus.Desc) {
 	e.buildSLO.Describe(ch)
 	e.integrationSLO.Describe(ch)
 	e.releaseSLO.Describe(ch)
+	e.signingSLO.Describe(ch)
+	e.releaseInFlight.Describe(ch)
 
 	e.scrapeErrorsTotal.Describe(ch)
 	e.lastScrapeSuccessGauge.Describe(ch)
@@ -41,6 +43,8 @@ func (e *KAExporter) Collect(ch chan<- prometheus.Metric) {
 	e.buildSLO.Collect(ch)
 	e.integrationSLO.Collect(ch)
 	e.releaseSLO.Collect(ch)
+	e.signingSLO.Collect(ch)
+	e.releaseInFlight.Collect(ch)
 
 	e.scrapeErrorsTotal.Collect(ch)
 	e.lastScrapeSuccessGauge.Collect(ch)
@@ -119,6 +123,8 @@ func (e *KAExporter) runCollection() {
 		e.buildSLO.updateGauges(e.rollingStore, skipBreach)
 		e.integrationSLO.updateGauges(e.rollingStore, skipBreach)
 		e.releaseSLO.updateGauges(e.rollingStore, skipBreach)
+		e.signingSLO.updateGauges(e.rollingStore, skipBreach)
+		e.releaseInFlight.updateGauges()
 
 		// coldStart flag now managed per-namespace; check if all namespaces are bootstrapped
 		if e.coldStart {
@@ -317,7 +323,18 @@ func (e *KAExporter) collectMetrics(ctx context.Context) (*releaseIndex, error) 
 	}
 
 	// Record all release observations into 30d SLO store
-	e.releaseSLO.recordAllFromIndex(e.rollingStore, e.cluster, releaseIdx)
+	e.releaseSLO.recordAllFromIndex(e.rollingStore, e.cluster, releaseIdx, e.releaseInFlight)
+
+	// Signing TaskRuns are collected separately from the tenant namespace loop:
+	// they live in the managed release namespaces and are selected by task label.
+	signingCount := e.collectSigningNamespaces(ctx, releaseSince, releaseMaxItems, concurrency)
+
+	// Releases that are still running are not in the archive at all, so they
+	// are read from the live API instead.
+	if err := e.collectInFlightReleases(ctx, namespaces); err != nil {
+		log.Printf("in-flight releases: %v", err)
+		e.scrapeErrorsTotal.WithLabelValues(e.cluster, "releases_live").Inc()
+	}
 
 	// Gap-fill pass: fill truncated namespaces in parallel (post-steady-state)
 	// Only run gap-fill if main collection had some successes (avoid piling on during KubeArchive outages)
@@ -359,8 +376,8 @@ func (e *KAExporter) collectMetrics(ctx context.Context) (*releaseIndex, error) 
 		}
 	}
 
-	log.Printf("Metrics collected: %d build PLRs, %d test PLRs (%d/%d tenant namespaces scraped successfully); %d releases indexed",
-		totalBuild, totalTest, nsOK, len(namespaces), len(releaseIdx.store))
+	log.Printf("Metrics collected: %d build PLRs, %d test PLRs (%d/%d tenant namespaces scraped successfully); %d releases indexed; %d signing TaskRuns",
+		totalBuild, totalTest, nsOK, len(namespaces), len(releaseIdx.store), signingCount)
 
 	return releaseIdx, nil
 }
@@ -467,6 +484,66 @@ func (e *KAExporter) gatherAllReleasesParallel(ctx context.Context, namespaces [
 		mu.Unlock()
 	}
 	return idx
+}
+
+// collectSigningNamespaces fetches signing TaskRuns from every configured
+// managed release namespace in parallel and records them into the rolling store.
+// Returns the number of completed signing TaskRuns observed this cycle.
+func (e *KAExporter) collectSigningNamespaces(ctx context.Context, since string, maxItems, maxConcurrent int) int {
+	if len(e.signingNamespaces) == 0 || len(e.signingTasks) == 0 {
+		return 0
+	}
+
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	sem := make(chan struct{}, maxConcurrent)
+	total := 0
+
+	for _, ns := range e.signingNamespaces {
+		wg.Add(1)
+		go func(ns string) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+
+			count, err := e.collectSigningNamespace(ctx, ns, since, maxItems)
+			if err != nil {
+				log.Printf("signing taskruns namespace %q: %v", ns, err)
+				e.scrapeErrorsTotal.WithLabelValues(e.cluster, "signing").Inc()
+				return
+			}
+			mu.Lock()
+			total += count
+			mu.Unlock()
+		}(ns)
+	}
+
+	wg.Wait()
+	return total
+}
+
+// collectSigningNamespace streams the configured signing TaskRuns for one
+// namespace, one label selector per task, and records each completed run.
+func (e *KAExporter) collectSigningNamespace(ctx context.Context, tenantNS, since string, maxItems int) (int, error) {
+	baseURL := fmt.Sprintf("%s/apis/tekton.dev/v1/namespaces/%s/taskruns", e.kaHost, url.PathEscape(tenantNS))
+
+	count := 0
+	for _, task := range e.signingTasks {
+		selector := fmt.Sprintf("%s=%s", labelTektonPipelineTask, task)
+		_, _, err := e.streamTaskRuns(ctx, baseURL, since, "", selector, tenantNS, maxItems, func(page []TaskRun) {
+			for i := range page {
+				if page[i].Status.CompletionTime == "" {
+					continue
+				}
+				count++
+				e.signingSLO.recordObservation(e.rollingStore, e.cluster, tenantNS, page[i])
+			}
+		})
+		if err != nil {
+			return count, fmt.Errorf("stream taskruns for task %q: %w", task, err)
+		}
+	}
+	return count, nil
 }
 
 // startRollingStoreMaintenance launches a background goroutine that prunes the
