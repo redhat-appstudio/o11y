@@ -28,12 +28,21 @@ spec:
           team: konflux-infra
           runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/etcd.md
 
+      # The etcd-maintenance CronJob (infra-deployments configs/etcd-defrag) defrags every
+      # 5 minutes while the DB is above 75%, so back-to-back defrags are expected on a
+      # nearly full cluster. Count defrag starts (rising edges) instead and alert only when
+      # nearly every CronJob run defrags (>= 10 of the 12 possible per hour) for 30 minutes,
+      # i.e. defragmentation keeps looping without reclaiming enough space.
       - alert: EtcdDefragFrequent
         expr: |
-          sum by (source_cluster) (etcd_disk_defrag_inflight) > 0
-          and
-          sum by (source_cluster) (max_over_time(etcd_disk_defrag_inflight[20m] offset 10m)) > 0
-        for: 1m
+          count_over_time(
+            (
+              (sum by (source_cluster) (etcd_disk_defrag_inflight) > 0)
+              unless
+              (sum by (source_cluster) (etcd_disk_defrag_inflight offset 1m) > 0)
+            )[1h:1m]
+          ) >= 10
+        for: 30m
         labels:
           severity: warning
           component: etcd
@@ -41,7 +50,7 @@ spec:
           summary: >-
             Etcd defragmentation is happening too frequently
           description: >-
-            Etcd defragmentation occurred more than once in the last 30 minutes in cluster {{ $labels.source_cluster }}.
+            Etcd defragmentation started at least 10 times per hour for the past 30 minutes in cluster {{ $labels.source_cluster }}.
           alert_routing_key: infra
           team: konflux-infra
           runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/etcd.md
