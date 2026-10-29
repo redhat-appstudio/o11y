@@ -272,26 +272,15 @@ tests:
         values: '0 1 2 2 2 2 2 2 2 2'
 
     alert_rule_test:
+      # for: 5m, still pending at 3m and 5m, so nothing has fired yet
       - eval_time: 3m
         alertname: KonfluxUIUpstream502
-        exp_alerts:
-          - exp_labels:
-              severity: critical
-              component: konflux-ui
-              slo: "true"
-              source_cluster: c_upstream_502
-            exp_annotations:
-              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.konflux_ui_availability_alerts.yaml#L136
-              summary: Konflux UI proxy returning 502 errors in cluster c_upstream_502
-              description: >
-                The Konflux UI nginx proxy has been returning 502 errors for 2min in cluster
-                c_upstream_502, indicating an upstream backend (e.g. namespace-lister)
-                is down or unreachable.
-              alert_team_handle: <!subteam^S04HY632621>
-              team: konflux-ui
-              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/konflux-ui/sre/upstream-502.md
-      # Brief burst should not fire after it ends
+        exp_alerts: []
       - eval_time: 5m
+        alertname: KonfluxUIUpstream502
+        exp_alerts: []
+      # Sustained 502s fire once the 5m pending period is met; the brief burst does not
+      - eval_time: 6m
         alertname: KonfluxUIUpstream502
         exp_alerts:
           - exp_labels:
@@ -303,7 +292,7 @@ tests:
               html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.konflux_ui_availability_alerts.yaml#L136
               summary: Konflux UI proxy returning 502 errors in cluster c_upstream_502
               description: >
-                The Konflux UI nginx proxy has been returning 502 errors for 2min in cluster
+                The Konflux UI nginx proxy has been returning 502 errors for 5min in cluster
                 c_upstream_502, indicating an upstream backend (e.g. namespace-lister)
                 is down or unreachable.
               alert_team_handle: <!subteam^S04HY632621>
