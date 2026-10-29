@@ -201,6 +201,7 @@ All metrics are **Gauges** over a rolling 30-day window of daily aggregated buck
 | `konflux_signing_failure_count_30d` | signing | `cluster, namespace, task, pipeline, reason` |
 | `konflux_signing_duration_slo_breach` | signing | `cluster, namespace, task, pipeline, tier` |
 | `konflux_signing_last_success_timestamp_seconds` | signing | `cluster, namespace, task, pipeline` |
+| `konflux_signing_last_failure_timestamp_seconds` | signing | `cluster, namespace, task, pipeline` |
 
 **Metric definitions**:
 - **Duration metrics** (`mean_duration_seconds_30d`): Mean execution time for **successful workloads only** (startTime to completionTime for PipelineRuns; startTime to completionTime for Releases). Failed workloads are excluded from this average.
@@ -264,16 +265,20 @@ the signing pipeline. TaskRuns are fetched from the managed release namespaces l
 `KA_SIGNING_NAMESPACES`, one `tekton.dev/pipelineTask` label selector per entry in
 `KA_SIGNING_TASKS`.
 
-`konflux_signing_last_success_timestamp_seconds` is the one metric here that is not a 30-day
-aggregate. It holds the completion time of the most recent successful signing task and is
-deliberately monotonic: it keeps reporting after the observation has aged out of the rolling
-window, so a long gap reports the real age of the last success rather than disappearing.
+`konflux_signing_last_success_timestamp_seconds` and `konflux_signing_last_failure_timestamp_seconds`
+are the metrics here that are not 30-day aggregates. They hold the completion time of the most
+recent successful and the most recent failed signing task, and are deliberately monotonic: they
+keep reporting after the observation has aged out of the rolling window.
 
-It exists because the 30-day aggregates cannot express a signing outage. A signing task that
-hangs never records a completion time, so KubeArchive never holds it and no success or failure
-count ever moves. During the August 2026 container signing outage every failure-rate signal
-stayed flat for four days while releases were blocked. Absence of success is the only form such
-an outage takes, which is what `SigningPipelineNoRecentSuccess` alerts on.
+Signing is broken and has not recovered when the last failure is newer than the last success,
+which is what `SigningPipelineFailing` alerts on. Neither signal works on its own. A 30-day
+failure rate rises slowly from a large base of past successes, and the age of the last success
+grows every weekend, because Conforma blocks releases on Fridays, weekends and freeze dates. A
+hung signing task is not a blind spot: `rh-direct-sign-image` has a 6h task timeout, so a hang
+ends as a failed TaskRun.
+
+The exporter lists TaskRuns from KubeArchive, so its service account needs `list` on
+`taskruns.tekton.dev`; without it the signing metrics are never produced.
 
 **Scope note**: `rh-sign-image` and `sign-index-image` are deliberately absent from the default
 task list. No managed release pipeline calls them, so measuring them would measure zero.

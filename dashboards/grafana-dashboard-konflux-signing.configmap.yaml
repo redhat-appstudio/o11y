@@ -35,7 +35,7 @@ data:
             "type": "prometheus",
             "uid": "${Datasource}"
           },
-          "description": "Wall-clock age of the most recent successful signing task, per cluster and task. This is the panel that shows a signing outage. A hung signing task never completes, so it is never counted as a failure anywhere else on this dashboard; only the age of the last success moves. Orange at 6h, red at 24h, which is where SigningPipelineNoRecentSuccess fires.",
+          "description": "Wall-clock age of the most recent successful signing task, per cluster and task. A long gap on its own is not an outage: Conforma blocks releases on Fridays, weekends and freeze dates (UTC), so nothing is signed then. Read it together with the Failing without recovery panel.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -46,15 +46,7 @@ data:
                 "mode": "absolute",
                 "steps": [
                   {
-                    "color": "green"
-                  },
-                  {
-                    "color": "orange",
-                    "value": 21600
-                  },
-                  {
-                    "color": "red",
-                    "value": 86400
+                    "color": "blue"
                   }
                 ]
               },
@@ -64,7 +56,7 @@ data:
           },
           "gridPos": {
             "h": 7,
-            "w": 12,
+            "w": 8,
             "x": 0,
             "y": 1
           },
@@ -107,6 +99,70 @@ data:
             "type": "prometheus",
             "uid": "${Datasource}"
           },
+          "description": "Clusters and tasks whose most recent signing outcome is a failure, with the time since the last success. This is the condition SigningPipelineFailing pages on (rh-direct-sign-image only, after 1h). Empty means every task that ran last succeeded.",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red"
+                  }
+                ]
+              },
+              "unit": "s"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 7,
+            "w": 8,
+            "x": 8,
+            "y": 1
+          },
+          "id": 12,
+          "options": {
+            "colorMode": "background",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "percentChangeColorMode": "standard",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "showPercentChange": false,
+            "textMode": "auto",
+            "wideLayout": true
+          },
+          "pluginVersion": "11.6.11",
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${Datasource}"
+              },
+              "expr": "(time() - max by (source_cluster, task) (konflux_signing_last_success_timestamp_seconds{source_cluster=~\"$Cluster\", task=~\"$Task\"})) and on (source_cluster, task) (max by (source_cluster, task) (konflux_signing_last_failure_timestamp_seconds{source_cluster=~\"$Cluster\", task=~\"$Task\"}) > max by (source_cluster, task) (konflux_signing_last_success_timestamp_seconds{source_cluster=~\"$Cluster\", task=~\"$Task\"}))",
+              "legendFormat": "{{source_cluster}} / {{task}}",
+              "refId": "A",
+              "instant": true
+            }
+          ],
+          "title": "Failing without recovery",
+          "type": "stat"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${Datasource}"
+          },
           "description": "Volume-weighted success rate per task over the rolling 30-day window: sum(success_count) / sum(total_count). Counts completed signing tasks only.",
           "fieldConfig": {
             "defaults": {
@@ -137,8 +193,8 @@ data:
           },
           "gridPos": {
             "h": 7,
-            "w": 12,
-            "x": 12,
+            "w": 8,
+            "x": 16,
             "y": 1
           },
           "id": 11,

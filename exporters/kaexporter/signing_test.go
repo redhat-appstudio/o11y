@@ -40,9 +40,8 @@ func TestSigningRecordObservation(t *testing.T) {
 			wantRecorded: true, wantTask: "unknown", wantPipeline: "unknown",
 		},
 		{
-			// A hung signing task is the August 17-21 failure mode: it never
-			// completes, so KubeArchive never holds it and it must not count.
-			name: "hung task has no completion time",
+			// A running task has no outcome yet and must not count.
+			name: "running task has no completion time",
 			tr: NewPLR().UID("sign-4").
 				CreatedAt(secondsAgo(7200)).StartedAt(secondsAgo(7190)).
 				PipelineTask("rh-direct-sign-image").Pipeline("rh-advisories").Build(),
@@ -107,8 +106,49 @@ func TestSigningLastSuccessTracking(t *testing.T) {
 		PipelineTask("sign-base64-blob").Pipeline("release-to-github").Failed("Failed").Build())
 	slo.updateGauges(store, nil)
 
-	if _, ok := collectGauge(t, slo.lastSuccessGauge)[seriesKey("c1", "ns1", "sign-base64-blob", "release-to-github")]; ok {
+	if _, ok := collectGauge(t, slo.lastSuccessGauge)[seriesKey("c1", "ns1", "release-to-github", "sign-base64-blob")]; ok {
 		t.Errorf("last success reported for a series that never succeeded")
+	}
+}
+
+// TestSigningLastFailureTracking covers the other half of the alert condition.
+// Only failures advance it, it keeps the newest timestamp regardless of arrival
+// order, and a later success must not move it.
+func TestSigningLastFailureTracking(t *testing.T) {
+	store := NewStore()
+	slo := newSigningSLO30d(nil)
+
+	older := secondsAgo(7200)
+	newer := secondsAgo(1800)
+
+	slo.recordObservation(store, "c1", "ns1", NewPLR().UID("f-new").
+		Times(secondsAgo(2000), secondsAgo(1990), newer).
+		PipelineTask("rh-direct-sign-image").Pipeline("rh-advisories").Failed("TaskRunTimeout").Build())
+	slo.recordObservation(store, "c1", "ns1", NewPLR().UID("f-old").
+		Times(secondsAgo(7400), secondsAgo(7390), older).
+		PipelineTask("rh-direct-sign-image").Pipeline("rh-advisories").Failed("Failed").Build())
+	// A success after both must not touch last-failure.
+	slo.recordObservation(store, "c1", "ns1", NewPLR().UID("f-ok").
+		Times(secondsAgo(600), secondsAgo(590), secondsAgo(300)).
+		PipelineTask("rh-direct-sign-image").Pipeline("rh-advisories").Succeeded().Build())
+
+	slo.updateGauges(store, nil)
+
+	wantTS, err := time.Parse(time.RFC3339, newer)
+	if err != nil {
+		t.Fatalf("parse timestamp: %v", err)
+	}
+	got := gaugeValueFor(t, slo.lastFailureGauge, "c1", "ns1", "rh-direct-sign-image", "rh-advisories")
+	assertEqual(t, "last failure timestamp", int64(got), wantTS.Unix())
+
+	// A series that only ever succeeded must not report a last failure at all.
+	slo.recordObservation(store, "c1", "ns1", NewPLR().UID("f-only-ok").
+		Times(secondsAgo(900), secondsAgo(890), secondsAgo(600)).
+		PipelineTask("sign-base64-blob").Pipeline("release-to-github").Succeeded().Build())
+	slo.updateGauges(store, nil)
+
+	if _, ok := collectGauge(t, slo.lastFailureGauge)[seriesKey("c1", "ns1", "release-to-github", "sign-base64-blob")]; ok {
+		t.Errorf("last failure reported for a series that never failed")
 	}
 }
 
