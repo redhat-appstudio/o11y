@@ -14,22 +14,28 @@ import (
 // many, and only that task's outcome describes the signing pipeline.
 //
 // In addition to the shared 30-day gauge set, this domain tracks the completion
-// time of the most recent successful signing TaskRun. The 30-day aggregates
-// cannot express a signing outage: a signing task that hangs never reaches a
-// completion time, so it is never archived and never counted. Absence of
-// success is therefore the only observable form such an outage takes.
+// time of the most recent successful and the most recent failed signing
+// TaskRun. A failure newer than every success means signing is broken and has
+// not recovered since. A 30-day failure rate cannot say that: during an outage
+// it rises slowly from a large base of past successes.
+//
+// Absence of success alone is not a usable signal either. Conforma blocks
+// releases on Fridays, weekends and freeze dates, so long periods with no
+// signing at all are normal. Requiring a failure keeps those periods quiet.
 type SigningSLO30d struct {
 	SLOGaugeSet
 
 	lastSuccessGauge *prometheus.GaugeVec
+	lastFailureGauge *prometheus.GaugeVec
 
-	// mu guards lastSuccessAt, which is written from the parallel
-	// per-namespace collection goroutines.
+	// mu guards lastSuccessAt and lastFailureAt, which are written from the
+	// parallel per-namespace collection goroutines.
 	mu sync.Mutex
-	// lastSuccessAt holds the newest successful completion seen per label
-	// combination. It is monotonic and deliberately outlives the rolling
-	// window, so a long gap keeps reporting the real age of the last success.
+	// lastSuccessAt and lastFailureAt hold the newest completion seen per
+	// label combination. They are monotonic and deliberately outlive the
+	// rolling window, so a long gap keeps reporting the real age.
 	lastSuccessAt map[signingKey]time.Time
+	lastFailureAt map[signingKey]time.Time
 }
 
 // signingKey identifies one signing series for last-success tracking.
@@ -51,21 +57,26 @@ func newSigningSLO30dWithTiers(sloConfig *SLOConfig, tierConfig *TierConfig, tie
 		SLOGaugeSet: newSLOGaugeSet("konflux_signing", "signing task", labels, sloConfig, tierConfig, tierPins, metricSigningDuration),
 		lastSuccessGauge: prometheus.NewGaugeVec(prometheus.GaugeOpts{
 			Name: "konflux_signing_last_success_timestamp_seconds",
-			Help: "Unix timestamp of the most recent successful signing task completion. Use time() - this to detect a signing outage; a hung signing task never completes and is therefore invisible to success/failure counts.",
+			Help: "Unix timestamp of the most recent successful signing task completion.",
+		}, labels),
+		lastFailureGauge: prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: "konflux_signing_last_failure_timestamp_seconds",
+			Help: "Unix timestamp of the most recent failed signing task completion. Signing is broken and has not recovered when this is newer than konflux_signing_last_success_timestamp_seconds.",
 		}, labels),
 		lastSuccessAt: make(map[signingKey]time.Time),
+		lastFailureAt: make(map[signingKey]time.Time),
 	}
 }
 
 // recordObservation records a single signing TaskRun observation into the
-// rolling store and updates last-success tracking.
+// rolling store and updates last-success and last-failure tracking.
 func (m *SigningSLO30d) recordObservation(
 	store *Store,
 	cluster, namespace string,
 	tr TaskRun,
 ) {
 	if tr.Status.CompletionTime == "" {
-		return // Not finished, or hung — see the type comment.
+		return // Not finished yet.
 	}
 
 	completionTime, err := time.Parse(time.RFC3339, tr.Status.CompletionTime)
@@ -102,17 +113,23 @@ func (m *SigningSLO30d) recordObservation(
 		failureReason,
 	)
 
-	if recorded && succeeded {
-		m.recordSuccessAt(signingKey{cluster, namespace, task, pipeline}, completionTime)
+	if !recorded {
+		return
+	}
+	key := signingKey{cluster, namespace, task, pipeline}
+	if succeeded {
+		m.recordCompletionAt(m.lastSuccessAt, key, completionTime)
+	} else {
+		m.recordCompletionAt(m.lastFailureAt, key, completionTime)
 	}
 }
 
-// recordSuccessAt advances the last-success timestamp for one series.
-func (m *SigningSLO30d) recordSuccessAt(key signingKey, completionTime time.Time) {
+// recordCompletionAt advances one series in a last-success or last-failure map.
+func (m *SigningSLO30d) recordCompletionAt(last map[signingKey]time.Time, key signingKey, completionTime time.Time) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	if prev, ok := m.lastSuccessAt[key]; !ok || completionTime.After(prev) {
-		m.lastSuccessAt[key] = completionTime
+	if prev, ok := last[key]; !ok || completionTime.After(prev) {
+		last[key] = completionTime
 	}
 }
 
@@ -122,14 +139,20 @@ func (m *SigningSLO30d) updateGauges(store *Store, skipBreachNamespaces map[stri
 		return []string{ls.Cluster, ls.Namespace, ls.Task, ls.Pipeline}
 	}, skipBreachNamespaces)
 
-	// last-success gauges are rebuilt from tracking state rather than from the
-	// rolling store, so that a success older than the window keeps reporting.
+	// last-success and last-failure gauges are rebuilt from tracking state
+	// rather than from the rolling store, so that a completion older than the
+	// window keeps reporting.
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.lastSuccessGauge.Reset()
-	for key, ts := range m.lastSuccessAt {
-		m.lastSuccessGauge.
-			WithLabelValues(key.cluster, key.namespace, key.task, key.pipeline).
+	setTimestampGauge(m.lastSuccessGauge, m.lastSuccessAt)
+	setTimestampGauge(m.lastFailureGauge, m.lastFailureAt)
+}
+
+// setTimestampGauge replaces the contents of g with one series per tracked key.
+func setTimestampGauge(g *prometheus.GaugeVec, last map[signingKey]time.Time) {
+	g.Reset()
+	for key, ts := range last {
+		g.WithLabelValues(key.cluster, key.namespace, key.task, key.pipeline).
 			Set(float64(ts.Unix()))
 	}
 }
@@ -138,10 +161,12 @@ func (m *SigningSLO30d) updateGauges(store *Store, skipBreachNamespaces map[stri
 func (m *SigningSLO30d) Describe(ch chan<- *prometheus.Desc) {
 	m.SLOGaugeSet.Describe(ch)
 	m.lastSuccessGauge.Describe(ch)
+	m.lastFailureGauge.Describe(ch)
 }
 
 // Collect implements prometheus.Collector
 func (m *SigningSLO30d) Collect(ch chan<- prometheus.Metric) {
 	m.SLOGaugeSet.Collect(ch)
 	m.lastSuccessGauge.Collect(ch)
+	m.lastFailureGauge.Collect(ch)
 }
