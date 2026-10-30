@@ -135,7 +135,7 @@ func (m *SigningSLO30d) recordCompletionAt(last map[signingKey]time.Time, key si
 
 // updateGauges reads from the rolling store and updates the 30d SLO gauges
 func (m *SigningSLO30d) updateGauges(store *Store, skipBreachNamespaces map[string]bool) {
-	m.SLOGaugeSet.UpdateFromStore(store, metricSigningDuration, func(ls LabelSet) []string {
+	m.UpdateFromStore(store, metricSigningDuration, func(ls LabelSet) []string {
 		return []string{ls.Cluster, ls.Namespace, ls.Task, ls.Pipeline}
 	}, skipBreachNamespaces)
 
