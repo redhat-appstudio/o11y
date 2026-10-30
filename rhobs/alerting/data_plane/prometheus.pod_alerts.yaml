@@ -10,8 +10,19 @@ spec:
     interval: 1m
     rules:
     - alert: UnschedulablePods
-      expr: min_over_time(kube_pod_status_unschedulable{namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-templates-e2e|multi-platform-.*|clusters-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|clusters|proactive-scaler|.*-provision-namespace-.*|.*-provision-eaas-space-.*|.*-provision-env-.*|.*-deploy-ephemeral-.*)"}[5m]) == 1
-      for: 30m
+      expr: |
+        min_over_time(kube_pod_status_unschedulable{namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-templates-e2e|multi-platform-.*|clusters-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|clusters|proactive-scaler|.*-provision-namespace-.*|.*-provision-eaas-space-.*|.*-provision-env-.*|.*-deploy-ephemeral-.*)"}[5m]) == 1
+        or
+        (
+          min_over_time(kube_pod_status_unschedulable{namespace="proactive-scaler"}[5m]) == 1
+          and on (source_cluster)
+          (
+            sum by (source_cluster) (cluster_autoscaler_nodes_count)
+            < on (source_cluster)
+            max by (source_cluster) (cluster_autoscaler_max_nodes_count)
+          )
+        )
+      for: 60m
       labels:
         severity: warning
         slo: "false"
@@ -21,9 +32,9 @@ spec:
         summary: Pod {{ $labels.namespace }}/{{ $labels.pod }} on {{ $labels.source_cluster }} cannot be scheduled.
         description: >-
           Pod {{ $labels.pod }} for namespace {{ $labels.namespace }} on cluster
-          {{ $labels.source_cluster }} is unscheduled for more than 30 minutes.
+          {{ $labels.source_cluster }} is unscheduled for more than 60 minutes.
         alert_routing_key: '{{ $labels.namespace }}'
-        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-unschedualablePods.md
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-unschedulablePods.md
     - alert: CrashLoopBackOff
       expr: max_over_time(kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff", namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-templates-e2e|multi-platform-.*|clusters-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|tekton-kueue)"}[5m]) >= 1
       for: 15m
