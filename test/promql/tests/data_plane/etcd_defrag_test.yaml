@@ -5,13 +5,17 @@ rule_files:
 
 tests:
 
+  # etcd-maintenance CronJob defragging on every 5-minute run for 2 hours:
+  # 10th start at 45m, pending until 75m, firing after that.
   - interval: 1m
     input_series:
       - series: etcd_disk_defrag_inflight{source_cluster="cluster01"}
-        values: 1x5 0x25 1x5 0x35
+        values: 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1
 
     alert_rule_test:
-      - eval_time: 33m
+      - eval_time: 70m
+        alertname: EtcdDefragFrequent
+      - eval_time: 90m
         alertname: EtcdDefragFrequent
         exp_alerts:
           - exp_labels:
@@ -20,11 +24,67 @@ tests:
               source_cluster: cluster01
             exp_annotations:
               summary: Etcd defragmentation is happening too frequently
-              description: 'Etcd defragmentation occurred more than once in the last 30 minutes in cluster cluster01.'
+              description: 'Etcd defragmentation started at least 10 times per hour for the past 30 minutes in cluster cluster01.'
               alert_routing_key: infra
               team: konflux-infra
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/etcd.md
 
+  # Multi-minute defrags (two etcd members in a row) still count once per run.
+  - interval: 1m
+    input_series:
+      - series: etcd_disk_defrag_inflight{source_cluster="cluster01"}
+        values: 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1
+
+    alert_rule_test:
+      - eval_time: 90m
+        alertname: EtcdDefragFrequent
+        exp_alerts:
+          - exp_labels:
+              component: etcd
+              severity: warning
+              source_cluster: cluster01
+            exp_annotations:
+              summary: Etcd defragmentation is happening too frequently
+              description: 'Etcd defragmentation started at least 10 times per hour for the past 30 minutes in cluster cluster01.'
+              alert_routing_key: infra
+              team: konflux-infra
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/etcd.md
+
+  # Back-to-back defrags that are expected behaviour must not alert:
+  # every 10 minutes (6 per hour) for 2 hours.
+  - interval: 1m
+    input_series:
+      - series: etcd_disk_defrag_inflight{source_cluster="cluster01"}
+        values: 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1
+
+    alert_rule_test:
+      - eval_time: 120m
+        alertname: EtcdDefragFrequent
+
+  # A one-hour burst on every CronJob run that stops is above the threshold
+  # for less than 30 minutes, so it must not alert.
+  - interval: 1m
+    input_series:
+      - series: etcd_disk_defrag_inflight{source_cluster="cluster01"}
+        values: 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0x60
+
+    alert_rule_test:
+      - eval_time: 60m
+        alertname: EtcdDefragFrequent
+      - eval_time: 75m
+        alertname: EtcdDefragFrequent
+
+  # One long defrag is a single start.
+  - interval: 1m
+    input_series:
+      - series: etcd_disk_defrag_inflight{source_cluster="cluster01"}
+        values: 1x60 0x60
+
+    alert_rule_test:
+      - eval_time: 90m
+        alertname: EtcdDefragFrequent
+
+  # Defrags across etcd members within the same run.
   - interval: 1m
     input_series:
       - series: etcd_disk_defrag_inflight{source_cluster="cluster01", instance="instance1"}
