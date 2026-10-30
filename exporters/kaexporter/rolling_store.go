@@ -22,6 +22,8 @@ type LabelSet struct {
 	Optional    string `json:"optional,omitempty"`   // integration tests
 	TestType    string `json:"test_type,omitempty"`  // integration tests
 	Automated   string `json:"automated,omitempty"`  // "true" if release is automated, "false" if manual
+	Task        string `json:"task,omitempty"`       // signing
+	Pipeline    string `json:"pipeline,omitempty"`   // signing
 }
 
 func (l LabelSet) String() string {
@@ -48,6 +50,12 @@ func (l LabelSet) String() string {
 	}
 	if l.Automated != "" {
 		parts = append(parts, fmt.Sprintf("automated=%s", l.Automated))
+	}
+	if l.Task != "" {
+		parts = append(parts, fmt.Sprintf("task=%s", l.Task))
+	}
+	if l.Pipeline != "" {
+		parts = append(parts, fmt.Sprintf("pipeline=%s", l.Pipeline))
 	}
 	return strings.Join(parts, ",")
 }
@@ -527,6 +535,7 @@ const (
 	metricBuildDuration       = "build_duration"
 	metricIntegrationDuration = "integration_duration"
 	metricReleaseDuration     = "release_duration"
+	metricSigningDuration     = "signing_duration"
 )
 
 // SLO breach evaluation constants.
