@@ -81,3 +81,25 @@ tests:
               description: "The average scheduling wait time for PipelineRuns on cluster kflux-ocp-p01 has exceeded the defined tier-based threshold for over 15 minutes."
               team: pipelines
               alert_routing_key: pipelines
+
+  # Test 5: stone-prd-rh01 exceeds 9000s threshold
+  - interval: 1m
+    input_series:
+      - series: 'pipelinerun_duration_scheduled_seconds_sum{source_cluster="stone-prd-rh01"}'
+        values: '0+10000x420'
+      - series: 'pipelinerun_duration_scheduled_seconds_count{source_cluster="stone-prd-rh01"}'
+        values: '0+1x420'
+    alert_rule_test:
+      - eval_time: 6h20m
+        alertname: PipelineRunSchedulingLatencyHigh
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              component: konflux-pipelines
+              slo: "false"
+              source_cluster: stone-prd-rh01
+            exp_annotations:
+              summary: "PipelineRun scheduling latency is exceptionally high on cluster stone-prd-rh01"
+              description: "The average scheduling wait time for PipelineRuns on cluster stone-prd-rh01 has exceeded the defined tier-based threshold for over 15 minutes."
+              team: pipelines
+              alert_routing_key: pipelines
