@@ -1,42 +1,83 @@
 evaluation_interval: 1m
 
 rule_files:
-  - ../../../rhobs/alerting/data_plane/prometheus.pipelinerun_scheduling_latency_alerts.yaml
+  - prometheus.pipelinerun_scheduling_latency_alerts.yaml
 
 tests:
-  # Test 1: Fast cluster exceeds 180s threshold and fires after 15m
+  # Test 1: Fast cluster exceeds 180s threshold
   - interval: 1m
     input_series:
-      - series: pipelinerun_duration_scheduled_seconds_sum{source_cluster="kflux-fedora-01"}
+      - series: 'pipelinerun_duration_scheduled_seconds_sum{source_cluster="kflux-fedora-01"}'
         values: '0+600x420'
-      - series: pipelinerun_duration_scheduled_seconds_count{source_cluster="kflux-fedora-01"}
+      - series: 'pipelinerun_duration_scheduled_seconds_count{source_cluster="kflux-fedora-01"}'
         values: '0+1x420'
-
     alert_rule_test:
       - eval_time: 6h20m
         alertname: PipelineRunSchedulingLatencyHigh
         exp_alerts:
           - exp_labels:
               severity: warning
-              namespace: konflux-pipelines
-              team: pipelines
+              component: konflux-pipelines
               slo: "false"
               source_cluster: kflux-fedora-01
             exp_annotations:
               summary: "PipelineRun scheduling latency is exceptionally high on cluster kflux-fedora-01"
               description: "The average scheduling wait time for PipelineRuns on cluster kflux-fedora-01 has exceeded the defined tier-based threshold for over 15 minutes."
-              alert_team_handle: "<!subteam^S06V06A36F5>"
+              team: pipelines
               alert_routing_key: pipelines
 
-  # Test 2: Medium cluster remains below 1200s threshold
+  # Test 2: Medium cluster below 1200s threshold
   - interval: 1m
     input_series:
-      - series: pipelinerun_duration_scheduled_seconds_sum{source_cluster="kflux-osp-p01"}
+      - series: 'pipelinerun_duration_scheduled_seconds_sum{source_cluster="kflux-osp-p01"}'
         values: '0+100x420'
-      - series: pipelinerun_duration_scheduled_seconds_count{source_cluster="kflux-osp-p01"}
+      - series: 'pipelinerun_duration_scheduled_seconds_count{source_cluster="kflux-osp-p01"}'
         values: '0+1x420'
-
     alert_rule_test:
       - eval_time: 6h20m
         alertname: PipelineRunSchedulingLatencyHigh
         exp_alerts: []
+
+  # Test 3: Medium cluster exceeds 1200s threshold
+  - interval: 1m
+    input_series:
+      - series: 'pipelinerun_duration_scheduled_seconds_sum{source_cluster="kflux-osp-p01"}'
+        values: '0+1500x420'
+      - series: 'pipelinerun_duration_scheduled_seconds_count{source_cluster="kflux-osp-p01"}'
+        values: '0+1x420'
+    alert_rule_test:
+      - eval_time: 6h20m
+        alertname: PipelineRunSchedulingLatencyHigh
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              component: konflux-pipelines
+              slo: "false"
+              source_cluster: kflux-osp-p01
+            exp_annotations:
+              summary: "PipelineRun scheduling latency is exceptionally high on cluster kflux-osp-p01"
+              description: "The average scheduling wait time for PipelineRuns on cluster kflux-osp-p01 has exceeded the defined tier-based threshold for over 15 minutes."
+              team: pipelines
+              alert_routing_key: pipelines
+
+  # Test 4: Slow cluster exceeds 9000s threshold
+  - interval: 1m
+    input_series:
+      - series: 'pipelinerun_duration_scheduled_seconds_sum{source_cluster="kflux-ocp-p01"}'
+        values: '0+10000x420'
+      - series: 'pipelinerun_duration_scheduled_seconds_count{source_cluster="kflux-ocp-p01"}'
+        values: '0+1x420'
+    alert_rule_test:
+      - eval_time: 6h20m
+        alertname: PipelineRunSchedulingLatencyHigh
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              component: konflux-pipelines
+              slo: "false"
+              source_cluster: kflux-ocp-p01
+            exp_annotations:
+              summary: "PipelineRun scheduling latency is exceptionally high on cluster kflux-ocp-p01"
+              description: "The average scheduling wait time for PipelineRuns on cluster kflux-ocp-p01 has exceeded the defined tier-based threshold for over 15 minutes."
+              team: pipelines
+              alert_routing_key: pipelines
