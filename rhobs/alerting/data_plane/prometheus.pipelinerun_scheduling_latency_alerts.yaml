@@ -1,0 +1,70 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-pipelinerun-scheduling-latency-alerts
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: pipelinerun.scheduling.latency
+      interval: 1m
+      rules:
+        - alert: PipelineRunSchedulingLatencyHigh
+          expr: |
+            (
+              (
+                sum by (source_cluster) (
+                  rate(pipelinerun_duration_scheduled_seconds_sum{
+                    source_cluster=~"kflux-fedora-01|kflux-rhel-p01|stone-prod-p01"
+                  }[6h])
+                )
+                /
+                sum by (source_cluster) (
+                  rate(pipelinerun_duration_scheduled_seconds_count{
+                    source_cluster=~"kflux-fedora-01|kflux-rhel-p01|stone-prod-p01"
+                  }[6h])
+                )
+              ) > 180
+            )
+            or
+            (
+              (
+                sum by (source_cluster) (
+                  rate(pipelinerun_duration_scheduled_seconds_sum{
+                    source_cluster=~"kflux-osp-p01|kflux-prd-rh02|kflux-lw-p01"
+                  }[6h])
+                )
+                /
+                sum by (source_cluster) (
+                  rate(pipelinerun_duration_scheduled_seconds_count{
+                    source_cluster=~"kflux-osp-p01|kflux-prd-rh02|kflux-lw-p01"
+                  }[6h])
+                )
+              ) > 1200
+            )
+            or
+            (
+              (
+                sum by (source_cluster) (
+                  rate(pipelinerun_duration_scheduled_seconds_sum{
+                    source_cluster=~"kflux-ocp-p01|kflux-prd-rh03|stone-prod-p02|stone-prd-rh01"
+                  }[6h])
+                )
+                /
+                sum by (source_cluster) (
+                  rate(pipelinerun_duration_scheduled_seconds_count{
+                    source_cluster=~"kflux-ocp-p01|kflux-prd-rh03|stone-prod-p02|stone-prd-rh01"
+                  }[6h])
+                )
+              ) > 9000
+            )
+          for: 15m
+          labels:
+            severity: warning
+            component: konflux-pipelines
+            slo: "false"
+          annotations:
+            summary: "PipelineRun scheduling latency is exceptionally high on cluster {{ $labels.source_cluster }}"
+            description: "The average scheduling wait time for PipelineRuns on cluster {{ $labels.source_cluster }} has exceeded the defined tier-based threshold for over 15 minutes."
+            team: konflux-spre
+            alert_routing_key: "<!subteam^S06V06A36F5>"
