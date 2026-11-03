@@ -144,22 +144,22 @@ spec:
         - alert: KargoVerificationFailed
           expr: |
             label_replace(
-              (
-                (time() - kargo:stage:condition:last_transition_timestamp{
-                  condition="Verified",
-                  status="False",
-                  reason=~"VerificationFailed|VerificationError"
-                }) >= 0
-              )
-              and
-              (
-                (time() - kargo:stage:condition:last_transition_timestamp{
-                  condition="Verified",
-                  status="False",
-                  reason=~"VerificationFailed|VerificationError"
-                }) < 1800
-              ),
-              "kargo_component", "$1", "component", "(.+)"
+            (
+              (time() - kargo:stage:condition:last_transition_timestamp{
+                condition="Verified",
+                status="False",
+                reason=~"VerificationFailed|VerificationError"
+              }) >= 0
+            )
+            and
+            (
+              (time() - kargo:stage:condition:last_transition_timestamp{
+                condition="Verified",
+                status="False",
+                reason=~"VerificationFailed|VerificationError"
+              }) < 1800
+            ),
+            "kargo_component", "$1", "component", "(.+)"
             )
           for: 2m
           labels:
@@ -168,7 +168,6 @@ spec:
             slo: "true"
           annotations:
             html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.kargo_alerts.yaml#L144
-            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/alert-KargoVerificationFailed.md
             summary: >-
               Kargo verification failed: {{ $labels.kargo_component }} / {{ $labels.stage }}
             description: >-
@@ -180,26 +179,26 @@ spec:
             alert_team_handle: >-
               <!subteam^S07SW2EEW3D> <!subteam^S05Q1P4Q2TG>
             team: konflux-infra
-            alert_routing_key: spreandinfra
+            runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/alert-KargoVerificationFailed.md
         - alert: KargoVerificationInconclusive
           expr: |
             label_replace(
-              (
-                (time() - kargo:stage:condition:last_transition_timestamp{
-                  condition="Verified",
-                  status="Unknown",
-                  reason="VerificationInconclusive"
-                }) >= 0
-              )
-              and
-              (
-                (time() - kargo:stage:condition:last_transition_timestamp{
-                  condition="Verified",
-                  status="Unknown",
-                  reason="VerificationInconclusive"
-                }) < 1800
-              ),
-              "kargo_component", "$1", "component", "(.+)"
+            (
+              (time() - kargo:stage:condition:last_transition_timestamp{
+                condition="Verified",
+                status="Unknown",
+                reason="VerificationInconclusive"
+              }) >= 0
+            )
+            and
+            (
+              (time() - kargo:stage:condition:last_transition_timestamp{
+                condition="Verified",
+                status="Unknown",
+                reason="VerificationInconclusive"
+              }) < 1800
+            ),
+            "kargo_component", "$1", "component", "(.+)"
             )
           for: 5m
           labels:
