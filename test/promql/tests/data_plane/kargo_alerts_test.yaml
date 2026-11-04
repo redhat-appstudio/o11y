@@ -313,3 +313,137 @@ tests:
                 Auto-promotion hold timestamp is older than 24 hours in
                 kargo-konflux-infrastructure.
               alert_routing_key: spreandinfra
+  # Layer 2: Recent Kargo verification failure
+  - interval: 1m
+    input_series:
+      - series: 'kargo:stage:condition:last_transition_timestamp{exported_namespace="kargo-konflux-infrastructure",component="etcd-shield",stage="ring-1",condition="Verified",status="False",reason="VerificationFailed"}'
+        values: '600x50'
+
+    alert_rule_test:
+      # Recent failure fires after the 2-minute pending period
+      - eval_time: 15m
+        alertname: KargoVerificationFailed
+        exp_alerts:
+          - exp_labels:
+              exported_namespace: kargo-konflux-infrastructure
+              component: kargo
+              kargo_component: etcd-shield
+              stage: ring-1
+              condition: Verified
+              status: "False"
+              reason: VerificationFailed
+              severity: critical
+              slo: "true"
+            exp_annotations:
+              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.kargo_alerts.yaml#L144
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/alert-KargoVerificationFailed.md
+              summary: "Kargo verification failed: etcd-shield / ring-1"
+              description: >-
+                Kargo Stage Verified condition transitioned to False with
+                reason VerificationFailed or VerificationError within the
+                last 30 minutes in namespace kargo-konflux-infrastructure.
+                This condition may not represent the latest individual
+                verification attempt.
+              alert_team_handle: '<!subteam^S07SW2EEW3D> <!subteam^S05Q1P4Q2TG>'
+              team: konflux-infra
+
+      # Historical failure must not fire
+      - eval_time: 41m
+        alertname: KargoVerificationFailed
+        exp_alerts: []
+
+  # Layer 2: VerificationError also triggers the critical alert
+  - interval: 1m
+    input_series:
+      - series: 'kargo:stage:condition:last_transition_timestamp{exported_namespace="kargo-konflux-core",component="konflux-operator",stage="ring-1",condition="Verified",status="False",reason="VerificationError"}'
+        values: '600x45'
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: KargoVerificationFailed
+        exp_alerts:
+          - exp_labels:
+              exported_namespace: kargo-konflux-core
+              component: kargo
+              kargo_component: konflux-operator
+              stage: ring-1
+              condition: Verified
+              status: "False"
+              reason: VerificationError
+              severity: critical
+              slo: "true"
+            exp_annotations:
+              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.kargo_alerts.yaml#L144
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/alert-KargoVerificationFailed.md
+              summary: "Kargo verification failed: konflux-operator / ring-1"
+              description: >-
+                Kargo Stage Verified condition transitioned to False with
+                reason VerificationFailed or VerificationError within the
+                last 30 minutes in namespace kargo-konflux-core.
+                This condition may not represent the latest individual
+                verification attempt.
+              alert_team_handle: '<!subteam^S07SW2EEW3D> <!subteam^S05Q1P4Q2TG>'
+              team: konflux-infra
+
+  # Layer 2: Kargo verification inconclusive warning
+  - interval: 1m
+    input_series:
+      - series: 'kargo:stage:condition:last_transition_timestamp{exported_namespace="kargo-konflux-infrastructure",component="etcd-shield",stage="ring-1",condition="Verified",status="Unknown",reason="VerificationInconclusive"}'
+        values: '600x50'
+
+    alert_rule_test:
+      # Inconclusive condition fires after the 5-minute pending period
+      - eval_time: 15m
+        alertname: KargoVerificationInconclusive
+        exp_alerts:
+          - exp_labels:
+              exported_namespace: kargo-konflux-infrastructure
+              component: kargo
+              kargo_component: etcd-shield
+              stage: ring-1
+              condition: Verified
+              status: Unknown
+              reason: VerificationInconclusive
+              severity: warning
+              slo: "false"
+            exp_annotations:
+              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.kargo_alerts.yaml#L183
+              summary: "Kargo verification inconclusive: etcd-shield / ring-1"
+              description: >-
+                Kargo Stage Verified condition transitioned to Unknown with
+                reason VerificationInconclusive within the last 30 minutes
+                in namespace kargo-konflux-infrastructure.
+              alert_routing_key: spreandinfra
+
+      # Historical inconclusive condition must not fire
+      - eval_time: 41m
+        alertname: KargoVerificationInconclusive
+        exp_alerts: []
+
+  # Layer 2: Healthy and unrelated verification conditions must not alert
+  - interval: 1m
+    input_series:
+      # Successful verification
+      - series: 'kargo:stage:condition:last_transition_timestamp{exported_namespace="kargo-konflux-infrastructure",component="healthy-app",stage="ring-1",condition="Verified",status="True",reason="Verified"}'
+        values: '600x30'
+
+      # Verification currently running
+      - series: 'kargo:stage:condition:last_transition_timestamp{exported_namespace="kargo-konflux-infrastructure",component="running-app",stage="ring-1",condition="Verified",status="Unknown",reason="VerificationRunning"}'
+        values: '600x30'
+
+      # Verification waiting to start
+      - series: 'kargo:stage:condition:last_transition_timestamp{exported_namespace="kargo-konflux-infrastructure",component="waiting-app",stage="ring-1",condition="Verified",status="Unknown",reason="WaitingForVerification"}'
+        values: '600x30'
+
+      # Aborted verification is not included in failure alert
+      - series: 'kargo:stage:condition:last_transition_timestamp{exported_namespace="kargo-konflux-infrastructure",component="aborted-app",stage="ring-1",condition="Verified",status="False",reason="VerificationAborted"}'
+        values: '600x30'
+
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: KargoVerificationFailed
+        exp_alerts: []
+
+      - eval_time: 15m
+        alertname: KargoVerificationInconclusive
+        exp_alerts: []
