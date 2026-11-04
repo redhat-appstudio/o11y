@@ -1,0 +1,40 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-prometheus-tsdb-size-alert
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: prometheus_tsdb_size_alert
+    interval: 1m
+    rules:
+    - alert: PrometheusTSDBStorageHigh
+      expr: |
+        (
+          sum by (source_cluster, namespace, pod) (
+            prometheus_tsdb_storage_blocks_bytes{
+              namespace=~"openshift-monitoring|openshift-user-workload-monitoring|appstudio-monitoring",
+              job=~"prometheus.*"
+            }
+          )
+          /
+          on (source_cluster, namespace, pod)
+          sum by (source_cluster, namespace, pod) (
+            prometheus_tsdb_retention_limit_bytes{
+              namespace=~"openshift-monitoring|openshift-user-workload-monitoring|appstudio-monitoring",
+              job=~"prometheus.*"
+            }
+          )
+        ) > 0.85
+      for: 5m
+      labels:
+        severity: warning
+        component: prometheus
+        slo: "false"
+      annotations:
+        summary: "Prometheus TSDB storage high on {{ $labels.pod }} in cluster {{ $labels.source_cluster }}"
+        description: "Prometheus instance {{ $labels.pod }} in namespace {{ $labels.namespace }} on cluster {{ $labels.source_cluster }} is using {{ $value | humanizePercentage }} of its TSDB retention limit. Note: Values above 100% can occur during normal compaction cycles and will typically resolve automatically."
+        alert_routing_key: o11y
+        team: o11y
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-prometheus-tsdb-storage.md
