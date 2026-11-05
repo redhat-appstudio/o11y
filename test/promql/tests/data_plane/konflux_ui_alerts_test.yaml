@@ -267,12 +267,37 @@ tests:
       # Only 404s, no 502s - should not fire
       - series: 'nginx_otel_http_request_errors_total{namespace="konflux-ui", status="404", source_cluster="c_upstream_ok", job="proxy"}'
         values: '0+10x10'
-      # Brief 502 burst during rolling deploy then stops - should not fire
+      # +30/min for 3m (~0.5/s), then flat. Crosses 0.05 inside rate[2m]
+      # at 1m-3m, which would fire with for: 2m, then drops to 0 by 4m
+      # so for: 5m never elapses.
       - series: 'nginx_otel_http_request_errors_total{namespace="konflux-ui", status="502", source_cluster="c_upstream_burst", job="proxy"}'
-        values: '0 1 2 2 2 2 2 2 2 2'
+        values: '0+30x3 90x6'
+
+    promql_expr_test:
+      # Same predicate as the alert, with bool so a cleared burst is 0 rather than absent.
+      - expr: |
+          sum by (source_cluster) (
+            rate(nginx_otel_http_request_errors_total{namespace="konflux-ui", status="502"}[2m])
+          ) > bool 0.05
+        eval_time: 3m
+        exp_samples:
+          - labels: '{source_cluster="c_upstream_502"}'
+            value: 1
+          - labels: '{source_cluster="c_upstream_burst"}'
+            value: 1
+      - expr: |
+          sum by (source_cluster) (
+            rate(nginx_otel_http_request_errors_total{namespace="konflux-ui", status="502"}[2m])
+          ) > bool 0.05
+        eval_time: 5m
+        exp_samples:
+          - labels: '{source_cluster="c_upstream_502"}'
+            value: 1
+          - labels: '{source_cluster="c_upstream_burst"}'
+            value: 0
 
     alert_rule_test:
-      # for: 5m, still pending at 3m and 5m, so nothing has fired yet
+      # Both series are above 0.05 by 3m, but for: 5m has not elapsed.
       - eval_time: 3m
         alertname: KonfluxUIUpstream502
         exp_alerts: []
