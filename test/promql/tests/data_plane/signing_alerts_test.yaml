@@ -1,0 +1,103 @@
+evaluation_interval: 5m
+
+rule_files:
+  - prometheus.signing_alerts.yaml
+
+tests:
+  # Last success is recent: the gap stays well under 24h at every evaluation.
+  - name: SigningRecentSuccess
+    interval: 5m
+    input_series:
+      - series: 'konflux_signing_last_success_timestamp_seconds{source_cluster="stone-prd-rh01", exported_namespace="rhtap-releng-tenant", task="rh-direct-sign-image", pipeline="rh-advisories"}'
+        values: '90000x312'
+    alert_rule_test:
+      - eval_time: 26h
+        alertname: SigningPipelineNoRecentSuccess
+        exp_alerts: []
+
+  # Last success at the epoch: the gap passes 24h and stays there.
+  - name: SigningNoRecentSuccess
+    interval: 5m
+    input_series:
+      - series: 'konflux_signing_last_success_timestamp_seconds{source_cluster="stone-prd-rh01", exported_namespace="rhtap-releng-tenant", task="rh-direct-sign-image", pipeline="rh-advisories"}'
+        values: '0x312'
+    alert_rule_test:
+      # 24h30m: the condition is true but has not held for the 1h `for` yet.
+      - eval_time: 24h30m
+        alertname: SigningPipelineNoRecentSuccess
+        exp_alerts: []
+      - eval_time: 26h
+        alertname: SigningPipelineNoRecentSuccess
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              component: release-service
+              source_cluster: stone-prd-rh01
+              task: rh-direct-sign-image
+            exp_annotations:
+              summary: >-
+                No container image has been signed successfully for over 24h in cluster stone-prd-rh01
+              description: >-
+                The signing task rh-direct-sign-image has not completed successfully for over 24 hours
+                in cluster stone-prd-rh01. Releases that require container signing are most likely
+                blocked. A hung signing task produces no failures, so failure-rate panels may look
+                healthy while nothing is being signed.
+              alert_team_handle: <!subteam^S03SVBS426R>
+              team: release
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/release-service/sre/signing-pipeline-no-recent-success.md
+
+  # One cluster stale, one healthy: only the stale cluster alerts.
+  - name: SigningOneClusterStale
+    interval: 5m
+    input_series:
+      - series: 'konflux_signing_last_success_timestamp_seconds{source_cluster="stone-prd-rh01", exported_namespace="rhtap-releng-tenant", task="rh-direct-sign-image", pipeline="rh-advisories"}'
+        values: '0x312'
+      - series: 'konflux_signing_last_success_timestamp_seconds{source_cluster="stone-prod-p02", exported_namespace="rhtap-releng-tenant", task="rh-direct-sign-image", pipeline="rh-advisories"}'
+        values: '90000x312'
+    alert_rule_test:
+      - eval_time: 26h
+        alertname: SigningPipelineNoRecentSuccess
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              component: release-service
+              source_cluster: stone-prd-rh01
+              task: rh-direct-sign-image
+            exp_annotations:
+              summary: >-
+                No container image has been signed successfully for over 24h in cluster stone-prd-rh01
+              description: >-
+                The signing task rh-direct-sign-image has not completed successfully for over 24 hours
+                in cluster stone-prd-rh01. Releases that require container signing are most likely
+                blocked. A hung signing task produces no failures, so failure-rate panels may look
+                healthy while nothing is being signed.
+              alert_team_handle: <!subteam^S03SVBS426R>
+              team: release
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/release-service/sre/signing-pipeline-no-recent-success.md
+
+  # Two pipelines, one of them signing recently: the task is alive, no alert.
+  # This covers the max-by aggregation across pipelines.
+  - name: SigningOnePipelineStaleTaskAlive
+    interval: 5m
+    input_series:
+      - series: 'konflux_signing_last_success_timestamp_seconds{source_cluster="stone-prd-rh01", exported_namespace="rhtap-releng-tenant", task="rh-direct-sign-image", pipeline="rh-advisories"}'
+        values: '0x312'
+      - series: 'konflux_signing_last_success_timestamp_seconds{source_cluster="stone-prd-rh01", exported_namespace="rhtap-releng-tenant", task="rh-direct-sign-image", pipeline="rh-push-to-registry-redhat-io"}'
+        values: '90000x312'
+    alert_rule_test:
+      - eval_time: 26h
+        alertname: SigningPipelineNoRecentSuccess
+        exp_alerts: []
+
+  # An intermittent signing task is out of scope and must not alert when idle.
+  - name: SigningIntermittentTaskIgnored
+    interval: 5m
+    input_series:
+      - series: 'konflux_signing_last_success_timestamp_seconds{source_cluster="stone-prd-rh01", exported_namespace="rhtap-releng-tenant", task="sign-base64-blob", pipeline="release-to-github"}'
+        values: '0x312'
+    alert_rule_test:
+      - eval_time: 26h
+        alertname: SigningPipelineNoRecentSuccess
+        exp_alerts: []
