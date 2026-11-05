@@ -1,0 +1,75 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-signing-alerting
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: signing_alerts
+    interval: 5m
+
+    rules:
+    # Detects signing that has failed and not recovered: the most recent
+    # rh-direct-sign-image outcome on a cluster is a failure, and no run on
+    # that cluster has succeeded since.
+    #
+    # Absence of success alone would page every weekend. Conforma blocks
+    # releases on Fridays, Saturdays and Sundays (UTC) and on freeze dates, so
+    # days without any signing are normal. Encoding that calendar here is not
+    # an option either: exception releases (Major/KEV/Critical CVE) still run
+    # during freezes, and those are the releases where a signing failure
+    # matters most. Requiring a failure keeps quiet periods quiet, because no
+    # releases means no failures.
+    #
+    # Hung signing tasks are covered as well: rh-direct-sign-image has a 6h task
+    # timeout in every managed pipeline, so a hang ends as a failed TaskRun. An
+    # August 17-21 2026 style outage (ITN-2026-00266) would page within about 7h
+    # of the first blocked release instead of never.
+    #
+    # The `for: 1h` lets a retry that succeeds clear the condition without a
+    # page. A single failure followed by no further releases still pages; that
+    # is intended, nobody can tell it apart from an outage until something
+    # succeeds again.
+    #
+    # Scoped to rh-direct-sign-image: it is the container signing task that
+    # broke, and the only signing task with traffic on every managed cluster.
+    # The remaining signing tasks are covered by the Konflux Signing dashboard.
+    #
+    # The `or ... * 0` branch makes a cluster whose task has failed but never
+    # succeeded within the exporter's memory compare against 0 instead of
+    # dropping out of the comparison.
+    #
+    # Note: this alert cannot fire if the series disappears entirely, e.g. when
+    # the exporter itself is down. That case is covered by the KAExporter
+    # scrape-health alerting, not here.
+    - alert: SigningPipelineFailing
+      expr: |
+        max by (source_cluster, task) (
+          konflux_signing_last_failure_timestamp_seconds{task="rh-direct-sign-image"}
+        )
+        >
+        (
+          max by (source_cluster, task) (
+            konflux_signing_last_success_timestamp_seconds{task="rh-direct-sign-image"}
+          )
+          or
+          max by (source_cluster, task) (
+            konflux_signing_last_failure_timestamp_seconds{task="rh-direct-sign-image"}
+          ) * 0
+        )
+      for: 1h
+      labels:
+        severity: critical
+        slo: "true"
+        component: release-service
+      annotations:
+        summary: >-
+          Container signing is failing in cluster {{ $labels.source_cluster }} and has not succeeded since
+        description: >-
+          The most recent run of the signing task {{ $labels.task }} in cluster
+          {{ $labels.source_cluster }} failed, and no run has succeeded since for over an hour.
+          Releases that require container signing are most likely blocked.
+        alert_team_handle: <!subteam^S03SVBS426R>
+        team: release
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/release-service/sre/signing-pipeline-failing.md
