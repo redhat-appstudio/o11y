@@ -1,0 +1,136 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.kubearchive_exporter_health.yaml
+
+tests:
+  - interval: 1m
+    input_series:
+      - series: 'up{namespace="konflux-o11y-exporters", job="kaexporter-service", source_cluster="c1"}'
+        values: "1x11"
+      - series: 'konflux_up{service="kubearchive-api-server", source_cluster="c1"}'
+        values: "1x11"
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: KubeArchiveExporterDown
+        exp_alerts: []
+
+  - interval: 1m
+    input_series:
+      - series: 'up{namespace="konflux-o11y-exporters", job="kaexporter-service", source_cluster="c1"}'
+        values: "0x11"
+      - series: 'konflux_up{service="kubearchive-api-server", source_cluster="c1"}'
+        values: "1x11"
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: KubeArchiveExporterDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "false"
+              source_cluster: c1
+              component: kubearchive-exporter
+            exp_annotations:
+              summary: KubeArchive exporter is down in cluster c1
+              description: >-
+                The KubeArchive exporter has been unreachable or missing for 10 minutes
+                in cluster c1.
+              alert_routing_key: o11y
+              team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/kubearchive/README.md?ref_type=heads
+
+  - interval: 1m
+    input_series:
+      - series: 'konflux_up{service="kubearchive-api-server", source_cluster="c1"}'
+        values: "1x11"
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: KubeArchiveExporterDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "false"
+              source_cluster: c1
+              component: kubearchive-exporter
+            exp_annotations:
+              summary: KubeArchive exporter is down in cluster c1
+              description: >-
+                The KubeArchive exporter has been unreachable or missing for 10 minutes
+                in cluster c1.
+              alert_routing_key: o11y
+              team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/kubearchive/README.md?ref_type=heads
+
+  - interval: 1m
+    input_series:
+      - series: 'konflux_ka_exporter_scrape_errors_total{source_cluster="c1", phase="namespaces"}'
+        values: "0+1x26"
+    alert_rule_test:
+      - eval_time: 25m
+        alertname: KubeArchiveExporterScrapeErrors
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              source_cluster: c1
+              phase: namespaces
+              component: kubearchive-exporter
+            exp_annotations:
+              summary: KubeArchive exporter collection errors in cluster c1
+              description: >-
+                The KubeArchive exporter has reported namespaces collection errors
+                for 15 minutes in cluster c1. Statistics may be incomplete.
+              alert_routing_key: o11y
+              team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/kubearchive/README.md?ref_type=heads
+
+  - interval: 1m
+    input_series:
+      - series: 'konflux_ka_exporter_scrape_errors_total{source_cluster="kflux-lw-p01", phase="namespaces"}'
+        values: "0+1x26"
+    alert_rule_test:
+      - eval_time: 25m
+        alertname: KubeArchiveExporterScrapeErrors
+        exp_alerts: []
+
+  - interval: 1m
+    input_series:
+      - series: 'konflux_ka_exporter_scrape_errors_total{source_cluster="c1", phase="namespaces"}'
+        values: "0 0 0 0 1x22"
+    alert_rule_test:
+      - eval_time: 25m
+        alertname: KubeArchiveExporterScrapeErrors
+        exp_alerts: []
+
+  - interval: 5m
+    input_series:
+      - series: 'konflux_ka_exporter_truncations_total{source_cluster="c1", resource="pipelineruns", namespace="team-a"}'
+        values: "0+1x13"
+      - series: 'konflux_ka_exporter_truncations_total{source_cluster="c1", resource="pipelineruns", namespace="team-b"}'
+        values: "0+1x13"
+    alert_rule_test:
+      - eval_time: 1h
+        alertname: KubeArchiveExporterTruncating
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              source_cluster: c1
+              component: kubearchive-exporter
+            exp_annotations:
+              summary: KubeArchive exporter statistics are truncated in cluster c1
+              description: >-
+                The KubeArchive exporter reached its item limit in cluster c1.
+                Statistics for at least one tenant namespace are incomplete.
+              alert_routing_key: o11y
+              team: o11y
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/kubearchive/README.md?ref_type=heads
+
+  - interval: 5m
+    input_series:
+      - series: 'konflux_ka_exporter_truncations_total{source_cluster="c1", resource="pipelineruns", namespace="team-a"}'
+        values: "0x13"
+    alert_rule_test:
+      - eval_time: 1h
+        alertname: KubeArchiveExporterTruncating
+        exp_alerts: []
