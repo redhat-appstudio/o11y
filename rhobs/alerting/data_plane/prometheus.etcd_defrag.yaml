@@ -10,20 +10,48 @@ spec:
       interval: 1m
       rules:
 
+      # SPRE-7072. The old rule required a defrag in progress now and another
+      # one in [now-10m, now-3m]. The etcd-maintenance CronJob
+      # (infra-deployments configs/etcd-defrag) is "*/5 * * * *" and defrags
+      # while fragmentation is above 30% or DB usage is above 75%. Two
+      # consecutive runs that both defrag are 5 minutes apart, which sits
+      # inside that window, so routine operation fired the alert (66 of 79
+      # sweeps on stone-prod-p02 over 30 days). Shifting the window cannot
+      # fix it: cron gaps are always multiples of 5 minutes.
+      #
+      # Count defrag starts instead. A start is a rising edge of
+      # etcd_disk_defrag_inflight: above 0 this minute, and not above 0 one
+      # minute ago. Alert when at least 10 of the 12 possible CronJob runs
+      # in the last hour are starts, and that stays true for 30 minutes.
+      # That is a defrag loop that is not reclaiming enough space to drop
+      # back under the CronJob's own threshold.
+      #
+      # This is the same expression as the EtcdDefragFrequent rewrite in
+      # o11y#1357 (SPRE-7071, still open). EtcdDefragFrequent below is still
+      # the old query, so the two rules in this file do not match yet.
+      # After #1357 merges they will, and both will notify for one condition.
+      #
+      # Severity is warning. The rule has no slo label and uses
+      # alert_routing_key: infra, so it already only posts to
+      # #konflux-misc-alerts. Severity is not part of the route.
       - alert: EtcdCustomDefragOccurred
         expr: |
-          sum by (source_cluster) (etcd_disk_defrag_inflight) > 0
-          and
-          sum by (source_cluster) (max_over_time(etcd_disk_defrag_inflight[7m] offset 3m)) > 0
-        for: 1m
+          count_over_time(
+            (
+              (sum by (source_cluster) (etcd_disk_defrag_inflight) > 0)
+              unless
+              (sum by (source_cluster) (etcd_disk_defrag_inflight offset 1m) > 0)
+            )[1h:1m]
+          ) >= 10
+        for: 30m
         labels:
-          severity: high
+          severity: warning
           component: etcd
         annotations:
           summary: >-
-            Custom etcd defragmentation occurred after built-in defrag
+            Custom etcd defrag is looping without reclaiming space
           description: >-
-            Two etcd defragmentation cycles detected within a 3-10 minute window in cluster {{ $labels.source_cluster }}.
+            Etcd defragmentation started at least 10 times per hour for the past 30 minutes in cluster {{ $labels.source_cluster }}.
           alert_routing_key: infra
           team: konflux-infra
           runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/etcd.md
