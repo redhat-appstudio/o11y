@@ -41,9 +41,7 @@ spec:
     - alert: KubeArchiveExporterScrapeErrors
       expr: |
         sum by (source_cluster, phase) (
-          increase(konflux_ka_exporter_scrape_errors_total{
-            source_cluster!="kflux-lw-p01"
-          }[10m])
+          increase(konflux_ka_exporter_scrape_errors_total[10m])
         ) > 0
       for: 15m
       labels:
