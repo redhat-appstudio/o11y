@@ -35,12 +35,14 @@ spec:
       # i.e. defragmentation keeps looping without reclaiming enough space.
       - alert: EtcdDefragFrequent
         expr: |
-          count_over_time(
-            (
-              (sum by (source_cluster) (etcd_disk_defrag_inflight) > 0)
-              unless
-              (sum by (source_cluster) (etcd_disk_defrag_inflight offset 1m) > 0)
-            )[1h:1m]
+          max by (source_cluster) (
+            count_over_time(
+              (
+                (etcd_disk_defrag_inflight > 0)
+                unless
+                (etcd_disk_defrag_inflight offset 1m > 0)
+              )[1h:1m]
+            )
           ) >= 10
         for: 30m
         labels:

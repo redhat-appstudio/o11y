@@ -144,3 +144,45 @@ tests:
     alert_rule_test:
       - eval_time: 20m
         alertname: EtcdCustomDefragOccurred
+
+  # Sequential member defrags with a gap between members count as one start
+  # per member, not one per member per run: a run every 10 minutes (6 per hour)
+  # that defrags three members one after another must not alert.
+  - interval: 1m
+    input_series:
+      - series: etcd_disk_defrag_inflight{source_cluster="cluster01", instance="instance1"}
+        values: 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1
+      - series: etcd_disk_defrag_inflight{source_cluster="cluster01", instance="instance2"}
+        values: 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0
+      - series: etcd_disk_defrag_inflight{source_cluster="cluster01", instance="instance3"}
+        values: 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0
+
+    alert_rule_test:
+      - eval_time: 120m
+        alertname: EtcdDefragFrequent
+        exp_alerts: []
+
+  # The same sequential pattern on every 5-minute run still alerts, once per cluster.
+  - interval: 1m
+    input_series:
+      - series: etcd_disk_defrag_inflight{source_cluster="cluster01", instance="instance1"}
+        values: 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1
+      - series: etcd_disk_defrag_inflight{source_cluster="cluster01", instance="instance2"}
+        values: 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0
+      - series: etcd_disk_defrag_inflight{source_cluster="cluster01", instance="instance3"}
+        values: 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0
+
+    alert_rule_test:
+      - eval_time: 90m
+        alertname: EtcdDefragFrequent
+        exp_alerts:
+          - exp_labels:
+              component: etcd
+              severity: warning
+              source_cluster: cluster01
+            exp_annotations:
+              summary: Etcd defragmentation is happening too frequently
+              description: 'Etcd defragmentation started at least 10 times per hour for the past 30 minutes in cluster cluster01.'
+              alert_routing_key: infra
+              team: konflux-infra
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/etcd.md
