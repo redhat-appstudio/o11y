@@ -139,3 +139,18 @@ spec:
              Probe alert for job {{ $labels.job }} and target {{ $labels.target }} on cluster {{ $labels.source_cluster }}.
           alert_team_handle: '<!subteam^S0C4VKLC9KP> <!subteam^S05Q1P4Q2TG>'
           runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/sre/vpn_probe_alerts.md
+      - alert: OpenShiftUIProbeAlert
+        expr: |
+          konflux_up{check="probe", service="openshift-ui"} != 1
+        for: 25m
+        labels:
+          severity: critical
+          slo: "true"
+        annotations:
+          html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.probe_alerts.yaml#L142
+          summary: >-
+             OpenShift console probe alert on {{ $labels.source_cluster }}.
+          description: >-
+             Probe on {{ $labels.source_cluster }} is unable to reach the OpenShift console ({{ $labels.instance }}) for the last 25 minutes.
+          alert_team_handle: '<!subteam^S0C4VKLC9KP> <!subteam^S05Q1P4Q2TG>'
+          runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/exporters/blackbox/probe-alerts.md
