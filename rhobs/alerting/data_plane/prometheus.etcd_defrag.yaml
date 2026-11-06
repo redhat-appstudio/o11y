@@ -11,17 +11,19 @@ spec:
       rules:
 
       # The 3-10 minute window overlaps the etcd-maintenance CronJob (every 5
-      # minutes), so routine defrags fired this alert. Count defrag starts
-      # (rising edges) instead and alert only when nearly every CronJob run
-      # defrags (>= 10 of the 12 possible per hour) for 30 minutes.
+      # minutes), so routine defrags fired this alert. Count starts per member
+      # and alert when the busiest member starts nearly every CronJob run
+      # (>= 10 of the 12 possible per hour) for 30 minutes.
       - alert: EtcdCustomDefragOccurred
         expr: |
-          count_over_time(
-            (
-              (sum by (source_cluster) (etcd_disk_defrag_inflight) > 0)
-              unless
-              (sum by (source_cluster) (etcd_disk_defrag_inflight offset 1m) > 0)
-            )[1h:1m]
+          max by (source_cluster) (
+            count_over_time(
+              (
+                (etcd_disk_defrag_inflight > 0)
+                unless
+                (etcd_disk_defrag_inflight offset 1m > 0)
+              )[1h:1m]
+            )
           ) >= 10
         for: 30m
         labels:
@@ -31,7 +33,7 @@ spec:
           summary: >-
             Custom etcd defrag is looping without reclaiming space
           description: >-
-            Etcd defragmentation started at least 10 times per hour for the past 30 minutes in cluster {{ $labels.source_cluster }}.
+            The busiest etcd member started defragmentation at least 10 times per hour for the past 30 minutes in cluster {{ $labels.source_cluster }}.
           alert_routing_key: infra
           team: konflux-infra
           runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/etcd.md
