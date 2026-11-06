@@ -137,15 +137,15 @@ spec:
       expr: |
         # Uses raw metric (not the existing recording rule) because the recording rule drops
         # the namespace label, which would cause false positives from other namespaces.
-        # rate[2m] matches the for: 2m pending period intentionally: a wider window (e.g. [5m])
-        # would allow a brief burst to keep the rate positive long enough to satisfy the
-        # pending period without sustained errors actually occurring.
-        # threshold of 0.05/s (~1 error per 20s) filters brief rolling-deploy bursts
-        # while catching sustained upstream failures within the 2m pending period.
+        # rate[2m] stays shorter than for: 5m on purpose. A wider window (e.g. [5m])
+        # would keep a brief burst above the threshold long enough to satisfy the
+        # pending period after the errors had already stopped.
+        # threshold stays 0.05/s (~1 error per 20s). for: 5m lets that short burst
+        # age out of the 2m rate before the alert fires. SPRE-6786.
         sum by (source_cluster) (
           rate(nginx_otel_http_request_errors_total{namespace="konflux-ui", status="502"}[2m])
         ) > 0.05
-      for: 2m
+      for: 5m
       labels:
         severity: critical
         slo: "true"
@@ -155,7 +155,7 @@ spec:
         summary: >-
           Konflux UI proxy returning 502 errors in cluster {{ $labels.source_cluster }}
         description: >
-          The Konflux UI nginx proxy has been returning 502 errors for 2min in cluster
+          The Konflux UI nginx proxy has been returning 502 errors for 5min in cluster
           {{ $labels.source_cluster }}, indicating an upstream backend (e.g. namespace-lister)
           is down or unreachable.
         alert_team_handle: <!subteam^S04HY632621>
