@@ -1,0 +1,77 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-kubearchive-exporter-health-alerting-rules
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: kubearchive-exporter-health
+    interval: 1m
+    rules:
+    - alert: KubeArchiveExporterDown
+      expr: |
+        min by (source_cluster) (
+          up{namespace="konflux-o11y-exporters", job="kaexporter-service"}
+        ) == 0
+        or
+        (
+          count by (source_cluster) (
+            konflux_up{service=~"kubearchive-.*"}
+          )
+          unless on (source_cluster)
+          count by (source_cluster) (
+            up{namespace="konflux-o11y-exporters", job="kaexporter-service"}
+          )
+        )
+      for: 10m
+      labels:
+        severity: critical
+        slo: "false"
+        component: kubearchive-exporter
+      annotations:
+        summary: KubeArchive exporter is down in cluster {{ $labels.source_cluster }}
+        description: >-
+          The KubeArchive exporter has been unreachable or missing for 10 minutes
+          in cluster {{ $labels.source_cluster }}.
+        alert_routing_key: o11y
+        team: o11y
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/kubearchive/README.md?ref_type=heads
+
+    - alert: KubeArchiveExporterScrapeErrors
+      expr: |
+        sum by (source_cluster, phase) (
+          increase(konflux_ka_exporter_scrape_errors_total[10m])
+        ) > 0
+      for: 15m
+      labels:
+        severity: warning
+        slo: "false"
+        component: kubearchive-exporter
+      annotations:
+        summary: KubeArchive exporter collection errors in cluster {{ $labels.source_cluster }}
+        description: >-
+          The KubeArchive exporter has reported {{ $labels.phase }} collection errors
+          for 15 minutes in cluster {{ $labels.source_cluster }}. Statistics may be incomplete.
+        alert_routing_key: o11y
+        team: o11y
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/kubearchive/README.md?ref_type=heads
+
+    - alert: KubeArchiveExporterTruncating
+      expr: |
+        sum by (source_cluster) (
+          increase(konflux_ka_exporter_truncations_total[1h])
+        ) > 0
+      for: 5m
+      labels:
+        severity: warning
+        slo: "false"
+        component: kubearchive-exporter
+      annotations:
+        summary: KubeArchive exporter statistics are truncated in cluster {{ $labels.source_cluster }}
+        description: >-
+          The KubeArchive exporter reached its item limit in cluster {{ $labels.source_cluster }}.
+          Statistics for at least one tenant namespace are incomplete.
+        alert_routing_key: o11y
+        team: o11y
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/kubearchive/README.md?ref_type=heads
