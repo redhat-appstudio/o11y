@@ -1,12 +1,8 @@
 module github.com/redhat-appstudio/o11y.git
 
-go 1.25.0
-
-toolchain go1.25.5
+go 1.26
 
 require (
-	github.com/DATA-DOG/go-sqlmock v1.5.2
-	github.com/lib/pq v1.12.3
 	github.com/prometheus/client_golang v1.23.2
 	k8s.io/apimachinery v0.35.3
 )
@@ -51,7 +47,7 @@ require (
 	k8s.io/api v0.35.3 // indirect
 	k8s.io/klog/v2 v2.140.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20260618221249-bc653b64f974 // indirect
-	k8s.io/utils v0.0.0-20260617174310-a95e086a2553 // indirect
+	k8s.io/utils v0.0.0-20261023123148-ca04ba58ecab // indirect
 	sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.4.0 // indirect
@@ -63,7 +59,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/prometheus/client_model v0.6.2 // indirect
+	github.com/prometheus/client_model v0.6.2
 	github.com/prometheus/common v0.69.0 // indirect
 	github.com/prometheus/procfs v0.20.1 // indirect
 	github.com/stretchr/testify v1.11.1
