@@ -100,7 +100,11 @@ How `konflux_up` signals are created:
 
 In both cases, the metric must be forwarded to RHOBS via infra-deployments before alerts can consume it.
 
-Alerts built on `konflux_up` follow the pattern `konflux_up{namespace="...", check="...", service="..."} != 1`. A meta-alert (`KonfluxAlert`) also monitors for missing `konflux_up` signals by checking whether the metric was present in the last hour but absent for the last 10 minutes, and notifies o11y if a signal disappears.
+Alerts built on `konflux_up` follow the pattern `konflux_up{namespace="...", check="...", service="..."} != 1`. A meta-alert (`KonfluxAlert`) also monitors for missing `konflux_up` signals. It fires per cluster
+when 3 or more distinct service/check pairs have not reported `konflux_up` in the last 10 minutes
+despite being present within the last 2 hours, sustained for 30 minutes. This cardinality threshold
+distinguishes a monitoring pipeline disruption (platform-wide scrape gap) from an isolated service
+failure. Routed to the o11y team via `alert_routing_key: o11y`.
 
 ### Converting between alert types
 
