@@ -34,7 +34,7 @@ spec:
     #
     # Scoped to rh-direct-sign-image: it is the container signing task that
     # broke, and the only signing task with traffic on every managed cluster.
-    # The remaining signing tasks are covered by the Konflux Signing dashboard.
+    # The other direct-signing tasks are covered by SigningPipelineFailingOther.
     #
     # The `or ... * 0` branch makes a cluster whose task has failed but never
     # succeeded within the exporter's memory compare against 0 instead of
@@ -70,6 +70,46 @@ spec:
           The most recent run of the signing task {{ $labels.task }} in cluster
           {{ $labels.source_cluster }} failed, and no run has succeeded since for over an hour.
           Releases that require container signing are most likely blocked.
+        alert_team_handle: <!subteam^S03SVBS426R>
+        team: release
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/release-service/sre/signing-pipeline-failing.md
+
+    # Same condition for the other tasks that go through direct signing: index
+    # images (direct-sign-index-image), RPMs (rh-sign-rpm) and blobs
+    # (sign-checksum-blob, used by release-to-github since
+    # konflux-ci/release-service-catalog#2544).
+    #
+    # These tasks run intermittently, so one failure caused by a release's own
+    # input can stay the latest outcome for days. That is why this alert is a
+    # warning and not an SLO page: it tells the release team that a signing
+    # path is broken without paging on a single bad release.
+    - alert: SigningPipelineFailingOther
+      expr: |
+        max by (source_cluster, task) (
+          konflux_signing_last_failure_timestamp_seconds{task=~"direct-sign-index-image|rh-sign-rpm|sign-checksum-blob"}
+        )
+        >
+        (
+          max by (source_cluster, task) (
+            konflux_signing_last_success_timestamp_seconds{task=~"direct-sign-index-image|rh-sign-rpm|sign-checksum-blob"}
+          )
+          or
+          max by (source_cluster, task) (
+            konflux_signing_last_failure_timestamp_seconds{task=~"direct-sign-index-image|rh-sign-rpm|sign-checksum-blob"}
+          ) * 0
+        )
+      for: 1h
+      labels:
+        severity: warning
+        slo: "false"
+        component: release-service
+      annotations:
+        summary: >-
+          Signing task {{ $labels.task }} is failing in cluster {{ $labels.source_cluster }} and has not succeeded since
+        description: >-
+          The most recent run of the signing task {{ $labels.task }} in cluster
+          {{ $labels.source_cluster }} failed, and no run has succeeded since for over an hour.
+          Releases that use this signing path may be blocked.
         alert_team_handle: <!subteam^S03SVBS426R>
         team: release
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/release-service/sre/signing-pipeline-failing.md

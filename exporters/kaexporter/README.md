@@ -27,7 +27,7 @@ Exposes mean duration and success rate metrics over a rolling 30-day window usin
 | `KA_CONFIG_FILE` | No | *(empty)* | Path to YAML config file. Controls namespace exclusions and custom per-tenant SLO threshold overrides. When unset, no namespaces are excluded and no customSLO overrides are loaded; baseline tiers are controlled separately by `KA_SLO_TIERS_FILE`. |
 | `KA_SLO_TIERS_FILE` | No | `/etc/kaexporter/slo-tiers.yaml` | Path to the YAML file containing baseline-tiered duration thresholds. Invalid or missing configuration falls back to custom SLO thresholds and the statistical threshold. |
 | `KA_SIGNING_NAMESPACES` | No | `rhtap-releng-tenant` | Comma-separated managed release namespaces queried for signing TaskRuns. A tenant namespace holds far more TaskRuns than PipelineRuns, so the signing domain is scoped explicitly instead of scanning every namespace. |
-| `KA_SIGNING_TASKS` | No | `rh-direct-sign-image,direct-sign-index-image,rh-sign-rpm,sign-base64-blob,rh-sign-image-cosign` | Comma-separated Tekton `pipelineTask` names counted as signing. One label-selected query is issued per task per namespace. |
+| `KA_SIGNING_TASKS` | No | `rh-direct-sign-image,direct-sign-index-image,rh-sign-rpm,sign-checksum-blob,sign-base64-blob,rh-sign-image-cosign` | Comma-separated Tekton `pipelineTask` names counted as signing. One label-selected query is issued per task per namespace. |
 | `EXPORTER_PORT` | No | `9101` | HTTP listen port. |
 
 ### Configuration file
