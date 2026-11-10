@@ -64,7 +64,7 @@ const (
 	signingTasksEnv = "KA_SIGNING_TASKS"
 	// rh-sign-image and sign-index-image are deliberately absent: no managed
 	// release pipeline calls them, so measuring them would measure zero.
-	defaultSigningTasks = "rh-direct-sign-image,direct-sign-index-image,rh-sign-rpm,sign-base64-blob,rh-sign-image-cosign"
+	defaultSigningTasks = "rh-direct-sign-image,direct-sign-index-image,rh-sign-rpm,sign-checksum-blob,sign-base64-blob,rh-sign-image-cosign"
 
 	// Release CR labels
 	labelReleaseAutomated = "release.appstudio.openshift.io/automated" // "true" for automated releases, "false" for manual

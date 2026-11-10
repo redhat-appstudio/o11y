@@ -162,3 +162,79 @@ tests:
       - eval_time: 70m
         alertname: SigningPipelineFailing
         exp_alerts: []
+
+  # SigningPipelineFailingOther: an RPM signing failure without recovery warns.
+  - name: OtherSigningFailingNoRecovery
+    interval: 5m
+    input_series:
+      - series: 'konflux_signing_last_success_timestamp_seconds{source_cluster="stone-prd-rh01", exported_namespace="rhtap-releng-tenant", task="rh-sign-rpm", pipeline="push-rpms-to-pulp"}'
+        values: '1000x24'
+      - series: 'konflux_signing_last_failure_timestamp_seconds{source_cluster="stone-prd-rh01", exported_namespace="rhtap-releng-tenant", task="rh-sign-rpm", pipeline="push-rpms-to-pulp"}'
+        values: '2000x24'
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: SigningPipelineFailingOther
+        exp_alerts: []
+      - eval_time: 70m
+        alertname: SigningPipelineFailingOther
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              component: release-service
+              source_cluster: stone-prd-rh01
+              task: rh-sign-rpm
+            exp_annotations:
+              summary: >-
+                Signing task rh-sign-rpm is failing in cluster stone-prd-rh01 and has not succeeded since
+              description: >-
+                The most recent run of the signing task rh-sign-rpm in cluster
+                stone-prd-rh01 failed, and no run has succeeded since for over an hour.
+                Releases that use this signing path may be blocked.
+              alert_team_handle: <!subteam^S03SVBS426R>
+              team: release
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/release-service/sre/signing-pipeline-failing.md
+      - eval_time: 70m
+        alertname: SigningPipelineFailing
+        exp_alerts: []
+
+  # SigningPipelineFailingOther: a blob signing task that never succeeded warns too.
+  - name: OtherSigningNeverSucceeded
+    interval: 5m
+    input_series:
+      - series: 'konflux_signing_last_failure_timestamp_seconds{source_cluster="stone-prd-rh01", exported_namespace="rhtap-releng-tenant", task="sign-checksum-blob", pipeline="release-to-github"}'
+        values: '2000x24'
+    alert_rule_test:
+      - eval_time: 70m
+        alertname: SigningPipelineFailingOther
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              component: release-service
+              source_cluster: stone-prd-rh01
+              task: sign-checksum-blob
+            exp_annotations:
+              summary: >-
+                Signing task sign-checksum-blob is failing in cluster stone-prd-rh01 and has not succeeded since
+              description: >-
+                The most recent run of the signing task sign-checksum-blob in cluster
+                stone-prd-rh01 failed, and no run has succeeded since for over an hour.
+                Releases that use this signing path may be blocked.
+              alert_team_handle: <!subteam^S03SVBS426R>
+              team: release
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/release-service/sre/signing-pipeline-failing.md
+
+  # SigningPipelineFailingOther does not cover the container signing task or cosign.
+  - name: OtherSigningScope
+    interval: 5m
+    input_series:
+      - series: 'konflux_signing_last_failure_timestamp_seconds{source_cluster="stone-prd-rh01", exported_namespace="rhtap-releng-tenant", task="rh-direct-sign-image", pipeline="rh-advisories"}'
+        values: '2000x24'
+      - series: 'konflux_signing_last_failure_timestamp_seconds{source_cluster="stone-prd-rh01", exported_namespace="rhtap-releng-tenant", task="rh-sign-image-cosign", pipeline="rh-advisories"}'
+        values: '2000x24'
+    alert_rule_test:
+      - eval_time: 70m
+        alertname: SigningPipelineFailingOther
+        exp_alerts: []
+
