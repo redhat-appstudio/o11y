@@ -6,52 +6,28 @@ metadata:
     tenant: rhtap
 spec:
   groups:
-  - name: konflux-30d-failure-rate-warning
+  - name: konflux-failure-rate-warning
     # kaexporter refreshes the *_30d gauges every 5m, evaluating more often adds nothing
     interval: 5m
     rules:
-    - alert: KonfluxBuildFailureRate30dHigh
-      # The minimum volume guard avoids firing on a sparse window, e.g. right after a kaexporter restart
+    # Integration tests that fail for a reason other than the test itself.
+    # Excluded on purpose (agreed with the integration team):
+    # - EC (Conforma) runs: a different part of the pipeline with its own policy outcomes
+    # - reason "Failed": the test ran and failed, which is the test doing its job
+    # - reason "Cancelled": superseded runs, not failures
+    # What remains is mostly CouldntGetPipeline/Task, timeouts, ParameterMissing,
+    # InvalidWorkspaceBindings and similar. On 14 days of prod data the highest
+    # value per cluster was 12.6% (stone-prod-p01), most clusters stay below 6%.
+    # The minimum volume guard avoids firing on a sparse window, e.g. right after a kaexporter restart.
+    - alert: KonfluxIntegrationUnexplainedFailureRate30dHigh
       expr: |
         (
-          (
-            sum by (source_cluster) (konflux_build_total_count_30d)
-            - on (source_cluster)
-            sum by (source_cluster) (konflux_build_success_count_30d)
-          )
+          sum by (source_cluster) (konflux_integration_failure_count_30d{test_type!="ec", reason!~"Failed|Cancelled"})
           / on (source_cluster)
-          sum by (source_cluster) (konflux_build_total_count_30d)
-        ) > 0.3
-        and
-        sum by (source_cluster) (konflux_build_total_count_30d) >= 100
-      for: 1h
-      labels:
-        severity: warning
-        slo: "false"
-        component: konflux-build
-      annotations:
-        summary: >-
-          High 30-day build failure rate in cluster {{ $labels.source_cluster }}
-        description: >-
-          Build PipelineRuns on cluster {{ $labels.source_cluster }} have a failure rate of {{ $value | humanizePercentage }}
-          over the last 30 days, exceeding the 30% threshold. Check the Konflux UX Metrics dashboard for the breakdown by failure reason.
-        team: konflux-spre
-        alert_routing_key: "<!subteam^S06V06A36F5>"
-        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-KonfluxFailureRate30dHigh.md
-
-    - alert: KonfluxIntegrationFailureRate30dHigh
-      expr: |
-        (
-          (
-            sum by (source_cluster) (konflux_integration_total_count_30d)
-            - on (source_cluster)
-            sum by (source_cluster) (konflux_integration_success_count_30d)
-          )
-          / on (source_cluster)
-          sum by (source_cluster) (konflux_integration_total_count_30d)
-        ) > 0.3
-        and
-        sum by (source_cluster) (konflux_integration_total_count_30d) >= 100
+          sum by (source_cluster) (konflux_integration_total_count_30d{test_type!="ec"})
+        ) > 0.15
+        and on (source_cluster)
+        sum by (source_cluster) (konflux_integration_total_count_30d{test_type!="ec"}) >= 100
       for: 1h
       labels:
         severity: warning
@@ -59,27 +35,41 @@ spec:
         component: konflux-integration
       annotations:
         summary: >-
-          High 30-day integration test failure rate in cluster {{ $labels.source_cluster }}
+          High rate of unexplained integration test failures in cluster {{ $labels.source_cluster }}
         description: >-
-          Integration test PipelineRuns on cluster {{ $labels.source_cluster }} have a failure rate of {{ $value | humanizePercentage }}
-          over the last 30 days, exceeding the 30% threshold. Check the Konflux UX Metrics dashboard for the breakdown by failure reason.
+          {{ $value | humanizePercentage }} of integration test PipelineRuns (excluding EC) on cluster {{ $labels.source_cluster }}
+          failed over the last 30 days for a reason other than the test itself failing or being cancelled, above the 15% threshold.
+          Check the failure reasons in konflux_integration_failure_count_30d.
         team: konflux-spre
-        alert_routing_key: "<!subteam^S06V06A36F5>"
+        alert_routing_key: "<!subteam^S05M4AG8CJH> <!subteam^S06V06A36F5>"
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-KonfluxFailureRate30dHigh.md
 
-    - alert: KonfluxReleaseFailureRate30dHigh
+    # Release failures that pass validation, rising sharply against the cluster's
+    # own baseline. Uses the release-service release_total counter instead of the
+    # kaexporter gauges: it carries validation_reason, so releases rejected by
+    # validation (usually misconfiguration) are excluded, as the release team does
+    # in their dashboard. A fixed threshold doesn't work here, the 7-day baseline
+    # differs a lot between clusters (1% to 35%).
+    # Fires when the 6h failure rate is 25 points above the 7-day one, with at least
+    # 50 releases in the 6h window. On 14 days of prod data: about 11 episodes,
+    # 5 of them on kflux-ocp-p01.
+    - alert: KonfluxReleaseFailureRateSpike
       expr: |
         (
           (
-            sum by (source_cluster) (konflux_release_cr_total_count_30d)
-            - on (source_cluster)
-            sum by (source_cluster) (konflux_release_cr_success_count_30d)
+            sum by (source_cluster) (increase(release_total{validation_reason="Succeeded", release_reason="Failed"}[6h]))
+            / on (source_cluster)
+            sum by (source_cluster) (increase(release_total[6h]))
           )
-          / on (source_cluster)
-          sum by (source_cluster) (konflux_release_cr_total_count_30d)
-        ) > 0.3
-        and
-        sum by (source_cluster) (konflux_release_cr_total_count_30d) >= 100
+          - on (source_cluster)
+          (
+            sum by (source_cluster) (increase(release_total{validation_reason="Succeeded", release_reason="Failed"}[7d]))
+            / on (source_cluster)
+            sum by (source_cluster) (increase(release_total[7d]))
+          )
+        ) > 0.25
+        and on (source_cluster)
+        sum by (source_cluster) (increase(release_total[6h])) >= 50
       for: 1h
       labels:
         severity: warning
@@ -87,10 +77,10 @@ spec:
         component: konflux-release
       annotations:
         summary: >-
-          High 30-day release failure rate in cluster {{ $labels.source_cluster }}
+          Release failure rate spiked in cluster {{ $labels.source_cluster }}
         description: >-
-          Releases on cluster {{ $labels.source_cluster }} have a failure rate of {{ $value | humanizePercentage }}
-          over the last 30 days, exceeding the 30% threshold. Check the Konflux UX Metrics dashboard for the breakdown by failure reason.
+          On cluster {{ $labels.source_cluster }}, the share of releases failing after validation over the last 6 hours
+          exceeds its 7-day average by {{ $value | humanizePercentage }} (percentage points).
         team: konflux-spre
-        alert_routing_key: "<!subteam^S06V06A36F5>"
+        alert_routing_key: "<!subteam^S09N535GS4E> <!subteam^S06V06A36F5>"
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-KonfluxFailureRate30dHigh.md
