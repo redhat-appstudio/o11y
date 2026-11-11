@@ -1,7 +1,7 @@
 evaluation_interval: 1m
 
 rule_files:
-  - "prometheus.pipelinerun_success_rate_alerts.yaml"
+  - "prometheus.pipelinerun_failure_rate_elevation_alerts.yaml"
 
 tests:
   - interval: 1m
@@ -17,7 +17,7 @@ tests:
     alert_rule_test:
       # Alert should fire after 15 minutes of continuously meeting both conditions
       - eval_time: 23m
-        alertname: PipelineRunSuccessRateDegradation
+        alertname: PipelineRunFailureRateElevation
         exp_alerts:
           - exp_labels:
               severity: warning
@@ -26,6 +26,6 @@ tests:
               source_cluster: cluster-1
             exp_annotations:
               summary: "PipelineRun failure rate is elevated on cluster cluster-1"
-              description: "The PipelineRun failure rate on cluster cluster-1 has exceeded 20% over the last hour, with an estimated 20 or more completed PipelineRuns, for at least 15 minutes. This may indicate a regression or Tekton upgrade issue."
-              team: pipelines
+              description: "The PipelineRun failure rate on cluster cluster-1 has exceeded 20% of all PipelineRuns over the last hour, with at least 20 PipelineRuns, for at least 15 minutes. This may indicate a regression or Tekton upgrade issue."
+              team: konflux-spre
               alert_routing_key: "<!subteam^S06V06A36F5> <!subteam^S04PYECHCCU>"
