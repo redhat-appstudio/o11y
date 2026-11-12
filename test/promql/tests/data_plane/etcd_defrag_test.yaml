@@ -107,42 +107,115 @@ tests:
       - eval_time: 65m
         alertname: EtcdDefragFrequent
 
+  # Old false positive: two defrags a few minutes apart, which is one
+  # CronJob gap. The previous 3-10 minute rule fired at 6m. The rate rule
+  # must not.
   - interval: 1m
     input_series:
       - series: etcd_disk_defrag_inflight{source_cluster="cluster01"}
-        values: 1x2 0x1 1x2 0x14
+        values: 1x2 0x1 1x2 0x90
 
     alert_rule_test:
       - eval_time: 6m
         alertname: EtcdCustomDefragOccurred
+      - eval_time: 90m
+        alertname: EtcdCustomDefragOccurred
+
+  # Defrag on every 5-minute CronJob run for 2 hours. The 10th start is at
+  # 45m, the condition stays true, and for: 30m makes it fire at 75m.
+  - interval: 1m
+    input_series:
+      - series: etcd_disk_defrag_inflight{source_cluster="cluster01"}
+        values: 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1
+
+    alert_rule_test:
+      - eval_time: 70m
+        alertname: EtcdCustomDefragOccurred
+      - eval_time: 90m
+        alertname: EtcdCustomDefragOccurred
         exp_alerts:
           - exp_labels:
               component: etcd
-              severity: high
+              severity: warning
               source_cluster: cluster01
             exp_annotations:
-              summary: Custom etcd defragmentation occurred after built-in defrag
-              description: 'Two etcd defragmentation cycles detected within a 3-10 minute window in cluster cluster01.'
+              summary: Custom etcd defrag is looping without reclaiming space
+              description: 'The busiest etcd member started defragmentation at least 10 times per hour for the past 30 minutes in cluster cluster01.'
               alert_routing_key: infra
               team: konflux-infra
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/etcd.md
 
+  # Every 10 minutes is 6 starts per hour, under the threshold of 10.
   - interval: 1m
     input_series:
       - series: etcd_disk_defrag_inflight{source_cluster="cluster01"}
-        values: 1x2 0x10 1x2 0x10
+        values: 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1
 
     alert_rule_test:
-      - eval_time: 14m
+      - eval_time: 120m
+        alertname: EtcdCustomDefragOccurred
+
+  # A one-hour burst on every CronJob run, then it stops. Above the
+  # threshold for less than 30 minutes, so it must not fire.
+  - interval: 1m
+    input_series:
+      - series: etcd_disk_defrag_inflight{source_cluster="cluster01"}
+        values: 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0x60
+
+    alert_rule_test:
+      - eval_time: 60m
+        alertname: EtcdCustomDefragOccurred
+      - eval_time: 75m
         alertname: EtcdCustomDefragOccurred
 
   - interval: 1m
     input_series:
       - series: etcd_disk_defrag_inflight{source_cluster="cluster01"}
-        values: 0+0x20
+        values: 0+0x90
 
     alert_rule_test:
-      - eval_time: 20m
+      - eval_time: 90m
+        alertname: EtcdCustomDefragOccurred
+
+  # One CronJob run, three members, one idle minute between each.
+  # The busiest member started once, so the count is 1.
+  - interval: 1m
+    input_series:
+      - series: etcd_disk_defrag_inflight{source_cluster="cluster01",instance="m1"}
+        values: 1 0 0 0 0 0
+      - series: etcd_disk_defrag_inflight{source_cluster="cluster01",instance="m2"}
+        values: 0 0 1 0 0 0
+      - series: etcd_disk_defrag_inflight{source_cluster="cluster01",instance="m3"}
+        values: 0 0 0 0 1 0
+
+    promql_expr_test:
+      - expr: |
+          max by (source_cluster) (
+            count_over_time(
+              (
+                (etcd_disk_defrag_inflight > 0)
+                unless
+                (etcd_disk_defrag_inflight offset 1m > 0)
+              )[1h:1m]
+            )
+          )
+        eval_time: 5m
+        exp_samples:
+          - labels: '{source_cluster="cluster01"}'
+            value: 1
+
+  # Four such runs in an hour are 4 starts per member, under the threshold.
+  - interval: 1m
+    input_series:
+      - series: etcd_disk_defrag_inflight{source_cluster="cluster01",instance="m1"}
+        values: 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0x31
+      - series: etcd_disk_defrag_inflight{source_cluster="cluster01",instance="m2"}
+        values: 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0x31
+      - series: etcd_disk_defrag_inflight{source_cluster="cluster01",instance="m3"}
+        values: 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0x31
+
+    alert_rule_test:
+      - eval_time: 90m
         alertname: EtcdCustomDefragOccurred
 
   # Sequential member defrags with a gap between members count as one start
