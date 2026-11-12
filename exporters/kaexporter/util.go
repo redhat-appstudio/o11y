@@ -22,6 +22,21 @@ func getLabel[T PipelineRun | Release](obj T, key, defaultVal string) string {
 	return defaultVal
 }
 
+// splitAndTrim parses a comma-separated configuration value, falling back to
+// fallback when the value is empty or contains no non-blank entries.
+func splitAndTrim(value, fallback string) []string {
+	if strings.TrimSpace(value) == "" {
+		value = fallback
+	}
+	var out []string
+	for _, part := range strings.Split(value, ",") {
+		if part = strings.TrimSpace(part); part != "" {
+			out = append(out, part)
+		}
+	}
+	return out
+}
+
 // secondsBetween parses two timestamps and returns the elapsed seconds.
 func secondsBetween(start, end string) float64 {
 	if start == "" || end == "" {
@@ -46,6 +61,16 @@ func plrDedupeKey(namespace string, plr PipelineRun) string {
 		return "plr:" + plr.Metadata.UID
 	}
 	return fmt.Sprintf("plr:%s/%s", namespace, plr.Metadata.Name)
+}
+
+// taskRunDedupeKey generates a unique key for deduplicating TaskRun observations.
+// The prefix keeps TaskRun keys distinct from PipelineRun keys, which share the
+// same seen-set.
+func taskRunDedupeKey(namespace string, tr TaskRun) string {
+	if tr.Metadata.UID != "" {
+		return "taskrun:" + tr.Metadata.UID
+	}
+	return fmt.Sprintf("taskrun:%s/%s", namespace, tr.Metadata.Name)
 }
 
 // releaseDedupeKey generates a unique key for deduplicating Release observations

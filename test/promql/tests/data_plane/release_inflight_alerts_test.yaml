@@ -1,0 +1,107 @@
+evaluation_interval: 5m
+
+rule_files:
+  - prometheus.release_inflight_alerts.yaml
+
+tests:
+  # A normal release: well under the 6h threshold at every evaluation.
+  - name: ReleaseWithinExpectedDuration
+    interval: 5m
+    input_series:
+      - series: 'konflux_release_oldest_in_progress_age_seconds{source_cluster="stone-prd-rh01", exported_namespace="acme-tenant"}'
+        values: '900+300x24'
+    alert_rule_test:
+      - eval_time: 2h
+        alertname: ReleaseStuckInProgress
+        exp_alerts: []
+
+  # A release stuck past 6h, held long enough to satisfy `for`.
+  - name: ReleaseStuck
+    interval: 5m
+    input_series:
+      - series: 'konflux_release_oldest_in_progress_age_seconds{source_cluster="stone-prd-rh01", exported_namespace="acme-tenant"}'
+        values: '21000+300x24'
+    alert_rule_test:
+      # Crosses 21600 at 10m, so at 30m the `for: 30m` has not elapsed yet.
+      - eval_time: 30m
+        alertname: ReleaseStuckInProgress
+        exp_alerts: []
+      - eval_time: 1h
+        alertname: ReleaseStuckInProgress
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              slo: "false"
+              component: release-service
+              source_cluster: stone-prd-rh01
+              exported_namespace: acme-tenant
+            exp_annotations:
+              summary: >-
+                A release has been running for over 6h in acme-tenant on cluster stone-prd-rh01
+              description: >-
+                The oldest running Release CR in acme-tenant on cluster stone-prd-rh01 has been
+                in progress for over 6 hours. A release that hangs never completes, so it is
+                never counted as a failure and the release success rate stays healthy while
+                nothing is being delivered.
+              alert_routing_key: release-service
+              team: release
+
+  # The series disappears once nothing is running. The alert must stop, not
+  # latch on the last value.
+  - name: ReleaseStuckThenCleared
+    interval: 5m
+    input_series:
+      - series: 'konflux_release_oldest_in_progress_age_seconds{source_cluster="stone-prd-rh01", exported_namespace="acme-tenant"}'
+        values: '30000x12 _x12'
+    alert_rule_test:
+      - eval_time: 1h
+        alertname: ReleaseStuckInProgress
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              slo: "false"
+              component: release-service
+              source_cluster: stone-prd-rh01
+              exported_namespace: acme-tenant
+            exp_annotations:
+              summary: >-
+                A release has been running for over 6h in acme-tenant on cluster stone-prd-rh01
+              description: >-
+                The oldest running Release CR in acme-tenant on cluster stone-prd-rh01 has been
+                in progress for over 6 hours. A release that hangs never completes, so it is
+                never counted as a failure and the release success rate stays healthy while
+                nothing is being delivered.
+              alert_routing_key: release-service
+              team: release
+      - eval_time: 2h
+        alertname: ReleaseStuckInProgress
+        exp_alerts: []
+
+  # Two namespaces, one healthy: only the stuck one alerts, and the alert names it.
+  - name: ReleaseStuckOneNamespace
+    interval: 5m
+    input_series:
+      - series: 'konflux_release_oldest_in_progress_age_seconds{source_cluster="stone-prd-rh01", exported_namespace="acme-tenant"}'
+        values: '30000x24'
+      - series: 'konflux_release_oldest_in_progress_age_seconds{source_cluster="stone-prd-rh01", exported_namespace="other-tenant"}'
+        values: '600x24'
+    alert_rule_test:
+      - eval_time: 1h
+        alertname: ReleaseStuckInProgress
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              slo: "false"
+              component: release-service
+              source_cluster: stone-prd-rh01
+              exported_namespace: acme-tenant
+            exp_annotations:
+              summary: >-
+                A release has been running for over 6h in acme-tenant on cluster stone-prd-rh01
+              description: >-
+                The oldest running Release CR in acme-tenant on cluster stone-prd-rh01 has been
+                in progress for over 6 hours. A release that hangs never completes, so it is
+                never counted as a failure and the release success rate stays healthy while
+                nothing is being delivered.
+              alert_routing_key: release-service
+              team: release

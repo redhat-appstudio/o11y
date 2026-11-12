@@ -1,0 +1,55 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-release-inflight-alerting
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: release_inflight_alerts
+    interval: 5m
+
+    rules:
+    # Detects releases that are stuck, not releases that fail.
+    #
+    # Every existing release signal measures completions. konflux_release_cr_*
+    # is built from KubeArchive, and the archive only accepts a Release once it
+    # has a completion time, so a Release that hangs is absent from the archive
+    # for as long as it matters. release_total and the duration SLO move only
+    # when something finishes. During the Aug 17-21 2026 outage
+    # (ITN-2026-00266) releases were blocked for four days and none of them
+    # moved.
+    #
+    # konflux_release_oldest_in_progress_age_seconds is read from the live API
+    # each collection cycle instead, so a release that never finishes is
+    # visible while it is still running.
+    #
+    # Threshold: the mean Release CR duration across production is about 14
+    # minutes, and the slowest configured SLO tier is 90 minutes. 6h is well
+    # clear of both while still catching an outage on the day it starts rather
+    # than days later. Tighten once there is history for this metric to measure
+    # against; see SPRE-6768.
+    #
+    # Note: this cannot fire if the series is absent, which is the case when the
+    # exporter cannot list Releases. That failure raises
+    # konflux_ka_exporter_scrape_errors_total{phase="releases_live"} instead.
+    - alert: ReleaseStuckInProgress
+      expr: |
+        max by (source_cluster, exported_namespace) (
+          konflux_release_oldest_in_progress_age_seconds
+        ) > 21600
+      for: 30m
+      labels:
+        severity: high
+        slo: "false"
+        component: release-service
+      annotations:
+        summary: >-
+          A release has been running for over 6h in {{ $labels.exported_namespace }} on cluster {{ $labels.source_cluster }}
+        description: >-
+          The oldest running Release CR in {{ $labels.exported_namespace }} on cluster
+          {{ $labels.source_cluster }} has been in progress for over 6 hours. A release that
+          hangs never completes, so it is never counted as a failure and the release success
+          rate stays healthy while nothing is being delivered.
+        alert_routing_key: release-service
+        team: release
