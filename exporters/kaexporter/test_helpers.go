@@ -83,6 +83,10 @@ func (b *PLRBuilder) Pipeline(name string) *PLRBuilder {
 	return b.Label(labelTektonPipeline, name)
 }
 
+func (b *PLRBuilder) PipelineTask(name string) *PLRBuilder {
+	return b.Label(labelTektonPipelineTask, name)
+}
+
 func (b *PLRBuilder) EventType(eventType string) *PLRBuilder {
 	return b.Label(labelEventType, eventType)
 }
