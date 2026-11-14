@@ -1,0 +1,40 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-pipelinerun-failure-rate-elevation-alerts
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: pipelinerun.failure.rate
+      interval: 1m
+      rules:
+        - alert: PipelineRunFailureRateElevation
+          expr: |
+            (
+              sum by (source_cluster) (
+                rate(tekton_pipelines_controller_pipelinerun_total{
+                  status="failed"
+                }[1h])
+              )
+              /
+              sum by (source_cluster) (
+                rate(tekton_pipelines_controller_pipelinerun_total[1h])
+              )
+            ) > 0.2
+            and on (source_cluster)
+            (
+              sum by (source_cluster) (
+                increase(tekton_pipelines_controller_pipelinerun_total[1h])
+              ) >= 20
+            )
+          for: 15m
+          labels:
+            severity: warning
+            component: konflux-pipelines
+            slo: "false"
+          annotations:
+            summary: "PipelineRun failure rate is elevated on cluster {{ $labels.source_cluster }}"
+            description: "The PipelineRun failure rate on cluster {{ $labels.source_cluster }} has exceeded 20% of all PipelineRuns over the last hour, with at least 20 PipelineRuns, for at least 15 minutes. This may indicate a regression or Tekton upgrade issue."
+            team: konflux-spre
+            alert_routing_key: "<!subteam^S06V06A36F5> <!subteam^S04PYECHCCU>"
