@@ -94,3 +94,58 @@ spec:
           The multi-platform controller Gauge metrics are showing negative values for the last 1 minute in cluster {{ $labels.source_cluster }}
         alert_routing_key: infra
         team: konflux-infra
+
+  - name: multi-platform-controller-capacity
+    interval: 1m
+    rules:
+    - alert: MultiPlatformControllerHostAllocationFailuresHigh
+      expr: |
+        (
+          (
+            sum by (source_cluster, platform) (increase(multi_platform_controller_host_allocation_failures[1h]))
+            /
+            sum by (source_cluster, platform) (increase(multi_platform_controller_host_allocation_time_count[1h]))
+          ) > 0.25
+          and
+          sum by (source_cluster, platform) (increase(multi_platform_controller_host_allocation_failures[1h])) >= 5
+          and
+          sum by (source_cluster, platform) (increase(multi_platform_controller_host_allocation_time_count[1h])) > 0
+        )
+        or
+        sum by (source_cluster, platform) (increase(multi_platform_controller_host_allocation_failures[1h])) >= 25
+      for: 15m
+      labels:
+        severity: warning
+        slo: "false"
+        component: multi-platform-controller
+      annotations:
+        summary: >-
+          Host allocation failures are elevated for {{ $labels.platform }} in cluster {{ $labels.source_cluster }}
+        description: >-
+          MPC recorded over 25% as many host allocation failures as successful allocations (minimum 5 failures), or at least 25 failures per hour, for 15 minutes in cluster {{ $labels.source_cluster }}
+        alert_routing_key: infra
+        team: konflux-infra
+
+    - alert: MultiPlatformControllerCleanupFailuresHigh
+      expr: |
+        (
+          sum by (source_cluster, platform) (increase(multi_platform_controller_cleanup_failures[1h]))
+          /
+          sum by (source_cluster, platform) (increase(multi_platform_controller_task_run_time_count[1h]))
+        ) > 0.10
+        and
+        sum by (source_cluster, platform) (increase(multi_platform_controller_cleanup_failures[1h])) >= 3
+        and
+        sum by (source_cluster, platform) (increase(multi_platform_controller_task_run_time_count[1h])) > 0
+      for: 15m
+      labels:
+        severity: warning
+        slo: "false"
+        component: multi-platform-controller
+      annotations:
+        summary: >-
+          MPC cleanup failures are elevated for {{ $labels.platform }} in cluster {{ $labels.source_cluster }}
+        description: >-
+          MPC cleanup failures exceeded 10% of completed task runs for 15 minutes in cluster {{ $labels.source_cluster }}
+        alert_routing_key: infra
+        team: konflux-infra
