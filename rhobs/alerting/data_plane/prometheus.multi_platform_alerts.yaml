@@ -100,6 +100,9 @@ spec:
     rules:
     # host_allocation_time is observed only on successful host assignment
     # (pkg/reconciler/taskrun/taskrun.go), so this denominator is successes.
+    # shortcut: the failures counter increments twice per non-conflict error
+    # (KFLUXINFRA-5198), so these thresholds fire at ~half the stated real-failure
+    # ratio; revisit them once that bug is fixed.
     - alert: MultiPlatformControllerHostAllocationFailuresHigh
       expr: |
         (
@@ -131,6 +134,9 @@ spec:
 
     # No absolute-failure branch: the zero-denominator guard keeps this silent when no
     # task runs completed, where a failure ratio has no meaning.
+    # shortcut: this counter increments per reconcile of a failed cleanup TaskRun, not
+    # per failure (KFLUXINFRA-5198), so the >=3 minimum is met by ~1.5 real failures;
+    # revisit the thresholds once that bug is fixed.
     - alert: MultiPlatformControllerCleanupFailuresHigh
       expr: |
         (
