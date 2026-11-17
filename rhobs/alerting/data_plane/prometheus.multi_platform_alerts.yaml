@@ -98,6 +98,8 @@ spec:
   - name: multi-platform-controller-capacity
     interval: 1m
     rules:
+    # host_allocation_time is observed only on successful host assignment
+    # (pkg/reconciler/taskrun/taskrun.go), so this denominator is successes.
     - alert: MultiPlatformControllerHostAllocationFailuresHigh
       expr: |
         (
@@ -120,13 +122,15 @@ spec:
         component: multi-platform-controller
       annotations:
         summary: >-
-          Host allocation failures are elevated for {{ $labels.platform }} in cluster {{ $labels.source_cluster }}
+          Multi-platform controller host allocation failures are elevated for {{ $labels.platform }} in cluster {{ $labels.source_cluster }}
         description: >-
-          MPC recorded over 25% as many host allocation failures as successful allocations (minimum 5 failures), or at least 25 failures per hour, for 15 minutes in cluster {{ $labels.source_cluster }}
+          Multi-platform controller recorded over 25% as many host allocation failures as successful allocations (minimum 5 failures), or at least 25 failures per hour, for 15 minutes in cluster {{ $labels.source_cluster }}
         alert_routing_key: infra
         team: konflux-infra
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-multi-platform-host-pool.md
 
+    # No absolute-failure branch: the zero-denominator guard keeps this silent when no
+    # task runs completed, where a failure ratio has no meaning.
     - alert: MultiPlatformControllerCleanupFailuresHigh
       expr: |
         (
@@ -145,9 +149,9 @@ spec:
         component: multi-platform-controller
       annotations:
         summary: >-
-          MPC cleanup failures are elevated for {{ $labels.platform }} in cluster {{ $labels.source_cluster }}
+          Multi-platform controller cleanup failures are elevated for {{ $labels.platform }} in cluster {{ $labels.source_cluster }}
         description: >-
-          MPC cleanup failures exceeded 10% of completed task runs for 15 minutes in cluster {{ $labels.source_cluster }}
+          Multi-platform controller cleanup failures exceeded 10% of completed task runs for 15 minutes in cluster {{ $labels.source_cluster }}
         alert_routing_key: infra
         team: konflux-infra
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-multi-platform-host-pool.md
