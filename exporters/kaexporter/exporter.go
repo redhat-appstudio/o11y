@@ -22,7 +22,6 @@ import (
 
 const (
 	kaHostEnvVar        = "KA_HOST"
-	kaTokenEnvVar       = "KA_TOKEN"
 	clusterEnvVar       = "CLUSTER_NAME"
 	namespaceEnvVar     = "TENANT_NAMESPACE"
 	portEnvVar          = "EXPORTER_PORT"
@@ -187,7 +186,6 @@ type retryConfig struct {
 // KAExporter collects metrics from KubeArchive
 type KAExporter struct {
 	kaHost      string
-	kaToken     string // Static token (local dev only; empty when using file-based token)
 	kaTokenFile string // Path to projected SA token file (re-read on each request for rotation)
 	cluster     string
 	httpClient  *http.Client
@@ -267,7 +265,7 @@ func NewKAExporter() (*KAExporter, error) {
 		return nil, fmt.Errorf("missing required environment variable: %s", kaHostEnvVar)
 	}
 
-	kaTokenFile, kaToken, err := resolveTokenSource()
+	kaTokenFile, err := resolveTokenSource()
 	if err != nil {
 		return nil, err
 	}
@@ -436,7 +434,6 @@ func NewKAExporter() (*KAExporter, error) {
 
 	e := &KAExporter{
 		kaHost:               kaHost,
-		kaToken:              kaToken,
 		kaTokenFile:          kaTokenFile,
 		cluster:              cluster,
 		queryWindowHours:     queryWindowHours,
@@ -522,34 +519,25 @@ func kubeRESTConfig() (*rest.Config, error) {
 	return kubeConfig.ClientConfig()
 }
 
-// resolveTokenSource determines the KubeArchive API token source at startup.
-// Returns the file path to read tokens from, or empty string if using static env var.
-// Priority:
-//  1. KA_TOKEN_FILE env var (projected SA token with custom path/audience)
-//  2. Standard SA token at /var/run/secrets/kubernetes.io/serviceaccount/token
-//  3. KA_TOKEN env var (static token for local development)
-func resolveTokenSource() (tokenFile string, staticToken string, err error) {
+// resolveTokenSource determines the KubeArchive API token file at startup.
+// KA_TOKEN_FILE overrides the standard mounted ServiceAccount token path,
+// allowing a projected token with a custom audience or a local token file.
+func resolveTokenSource() (string, error) {
 	const defaultSATokenPath = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 
 	if f := strings.TrimSpace(os.Getenv("KA_TOKEN_FILE")); f != "" {
-		if _, statErr := os.Stat(f); statErr == nil {
-			log.Printf("Using projected token file %s for KubeArchive API authentication", f)
-			return f, "", nil
+		if _, err := os.Stat(f); err != nil {
+			return "", fmt.Errorf("KA_TOKEN_FILE=%q: %w", f, err)
 		}
-		return "", "", fmt.Errorf("KA_TOKEN_FILE=%q specified but file does not exist", f)
+		log.Printf("Using token file %s for KubeArchive API authentication", f)
+		return f, nil
 	}
 
-	if _, statErr := os.Stat(defaultSATokenPath); statErr == nil {
-		log.Printf("Using ServiceAccount token from %s for KubeArchive API authentication", defaultSATokenPath)
-		return defaultSATokenPath, "", nil
+	if _, err := os.Stat(defaultSATokenPath); err != nil {
+		return "", fmt.Errorf("no KubeArchive API token file found: mount a ServiceAccount token or set KA_TOKEN_FILE: %w", err)
 	}
-
-	if token := os.Getenv(kaTokenEnvVar); token != "" {
-		log.Printf("Using KA_TOKEN environment variable for KubeArchive API authentication (local dev mode)")
-		return "", token, nil
-	}
-
-	return "", "", fmt.Errorf("no KubeArchive API token found: set KA_TOKEN_FILE, mount SA token, or set %s", kaTokenEnvVar)
+	log.Printf("Using ServiceAccount token from %s for KubeArchive API authentication", defaultSATokenPath)
+	return defaultSATokenPath, nil
 }
 
 // readTokenFromFile reads and trims a bearer token from the given path.

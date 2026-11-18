@@ -13,7 +13,7 @@ Exposes mean duration and success rate metrics over a rolling 30-day window usin
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `KA_HOST` | Yes | — | KubeArchive API base URL |
-| `KA_TOKEN` | Yes | — | Bearer token for KubeArchive API |
+| `KA_TOKEN_FILE` | No | `/var/run/secrets/kubernetes.io/serviceaccount/token` | Bearer token file, re-read for each request to support rotation. |
 | `CLUSTER_NAME` | No | `unknown` | Cluster name label applied to all metrics |
 | `TENANT_NAMESPACE` | No | *(empty)* | Restrict scraping to a specific namespace. Empty = multi-tenant mode (discovers all namespaces with `konflux-ci.dev/type=tenant`) |
 | `KA_WINDOW_HOURS` | No | `24` | Steady-state look-back window. A 50% safety margin is added internally (e.g., 24h → 36h actual query) to capture long-running pipelines. Only applies after cold start. |
@@ -247,6 +247,19 @@ For Releases:
 
 ---
 
+## Deployment authentication
+
+In-cluster deployments use the automatically mounted `kaexporter-sa` ServiceAccount
+token for KubeArchive authentication. `KA_TOKEN` is not supported. Set
+`KA_TOKEN_FILE` to use a projected ServiceAccount token with a custom audience or
+a token file for local development. The selected identity needs the configured
+KubeArchive read permissions and an audience accepted by the server.
+
+The deployment expects a `kaexporter-endpoint` ConfigMap in
+`konflux-o11y-exporters` with a `ka-host` key, supplied by the per-cluster
+infra-deployments overlay. The endpoint is configuration and does not require a
+Secret or ExternalSecret.
+
 ## Build and run
 
 ```bash
@@ -255,7 +268,7 @@ go build -o kaexporter -mod=mod ./exporters/kaexporter/
 
 ```bash
 export KA_HOST="https://kubearchive-api-server.<cluster>"
-export KA_TOKEN="<token>"
+export KA_TOKEN_FILE="/path/to/token"
 export CLUSTER_NAME="<cluster-id>"
 ./kaexporter
 ```

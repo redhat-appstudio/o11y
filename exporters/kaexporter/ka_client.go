@@ -181,14 +181,9 @@ func (e *KAExporter) fetchPage(ctx context.Context, pageURL string) ([]byte, int
 	return body, resp.StatusCode, err
 }
 
-// bearerToken returns the current KubeArchive bearer token.
-// If kaTokenFile is set, re-reads on each call to support kubelet-rotated projected tokens.
-// Otherwise returns the static kaToken value.
+// bearerToken re-reads the token file on each request to support token rotation.
 func (e *KAExporter) bearerToken() (string, error) {
-	if e.kaTokenFile != "" {
-		return readTokenFromFile(e.kaTokenFile)
-	}
-	return e.kaToken, nil
+	return readTokenFromFile(e.kaTokenFile)
 }
 
 // streamPLRs fetches PipelineRuns page-by-page, calling fn once per page.
