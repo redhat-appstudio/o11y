@@ -526,10 +526,10 @@ func resolveTokenSource() (string, error) {
 	const defaultSATokenPath = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 
 	if f := strings.TrimSpace(os.Getenv("KA_TOKEN_FILE")); f != "" {
-		if _, err := os.Stat(f); err != nil {
+		if _, err := os.Stat(f); err != nil { // #nosec G703 -- KA_TOKEN_FILE is operator-controlled configuration intentionally allowing custom token paths.
 			return "", fmt.Errorf("KA_TOKEN_FILE=%q: %w", f, err)
 		}
-		log.Printf("Using token file %s for KubeArchive API authentication", f)
+		log.Printf("Using token file %s for KubeArchive API authentication", strconv.Quote(f))
 		return f, nil
 	}
 
