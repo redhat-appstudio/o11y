@@ -51,8 +51,11 @@ spec:
     # in their dashboard. A fixed threshold doesn't work here, the 7-day baseline
     # differs a lot between clusters (1% to 35%).
     # Fires when the 6h failure rate is 25 points above the 7-day one, with at least
-    # 50 releases in the 6h window. On 14 days of prod data: about 11 episodes,
-    # 5 of them on kflux-ocp-p01.
+    # 50 releases in the 6h window, and the spike is not driven by a single tenant:
+    # the tenant with the most new failures (kaexporter, per exported_namespace) has
+    # less than half of them. release_total has no tenant label, hence the second
+    # source. Without the tenant condition, 14 days of prod data gave 11 episodes,
+    # mostly one or two tenants; with it, 3 (agreed with the release team and Ruben).
     - alert: KonfluxReleaseFailureRateSpike
       expr: |
         (
@@ -70,6 +73,14 @@ spec:
         ) > 0.25
         and on (source_cluster)
         sum by (source_cluster) (increase(release_total[6h])) >= 50
+        and on (source_cluster)
+        (
+          max by (source_cluster) (
+            sum by (source_cluster, exported_namespace) (clamp_min(delta(konflux_release_cr_failure_count_30d[6h]), 0))
+          )
+          / on (source_cluster)
+          sum by (source_cluster) (clamp_min(delta(konflux_release_cr_failure_count_30d[6h]), 0))
+        ) < 0.5
       for: 1h
       labels:
         severity: warning

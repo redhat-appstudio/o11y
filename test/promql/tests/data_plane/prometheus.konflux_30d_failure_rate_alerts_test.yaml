@@ -56,7 +56,7 @@ tests:
               alert_routing_key: "<!subteam^S05M4AG8CJH> <!subteam^S06V06A36F5>"
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-KonfluxFailureRate30dHigh.md
 
-  # Release: a spike well above the 7-day baseline fires.
+  # Release: a spike well above the 7-day baseline, spread over several tenants, fires.
   # 5m steps: 7 days at 10% failing, then 8 hours at 60% failing, 10 releases per 5m.
   - interval: 5m
     input_series:
@@ -64,6 +64,12 @@ tests:
         values: '0+9x2016 18144+4x96'
       - series: 'release_total{source_cluster="cluster-1", validation_reason="Succeeded", release_reason="Failed"}'
         values: '0+1x2016 2016+6x96'
+      - series: 'konflux_release_cr_failure_count_30d{source_cluster="cluster-1", exported_namespace="tenant-a", reason="Failed"}'
+        values: '0x2016 0+2x96'
+      - series: 'konflux_release_cr_failure_count_30d{source_cluster="cluster-1", exported_namespace="tenant-b", reason="Failed"}'
+        values: '0x2016 0+2x96'
+      - series: 'konflux_release_cr_failure_count_30d{source_cluster="cluster-1", exported_namespace="tenant-c", reason="Failed"}'
+        values: '0x2016 0+2x96'
     alert_rule_test:
       - eval_time: 10080m
         alertname: KonfluxReleaseFailureRateSpike
@@ -105,6 +111,22 @@ tests:
         values: '0+0x2112'
       - series: 'release_total{source_cluster="cluster-1", validation_reason="Succeeded", release_reason="Failed"}'
         values: '0+0x2016 0+0.5x96'
+    alert_rule_test:
+      - eval_time: 10560m
+        alertname: KonfluxReleaseFailureRateSpike
+        exp_alerts: []
+
+  # Release: the same spike driven by one tenant (5 of 6 new failures) does not fire.
+  - interval: 5m
+    input_series:
+      - series: 'release_total{source_cluster="cluster-1", validation_reason="Succeeded", release_reason="Succeeded"}'
+        values: '0+9x2016 18144+4x96'
+      - series: 'release_total{source_cluster="cluster-1", validation_reason="Succeeded", release_reason="Failed"}'
+        values: '0+1x2016 2016+6x96'
+      - series: 'konflux_release_cr_failure_count_30d{source_cluster="cluster-1", exported_namespace="tenant-a", reason="Failed"}'
+        values: '0x2016 0+5x96'
+      - series: 'konflux_release_cr_failure_count_30d{source_cluster="cluster-1", exported_namespace="tenant-b", reason="Failed"}'
+        values: '0x2016 0+1x96'
     alert_rule_test:
       - eval_time: 10560m
         alertname: KonfluxReleaseFailureRateSpike
