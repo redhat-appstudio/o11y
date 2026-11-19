@@ -17,7 +17,7 @@ func testTokenFile(t *testing.T) string {
 
 func TestTokenFileRotation(t *testing.T) {
 	path := testTokenFile(t)
-	t.Setenv("KA_TOKEN_FILE", path)
+	t.Setenv(kaTokenFileEnvVar, path)
 	t.Setenv("KA_TOKEN", "ignored-static-token")
 	resolved, err := resolveTokenSource()
 	if err != nil {
@@ -36,7 +36,7 @@ func TestTokenFileRotation(t *testing.T) {
 }
 
 func TestMissingExplicitTokenFile(t *testing.T) {
-	t.Setenv("KA_TOKEN_FILE", filepath.Join(t.TempDir(), "missing"))
+	t.Setenv(kaTokenFileEnvVar, filepath.Join(t.TempDir(), "missing"))
 	t.Setenv("KA_TOKEN", "must-not-be-used")
 	if _, err := resolveTokenSource(); err == nil {
 		t.Fatal("expected an error for missing explicit token file")
@@ -47,7 +47,7 @@ func TestStaticTokenDoesNotReplaceMissingServiceAccountToken(t *testing.T) {
 	if _, err := os.Stat("/var/run/secrets/kubernetes.io/serviceaccount/token"); !os.IsNotExist(err) {
 		t.Skip("requires an environment without a mounted ServiceAccount token")
 	}
-	t.Setenv("KA_TOKEN_FILE", "")
+	t.Setenv(kaTokenFileEnvVar, "")
 	t.Setenv("KA_TOKEN", "must-not-be-used")
 	if _, err := resolveTokenSource(); err == nil {
 		t.Fatal("KA_TOKEN must not replace the missing ServiceAccount token")
