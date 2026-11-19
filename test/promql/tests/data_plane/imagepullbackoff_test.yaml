@@ -1,0 +1,104 @@
+evaluation_interval: 1m
+
+rule_files:
+  - prometheus.pod_alerts.yaml
+
+tests:
+  - interval: 1m
+    input_series:
+
+      # Platform container that never pulls its image, so it's alerted
+      - series: 'kube_pod_container_status_waiting_reason{namespace="build-service", pod="build-service-controller-1", container="manager", reason="ImagePullBackOff", source_cluster="cluster01"}'
+        values: '1x45'
+
+      # Same failure on another cluster, so it's alerted separately
+      - series: 'kube_pod_container_status_waiting_reason{namespace="konflux-ui", pod="konflux-ui-7f9c", container="konflux-ui", reason="ImagePullBackOff", source_cluster="cluster02"}'
+        values: '1x45'
+
+      # The pull recovered after 10 minutes, so it's not alerted
+      - series: 'kube_pod_container_status_waiting_reason{namespace="product-kubearchive-logging", pod="minio-0", container="minio", reason="ImagePullBackOff", source_cluster="cluster01"}'
+        values: '1x10 0x35'
+
+      # A 3 minute registry blip, so it's not alerted
+      - series: 'kube_pod_container_status_waiting_reason{namespace="release-service", pod="release-service-controller-2", container="manager", reason="ImagePullBackOff", source_cluster="cluster01"}'
+        values: '1x3 0x42'
+
+      # Another waiting reason, so the ImagePullBackOff alert ignores it
+      - series: 'kube_pod_container_status_waiting_reason{namespace="integration-service", pod="integration-service-5b", container="manager", reason="CrashLoopBackOff", source_cluster="cluster01"}'
+        values: '1x45'
+
+      # Tenant namespace, so it's ignored (user-supplied images)
+      - series: 'kube_pod_container_status_waiting_reason{namespace="my-app-tenant", pod="build-pod", container="step-build", reason="ImagePullBackOff", source_cluster="cluster01"}'
+        values: '1x45'
+
+      # Namespace starts with 'openshift', so it's ignored
+      - series: 'kube_pod_container_status_waiting_reason{namespace="openshift-pipelines", pod="tkn-cli-serve-9d4", container="tkn-cli-serve", reason="ImagePullBackOff", source_cluster="cluster01"}'
+        values: '1x45'
+
+      # Namespace starts with 'kube', so it's ignored
+      - series: 'kube_pod_container_status_waiting_reason{namespace="kube-system", pod="kube-pod", container="test-container", reason="ImagePullBackOff", source_cluster="cluster01"}'
+        values: '1x45'
+
+      # Namespace is 'default', so it's ignored
+      - series: 'kube_pod_container_status_waiting_reason{namespace="default", pod="test-pod", container="test-container", reason="ImagePullBackOff", source_cluster="cluster01"}'
+        values: '1x45'
+
+      # Namespace ends with 'env', so it's ignored
+      - series: 'kube_pod_container_status_waiting_reason{namespace="test-env", pod="test-pod", container="test-container", reason="ImagePullBackOff", source_cluster="cluster01"}'
+        values: '1x45'
+
+      # Namespace starts with 'multi-platform-', so it's ignored
+      - series: 'kube_pod_container_status_waiting_reason{namespace="multi-platform-controller", pod="host-pod", container="test-container", reason="ImagePullBackOff", source_cluster="cluster01"}'
+        values: '1x45'
+
+      # Hosted control plane namespace 'clusters-{uuid}', so it's ignored
+      - series: 'kube_pod_container_status_waiting_reason{namespace="clusters-37fcee5b-cbe0-4732-9b0b-b6c12054510f", pod="kube-apiserver-0", container="test-container", reason="ImagePullBackOff", source_cluster="cluster01"}'
+        values: '1x45'
+
+      # Namespace 'tekton-kueue', so it's ignored (has its own dedicated alert)
+      - series: 'kube_pod_container_status_waiting_reason{namespace="tekton-kueue", pod="tekton-kueue-controller-manager-abc123", container="manager", reason="ImagePullBackOff", source_cluster="cluster01"}'
+        values: '1x45'
+
+    alert_rule_test:
+      # The 'for' duration of 30 minutes has not elapsed yet, so nothing fires
+      - eval_time: 25m
+        alertname: ImagePullBackOff
+        exp_alerts: []
+
+      - eval_time: 45m
+        alertname: ImagePullBackOff
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              namespace: build-service
+              pod: build-service-controller-1
+              container: manager
+              reason: ImagePullBackOff
+              source_cluster: cluster01
+            exp_annotations:
+              summary: Pod build-service-controller-1 cannot pull its image
+              description: >-
+                Pod build-service/build-service-controller-1 (manager) is in waiting
+                state (reason: 'ImagePullBackOff') on cluster cluster01 for more than
+                30 minutes. The image is missing, the digest is stale, or the registry
+                rejects the pull.
+              alert_routing_key: build-service
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-imagePullBackOff.md
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              namespace: konflux-ui
+              pod: konflux-ui-7f9c
+              container: konflux-ui
+              reason: ImagePullBackOff
+              source_cluster: cluster02
+            exp_annotations:
+              summary: Pod konflux-ui-7f9c cannot pull its image
+              description: >-
+                Pod konflux-ui/konflux-ui-7f9c (konflux-ui) is in waiting state
+                (reason: 'ImagePullBackOff') on cluster cluster02 for more than 30
+                minutes. The image is missing, the digest is stale, or the registry
+                rejects the pull.
+              alert_routing_key: konflux-ui
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-imagePullBackOff.md
