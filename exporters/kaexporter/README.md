@@ -1,6 +1,6 @@
 # KubeArchive exporter (kaexporter)
 
-Prometheus exporter that computes **30-day moving averages** for Konflux build, integration, and release pipelines from KubeArchive data.
+Prometheus exporter that computes **30-day moving averages** for Konflux build, integration, release and signing pipelines from KubeArchive data.
 
 Exposes mean duration and success rate metrics over a rolling 30-day window using in-memory daily pre-aggregated buckets. Designed to meet Konflux SLO requirements while working within KubeArchive query constraints and Prometheus cardinality limits.
 
@@ -26,6 +26,8 @@ Exposes mean duration and success rate metrics over a rolling 30-day window usin
 | `KA_MAX_RETRY_DELAY_MS` | No | `5000` | Maximum retry delay cap in milliseconds. |
 | `KA_CONFIG_FILE` | No | *(empty)* | Path to YAML config file. Controls namespace exclusions and custom per-tenant SLO threshold overrides. When unset, no namespaces are excluded and no customSLO overrides are loaded; baseline tiers are controlled separately by `KA_SLO_TIERS_FILE`. |
 | `KA_SLO_TIERS_FILE` | No | `/etc/kaexporter/slo-tiers.yaml` | Path to the YAML file containing baseline-tiered duration thresholds. Invalid or missing configuration falls back to custom SLO thresholds and the statistical threshold. |
+| `KA_SIGNING_NAMESPACES` | No | `rhtap-releng-tenant` | Comma-separated managed release namespaces queried for signing TaskRuns. A tenant namespace holds far more TaskRuns than PipelineRuns, so the signing domain is scoped explicitly instead of scanning every namespace. |
+| `KA_SIGNING_TASKS` | No | `rh-direct-sign-image,direct-sign-index-image,rh-sign-rpm,sign-base64-blob,rh-sign-image-cosign` | Comma-separated Tekton `pipelineTask` names counted as signing. One label-selected query is issued per task per namespace. |
 | `EXPORTER_PORT` | No | `9101` | HTTP listen port. |
 
 ### Configuration file
@@ -192,6 +194,16 @@ All metrics are **Gauges** over a rolling 30-day window of daily aggregated buck
 | `konflux_release_cr_success_count_30d` | release | `cluster, namespace, application, component, automated, event_type` |
 | `konflux_release_cr_failure_count_30d` | release | `cluster, namespace, application, component, automated, event_type, reason` |
 | `konflux_release_cr_duration_slo_breach` | release | `cluster, namespace, application, component, automated, event_type, tier` |
+| `konflux_signing_mean_duration_seconds_30d` | signing | `cluster, namespace, task, pipeline` |
+| `konflux_signing_mean_wait_seconds_30d` | signing | `cluster, namespace, task, pipeline` |
+| `konflux_signing_total_count_30d` | signing | `cluster, namespace, task, pipeline` |
+| `konflux_signing_success_count_30d` | signing | `cluster, namespace, task, pipeline` |
+| `konflux_signing_failure_count_30d` | signing | `cluster, namespace, task, pipeline, reason` |
+| `konflux_signing_duration_slo_breach` | signing | `cluster, namespace, task, pipeline, tier` |
+| `konflux_signing_last_success_timestamp_seconds` | signing | `cluster, namespace, task, pipeline` |
+| `konflux_release_in_progress_count` | release | `cluster, namespace` |
+| `konflux_release_oldest_in_progress_age_seconds` | release | `cluster, namespace` |
+| `konflux_release_never_completed_count_30d` | release | `cluster, namespace, application, component` |
 
 **Metric definitions**:
 - **Duration metrics** (`mean_duration_seconds_30d`): Mean execution time for **successful workloads only** (startTime to completionTime for PipelineRuns; startTime to completionTime for Releases). Failed workloads are excluded from this average.
@@ -246,6 +258,54 @@ For Releases:
 | `konflux_ka_exporter_retry_exhausted_total` | `cluster, reason` | Requests exhausted after max retries |
 
 ---
+
+### Signing metrics
+
+The signing domain is measured at the Tekton **TaskRun** level, not the PipelineRun level: a
+release pipeline contains one signing task among many, and only that task's outcome describes
+the signing pipeline. TaskRuns are fetched from the managed release namespaces listed in
+`KA_SIGNING_NAMESPACES`, one `tekton.dev/pipelineTask` label selector per entry in
+`KA_SIGNING_TASKS`.
+
+`konflux_signing_last_success_timestamp_seconds` is the one metric here that is not a 30-day
+aggregate. It holds the completion time of the most recent successful signing task and is
+deliberately monotonic: it keeps reporting after the observation has aged out of the rolling
+window, so a long gap reports the real age of the last success rather than disappearing.
+
+It exists because the 30-day aggregates cannot express a signing outage. A signing task that
+hangs never records a completion time, so KubeArchive never holds it and no success or failure
+count ever moves. During the August 2026 container signing outage every failure-rate signal
+stayed flat for four days while releases were blocked. Absence of success is the only form such
+an outage takes, which is what `SigningPipelineNoRecentSuccess` alerts on.
+
+**Scope note**: `rh-sign-image` and `sign-index-image` are deliberately absent from the default
+task list. No managed release pipeline calls them, so measuring them would measure zero.
+`rh-sign-image-cosign` creates no InternalRequest at all and is observable only here.
+
+### Releases that never complete
+
+Three metrics above are not derived from completions, and they exist because
+everything else here is.
+
+KubeArchive accepts a Release only once it has a completion time
+(`archiveWhen: has(status.completionTime)`). A Release that hangs is therefore
+absent from the archive for exactly as long as it matters, and no `release_cr`
+counter moves. During the August 2026 signing outage releases were blocked for
+four days without a single release signal changing.
+
+- `konflux_release_in_progress_count` and
+  `konflux_release_oldest_in_progress_age_seconds` are read from the **live API**
+  each collection cycle, not from KubeArchive. This is the only place a release
+  can be observed while it is still stuck. It needs `get`/`list` on
+  `releases.appstudio.redhat.com`; without that permission the collection fails
+  loudly and raises `konflux_ka_exporter_scrape_errors_total{phase="releases_live"}`
+  rather than exporting an empty metric, because a silently absent series reads
+  exactly like "nothing is stuck".
+- `konflux_release_never_completed_count_30d` counts Releases that reached the
+  archive with no completion time, meaning they were deleted while still running.
+  The grace period delays archival by days, so this is a historical measure and
+  is not suitable for alerting. It is kept out of the `release_cr` duration
+  aggregates, which measure completions and feed a live SLO.
 
 ## Build and run
 

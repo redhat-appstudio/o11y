@@ -97,20 +97,49 @@ func (m *ReleaseSLO30d) recordAllFromIndex(
 	store *Store,
 	cluster string,
 	releaseIdx *releaseIndex,
+	inFlight *ReleaseInFlight,
 ) {
 	for i := range releaseIdx.store {
 		entry := &releaseIdx.store[i]
-		if entry.Status.CompletionTime == "" {
-			continue
-		}
 		tenantNS := entry.crNamespace
 		if tenantNS == "" {
 			tenantNS = entry.Metadata.Namespace
 		}
 		app := getLabel(entry.Release, labelAppStudioApp, "unknown")
 		comp := getLabel(entry.Release, labelAppStudioComp, "unknown")
+
+		if entry.Status.CompletionTime == "" {
+			// Archived with no completion time: the Release was deleted while
+			// still running. It is deliberately kept out of the release_cr
+			// duration aggregates, which measure completions, and counted
+			// separately instead of being discarded.
+			if inFlight != nil {
+				inFlight.recordNeverCompleted(
+					releaseDedupeKey(tenantNS, entry.Metadata.Name),
+					inFlightKey{cluster: cluster, namespace: tenantNS, application: app, component: comp},
+					neverCompletedObservedAt(entry.Release),
+				)
+			}
+			continue
+		}
+
 		m.recordObservation(store, cluster, tenantNS, app, comp, entry.Release)
 	}
+}
+
+// neverCompletedObservedAt dates a Release that never completed. The deletion
+// time is when it stopped being in flight; creation is the fallback for records
+// that carry no deletion timestamp.
+func neverCompletedObservedAt(rel Release) time.Time {
+	for _, candidate := range []string{rel.Metadata.DeletionTimestamp, rel.Metadata.CreationTimestamp} {
+		if candidate == "" {
+			continue
+		}
+		if parsed, err := time.Parse(time.RFC3339, candidate); err == nil {
+			return parsed.UTC()
+		}
+	}
+	return time.Now().UTC()
 }
 
 // updateGauges reads from the rolling store and updates the 30d SLO gauges
