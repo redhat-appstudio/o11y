@@ -22,7 +22,7 @@ import (
 
 const (
 	kaHostEnvVar        = "KA_HOST"
-	kaTokenFileEnvVar   = "KA_TOKEN_FILE"
+	kaTokenFileEnvVar   = "KA_TOKEN_FILE" // #nosec G101 -- Environment variable name, not a credential.
 	clusterEnvVar       = "CLUSTER_NAME"
 	namespaceEnvVar     = "TENANT_NAMESPACE"
 	portEnvVar          = "EXPORTER_PORT"
