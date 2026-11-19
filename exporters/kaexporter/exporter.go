@@ -186,7 +186,7 @@ type retryConfig struct {
 // KAExporter collects metrics from KubeArchive
 type KAExporter struct {
 	kaHost      string
-	kaTokenFile string // Path to projected SA token file (re-read on each request for rotation)
+	kaTokenFile string // Bearer token file, re-read on each request to pick up token rotation.
 	cluster     string
 	httpClient  *http.Client
 
@@ -526,7 +526,8 @@ func resolveTokenSource() (string, error) {
 	const defaultSATokenPath = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 
 	if f := strings.TrimSpace(os.Getenv("KA_TOKEN_FILE")); f != "" {
-		if _, err := os.Stat(f); err != nil { // #nosec G703 -- KA_TOKEN_FILE is operator-controlled configuration intentionally allowing custom token paths.
+		// #nosec G703 -- The deployment administrator selects the token file; custom mount paths are supported.
+		if _, err := os.Stat(f); err != nil {
 			return "", fmt.Errorf("KA_TOKEN_FILE=%q: %w", f, err)
 		}
 		log.Printf("Using token file %s for KubeArchive API authentication", strconv.Quote(f))
@@ -541,7 +542,7 @@ func resolveTokenSource() (string, error) {
 }
 
 // readTokenFromFile reads and trims a bearer token from the given path.
-// Called on each API request to pick up kubelet-rotated projected tokens.
+// Called on each API request so token rotation does not require restarting the exporter.
 func readTokenFromFile(path string) (string, error) {
 	b, err := os.ReadFile(path)
 	if err != nil {
