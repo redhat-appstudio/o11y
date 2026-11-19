@@ -22,6 +22,7 @@ import (
 
 const (
 	kaHostEnvVar        = "KA_HOST"
+	kaTokenFileEnvVar   = "KA_TOKEN_FILE"
 	clusterEnvVar       = "CLUSTER_NAME"
 	namespaceEnvVar     = "TENANT_NAMESPACE"
 	portEnvVar          = "EXPORTER_PORT"
@@ -525,7 +526,7 @@ func kubeRESTConfig() (*rest.Config, error) {
 func resolveTokenSource() (string, error) {
 	const defaultSATokenPath = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 
-	if f := strings.TrimSpace(os.Getenv("KA_TOKEN_FILE")); f != "" {
+	if f := strings.TrimSpace(os.Getenv(kaTokenFileEnvVar)); f != "" {
 		// #nosec G703 -- The deployment administrator selects the token file; custom mount paths are supported.
 		if _, err := os.Stat(f); err != nil {
 			return "", fmt.Errorf("KA_TOKEN_FILE=%q: %w", f, err)
