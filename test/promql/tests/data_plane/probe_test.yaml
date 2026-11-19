@@ -254,3 +254,58 @@ tests:
           # Assert Target 2 went DOWN (caught the sustained outage)
           - labels: '{job="pwvs", target="net02", source_cluster="cluster01", check="probe-pwvs", service="pwvs"}'
             value: 0
+  # OpenShiftUIProbeAlert: openshift-ui is excluded from multicluster_probe_up, so ProbeAlert
+  # can't fire for it. The dedicated alert fires after 25m down on a single cluster.
+  - interval: 1m
+    input_series:
+      - series: konflux_up{job="openshift-ui",instance="openshift-ui-cluster01",source_cluster="cluster01",check="probe",service="openshift-ui"}
+        values: 1x14 0x30
+      - series: konflux_up{job="openshift-ui",instance="openshift-ui-cluster02",source_cluster="cluster02",check="probe",service="openshift-ui"}
+        values: 1x44
+    alert_rule_test:
+      - eval_time: 39m
+        alertname: OpenShiftUIProbeAlert
+        exp_alerts: []
+      - eval_time: 41m
+        alertname: OpenShiftUIProbeAlert
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              slo: "true"
+              job: openshift-ui
+              instance: openshift-ui-cluster01
+              source_cluster: cluster01
+              check: probe
+              service: openshift-ui
+            exp_annotations:
+              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.probe_alerts.yaml#L142
+              summary: OpenShift console probe alert on cluster01.
+              description: 'Probe on cluster01 is unable to reach the OpenShift console (openshift-ui-cluster01) for the last 25 minutes.'
+              alert_team_handle: '<!subteam^S0C4VKLC9KP> <!subteam^S05Q1P4Q2TG>'
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/exporters/blackbox/probe-alerts.md
+      - eval_time: 41m
+        alertname: ProbeAlert
+        exp_alerts: []
+
+  # OpenShiftUIProbeAlert: a dip shorter than 25m does not fire
+  - interval: 1m
+    input_series:
+      - series: konflux_up{job="openshift-ui",instance="openshift-ui-cluster01",source_cluster="cluster01",check="probe",service="openshift-ui"}
+        values: 1x10 0x20 1x20
+    alert_rule_test:
+      - eval_time: 32m
+        alertname: OpenShiftUIProbeAlert
+        exp_alerts: []
+      - eval_time: 50m
+        alertname: OpenShiftUIProbeAlert
+        exp_alerts: []
+
+  # OpenShiftUIProbeAlert: other services are not matched
+  - interval: 1m
+    input_series:
+      - series: konflux_up{job="web-server",instance="instance01",source_cluster="cluster01",check="probe",service="web-server"}
+        values: 0x44
+    alert_rule_test:
+      - eval_time: 40m
+        alertname: OpenShiftUIProbeAlert
+        exp_alerts: []
