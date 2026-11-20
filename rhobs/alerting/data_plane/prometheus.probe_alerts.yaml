@@ -51,7 +51,7 @@ spec:
           check="probe-multicluster",
           service!~".*-vpn|.*static-host|.*pwvs|quay|api-server|openshift-ui|konflux-ui"
           } != 1
-        for: 25m
+        for: 40m
         labels:
           severity: critical
           slo: "true"
@@ -60,7 +60,7 @@ spec:
           summary: >-
              Probe alert {{ $labels.job }} ({{ $labels.instance }}) in multiple clusters.
           description: >-
-             More than 20% of Konflux cluster probes are failing to connect to {{ $labels.instance }} ({{ $labels.job }}) for the last 25 minutes.
+             More than 20% of Konflux cluster probes are failing to connect to {{ $labels.instance }} ({{ $labels.job }}) for the last 40 minutes.
           alert_team_handle: '<!subteam^S0C4VKLC9KP> <!subteam^S05Q1P4Q2TG>'
           runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/exporters/blackbox/probe-alerts.md
 
