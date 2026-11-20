@@ -147,3 +147,83 @@ tests:
               description: The multi-platform controller Gauge metrics are showing negative values for the last 1 minute in cluster c8
               alert_routing_key: infra
               team: konflux-infra
+
+  - interval: 1m
+    input_series:
+      - series: 'multi_platform_controller_host_allocation_failures{platform="linux-g64xlarge-amd64", source_cluster="c20"}'
+        values: '0+0.3x75'
+      - series: 'multi_platform_controller_host_allocation_time_count{platform="linux-g64xlarge-amd64", source_cluster="c20"}'
+        values: '0+1x75'
+      - series: 'multi_platform_controller_host_allocation_failures{platform="linux-g64xlarge-amd64", source_cluster="c21"}'
+        values: '0+0.5x75'
+      - series: 'multi_platform_controller_host_allocation_time_count{platform="linux-g64xlarge-amd64", source_cluster="c21"}'
+        values: '0+20x75'
+      - series: 'multi_platform_controller_host_allocation_failures{platform="linux-g64xlarge-amd64", source_cluster="c22"}'
+        values: '0+0.1x75'
+      - series: 'multi_platform_controller_host_allocation_time_count{platform="linux-g64xlarge-amd64", source_cluster="c22"}'
+        values: '0+0x75'
+      - series: 'multi_platform_controller_host_allocation_failures{platform="linux-g64xlarge-amd64", source_cluster="c33"}'
+        values: '0+0.06x75'
+      - series: 'multi_platform_controller_host_allocation_time_count{platform="linux-g64xlarge-amd64", source_cluster="c33"}'
+        values: '0+0.1x75'
+
+    alert_rule_test:
+      - eval_time: 75m
+        alertname: MultiPlatformControllerHostAllocationFailuresHigh
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              component: multi-platform-controller
+              platform: linux-g64xlarge-amd64
+              source_cluster: c20
+            exp_annotations:
+              summary: Multi-platform controller host allocation failures are elevated for linux-g64xlarge-amd64 in cluster c20
+              description: Multi-platform controller recorded over 25% as many host allocation failures as successful allocations (minimum 5 failures), or at least 25 failures per hour, for 15 minutes in cluster c20
+              alert_routing_key: infra
+              team: konflux-infra
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-multi-platform-host-pool.md
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              component: multi-platform-controller
+              platform: linux-g64xlarge-amd64
+              source_cluster: c21
+            exp_annotations:
+              summary: Multi-platform controller host allocation failures are elevated for linux-g64xlarge-amd64 in cluster c21
+              description: Multi-platform controller recorded over 25% as many host allocation failures as successful allocations (minimum 5 failures), or at least 25 failures per hour, for 15 minutes in cluster c21
+              alert_routing_key: infra
+              team: konflux-infra
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-multi-platform-host-pool.md
+
+  - interval: 1m
+    input_series:
+      - series: 'multi_platform_controller_cleanup_failures{platform="s390x", source_cluster="c23"}'
+        values: '0+0.2x75'
+      - series: 'multi_platform_controller_task_run_time_count{platform="s390x", source_cluster="c23"}'
+        values: '0+1x75'
+      - series: 'multi_platform_controller_cleanup_failures{platform="s390x", source_cluster="c24"}'
+        values: '0+0.2x75'
+      - series: 'multi_platform_controller_task_run_time_count{platform="s390x", source_cluster="c24"}'
+        values: '0+0x75'
+      - series: 'multi_platform_controller_cleanup_failures{platform="s390x", source_cluster="c25"}'
+        values: '0+0.03x75'
+      - series: 'multi_platform_controller_task_run_time_count{platform="s390x", source_cluster="c25"}'
+        values: '0+0.1x75'
+
+    alert_rule_test:
+      - eval_time: 75m
+        alertname: MultiPlatformControllerCleanupFailuresHigh
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              component: multi-platform-controller
+              platform: s390x
+              source_cluster: c23
+            exp_annotations:
+              summary: Multi-platform controller cleanup failures are elevated for s390x in cluster c23
+              description: Multi-platform controller cleanup failures exceeded 10% of completed task runs (minimum 3 failures) for 15 minutes in cluster c23
+              alert_routing_key: infra
+              team: konflux-infra
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-multi-platform-host-pool.md
