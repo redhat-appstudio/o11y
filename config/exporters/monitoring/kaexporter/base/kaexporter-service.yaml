@@ -131,14 +131,9 @@ spec:
           env:
             - name: KA_HOST
               valueFrom:
-                secretKeyRef:
-                  name: ka-kubearchive-credentials
+                configMapKeyRef:
+                  name: kaexporter-endpoint
                   key: ka-host
-            - name: KA_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: ka-kubearchive-credentials
-                  key: ka-token
             - name: EXPORTER_PORT
               value: "9101"
             - name: KA_COLLECTION_TIMEOUT_SECONDS

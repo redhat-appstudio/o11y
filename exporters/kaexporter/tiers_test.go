@@ -76,8 +76,7 @@ func loadTierConfigYAML(t *testing.T, content string) *TierConfig {
 
 func TestNewKAExporterTierWiring(t *testing.T) {
 	t.Setenv(kaHostEnvVar, "https://kubearchive.example")
-	t.Setenv(kaTokenEnvVar, "test-token")
-	t.Setenv("KA_TOKEN_FILE", "")
+	t.Setenv(kaTokenFileEnvVar, testTokenFile(t))
 	t.Setenv(namespaceEnvVar, "tenant") // fixed-tenant mode
 	t.Setenv(clusterEnvVar, "test-cluster")
 	t.Setenv(kaConfigFileEnv, "")

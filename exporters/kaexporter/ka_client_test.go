@@ -27,7 +27,7 @@ func TestRetryableHTTP(t *testing.T) {
 		}))
 		defer server.Close()
 
-		exporter := newTestExporter(server.URL, 3, 10*time.Millisecond)
+		exporter := newTestExporter(t, server.URL, 3, 10*time.Millisecond)
 		req, _ := http.NewRequestWithContext(context.Background(), "GET", server.URL, nil)
 
 		resp, err := exporter.retryableHTTP(context.Background(), req)
@@ -56,7 +56,7 @@ func TestRetryableHTTP(t *testing.T) {
 		}))
 		defer server.Close()
 
-		exporter := newTestExporter(server.URL, 3, 10*time.Millisecond)
+		exporter := newTestExporter(t, server.URL, 3, 10*time.Millisecond)
 		req, _ := http.NewRequestWithContext(context.Background(), "GET", server.URL, nil)
 
 		resp, err := exporter.retryableHTTP(context.Background(), req)
@@ -79,7 +79,7 @@ func TestRetryableHTTP(t *testing.T) {
 		}))
 		defer server.Close()
 
-		exporter := newTestExporter(server.URL, 3, 10*time.Millisecond)
+		exporter := newTestExporter(t, server.URL, 3, 10*time.Millisecond)
 		req, _ := http.NewRequestWithContext(context.Background(), "GET", server.URL, nil)
 
 		resp, err := exporter.retryableHTTP(context.Background(), req)
@@ -102,7 +102,7 @@ func TestRetryableHTTP(t *testing.T) {
 		}))
 		defer server.Close()
 
-		exporter := newTestExporter(server.URL, 3, 10*time.Millisecond)
+		exporter := newTestExporter(t, server.URL, 3, 10*time.Millisecond)
 		req, _ := http.NewRequestWithContext(context.Background(), "GET", server.URL, nil)
 
 		resp, err := exporter.retryableHTTP(context.Background(), req)
@@ -121,7 +121,7 @@ func TestRetryableHTTP(t *testing.T) {
 		defer server.Close()
 
 		maxRetries := 2
-		exporter := newTestExporter(server.URL, maxRetries, 10*time.Millisecond)
+		exporter := newTestExporter(t, server.URL, maxRetries, 10*time.Millisecond)
 		req, _ := http.NewRequestWithContext(context.Background(), "GET", server.URL, nil)
 
 		_, err := exporter.retryableHTTP(context.Background(), req)
@@ -141,7 +141,7 @@ func TestRetryableHTTP(t *testing.T) {
 		}))
 		defer server.Close()
 
-		exporter := newTestExporter(server.URL, 3, 10*time.Millisecond)
+		exporter := newTestExporter(t, server.URL, 3, 10*time.Millisecond)
 		req, _ := http.NewRequestWithContext(context.Background(), "GET", server.URL, nil)
 
 		resp, err := exporter.retryableHTTP(context.Background(), req)
@@ -161,7 +161,7 @@ func TestRetryableHTTP(t *testing.T) {
 		}))
 		defer server.Close()
 
-		exporter := newTestExporter(server.URL, 3, 10*time.Millisecond)
+		exporter := newTestExporter(t, server.URL, 3, 10*time.Millisecond)
 		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
 		defer cancel()
 
@@ -177,7 +177,7 @@ func TestRetryableHTTP(t *testing.T) {
 	})
 
 	t.Run("rejects requests with body", func(t *testing.T) {
-		exporter := newTestExporter("http://example.com", 3, 10*time.Millisecond)
+		exporter := newTestExporter(t, "http://example.com", 3, 10*time.Millisecond)
 		req, _ := http.NewRequest("POST", "http://example.com/test", http.NoBody)
 		req.Body = &testReadCloser{content: `{"key":"value"}`}
 
@@ -272,7 +272,7 @@ func TestPagination(t *testing.T) {
 
 			e := &KAExporter{
 				cluster:           "test-cluster",
-				kaToken:           "test-token",
+				kaTokenFile:       testTokenFile(t),
 				kaHost:            "http://localhost",
 				httpClient:        http.DefaultClient,
 				truncationsTotal:  prometheus.NewCounterVec(prometheus.CounterOpts{Name: "truncations"}, []string{"cluster", "resource", "namespace"}),
@@ -325,12 +325,12 @@ func TestPagination(t *testing.T) {
 
 // ── Test Helpers ──────────────────────────────────────────────────────────────
 
-func newTestExporter(kaHost string, maxRetries int, initialDelay time.Duration) *KAExporter {
+func newTestExporter(t *testing.T, kaHost string, maxRetries int, initialDelay time.Duration) *KAExporter {
 	return &KAExporter{
-		kaHost:     kaHost,
-		kaToken:    "test-token",
-		cluster:    "test-cluster",
-		httpClient: &http.Client{Timeout: 5 * time.Second},
+		kaHost:      kaHost,
+		kaTokenFile: testTokenFile(t),
+		cluster:     "test-cluster",
+		httpClient:  &http.Client{Timeout: 5 * time.Second},
 		retry: retryConfig{
 			maxRetries:   maxRetries,
 			initialDelay: initialDelay,
