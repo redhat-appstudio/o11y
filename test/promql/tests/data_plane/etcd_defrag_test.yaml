@@ -9,7 +9,7 @@ tests:
   # 10th start at 45m, pending until 75m, firing after that.
   - interval: 1m
     input_series:
-      - series: etcd_disk_defrag_inflight{source_cluster="cluster01"}
+      - series: etcd_disk_defrag_inflight{source_cluster="stone-prod-p02"}
         values: 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1
 
     alert_rule_test:
@@ -21,10 +21,10 @@ tests:
           - exp_labels:
               component: etcd
               severity: warning
-              source_cluster: cluster01
+              source_cluster: stone-prod-p02
             exp_annotations:
               summary: Etcd defragmentation is happening too frequently
-              description: 'Etcd defragmentation started at least 10 times per hour for the past 30 minutes in cluster cluster01.'
+              description: 'Etcd defragmentation started at least 6 times per hour (10 on stone-prod-p02) for the past 30 minutes in cluster stone-prod-p02.'
               alert_routing_key: infra
               team: konflux-infra
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/etcd.md
@@ -32,7 +32,7 @@ tests:
   # Multi-minute defrags (two etcd members in a row) still count once per run.
   - interval: 1m
     input_series:
-      - series: etcd_disk_defrag_inflight{source_cluster="cluster01"}
+      - series: etcd_disk_defrag_inflight{source_cluster="stone-prod-p02"}
         values: 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1 1 0 0 0 1
 
     alert_rule_test:
@@ -42,10 +42,10 @@ tests:
           - exp_labels:
               component: etcd
               severity: warning
-              source_cluster: cluster01
+              source_cluster: stone-prod-p02
             exp_annotations:
               summary: Etcd defragmentation is happening too frequently
-              description: 'Etcd defragmentation started at least 10 times per hour for the past 30 minutes in cluster cluster01.'
+              description: 'Etcd defragmentation started at least 6 times per hour (10 on stone-prod-p02) for the past 30 minutes in cluster stone-prod-p02.'
               alert_routing_key: infra
               team: konflux-infra
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/etcd.md
@@ -54,7 +54,7 @@ tests:
   # every 10 minutes (6 per hour) for 2 hours.
   - interval: 1m
     input_series:
-      - series: etcd_disk_defrag_inflight{source_cluster="cluster01"}
+      - series: etcd_disk_defrag_inflight{source_cluster="stone-prod-p02"}
         values: 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1
 
     alert_rule_test:
@@ -65,7 +65,7 @@ tests:
   # for less than 30 minutes, so it must not alert.
   - interval: 1m
     input_series:
-      - series: etcd_disk_defrag_inflight{source_cluster="cluster01"}
+      - series: etcd_disk_defrag_inflight{source_cluster="stone-prod-p02"}
         values: 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0x60
 
     alert_rule_test:
@@ -77,7 +77,7 @@ tests:
   # One long defrag is a single start.
   - interval: 1m
     input_series:
-      - series: etcd_disk_defrag_inflight{source_cluster="cluster01"}
+      - series: etcd_disk_defrag_inflight{source_cluster="stone-prod-p02"}
         values: 1x60 0x60
 
     alert_rule_test:
@@ -87,11 +87,11 @@ tests:
   # Defrags across etcd members within the same run.
   - interval: 1m
     input_series:
-      - series: etcd_disk_defrag_inflight{source_cluster="cluster01", instance="instance1"}
+      - series: etcd_disk_defrag_inflight{source_cluster="stone-prod-p02", instance="instance1"}
         values: 1x2 0x68
-      - series: etcd_disk_defrag_inflight{source_cluster="cluster01", instance="instance2"}
+      - series: etcd_disk_defrag_inflight{source_cluster="stone-prod-p02", instance="instance2"}
         values: 0x2 1x2 0x66
-      - series: etcd_disk_defrag_inflight{source_cluster="cluster01", instance="instance3"}
+      - series: etcd_disk_defrag_inflight{source_cluster="stone-prod-p02", instance="instance3"}
         values: 0x4 1x2 0x64
 
     alert_rule_test:
@@ -100,7 +100,7 @@ tests:
 
   - interval: 1m
     input_series:
-      - series: etcd_disk_defrag_inflight{source_cluster="cluster01"}
+      - series: etcd_disk_defrag_inflight{source_cluster="stone-prod-p02"}
         values: 0+0x70
 
     alert_rule_test:
@@ -150,11 +150,11 @@ tests:
   # that defrags three members one after another must not alert.
   - interval: 1m
     input_series:
-      - series: etcd_disk_defrag_inflight{source_cluster="cluster01", instance="instance1"}
+      - series: etcd_disk_defrag_inflight{source_cluster="stone-prod-p02", instance="instance1"}
         values: 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1
-      - series: etcd_disk_defrag_inflight{source_cluster="cluster01", instance="instance2"}
+      - series: etcd_disk_defrag_inflight{source_cluster="stone-prod-p02", instance="instance2"}
         values: 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0
-      - series: etcd_disk_defrag_inflight{source_cluster="cluster01", instance="instance3"}
+      - series: etcd_disk_defrag_inflight{source_cluster="stone-prod-p02", instance="instance3"}
         values: 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0
 
     alert_rule_test:
@@ -165,11 +165,11 @@ tests:
   # The same sequential pattern on every 5-minute run still alerts, once per cluster.
   - interval: 1m
     input_series:
-      - series: etcd_disk_defrag_inflight{source_cluster="cluster01", instance="instance1"}
+      - series: etcd_disk_defrag_inflight{source_cluster="stone-prod-p02", instance="instance1"}
         values: 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1
-      - series: etcd_disk_defrag_inflight{source_cluster="cluster01", instance="instance2"}
+      - series: etcd_disk_defrag_inflight{source_cluster="stone-prod-p02", instance="instance2"}
         values: 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0
-      - series: etcd_disk_defrag_inflight{source_cluster="cluster01", instance="instance3"}
+      - series: etcd_disk_defrag_inflight{source_cluster="stone-prod-p02", instance="instance3"}
         values: 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0
 
     alert_rule_test:
@@ -179,10 +179,54 @@ tests:
           - exp_labels:
               component: etcd
               severity: warning
-              source_cluster: cluster01
+              source_cluster: stone-prod-p02
             exp_annotations:
               summary: Etcd defragmentation is happening too frequently
-              description: 'Etcd defragmentation started at least 10 times per hour for the past 30 minutes in cluster cluster01.'
+              description: 'Etcd defragmentation started at least 6 times per hour (10 on stone-prod-p02) for the past 30 minutes in cluster stone-prod-p02.'
               alert_routing_key: infra
               team: konflux-infra
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/etcd.md
+
+  # Other clusters use >= 6 starts per hour: a defrag every 10 minutes (6 per hour)
+  # for 2 hours alerts. 6th start at 50m, pending until 80m.
+  - interval: 1m
+    input_series:
+      - series: etcd_disk_defrag_inflight{source_cluster="stone-prd-rh01"}
+        values: 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 1
+    alert_rule_test:
+      - eval_time: 75m
+        alertname: EtcdDefragFrequent
+        exp_alerts: []
+      - eval_time: 100m
+        alertname: EtcdDefragFrequent
+        exp_alerts:
+          - exp_labels:
+              component: etcd
+              severity: warning
+              source_cluster: stone-prd-rh01
+            exp_annotations:
+              summary: Etcd defragmentation is happening too frequently
+              description: 'Etcd defragmentation started at least 6 times per hour (10 on stone-prod-p02) for the past 30 minutes in cluster stone-prd-rh01.'
+              alert_routing_key: infra
+              team: konflux-infra
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/etcd.md
+
+  # Other clusters: a defrag every 12 minutes (5 per hour) does not alert.
+  - interval: 1m
+    input_series:
+      - series: etcd_disk_defrag_inflight{source_cluster="stone-prd-rh01"}
+        values: 1 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1
+    alert_rule_test:
+      - eval_time: 120m
+        alertname: EtcdDefragFrequent
+        exp_alerts: []
+
+  # stone-prod-p02 keeps >= 10: 8 starts per hour (every 7-8 minutes) does not alert there.
+  - interval: 1m
+    input_series:
+      - series: etcd_disk_defrag_inflight{source_cluster="stone-prod-p02"}
+        values: 1 0 0 0 0 0 0 1 0 0 0 0 0 0 1 0 0 0 0 0 0 1 0 0 0 0 0 0 1 0 0 0 0 0 0 1 0 0 0 0 0 0 1 0 0 0 0 0 0 1 0 0 0 0 0 0 1 0 0 0 0 0 0 1 0 0 0 0 0 0 1 0 0 0 0 0 0 1 0 0 0 0 0 0 1 0 0 0 0 0 0 1 0 0 0 0 0 0 1 0 0 0 0 0 0 1 0 0 0 0 0 0 1 0 0 0 0 0 0 1 0
+    alert_rule_test:
+      - eval_time: 120m
+        alertname: EtcdDefragFrequent
+        exp_alerts: []

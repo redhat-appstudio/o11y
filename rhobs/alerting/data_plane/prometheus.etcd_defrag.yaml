@@ -29,18 +29,31 @@ spec:
           runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/etcd.md
 
       # The etcd-maintenance CronJob (infra-deployments configs/etcd-defrag) defrags every
-      # 5 minutes while the DB is above 75%, so back-to-back defrags are expected on a
-      # nearly full cluster. Count defrag starts (rising edges) instead and alert only when
-      # nearly every CronJob run defrags (>= 10 of the 12 possible per hour) for 30 minutes,
-      # i.e. defragmentation keeps looping without reclaiming enough space.
+      # 5 minutes while the DB is above 75%, so some back-to-back defrags are expected.
+      # Count defrag starts per etcd member and alert when they keep coming for 30 minutes.
+      # Threshold agreed with the infra team (SPRE-7877): >= 6 starts per hour on every
+      # cluster, so a busy cluster that starts looping (e.g. stone-prd-rh01, 8/h at peak)
+      # shows up. stone-prod-p02 defrags almost constantly until p03 takes load off it, so
+      # it keeps >= 10 of the 12 possible runs per hour. Last 30 days: rh01 2 alerts,
+      # p02 7, other clusters 0.
       - alert: EtcdDefragFrequent
         expr: |
           max by (source_cluster) (
             count_over_time(
               (
-                (etcd_disk_defrag_inflight > 0)
+                (etcd_disk_defrag_inflight{source_cluster!="stone-prod-p02"} > 0)
                 unless
-                (etcd_disk_defrag_inflight offset 1m > 0)
+                (etcd_disk_defrag_inflight{source_cluster!="stone-prod-p02"} offset 1m > 0)
+              )[1h:1m]
+            )
+          ) >= 6
+          or
+          max by (source_cluster) (
+            count_over_time(
+              (
+                (etcd_disk_defrag_inflight{source_cluster="stone-prod-p02"} > 0)
+                unless
+                (etcd_disk_defrag_inflight{source_cluster="stone-prod-p02"} offset 1m > 0)
               )[1h:1m]
             )
           ) >= 10
@@ -52,7 +65,7 @@ spec:
           summary: >-
             Etcd defragmentation is happening too frequently
           description: >-
-            Etcd defragmentation started at least 10 times per hour for the past 30 minutes in cluster {{ $labels.source_cluster }}.
+            Etcd defragmentation started at least 6 times per hour (10 on stone-prod-p02) for the past 30 minutes in cluster {{ $labels.source_cluster }}.
           alert_routing_key: infra
           team: konflux-infra
           runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/infra/etcd.md
