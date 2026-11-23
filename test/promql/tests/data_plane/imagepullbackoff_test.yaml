@@ -31,8 +31,12 @@ tests:
       - series: 'kube_pod_container_status_waiting_reason{namespace="my-app-tenant", pod="build-pod", container="step-build", reason="ImagePullBackOff", source_cluster="cluster01"}'
         values: '1x45'
 
-      # Namespace starts with 'openshift', so it's ignored
+      # openshift-pipelines is the one openshift-* namespace covered, routed to the Pipelines team
       - series: 'kube_pod_container_status_waiting_reason{namespace="openshift-pipelines", pod="tkn-cli-serve-9d4", container="tkn-cli-serve", reason="ImagePullBackOff", source_cluster="cluster01"}'
+        values: '1x45'
+
+      # Any other namespace starting with 'openshift', so it's ignored
+      - series: 'kube_pod_container_status_waiting_reason{namespace="openshift-gitops", pod="gitops-pod", container="test-container", reason="ImagePullBackOff", source_cluster="cluster01"}'
         values: '1x45'
 
       # Namespace starts with 'kube', so it's ignored
@@ -101,4 +105,21 @@ tests:
                 minutes. The image is missing, the digest is stale, or the registry
                 rejects the pull.
               alert_routing_key: konflux-ui
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-imagePullBackOff.md
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              namespace: openshift-pipelines
+              pod: tkn-cli-serve-9d4
+              container: tkn-cli-serve
+              reason: ImagePullBackOff
+              source_cluster: cluster01
+            exp_annotations:
+              summary: Pod tkn-cli-serve-9d4 cannot pull its image
+              description: >-
+                Pod openshift-pipelines/tkn-cli-serve-9d4 (tkn-cli-serve) is in waiting
+                state (reason: 'ImagePullBackOff') on cluster cluster01 for more than
+                30 minutes. The image is missing, the digest is stale, or the registry
+                rejects the pull.
+              alert_routing_key: pipelines
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-imagePullBackOff.md
