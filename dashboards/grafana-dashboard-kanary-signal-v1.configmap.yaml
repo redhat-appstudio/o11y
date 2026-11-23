@@ -50,7 +50,7 @@ data:
             "type": "prometheus",
             "uid": "${kanary_datasource}"
           },
-          "description": "Overview of the kanary signal status per cluster",
+          "description": "Overview of the kanary signal status per cluster. Click a cluster value for Sumo logs, the SOP, or alert definitions. Sumo searches use that value's cluster and the selected dashboard time range. Select a short time range to limit scanned data.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -58,9 +58,34 @@ data:
               },
               "links": [
                 {
+                  "title": "Orchestration logs \u2014 ${__field.labels.tested_cluster} (Sumo)",
+                  "targetBlank": true,
+                  "url": "https://rhcorporate.sumologic.com/log-search/create?query=%28%28_index%3Drh_rhtap_stage%20_sourcecategory%3Dopenshift%29%20or%20%28_index%3Drh_rhtap_production_app%29%29%0A%7C%20json%20%22openshift.cluster_id%22%2C%20%22kubernetes.namespace_name%22%2C%20%22kubernetes.pod_name%22%2C%20%22kubernetes.container_name%22%2C%20%22kubernetes.labels.tekton_dev_pipelineRun%22%2C%20%22kubernetes.labels.tekton_dev_taskRun%22%2C%20%22level%22%2C%20%22message%22%20as%20cluster_id%2C%20namespace%2C%20pod%2C%20container%2C%20pipeline_run%2C%20task_run%2C%20level%2C%20message%20nodrop%0A%7C%20lookup%20cluster_name%20from%20path%3A%2F%2F%22%2FLibrary%2FAdmin%20Recommended%2FKonflux%2Flookups%2Focp_clusters_lookup.csv%22%20on%20cluster_id%3Dopenshift.cluster_id%0A%7C%20where%20cluster_name%20%3D%20%22${__field.labels.tested_cluster:percentencode}%22%0A%7C%20where%20namespace%20%3D%20%22appstudio-kanary-exporter%22%0A%7C%20if%28isNull%28message%29%2C%20_raw%2C%20message%29%20as%20_raw%0A%7C%20fields%20_messageTime%2C%20cluster_name%2C%20namespace%2C%20pipeline_run%2C%20task_run%2C%20pod%2C%20container%2C%20level%2C%20_raw%0A%7C%20sort%20by%20_messageTime%20asc%0A&startTime=${__from}&endTime=${__to}"
+                },
+                {
+                  "title": "Orchestration errors/fatal logs \u2014 ${__field.labels.tested_cluster} (Sumo)",
+                  "targetBlank": true,
+                  "url": "https://rhcorporate.sumologic.com/log-search/create?query=%28%28_index%3Drh_rhtap_stage%20_sourcecategory%3Dopenshift%29%20or%20%28_index%3Drh_rhtap_production_app%29%29%0A%7C%20json%20%22openshift.cluster_id%22%2C%20%22kubernetes.namespace_name%22%2C%20%22kubernetes.pod_name%22%2C%20%22kubernetes.container_name%22%2C%20%22kubernetes.labels.tekton_dev_pipelineRun%22%2C%20%22kubernetes.labels.tekton_dev_taskRun%22%2C%20%22level%22%2C%20%22message%22%20as%20cluster_id%2C%20namespace%2C%20pod%2C%20container%2C%20pipeline_run%2C%20task_run%2C%20level%2C%20message%20nodrop%0A%7C%20lookup%20cluster_name%20from%20path%3A%2F%2F%22%2FLibrary%2FAdmin%20Recommended%2FKonflux%2Flookups%2Focp_clusters_lookup.csv%22%20on%20cluster_id%3Dopenshift.cluster_id%0A%7C%20where%20cluster_name%20%3D%20%22${__field.labels.tested_cluster:percentencode}%22%0A%7C%20where%20namespace%20%3D%20%22appstudio-kanary-exporter%22%0A%7C%20if%28isNull%28message%29%2C%20_raw%2C%20message%29%20as%20_raw%0A%7C%20where%20level%20matches%20%2F%28%3Fi%29%5E%28error%7Cfatal%29%24%2F%20or%20_raw%20matches%20%2F%28%3Fis%29.%2A%5Cb%28error%7Cfatal%7Cpanic%29%5Cb.%2A%2F%0A%7C%20fields%20_messageTime%2C%20cluster_name%2C%20namespace%2C%20pipeline_run%2C%20task_run%2C%20pod%2C%20container%2C%20level%2C%20_raw%0A%7C%20sort%20by%20_messageTime%20asc%0A&startTime=${__from}&endTime=${__to}"
+                },
+                {
+                  "title": "Workload and release logs \u2014 ${__field.labels.tested_cluster} (Sumo)",
+                  "targetBlank": true,
+                  "url": "https://rhcorporate.sumologic.com/log-search/create?query=%28%28_index%3Drh_rhtap_stage%20_sourcecategory%3Dopenshift%29%20or%20%28_index%3Drh_rhtap_production_app%29%29%0A%7C%20json%20%22openshift.cluster_id%22%2C%20%22kubernetes.namespace_name%22%2C%20%22kubernetes.pod_name%22%2C%20%22kubernetes.container_name%22%2C%20%22kubernetes.labels.tekton_dev_pipelineRun%22%2C%20%22kubernetes.labels.tekton_dev_taskRun%22%2C%20%22level%22%2C%20%22message%22%20as%20cluster_id%2C%20namespace%2C%20pod%2C%20container%2C%20pipeline_run%2C%20task_run%2C%20level%2C%20message%20nodrop%0A%7C%20lookup%20cluster_name%20from%20path%3A%2F%2F%22%2FLibrary%2FAdmin%20Recommended%2FKonflux%2Flookups%2Focp_clusters_lookup.csv%22%20on%20cluster_id%3Dopenshift.cluster_id%0A%7C%20where%20cluster_name%20%3D%20%22${__field.labels.tested_cluster:percentencode}%22%0A%7C%20where%20namespace%20in%20%28%22konflux-perfscale-4-tenant%22%2C%20%22managed-konflux-perfscale-tenant%22%29%0A%7C%20if%28isNull%28message%29%2C%20_raw%2C%20message%29%20as%20_raw%0A%7C%20fields%20_messageTime%2C%20cluster_name%2C%20namespace%2C%20pipeline_run%2C%20task_run%2C%20pod%2C%20container%2C%20level%2C%20_raw%0A%7C%20sort%20by%20_messageTime%20asc%0A&startTime=${__from}&endTime=${__to}"
+                },
+                {
+                  "title": "Workload and release errors/fatal logs \u2014 ${__field.labels.tested_cluster} (Sumo)",
+                  "targetBlank": true,
+                  "url": "https://rhcorporate.sumologic.com/log-search/create?query=%28%28_index%3Drh_rhtap_stage%20_sourcecategory%3Dopenshift%29%20or%20%28_index%3Drh_rhtap_production_app%29%29%0A%7C%20json%20%22openshift.cluster_id%22%2C%20%22kubernetes.namespace_name%22%2C%20%22kubernetes.pod_name%22%2C%20%22kubernetes.container_name%22%2C%20%22kubernetes.labels.tekton_dev_pipelineRun%22%2C%20%22kubernetes.labels.tekton_dev_taskRun%22%2C%20%22level%22%2C%20%22message%22%20as%20cluster_id%2C%20namespace%2C%20pod%2C%20container%2C%20pipeline_run%2C%20task_run%2C%20level%2C%20message%20nodrop%0A%7C%20lookup%20cluster_name%20from%20path%3A%2F%2F%22%2FLibrary%2FAdmin%20Recommended%2FKonflux%2Flookups%2Focp_clusters_lookup.csv%22%20on%20cluster_id%3Dopenshift.cluster_id%0A%7C%20where%20cluster_name%20%3D%20%22${__field.labels.tested_cluster:percentencode}%22%0A%7C%20where%20namespace%20in%20%28%22konflux-perfscale-4-tenant%22%2C%20%22managed-konflux-perfscale-tenant%22%29%0A%7C%20if%28isNull%28message%29%2C%20_raw%2C%20message%29%20as%20_raw%0A%7C%20where%20level%20matches%20%2F%28%3Fi%29%5E%28error%7Cfatal%29%24%2F%20or%20_raw%20matches%20%2F%28%3Fis%29.%2A%5Cb%28error%7Cfatal%7Cpanic%29%5Cb.%2A%2F%0A%7C%20fields%20_messageTime%2C%20cluster_name%2C%20namespace%2C%20pipeline_run%2C%20task_run%2C%20pod%2C%20container%2C%20level%2C%20_raw%0A%7C%20sort%20by%20_messageTime%20asc%0A&startTime=${__from}&endTime=${__to}"
+                },
+                {
                   "targetBlank": true,
                   "title": "SOP load test results",
                   "url": "https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-kanary.md?ref_type=heads#check-load-test-results"
+                },
+                {
+                  "title": "Kanary alert definitions",
+                  "targetBlank": true,
+                  "url": "https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.kanary_alerts.yaml"
                 }
               ],
               "mappings": [
@@ -136,7 +161,7 @@ data:
             "type": "prometheus",
             "uid": "${kanary_datasource}"
           },
-          "description": "Overview of the kanary error signal which indicates an issue in the kanary signal processing for a given cluster.",
+          "description": "Overview of the kanary error signal which indicates an issue in the kanary signal processing for a given cluster. Click a cluster value for Sumo logs, the SOP, or alert definitions. Sumo searches use that value's cluster and the selected dashboard time range. Select a short time range to limit scanned data.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -144,9 +169,34 @@ data:
               },
               "links": [
                 {
+                  "title": "Orchestration logs \u2014 ${__field.labels.tested_cluster} (Sumo)",
+                  "targetBlank": true,
+                  "url": "https://rhcorporate.sumologic.com/log-search/create?query=%28%28_index%3Drh_rhtap_stage%20_sourcecategory%3Dopenshift%29%20or%20%28_index%3Drh_rhtap_production_app%29%29%0A%7C%20json%20%22openshift.cluster_id%22%2C%20%22kubernetes.namespace_name%22%2C%20%22kubernetes.pod_name%22%2C%20%22kubernetes.container_name%22%2C%20%22kubernetes.labels.tekton_dev_pipelineRun%22%2C%20%22kubernetes.labels.tekton_dev_taskRun%22%2C%20%22level%22%2C%20%22message%22%20as%20cluster_id%2C%20namespace%2C%20pod%2C%20container%2C%20pipeline_run%2C%20task_run%2C%20level%2C%20message%20nodrop%0A%7C%20lookup%20cluster_name%20from%20path%3A%2F%2F%22%2FLibrary%2FAdmin%20Recommended%2FKonflux%2Flookups%2Focp_clusters_lookup.csv%22%20on%20cluster_id%3Dopenshift.cluster_id%0A%7C%20where%20cluster_name%20%3D%20%22${__field.labels.tested_cluster:percentencode}%22%0A%7C%20where%20namespace%20%3D%20%22appstudio-kanary-exporter%22%0A%7C%20if%28isNull%28message%29%2C%20_raw%2C%20message%29%20as%20_raw%0A%7C%20fields%20_messageTime%2C%20cluster_name%2C%20namespace%2C%20pipeline_run%2C%20task_run%2C%20pod%2C%20container%2C%20level%2C%20_raw%0A%7C%20sort%20by%20_messageTime%20asc%0A&startTime=${__from}&endTime=${__to}"
+                },
+                {
+                  "title": "Orchestration errors/fatal logs \u2014 ${__field.labels.tested_cluster} (Sumo)",
+                  "targetBlank": true,
+                  "url": "https://rhcorporate.sumologic.com/log-search/create?query=%28%28_index%3Drh_rhtap_stage%20_sourcecategory%3Dopenshift%29%20or%20%28_index%3Drh_rhtap_production_app%29%29%0A%7C%20json%20%22openshift.cluster_id%22%2C%20%22kubernetes.namespace_name%22%2C%20%22kubernetes.pod_name%22%2C%20%22kubernetes.container_name%22%2C%20%22kubernetes.labels.tekton_dev_pipelineRun%22%2C%20%22kubernetes.labels.tekton_dev_taskRun%22%2C%20%22level%22%2C%20%22message%22%20as%20cluster_id%2C%20namespace%2C%20pod%2C%20container%2C%20pipeline_run%2C%20task_run%2C%20level%2C%20message%20nodrop%0A%7C%20lookup%20cluster_name%20from%20path%3A%2F%2F%22%2FLibrary%2FAdmin%20Recommended%2FKonflux%2Flookups%2Focp_clusters_lookup.csv%22%20on%20cluster_id%3Dopenshift.cluster_id%0A%7C%20where%20cluster_name%20%3D%20%22${__field.labels.tested_cluster:percentencode}%22%0A%7C%20where%20namespace%20%3D%20%22appstudio-kanary-exporter%22%0A%7C%20if%28isNull%28message%29%2C%20_raw%2C%20message%29%20as%20_raw%0A%7C%20where%20level%20matches%20%2F%28%3Fi%29%5E%28error%7Cfatal%29%24%2F%20or%20_raw%20matches%20%2F%28%3Fis%29.%2A%5Cb%28error%7Cfatal%7Cpanic%29%5Cb.%2A%2F%0A%7C%20fields%20_messageTime%2C%20cluster_name%2C%20namespace%2C%20pipeline_run%2C%20task_run%2C%20pod%2C%20container%2C%20level%2C%20_raw%0A%7C%20sort%20by%20_messageTime%20asc%0A&startTime=${__from}&endTime=${__to}"
+                },
+                {
+                  "title": "Workload and release logs \u2014 ${__field.labels.tested_cluster} (Sumo)",
+                  "targetBlank": true,
+                  "url": "https://rhcorporate.sumologic.com/log-search/create?query=%28%28_index%3Drh_rhtap_stage%20_sourcecategory%3Dopenshift%29%20or%20%28_index%3Drh_rhtap_production_app%29%29%0A%7C%20json%20%22openshift.cluster_id%22%2C%20%22kubernetes.namespace_name%22%2C%20%22kubernetes.pod_name%22%2C%20%22kubernetes.container_name%22%2C%20%22kubernetes.labels.tekton_dev_pipelineRun%22%2C%20%22kubernetes.labels.tekton_dev_taskRun%22%2C%20%22level%22%2C%20%22message%22%20as%20cluster_id%2C%20namespace%2C%20pod%2C%20container%2C%20pipeline_run%2C%20task_run%2C%20level%2C%20message%20nodrop%0A%7C%20lookup%20cluster_name%20from%20path%3A%2F%2F%22%2FLibrary%2FAdmin%20Recommended%2FKonflux%2Flookups%2Focp_clusters_lookup.csv%22%20on%20cluster_id%3Dopenshift.cluster_id%0A%7C%20where%20cluster_name%20%3D%20%22${__field.labels.tested_cluster:percentencode}%22%0A%7C%20where%20namespace%20in%20%28%22konflux-perfscale-4-tenant%22%2C%20%22managed-konflux-perfscale-tenant%22%29%0A%7C%20if%28isNull%28message%29%2C%20_raw%2C%20message%29%20as%20_raw%0A%7C%20fields%20_messageTime%2C%20cluster_name%2C%20namespace%2C%20pipeline_run%2C%20task_run%2C%20pod%2C%20container%2C%20level%2C%20_raw%0A%7C%20sort%20by%20_messageTime%20asc%0A&startTime=${__from}&endTime=${__to}"
+                },
+                {
+                  "title": "Workload and release errors/fatal logs \u2014 ${__field.labels.tested_cluster} (Sumo)",
+                  "targetBlank": true,
+                  "url": "https://rhcorporate.sumologic.com/log-search/create?query=%28%28_index%3Drh_rhtap_stage%20_sourcecategory%3Dopenshift%29%20or%20%28_index%3Drh_rhtap_production_app%29%29%0A%7C%20json%20%22openshift.cluster_id%22%2C%20%22kubernetes.namespace_name%22%2C%20%22kubernetes.pod_name%22%2C%20%22kubernetes.container_name%22%2C%20%22kubernetes.labels.tekton_dev_pipelineRun%22%2C%20%22kubernetes.labels.tekton_dev_taskRun%22%2C%20%22level%22%2C%20%22message%22%20as%20cluster_id%2C%20namespace%2C%20pod%2C%20container%2C%20pipeline_run%2C%20task_run%2C%20level%2C%20message%20nodrop%0A%7C%20lookup%20cluster_name%20from%20path%3A%2F%2F%22%2FLibrary%2FAdmin%20Recommended%2FKonflux%2Flookups%2Focp_clusters_lookup.csv%22%20on%20cluster_id%3Dopenshift.cluster_id%0A%7C%20where%20cluster_name%20%3D%20%22${__field.labels.tested_cluster:percentencode}%22%0A%7C%20where%20namespace%20in%20%28%22konflux-perfscale-4-tenant%22%2C%20%22managed-konflux-perfscale-tenant%22%29%0A%7C%20if%28isNull%28message%29%2C%20_raw%2C%20message%29%20as%20_raw%0A%7C%20where%20level%20matches%20%2F%28%3Fi%29%5E%28error%7Cfatal%29%24%2F%20or%20_raw%20matches%20%2F%28%3Fis%29.%2A%5Cb%28error%7Cfatal%7Cpanic%29%5Cb.%2A%2F%0A%7C%20fields%20_messageTime%2C%20cluster_name%2C%20namespace%2C%20pipeline_run%2C%20task_run%2C%20pod%2C%20container%2C%20level%2C%20_raw%0A%7C%20sort%20by%20_messageTime%20asc%0A&startTime=${__from}&endTime=${__to}"
+                },
+                {
                   "targetBlank": true,
                   "title": "SOP load test results",
                   "url": "https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-kanary.md?ref_type=heads#check-load-test-results"
+                },
+                {
+                  "title": "Kanary alert definitions",
+                  "targetBlank": true,
+                  "url": "https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.kanary_alerts.yaml"
                 }
               ],
               "mappings": [
@@ -379,7 +429,7 @@ data:
             "type": "prometheus",
             "uid": "${kanary_datasource}"
           },
-          "description": "Kanary signal processing error overview.",
+          "description": "Click a Cluster cell for orchestration logs and errors, workload/release logs and errors, or the Kanary SOP. Log searches cover 30 minutes before to 5 minutes after the latest result publication for that cluster and test type, not the dashboard time range. The errors link matches error/fatal levels or error/fatal/panic words in the message; use the full logs for context. Managed-release logs can include Jenkins activity. Expand the window manually for longer runs.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -408,7 +458,70 @@ data:
               },
               "unit": "none"
             },
-            "overrides": []
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Cluster"
+                },
+                "properties": [
+                  {
+                    "id": "links",
+                    "value": [
+                      {
+                        "title": "Orchestration logs \u2014 ${__data.fields[\"Cluster\"]} (Sumo)",
+                        "targetBlank": true,
+                        "url": "https://rhcorporate.sumologic.com/log-search/create?query=%28%28_index%3Drh_rhtap_stage%20_sourcecategory%3Dopenshift%29%20or%20%28_index%3Drh_rhtap_production_app%29%29%0A%7C%20json%20%22openshift.cluster_id%22%2C%20%22kubernetes.namespace_name%22%2C%20%22kubernetes.pod_name%22%2C%20%22kubernetes.container_name%22%2C%20%22kubernetes.labels.tekton_dev_pipelineRun%22%2C%20%22kubernetes.labels.tekton_dev_taskRun%22%2C%20%22level%22%2C%20%22message%22%20as%20cluster_id%2C%20namespace%2C%20pod%2C%20container%2C%20pipeline_run%2C%20task_run%2C%20level%2C%20message%20nodrop%0A%7C%20lookup%20cluster_name%20from%20path%3A%2F%2F%22%2FLibrary%2FAdmin%20Recommended%2FKonflux%2Flookups%2Focp_clusters_lookup.csv%22%20on%20cluster_id%3Dopenshift.cluster_id%0A%7C%20where%20cluster_name%20%3D%20%22${__data.fields[\"Cluster\"]:percentencode}%22%0A%7C%20where%20namespace%20%3D%20%22appstudio-kanary-exporter%22%0A%7C%20if%28isNull%28message%29%2C%20_raw%2C%20message%29%20as%20_raw%0A%7C%20fields%20_messageTime%2C%20cluster_name%2C%20namespace%2C%20pipeline_run%2C%20task_run%2C%20pod%2C%20container%2C%20level%2C%20_raw%0A%7C%20sort%20by%20_messageTime%20asc%0A&startTime=${__data.fields[\"Log start\"]:raw}&endTime=${__data.fields[\"Log end\"]:raw}"
+                      },
+                      {
+                        "title": "Orchestration errors/fatal logs \u2014 ${__data.fields[\"Cluster\"]} (Sumo)",
+                        "targetBlank": true,
+                        "url": "https://rhcorporate.sumologic.com/log-search/create?query=%28%28_index%3Drh_rhtap_stage%20_sourcecategory%3Dopenshift%29%20or%20%28_index%3Drh_rhtap_production_app%29%29%0A%7C%20json%20%22openshift.cluster_id%22%2C%20%22kubernetes.namespace_name%22%2C%20%22kubernetes.pod_name%22%2C%20%22kubernetes.container_name%22%2C%20%22kubernetes.labels.tekton_dev_pipelineRun%22%2C%20%22kubernetes.labels.tekton_dev_taskRun%22%2C%20%22level%22%2C%20%22message%22%20as%20cluster_id%2C%20namespace%2C%20pod%2C%20container%2C%20pipeline_run%2C%20task_run%2C%20level%2C%20message%20nodrop%0A%7C%20lookup%20cluster_name%20from%20path%3A%2F%2F%22%2FLibrary%2FAdmin%20Recommended%2FKonflux%2Flookups%2Focp_clusters_lookup.csv%22%20on%20cluster_id%3Dopenshift.cluster_id%0A%7C%20where%20cluster_name%20%3D%20%22${__data.fields[\"Cluster\"]:percentencode}%22%0A%7C%20where%20namespace%20%3D%20%22appstudio-kanary-exporter%22%0A%7C%20if%28isNull%28message%29%2C%20_raw%2C%20message%29%20as%20_raw%0A%7C%20where%20level%20matches%20%2F%28%3Fi%29%5E%28error%7Cfatal%29%24%2F%20or%20_raw%20matches%20%2F%28%3Fis%29.%2A%5Cb%28error%7Cfatal%7Cpanic%29%5Cb.%2A%2F%0A%7C%20fields%20_messageTime%2C%20cluster_name%2C%20namespace%2C%20pipeline_run%2C%20task_run%2C%20pod%2C%20container%2C%20level%2C%20_raw%0A%7C%20sort%20by%20_messageTime%20asc%0A&startTime=${__data.fields[\"Log start\"]:raw}&endTime=${__data.fields[\"Log end\"]:raw}"
+                      },
+                      {
+                        "title": "Workload and release logs \u2014 ${__data.fields[\"Cluster\"]} (Sumo)",
+                        "targetBlank": true,
+                        "url": "https://rhcorporate.sumologic.com/log-search/create?query=%28%28_index%3Drh_rhtap_stage%20_sourcecategory%3Dopenshift%29%20or%20%28_index%3Drh_rhtap_production_app%29%29%0A%7C%20json%20%22openshift.cluster_id%22%2C%20%22kubernetes.namespace_name%22%2C%20%22kubernetes.pod_name%22%2C%20%22kubernetes.container_name%22%2C%20%22kubernetes.labels.tekton_dev_pipelineRun%22%2C%20%22kubernetes.labels.tekton_dev_taskRun%22%2C%20%22level%22%2C%20%22message%22%20as%20cluster_id%2C%20namespace%2C%20pod%2C%20container%2C%20pipeline_run%2C%20task_run%2C%20level%2C%20message%20nodrop%0A%7C%20lookup%20cluster_name%20from%20path%3A%2F%2F%22%2FLibrary%2FAdmin%20Recommended%2FKonflux%2Flookups%2Focp_clusters_lookup.csv%22%20on%20cluster_id%3Dopenshift.cluster_id%0A%7C%20where%20cluster_name%20%3D%20%22${__data.fields[\"Cluster\"]:percentencode}%22%0A%7C%20where%20namespace%20in%20%28%22konflux-perfscale-4-tenant%22%2C%20%22managed-konflux-perfscale-tenant%22%29%0A%7C%20if%28isNull%28message%29%2C%20_raw%2C%20message%29%20as%20_raw%0A%7C%20fields%20_messageTime%2C%20cluster_name%2C%20namespace%2C%20pipeline_run%2C%20task_run%2C%20pod%2C%20container%2C%20level%2C%20_raw%0A%7C%20sort%20by%20_messageTime%20asc%0A&startTime=${__data.fields[\"Log start\"]:raw}&endTime=${__data.fields[\"Log end\"]:raw}"
+                      },
+                      {
+                        "title": "Workload and release errors/fatal logs \u2014 ${__data.fields[\"Cluster\"]} (Sumo)",
+                        "targetBlank": true,
+                        "url": "https://rhcorporate.sumologic.com/log-search/create?query=%28%28_index%3Drh_rhtap_stage%20_sourcecategory%3Dopenshift%29%20or%20%28_index%3Drh_rhtap_production_app%29%29%0A%7C%20json%20%22openshift.cluster_id%22%2C%20%22kubernetes.namespace_name%22%2C%20%22kubernetes.pod_name%22%2C%20%22kubernetes.container_name%22%2C%20%22kubernetes.labels.tekton_dev_pipelineRun%22%2C%20%22kubernetes.labels.tekton_dev_taskRun%22%2C%20%22level%22%2C%20%22message%22%20as%20cluster_id%2C%20namespace%2C%20pod%2C%20container%2C%20pipeline_run%2C%20task_run%2C%20level%2C%20message%20nodrop%0A%7C%20lookup%20cluster_name%20from%20path%3A%2F%2F%22%2FLibrary%2FAdmin%20Recommended%2FKonflux%2Flookups%2Focp_clusters_lookup.csv%22%20on%20cluster_id%3Dopenshift.cluster_id%0A%7C%20where%20cluster_name%20%3D%20%22${__data.fields[\"Cluster\"]:percentencode}%22%0A%7C%20where%20namespace%20in%20%28%22konflux-perfscale-4-tenant%22%2C%20%22managed-konflux-perfscale-tenant%22%29%0A%7C%20if%28isNull%28message%29%2C%20_raw%2C%20message%29%20as%20_raw%0A%7C%20where%20level%20matches%20%2F%28%3Fi%29%5E%28error%7Cfatal%29%24%2F%20or%20_raw%20matches%20%2F%28%3Fis%29.%2A%5Cb%28error%7Cfatal%7Cpanic%29%5Cb.%2A%2F%0A%7C%20fields%20_messageTime%2C%20cluster_name%2C%20namespace%2C%20pipeline_run%2C%20task_run%2C%20pod%2C%20container%2C%20level%2C%20_raw%0A%7C%20sort%20by%20_messageTime%20asc%0A&startTime=${__data.fields[\"Log start\"]:raw}&endTime=${__data.fields[\"Log end\"]:raw}"
+                      },
+                      {
+                        "title": "Kanary SOP",
+                        "targetBlank": true,
+                        "url": "https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-kanary.md#check-load-test-results"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Log start"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hidden",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Log end"
+                },
+                "properties": [
+                  {
+                    "id": "custom.hidden",
+                    "value": true
+                  }
+                ]
+              }
+            ]
           },
           "gridPos": {
             "h": 11,
@@ -439,7 +552,7 @@ data:
               "disableTextWrap": false,
               "editorMode": "code",
               "exemplar": false,
-              "expr": "max by (tested_cluster, type, reason, phase) (\n  kanary_error{tested_cluster=~\"${kanary_clusters}\", type=~\"${kanary_type}\", namespace=\"konflux-otel\"}\n  and (time() - timestamp(kanary_error{tested_cluster=~\"${kanary_clusters}\", type=~\"${kanary_type}\", namespace=\"konflux-otel\"})) < 120\n) > 0",
+              "expr": "floor(\n  (\n    max by (tested_cluster, type, reason, phase) (\n      kanary_error{tested_cluster=~\"${kanary_clusters}\", type=~\"${kanary_type}\", namespace=\"konflux-otel\"}\n      and (time() - timestamp(kanary_error{tested_cluster=~\"${kanary_clusters}\", type=~\"${kanary_type}\", namespace=\"konflux-otel\"})) < 120\n    ) > 0\n  )\n  * on (tested_cluster, type) group_left()\n  max by (tested_cluster, type) (\n    kanary_last_push_timestamp{tested_cluster=~\"${kanary_clusters}\", type=~\"${kanary_type}\", namespace=\"konflux-otel\"}\n  )\n  * 1000\n)",
               "format": "table",
               "fullMetaSearch": false,
               "includeNullMetadata": true,
@@ -452,6 +565,46 @@ data:
           ],
           "title": "Kanary Error Signal",
           "transformations": [
+            {
+              "id": "calculateField",
+              "options": {
+                "mode": "binary",
+                "binary": {
+                  "left": {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Value"
+                    }
+                  },
+                  "operator": "-",
+                  "right": {
+                    "fixed": "1800000"
+                  }
+                },
+                "alias": "Log start",
+                "replaceFields": false
+              }
+            },
+            {
+              "id": "calculateField",
+              "options": {
+                "mode": "binary",
+                "binary": {
+                  "left": {
+                    "matcher": {
+                      "id": "byName",
+                      "options": "Value"
+                    }
+                  },
+                  "operator": "+",
+                  "right": {
+                    "fixed": "300000"
+                  }
+                },
+                "alias": "Log end",
+                "replaceFields": false
+              }
+            },
             {
               "id": "organize",
               "options": {
@@ -466,7 +619,9 @@ data:
                   "phase": 2,
                   "reason": 3,
                   "tested_cluster": 1,
-                  "type": 4
+                  "type": 4,
+                  "Log start": 6,
+                  "Log end": 7
                 },
                 "renameByName": {
                   "Time": "Time",
@@ -515,7 +670,7 @@ data:
             "type": "prometheus",
             "uid": "${kanary_datasource}"
           },
-          "description": "",
+          "description": "Open the links icon beside the panel title for Sumo logs or the Kanary SOP. Searches use this panel's cluster and the selected dashboard time range; frequency totals do not identify an individual failure time. Select a short time range to limit scanned data. Workload/release searches include konflux-perfscale-4-tenant and managed-konflux-perfscale-tenant. The workload/release errors/fatal link filters both namespaces by severity or error/fatal/panic message text. Reason/phase and test type are not log filters. Managed-release logs can include Jenkins activity.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -555,7 +710,34 @@ data:
                   }
                 ]
               },
-              "unit": "none"
+              "unit": "none",
+              "links": [
+                {
+                  "title": "Orchestration logs \u2014 ${kanary_clusters} (Sumo)",
+                  "targetBlank": true,
+                  "url": "https://rhcorporate.sumologic.com/log-search/create?query=%28%28_index%3Drh_rhtap_stage%20_sourcecategory%3Dopenshift%29%20or%20%28_index%3Drh_rhtap_production_app%29%29%0A%7C%20json%20%22openshift.cluster_id%22%2C%20%22kubernetes.namespace_name%22%2C%20%22kubernetes.pod_name%22%2C%20%22kubernetes.container_name%22%2C%20%22kubernetes.labels.tekton_dev_pipelineRun%22%2C%20%22kubernetes.labels.tekton_dev_taskRun%22%2C%20%22level%22%2C%20%22message%22%20as%20cluster_id%2C%20namespace%2C%20pod%2C%20container%2C%20pipeline_run%2C%20task_run%2C%20level%2C%20message%20nodrop%0A%7C%20lookup%20cluster_name%20from%20path%3A%2F%2F%22%2FLibrary%2FAdmin%20Recommended%2FKonflux%2Flookups%2Focp_clusters_lookup.csv%22%20on%20cluster_id%3Dopenshift.cluster_id%0A%7C%20where%20cluster_name%20%3D%20%22${kanary_clusters:percentencode}%22%0A%7C%20where%20namespace%20%3D%20%22appstudio-kanary-exporter%22%0A%7C%20if%28isNull%28message%29%2C%20_raw%2C%20message%29%20as%20_raw%0A%7C%20fields%20_messageTime%2C%20cluster_name%2C%20namespace%2C%20pipeline_run%2C%20task_run%2C%20pod%2C%20container%2C%20level%2C%20_raw%0A%7C%20sort%20by%20_messageTime%20asc%0A&startTime=${__from}&endTime=${__to}"
+                },
+                {
+                  "title": "Orchestration errors/fatal logs \u2014 ${kanary_clusters} (Sumo)",
+                  "targetBlank": true,
+                  "url": "https://rhcorporate.sumologic.com/log-search/create?query=%28%28_index%3Drh_rhtap_stage%20_sourcecategory%3Dopenshift%29%20or%20%28_index%3Drh_rhtap_production_app%29%29%0A%7C%20json%20%22openshift.cluster_id%22%2C%20%22kubernetes.namespace_name%22%2C%20%22kubernetes.pod_name%22%2C%20%22kubernetes.container_name%22%2C%20%22kubernetes.labels.tekton_dev_pipelineRun%22%2C%20%22kubernetes.labels.tekton_dev_taskRun%22%2C%20%22level%22%2C%20%22message%22%20as%20cluster_id%2C%20namespace%2C%20pod%2C%20container%2C%20pipeline_run%2C%20task_run%2C%20level%2C%20message%20nodrop%0A%7C%20lookup%20cluster_name%20from%20path%3A%2F%2F%22%2FLibrary%2FAdmin%20Recommended%2FKonflux%2Flookups%2Focp_clusters_lookup.csv%22%20on%20cluster_id%3Dopenshift.cluster_id%0A%7C%20where%20cluster_name%20%3D%20%22${kanary_clusters:percentencode}%22%0A%7C%20where%20namespace%20%3D%20%22appstudio-kanary-exporter%22%0A%7C%20if%28isNull%28message%29%2C%20_raw%2C%20message%29%20as%20_raw%0A%7C%20where%20level%20matches%20%2F%28%3Fi%29%5E%28error%7Cfatal%29%24%2F%20or%20_raw%20matches%20%2F%28%3Fis%29.%2A%5Cb%28error%7Cfatal%7Cpanic%29%5Cb.%2A%2F%0A%7C%20fields%20_messageTime%2C%20cluster_name%2C%20namespace%2C%20pipeline_run%2C%20task_run%2C%20pod%2C%20container%2C%20level%2C%20_raw%0A%7C%20sort%20by%20_messageTime%20asc%0A&startTime=${__from}&endTime=${__to}"
+                },
+                {
+                  "title": "Workload and release logs \u2014 ${kanary_clusters} (Sumo)",
+                  "targetBlank": true,
+                  "url": "https://rhcorporate.sumologic.com/log-search/create?query=%28%28_index%3Drh_rhtap_stage%20_sourcecategory%3Dopenshift%29%20or%20%28_index%3Drh_rhtap_production_app%29%29%0A%7C%20json%20%22openshift.cluster_id%22%2C%20%22kubernetes.namespace_name%22%2C%20%22kubernetes.pod_name%22%2C%20%22kubernetes.container_name%22%2C%20%22kubernetes.labels.tekton_dev_pipelineRun%22%2C%20%22kubernetes.labels.tekton_dev_taskRun%22%2C%20%22level%22%2C%20%22message%22%20as%20cluster_id%2C%20namespace%2C%20pod%2C%20container%2C%20pipeline_run%2C%20task_run%2C%20level%2C%20message%20nodrop%0A%7C%20lookup%20cluster_name%20from%20path%3A%2F%2F%22%2FLibrary%2FAdmin%20Recommended%2FKonflux%2Flookups%2Focp_clusters_lookup.csv%22%20on%20cluster_id%3Dopenshift.cluster_id%0A%7C%20where%20cluster_name%20%3D%20%22${kanary_clusters:percentencode}%22%0A%7C%20where%20namespace%20in%20%28%22konflux-perfscale-4-tenant%22%2C%20%22managed-konflux-perfscale-tenant%22%29%0A%7C%20if%28isNull%28message%29%2C%20_raw%2C%20message%29%20as%20_raw%0A%7C%20fields%20_messageTime%2C%20cluster_name%2C%20namespace%2C%20pipeline_run%2C%20task_run%2C%20pod%2C%20container%2C%20level%2C%20_raw%0A%7C%20sort%20by%20_messageTime%20asc%0A&startTime=${__from}&endTime=${__to}"
+                },
+                {
+                  "title": "Workload and release errors/fatal logs \u2014 ${kanary_clusters} (Sumo)",
+                  "targetBlank": true,
+                  "url": "https://rhcorporate.sumologic.com/log-search/create?query=%28%28_index%3Drh_rhtap_stage%20_sourcecategory%3Dopenshift%29%20or%20%28_index%3Drh_rhtap_production_app%29%29%0A%7C%20json%20%22openshift.cluster_id%22%2C%20%22kubernetes.namespace_name%22%2C%20%22kubernetes.pod_name%22%2C%20%22kubernetes.container_name%22%2C%20%22kubernetes.labels.tekton_dev_pipelineRun%22%2C%20%22kubernetes.labels.tekton_dev_taskRun%22%2C%20%22level%22%2C%20%22message%22%20as%20cluster_id%2C%20namespace%2C%20pod%2C%20container%2C%20pipeline_run%2C%20task_run%2C%20level%2C%20message%20nodrop%0A%7C%20lookup%20cluster_name%20from%20path%3A%2F%2F%22%2FLibrary%2FAdmin%20Recommended%2FKonflux%2Flookups%2Focp_clusters_lookup.csv%22%20on%20cluster_id%3Dopenshift.cluster_id%0A%7C%20where%20cluster_name%20%3D%20%22${kanary_clusters:percentencode}%22%0A%7C%20where%20namespace%20in%20%28%22konflux-perfscale-4-tenant%22%2C%20%22managed-konflux-perfscale-tenant%22%29%0A%7C%20if%28isNull%28message%29%2C%20_raw%2C%20message%29%20as%20_raw%0A%7C%20where%20level%20matches%20%2F%28%3Fi%29%5E%28error%7Cfatal%29%24%2F%20or%20_raw%20matches%20%2F%28%3Fis%29.%2A%5Cb%28error%7Cfatal%7Cpanic%29%5Cb.%2A%2F%0A%7C%20fields%20_messageTime%2C%20cluster_name%2C%20namespace%2C%20pipeline_run%2C%20task_run%2C%20pod%2C%20container%2C%20level%2C%20_raw%0A%7C%20sort%20by%20_messageTime%20asc%0A&startTime=${__from}&endTime=${__to}"
+                },
+                {
+                  "title": "Kanary SOP",
+                  "targetBlank": true,
+                  "url": "https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-kanary.md#check-load-test-results"
+                }
+              ]
             },
             "overrides": []
           },
@@ -614,7 +796,34 @@ data:
             }
           ],
           "title": "Kanary Failure Reason Frequency - $kanary_clusters",
-          "type": "barchart"
+          "type": "barchart",
+          "links": [
+            {
+              "title": "Orchestration logs \u2014 ${kanary_clusters} (Sumo)",
+              "targetBlank": true,
+              "url": "https://rhcorporate.sumologic.com/log-search/create?query=%28%28_index%3Drh_rhtap_stage%20_sourcecategory%3Dopenshift%29%20or%20%28_index%3Drh_rhtap_production_app%29%29%0A%7C%20json%20%22openshift.cluster_id%22%2C%20%22kubernetes.namespace_name%22%2C%20%22kubernetes.pod_name%22%2C%20%22kubernetes.container_name%22%2C%20%22kubernetes.labels.tekton_dev_pipelineRun%22%2C%20%22kubernetes.labels.tekton_dev_taskRun%22%2C%20%22level%22%2C%20%22message%22%20as%20cluster_id%2C%20namespace%2C%20pod%2C%20container%2C%20pipeline_run%2C%20task_run%2C%20level%2C%20message%20nodrop%0A%7C%20lookup%20cluster_name%20from%20path%3A%2F%2F%22%2FLibrary%2FAdmin%20Recommended%2FKonflux%2Flookups%2Focp_clusters_lookup.csv%22%20on%20cluster_id%3Dopenshift.cluster_id%0A%7C%20where%20cluster_name%20%3D%20%22${kanary_clusters:percentencode}%22%0A%7C%20where%20namespace%20%3D%20%22appstudio-kanary-exporter%22%0A%7C%20if%28isNull%28message%29%2C%20_raw%2C%20message%29%20as%20_raw%0A%7C%20fields%20_messageTime%2C%20cluster_name%2C%20namespace%2C%20pipeline_run%2C%20task_run%2C%20pod%2C%20container%2C%20level%2C%20_raw%0A%7C%20sort%20by%20_messageTime%20asc%0A&startTime=${__from}&endTime=${__to}"
+            },
+            {
+              "title": "Orchestration errors/fatal logs \u2014 ${kanary_clusters} (Sumo)",
+              "targetBlank": true,
+              "url": "https://rhcorporate.sumologic.com/log-search/create?query=%28%28_index%3Drh_rhtap_stage%20_sourcecategory%3Dopenshift%29%20or%20%28_index%3Drh_rhtap_production_app%29%29%0A%7C%20json%20%22openshift.cluster_id%22%2C%20%22kubernetes.namespace_name%22%2C%20%22kubernetes.pod_name%22%2C%20%22kubernetes.container_name%22%2C%20%22kubernetes.labels.tekton_dev_pipelineRun%22%2C%20%22kubernetes.labels.tekton_dev_taskRun%22%2C%20%22level%22%2C%20%22message%22%20as%20cluster_id%2C%20namespace%2C%20pod%2C%20container%2C%20pipeline_run%2C%20task_run%2C%20level%2C%20message%20nodrop%0A%7C%20lookup%20cluster_name%20from%20path%3A%2F%2F%22%2FLibrary%2FAdmin%20Recommended%2FKonflux%2Flookups%2Focp_clusters_lookup.csv%22%20on%20cluster_id%3Dopenshift.cluster_id%0A%7C%20where%20cluster_name%20%3D%20%22${kanary_clusters:percentencode}%22%0A%7C%20where%20namespace%20%3D%20%22appstudio-kanary-exporter%22%0A%7C%20if%28isNull%28message%29%2C%20_raw%2C%20message%29%20as%20_raw%0A%7C%20where%20level%20matches%20%2F%28%3Fi%29%5E%28error%7Cfatal%29%24%2F%20or%20_raw%20matches%20%2F%28%3Fis%29.%2A%5Cb%28error%7Cfatal%7Cpanic%29%5Cb.%2A%2F%0A%7C%20fields%20_messageTime%2C%20cluster_name%2C%20namespace%2C%20pipeline_run%2C%20task_run%2C%20pod%2C%20container%2C%20level%2C%20_raw%0A%7C%20sort%20by%20_messageTime%20asc%0A&startTime=${__from}&endTime=${__to}"
+            },
+            {
+              "title": "Workload and release logs \u2014 ${kanary_clusters} (Sumo)",
+              "targetBlank": true,
+              "url": "https://rhcorporate.sumologic.com/log-search/create?query=%28%28_index%3Drh_rhtap_stage%20_sourcecategory%3Dopenshift%29%20or%20%28_index%3Drh_rhtap_production_app%29%29%0A%7C%20json%20%22openshift.cluster_id%22%2C%20%22kubernetes.namespace_name%22%2C%20%22kubernetes.pod_name%22%2C%20%22kubernetes.container_name%22%2C%20%22kubernetes.labels.tekton_dev_pipelineRun%22%2C%20%22kubernetes.labels.tekton_dev_taskRun%22%2C%20%22level%22%2C%20%22message%22%20as%20cluster_id%2C%20namespace%2C%20pod%2C%20container%2C%20pipeline_run%2C%20task_run%2C%20level%2C%20message%20nodrop%0A%7C%20lookup%20cluster_name%20from%20path%3A%2F%2F%22%2FLibrary%2FAdmin%20Recommended%2FKonflux%2Flookups%2Focp_clusters_lookup.csv%22%20on%20cluster_id%3Dopenshift.cluster_id%0A%7C%20where%20cluster_name%20%3D%20%22${kanary_clusters:percentencode}%22%0A%7C%20where%20namespace%20in%20%28%22konflux-perfscale-4-tenant%22%2C%20%22managed-konflux-perfscale-tenant%22%29%0A%7C%20if%28isNull%28message%29%2C%20_raw%2C%20message%29%20as%20_raw%0A%7C%20fields%20_messageTime%2C%20cluster_name%2C%20namespace%2C%20pipeline_run%2C%20task_run%2C%20pod%2C%20container%2C%20level%2C%20_raw%0A%7C%20sort%20by%20_messageTime%20asc%0A&startTime=${__from}&endTime=${__to}"
+            },
+            {
+              "title": "Workload and release errors/fatal logs \u2014 ${kanary_clusters} (Sumo)",
+              "targetBlank": true,
+              "url": "https://rhcorporate.sumologic.com/log-search/create?query=%28%28_index%3Drh_rhtap_stage%20_sourcecategory%3Dopenshift%29%20or%20%28_index%3Drh_rhtap_production_app%29%29%0A%7C%20json%20%22openshift.cluster_id%22%2C%20%22kubernetes.namespace_name%22%2C%20%22kubernetes.pod_name%22%2C%20%22kubernetes.container_name%22%2C%20%22kubernetes.labels.tekton_dev_pipelineRun%22%2C%20%22kubernetes.labels.tekton_dev_taskRun%22%2C%20%22level%22%2C%20%22message%22%20as%20cluster_id%2C%20namespace%2C%20pod%2C%20container%2C%20pipeline_run%2C%20task_run%2C%20level%2C%20message%20nodrop%0A%7C%20lookup%20cluster_name%20from%20path%3A%2F%2F%22%2FLibrary%2FAdmin%20Recommended%2FKonflux%2Flookups%2Focp_clusters_lookup.csv%22%20on%20cluster_id%3Dopenshift.cluster_id%0A%7C%20where%20cluster_name%20%3D%20%22${kanary_clusters:percentencode}%22%0A%7C%20where%20namespace%20in%20%28%22konflux-perfscale-4-tenant%22%2C%20%22managed-konflux-perfscale-tenant%22%29%0A%7C%20if%28isNull%28message%29%2C%20_raw%2C%20message%29%20as%20_raw%0A%7C%20where%20level%20matches%20%2F%28%3Fi%29%5E%28error%7Cfatal%29%24%2F%20or%20_raw%20matches%20%2F%28%3Fis%29.%2A%5Cb%28error%7Cfatal%7Cpanic%29%5Cb.%2A%2F%0A%7C%20fields%20_messageTime%2C%20cluster_name%2C%20namespace%2C%20pipeline_run%2C%20task_run%2C%20pod%2C%20container%2C%20level%2C%20_raw%0A%7C%20sort%20by%20_messageTime%20asc%0A&startTime=${__from}&endTime=${__to}"
+            },
+            {
+              "title": "Kanary SOP",
+              "targetBlank": true,
+              "url": "https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-kanary.md#check-load-test-results"
+            }
+          ]
         },
         {
           "fieldConfig": {
@@ -646,7 +855,7 @@ data:
             "type": "prometheus",
             "uid": "${kanary_datasource}"
           },
-          "description": "",
+          "description": "Open the links icon beside the panel title for Sumo logs or the Kanary SOP. Searches use this panel's cluster and the selected dashboard time range; frequency totals do not identify an individual failure time. Select a short time range to limit scanned data. Workload/release searches include konflux-perfscale-4-tenant and managed-konflux-perfscale-tenant. The workload/release errors/fatal link filters both namespaces by severity or error/fatal/panic message text. Reason/phase and test type are not log filters. Managed-release logs can include Jenkins activity.",
           "fieldConfig": {
             "defaults": {
               "color": {
@@ -686,7 +895,34 @@ data:
                   }
                 ]
               },
-              "unit": "none"
+              "unit": "none",
+              "links": [
+                {
+                  "title": "Orchestration logs \u2014 ${kanary_clusters} (Sumo)",
+                  "targetBlank": true,
+                  "url": "https://rhcorporate.sumologic.com/log-search/create?query=%28%28_index%3Drh_rhtap_stage%20_sourcecategory%3Dopenshift%29%20or%20%28_index%3Drh_rhtap_production_app%29%29%0A%7C%20json%20%22openshift.cluster_id%22%2C%20%22kubernetes.namespace_name%22%2C%20%22kubernetes.pod_name%22%2C%20%22kubernetes.container_name%22%2C%20%22kubernetes.labels.tekton_dev_pipelineRun%22%2C%20%22kubernetes.labels.tekton_dev_taskRun%22%2C%20%22level%22%2C%20%22message%22%20as%20cluster_id%2C%20namespace%2C%20pod%2C%20container%2C%20pipeline_run%2C%20task_run%2C%20level%2C%20message%20nodrop%0A%7C%20lookup%20cluster_name%20from%20path%3A%2F%2F%22%2FLibrary%2FAdmin%20Recommended%2FKonflux%2Flookups%2Focp_clusters_lookup.csv%22%20on%20cluster_id%3Dopenshift.cluster_id%0A%7C%20where%20cluster_name%20%3D%20%22${kanary_clusters:percentencode}%22%0A%7C%20where%20namespace%20%3D%20%22appstudio-kanary-exporter%22%0A%7C%20if%28isNull%28message%29%2C%20_raw%2C%20message%29%20as%20_raw%0A%7C%20fields%20_messageTime%2C%20cluster_name%2C%20namespace%2C%20pipeline_run%2C%20task_run%2C%20pod%2C%20container%2C%20level%2C%20_raw%0A%7C%20sort%20by%20_messageTime%20asc%0A&startTime=${__from}&endTime=${__to}"
+                },
+                {
+                  "title": "Orchestration errors/fatal logs \u2014 ${kanary_clusters} (Sumo)",
+                  "targetBlank": true,
+                  "url": "https://rhcorporate.sumologic.com/log-search/create?query=%28%28_index%3Drh_rhtap_stage%20_sourcecategory%3Dopenshift%29%20or%20%28_index%3Drh_rhtap_production_app%29%29%0A%7C%20json%20%22openshift.cluster_id%22%2C%20%22kubernetes.namespace_name%22%2C%20%22kubernetes.pod_name%22%2C%20%22kubernetes.container_name%22%2C%20%22kubernetes.labels.tekton_dev_pipelineRun%22%2C%20%22kubernetes.labels.tekton_dev_taskRun%22%2C%20%22level%22%2C%20%22message%22%20as%20cluster_id%2C%20namespace%2C%20pod%2C%20container%2C%20pipeline_run%2C%20task_run%2C%20level%2C%20message%20nodrop%0A%7C%20lookup%20cluster_name%20from%20path%3A%2F%2F%22%2FLibrary%2FAdmin%20Recommended%2FKonflux%2Flookups%2Focp_clusters_lookup.csv%22%20on%20cluster_id%3Dopenshift.cluster_id%0A%7C%20where%20cluster_name%20%3D%20%22${kanary_clusters:percentencode}%22%0A%7C%20where%20namespace%20%3D%20%22appstudio-kanary-exporter%22%0A%7C%20if%28isNull%28message%29%2C%20_raw%2C%20message%29%20as%20_raw%0A%7C%20where%20level%20matches%20%2F%28%3Fi%29%5E%28error%7Cfatal%29%24%2F%20or%20_raw%20matches%20%2F%28%3Fis%29.%2A%5Cb%28error%7Cfatal%7Cpanic%29%5Cb.%2A%2F%0A%7C%20fields%20_messageTime%2C%20cluster_name%2C%20namespace%2C%20pipeline_run%2C%20task_run%2C%20pod%2C%20container%2C%20level%2C%20_raw%0A%7C%20sort%20by%20_messageTime%20asc%0A&startTime=${__from}&endTime=${__to}"
+                },
+                {
+                  "title": "Workload and release logs \u2014 ${kanary_clusters} (Sumo)",
+                  "targetBlank": true,
+                  "url": "https://rhcorporate.sumologic.com/log-search/create?query=%28%28_index%3Drh_rhtap_stage%20_sourcecategory%3Dopenshift%29%20or%20%28_index%3Drh_rhtap_production_app%29%29%0A%7C%20json%20%22openshift.cluster_id%22%2C%20%22kubernetes.namespace_name%22%2C%20%22kubernetes.pod_name%22%2C%20%22kubernetes.container_name%22%2C%20%22kubernetes.labels.tekton_dev_pipelineRun%22%2C%20%22kubernetes.labels.tekton_dev_taskRun%22%2C%20%22level%22%2C%20%22message%22%20as%20cluster_id%2C%20namespace%2C%20pod%2C%20container%2C%20pipeline_run%2C%20task_run%2C%20level%2C%20message%20nodrop%0A%7C%20lookup%20cluster_name%20from%20path%3A%2F%2F%22%2FLibrary%2FAdmin%20Recommended%2FKonflux%2Flookups%2Focp_clusters_lookup.csv%22%20on%20cluster_id%3Dopenshift.cluster_id%0A%7C%20where%20cluster_name%20%3D%20%22${kanary_clusters:percentencode}%22%0A%7C%20where%20namespace%20in%20%28%22konflux-perfscale-4-tenant%22%2C%20%22managed-konflux-perfscale-tenant%22%29%0A%7C%20if%28isNull%28message%29%2C%20_raw%2C%20message%29%20as%20_raw%0A%7C%20fields%20_messageTime%2C%20cluster_name%2C%20namespace%2C%20pipeline_run%2C%20task_run%2C%20pod%2C%20container%2C%20level%2C%20_raw%0A%7C%20sort%20by%20_messageTime%20asc%0A&startTime=${__from}&endTime=${__to}"
+                },
+                {
+                  "title": "Workload and release errors/fatal logs \u2014 ${kanary_clusters} (Sumo)",
+                  "targetBlank": true,
+                  "url": "https://rhcorporate.sumologic.com/log-search/create?query=%28%28_index%3Drh_rhtap_stage%20_sourcecategory%3Dopenshift%29%20or%20%28_index%3Drh_rhtap_production_app%29%29%0A%7C%20json%20%22openshift.cluster_id%22%2C%20%22kubernetes.namespace_name%22%2C%20%22kubernetes.pod_name%22%2C%20%22kubernetes.container_name%22%2C%20%22kubernetes.labels.tekton_dev_pipelineRun%22%2C%20%22kubernetes.labels.tekton_dev_taskRun%22%2C%20%22level%22%2C%20%22message%22%20as%20cluster_id%2C%20namespace%2C%20pod%2C%20container%2C%20pipeline_run%2C%20task_run%2C%20level%2C%20message%20nodrop%0A%7C%20lookup%20cluster_name%20from%20path%3A%2F%2F%22%2FLibrary%2FAdmin%20Recommended%2FKonflux%2Flookups%2Focp_clusters_lookup.csv%22%20on%20cluster_id%3Dopenshift.cluster_id%0A%7C%20where%20cluster_name%20%3D%20%22${kanary_clusters:percentencode}%22%0A%7C%20where%20namespace%20in%20%28%22konflux-perfscale-4-tenant%22%2C%20%22managed-konflux-perfscale-tenant%22%29%0A%7C%20if%28isNull%28message%29%2C%20_raw%2C%20message%29%20as%20_raw%0A%7C%20where%20level%20matches%20%2F%28%3Fi%29%5E%28error%7Cfatal%29%24%2F%20or%20_raw%20matches%20%2F%28%3Fis%29.%2A%5Cb%28error%7Cfatal%7Cpanic%29%5Cb.%2A%2F%0A%7C%20fields%20_messageTime%2C%20cluster_name%2C%20namespace%2C%20pipeline_run%2C%20task_run%2C%20pod%2C%20container%2C%20level%2C%20_raw%0A%7C%20sort%20by%20_messageTime%20asc%0A&startTime=${__from}&endTime=${__to}"
+                },
+                {
+                  "title": "Kanary SOP",
+                  "targetBlank": true,
+                  "url": "https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-kanary.md#check-load-test-results"
+                }
+              ]
             },
             "overrides": []
           },
@@ -745,7 +981,34 @@ data:
             }
           ],
           "title": "Kanary Failure Phase Frequency - $kanary_clusters",
-          "type": "barchart"
+          "type": "barchart",
+          "links": [
+            {
+              "title": "Orchestration logs \u2014 ${kanary_clusters} (Sumo)",
+              "targetBlank": true,
+              "url": "https://rhcorporate.sumologic.com/log-search/create?query=%28%28_index%3Drh_rhtap_stage%20_sourcecategory%3Dopenshift%29%20or%20%28_index%3Drh_rhtap_production_app%29%29%0A%7C%20json%20%22openshift.cluster_id%22%2C%20%22kubernetes.namespace_name%22%2C%20%22kubernetes.pod_name%22%2C%20%22kubernetes.container_name%22%2C%20%22kubernetes.labels.tekton_dev_pipelineRun%22%2C%20%22kubernetes.labels.tekton_dev_taskRun%22%2C%20%22level%22%2C%20%22message%22%20as%20cluster_id%2C%20namespace%2C%20pod%2C%20container%2C%20pipeline_run%2C%20task_run%2C%20level%2C%20message%20nodrop%0A%7C%20lookup%20cluster_name%20from%20path%3A%2F%2F%22%2FLibrary%2FAdmin%20Recommended%2FKonflux%2Flookups%2Focp_clusters_lookup.csv%22%20on%20cluster_id%3Dopenshift.cluster_id%0A%7C%20where%20cluster_name%20%3D%20%22${kanary_clusters:percentencode}%22%0A%7C%20where%20namespace%20%3D%20%22appstudio-kanary-exporter%22%0A%7C%20if%28isNull%28message%29%2C%20_raw%2C%20message%29%20as%20_raw%0A%7C%20fields%20_messageTime%2C%20cluster_name%2C%20namespace%2C%20pipeline_run%2C%20task_run%2C%20pod%2C%20container%2C%20level%2C%20_raw%0A%7C%20sort%20by%20_messageTime%20asc%0A&startTime=${__from}&endTime=${__to}"
+            },
+            {
+              "title": "Orchestration errors/fatal logs \u2014 ${kanary_clusters} (Sumo)",
+              "targetBlank": true,
+              "url": "https://rhcorporate.sumologic.com/log-search/create?query=%28%28_index%3Drh_rhtap_stage%20_sourcecategory%3Dopenshift%29%20or%20%28_index%3Drh_rhtap_production_app%29%29%0A%7C%20json%20%22openshift.cluster_id%22%2C%20%22kubernetes.namespace_name%22%2C%20%22kubernetes.pod_name%22%2C%20%22kubernetes.container_name%22%2C%20%22kubernetes.labels.tekton_dev_pipelineRun%22%2C%20%22kubernetes.labels.tekton_dev_taskRun%22%2C%20%22level%22%2C%20%22message%22%20as%20cluster_id%2C%20namespace%2C%20pod%2C%20container%2C%20pipeline_run%2C%20task_run%2C%20level%2C%20message%20nodrop%0A%7C%20lookup%20cluster_name%20from%20path%3A%2F%2F%22%2FLibrary%2FAdmin%20Recommended%2FKonflux%2Flookups%2Focp_clusters_lookup.csv%22%20on%20cluster_id%3Dopenshift.cluster_id%0A%7C%20where%20cluster_name%20%3D%20%22${kanary_clusters:percentencode}%22%0A%7C%20where%20namespace%20%3D%20%22appstudio-kanary-exporter%22%0A%7C%20if%28isNull%28message%29%2C%20_raw%2C%20message%29%20as%20_raw%0A%7C%20where%20level%20matches%20%2F%28%3Fi%29%5E%28error%7Cfatal%29%24%2F%20or%20_raw%20matches%20%2F%28%3Fis%29.%2A%5Cb%28error%7Cfatal%7Cpanic%29%5Cb.%2A%2F%0A%7C%20fields%20_messageTime%2C%20cluster_name%2C%20namespace%2C%20pipeline_run%2C%20task_run%2C%20pod%2C%20container%2C%20level%2C%20_raw%0A%7C%20sort%20by%20_messageTime%20asc%0A&startTime=${__from}&endTime=${__to}"
+            },
+            {
+              "title": "Workload and release logs \u2014 ${kanary_clusters} (Sumo)",
+              "targetBlank": true,
+              "url": "https://rhcorporate.sumologic.com/log-search/create?query=%28%28_index%3Drh_rhtap_stage%20_sourcecategory%3Dopenshift%29%20or%20%28_index%3Drh_rhtap_production_app%29%29%0A%7C%20json%20%22openshift.cluster_id%22%2C%20%22kubernetes.namespace_name%22%2C%20%22kubernetes.pod_name%22%2C%20%22kubernetes.container_name%22%2C%20%22kubernetes.labels.tekton_dev_pipelineRun%22%2C%20%22kubernetes.labels.tekton_dev_taskRun%22%2C%20%22level%22%2C%20%22message%22%20as%20cluster_id%2C%20namespace%2C%20pod%2C%20container%2C%20pipeline_run%2C%20task_run%2C%20level%2C%20message%20nodrop%0A%7C%20lookup%20cluster_name%20from%20path%3A%2F%2F%22%2FLibrary%2FAdmin%20Recommended%2FKonflux%2Flookups%2Focp_clusters_lookup.csv%22%20on%20cluster_id%3Dopenshift.cluster_id%0A%7C%20where%20cluster_name%20%3D%20%22${kanary_clusters:percentencode}%22%0A%7C%20where%20namespace%20in%20%28%22konflux-perfscale-4-tenant%22%2C%20%22managed-konflux-perfscale-tenant%22%29%0A%7C%20if%28isNull%28message%29%2C%20_raw%2C%20message%29%20as%20_raw%0A%7C%20fields%20_messageTime%2C%20cluster_name%2C%20namespace%2C%20pipeline_run%2C%20task_run%2C%20pod%2C%20container%2C%20level%2C%20_raw%0A%7C%20sort%20by%20_messageTime%20asc%0A&startTime=${__from}&endTime=${__to}"
+            },
+            {
+              "title": "Workload and release errors/fatal logs \u2014 ${kanary_clusters} (Sumo)",
+              "targetBlank": true,
+              "url": "https://rhcorporate.sumologic.com/log-search/create?query=%28%28_index%3Drh_rhtap_stage%20_sourcecategory%3Dopenshift%29%20or%20%28_index%3Drh_rhtap_production_app%29%29%0A%7C%20json%20%22openshift.cluster_id%22%2C%20%22kubernetes.namespace_name%22%2C%20%22kubernetes.pod_name%22%2C%20%22kubernetes.container_name%22%2C%20%22kubernetes.labels.tekton_dev_pipelineRun%22%2C%20%22kubernetes.labels.tekton_dev_taskRun%22%2C%20%22level%22%2C%20%22message%22%20as%20cluster_id%2C%20namespace%2C%20pod%2C%20container%2C%20pipeline_run%2C%20task_run%2C%20level%2C%20message%20nodrop%0A%7C%20lookup%20cluster_name%20from%20path%3A%2F%2F%22%2FLibrary%2FAdmin%20Recommended%2FKonflux%2Flookups%2Focp_clusters_lookup.csv%22%20on%20cluster_id%3Dopenshift.cluster_id%0A%7C%20where%20cluster_name%20%3D%20%22${kanary_clusters:percentencode}%22%0A%7C%20where%20namespace%20in%20%28%22konflux-perfscale-4-tenant%22%2C%20%22managed-konflux-perfscale-tenant%22%29%0A%7C%20if%28isNull%28message%29%2C%20_raw%2C%20message%29%20as%20_raw%0A%7C%20where%20level%20matches%20%2F%28%3Fi%29%5E%28error%7Cfatal%29%24%2F%20or%20_raw%20matches%20%2F%28%3Fis%29.%2A%5Cb%28error%7Cfatal%7Cpanic%29%5Cb.%2A%2F%0A%7C%20fields%20_messageTime%2C%20cluster_name%2C%20namespace%2C%20pipeline_run%2C%20task_run%2C%20pod%2C%20container%2C%20level%2C%20_raw%0A%7C%20sort%20by%20_messageTime%20asc%0A&startTime=${__from}&endTime=${__to}"
+            },
+            {
+              "title": "Kanary SOP",
+              "targetBlank": true,
+              "url": "https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-kanary.md#check-load-test-results"
+            }
+          ]
         },
         {
           "collapsed": true,
@@ -919,7 +1182,7 @@ data:
       },
       "timepicker": {},
       "timezone": "browser",
-      "title": "Kanary Signal V1 Dashboard",
+      "title": "Konflux Kanary",
       "uid": "kanary-signals-v1",
       "version": 1
     }
