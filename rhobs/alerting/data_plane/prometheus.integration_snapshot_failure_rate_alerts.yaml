@@ -1,0 +1,95 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-integration-snapshot-failure-rate-alerts
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+    - name: integration.snapshot.failure.rate
+      interval: 1m
+      rules:
+        - alert: IntegrationSnapshotFailureRateWarning
+          expr: |
+            (
+              (
+                100 *
+                sum by (source_cluster) (
+                  rate(integration_svc_snapshot_attempt_total{
+                    reason=~"Failed|Invalid"
+                  }[30m])
+                )
+                /
+                sum by (source_cluster) (
+                  rate(integration_svc_snapshot_attempt_total[30m])
+                )
+              ) > 15
+              and on (source_cluster)
+              (
+                sum by (source_cluster) (
+                  increase(integration_svc_snapshot_attempt_total[30m])
+                ) >= 20
+              )
+            )
+            unless on (source_cluster)
+            (
+              (
+                100 *
+                sum by (source_cluster) (
+                  rate(integration_svc_snapshot_attempt_total{
+                    reason=~"Failed|Invalid"
+                  }[30m])
+                )
+                /
+                sum by (source_cluster) (
+                  rate(integration_svc_snapshot_attempt_total[30m])
+                )
+              ) > 40
+              and on (source_cluster)
+              (
+                sum by (source_cluster) (
+                  increase(integration_svc_snapshot_attempt_total[30m])
+                ) >= 20
+              )
+            )
+          for: 15m
+          labels:
+            severity: warning
+            component: integration-service
+            slo: "false"
+          annotations:
+            summary: "High snapshot failure rate on cluster {{ $labels.source_cluster }}"
+            description: "The snapshot failure rate on cluster {{ $labels.source_cluster }} has exceeded 15% for over 15 minutes, with at least 20 attempts in the last 30 minutes."
+            team: integration
+            alert_routing_key: "<!subteam^S05M4AG8CJH> <!subteam^S0C4VKLC9KP>"
+
+        - alert: IntegrationSnapshotFailureRateCritical
+          expr: |
+            (
+              100 *
+              sum by (source_cluster) (
+                rate(integration_svc_snapshot_attempt_total{
+                  reason=~"Failed|Invalid"
+                }[30m])
+              )
+              /
+              sum by (source_cluster) (
+                rate(integration_svc_snapshot_attempt_total[30m])
+              )
+            ) > 40
+            and on (source_cluster)
+            (
+              sum by (source_cluster) (
+                increase(integration_svc_snapshot_attempt_total[30m])
+              ) >= 20
+            )
+          for: 10m
+          labels:
+            severity: critical
+            component: integration-service
+            slo: "false"
+          annotations:
+            summary: "Critical snapshot failure rate on cluster {{ $labels.source_cluster }}"
+            description: "The snapshot failure rate on cluster {{ $labels.source_cluster }} has exceeded 40% for over 10 minutes, with at least 20 attempts in the last 30 minutes."
+            team: integration
+            alert_routing_key: "<!subteam^S05M4AG8CJH> <!subteam^S0C4VKLC9KP>"
