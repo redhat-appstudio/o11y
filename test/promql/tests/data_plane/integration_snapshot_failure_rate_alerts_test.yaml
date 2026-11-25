@@ -1,0 +1,73 @@
+evaluation_interval: 1m
+
+rule_files:
+  - "prometheus.integration_snapshot_failure_rate_alerts.yaml"
+
+tests:
+  # Test 1: Warning - 20% failure rate for 15 minutes
+  - interval: 1m
+    input_series:
+      - series: 'integration_svc_snapshot_attempt_total{reason="Failed", source_cluster="cluster-1"}'
+        values: '0+1x46'
+
+      - series: 'integration_svc_snapshot_attempt_total{reason="Passed", source_cluster="cluster-1"}'
+        values: '0+4x46'
+
+    alert_rule_test:
+      - eval_time: 46m
+        alertname: IntegrationSnapshotFailureRateWarning
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              component: integration-service
+              slo: "false"
+              source_cluster: cluster-1
+            exp_annotations:
+              summary: "High snapshot failure rate on cluster cluster-1"
+              description: "The snapshot failure rate on cluster cluster-1 has exceeded 15% for over 15 minutes, with at least 20 attempts in the last 30 minutes."
+              team: integration
+              alert_routing_key: "<!subteam^S05M4AG8CJH> <!subteam^S0C4VKLC9KP>"
+
+  # Test 2: Critical - 60% failure rate for 10 minutes
+  # Warning must not fire when Critical is active.
+  - interval: 1m
+    input_series:
+      - series: 'integration_svc_snapshot_attempt_total{reason="Failed", source_cluster="cluster-2"}'
+        values: '0+3x46'
+
+      - series: 'integration_svc_snapshot_attempt_total{reason="Passed", source_cluster="cluster-2"}'
+        values: '0+2x46'
+
+    alert_rule_test:
+      - eval_time: 41m
+        alertname: IntegrationSnapshotFailureRateCritical
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              component: integration-service
+              slo: "false"
+              source_cluster: cluster-2
+            exp_annotations:
+              summary: "Critical snapshot failure rate on cluster cluster-2"
+              description: "The snapshot failure rate on cluster cluster-2 has exceeded 40% for over 10 minutes, with at least 20 attempts in the last 30 minutes."
+              team: integration
+              alert_routing_key: "<!subteam^S05M4AG8CJH> <!subteam^S0C4VKLC9KP>"
+
+      - eval_time: 41m
+        alertname: IntegrationSnapshotFailureRateWarning
+        exp_alerts: []
+
+  # Test 3: No alert when traffic is below 20 attempts
+  - interval: 1m
+    input_series:
+      - series: 'integration_svc_snapshot_attempt_total{reason="Failed", source_cluster="cluster-3"}'
+        values: '0+0.5x46'
+
+    alert_rule_test:
+      - eval_time: 46m
+        alertname: IntegrationSnapshotFailureRateWarning
+        exp_alerts: []
+
+      - eval_time: 46m
+        alertname: IntegrationSnapshotFailureRateCritical
+        exp_alerts: []
