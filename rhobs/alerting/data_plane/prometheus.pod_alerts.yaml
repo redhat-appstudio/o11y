@@ -48,6 +48,29 @@ spec:
           {{ $labels.source_cluster }} for more than 15 minutes.
         alert_routing_key: '{{ $labels.namespace }}'
         runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-crashLoopBackOff.md
+    # While kubelet retries a failing pull the container flips between the
+    # 'ErrImagePull' and 'ImagePullBackOff' waiting reasons, so an instant match on
+    # ImagePullBackOff alone has gaps. max_over_time() closes them. The same
+    # namespace exclusions as CrashLoopBackOff are used: tenant workloads pull
+    # user-supplied images and are not actionable for the platform teams.
+    - alert: ImagePullBackOff
+      expr: >-
+        max_over_time(kube_pod_container_status_waiting_reason{reason="ImagePullBackOff", namespace!~"(.*-tenant|.*-env|openshift-.*|kube-.*|default|tekton-ci|build-templates-e2e|multi-platform-.*|clusters-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|tekton-kueue)"}[15m]) >= 1
+        or
+        max_over_time(kube_pod_container_status_waiting_reason{reason="ImagePullBackOff", namespace="openshift-pipelines"}[15m]) >= 1
+      for: 30m
+      labels:
+        severity: warning
+        slo: "false"
+      annotations:
+        summary: Pod {{ $labels.pod }} cannot pull its image
+        description: >-
+          Pod {{ $labels.namespace }}/{{ $labels.pod }} ({{ $labels.container }}) is in
+          waiting state (reason: 'ImagePullBackOff') on cluster
+          {{ $labels.source_cluster }} for more than 30 minutes. The image is missing,
+          the digest is stale, or the registry rejects the pull.
+        alert_routing_key: '{{ if eq $labels.namespace "openshift-pipelines" }}pipelines{{ else }}{{ $labels.namespace }}{{ end }}'
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-imagePullBackOff.md
     - alert: PodNotReady
       expr: |
             kube_pod_status_phase:excluding_jobs{
