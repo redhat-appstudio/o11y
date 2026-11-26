@@ -224,12 +224,16 @@ func TestExtractBuildType(t *testing.T) {
 
 		// Operator builds
 		{"mtc-1-8-openshift-migration-operator", "operator-builds"},
-		{"fbc-mtc-1-8-openshift-migration-operator", "operator-builds"},
 		{"custom-operator", "operator-builds"},
 
-		// FBC builds (only if not operator-related)
+		// FBC builds (must match before operator: FBC catalog pipelines are
+		// named after the operator whose fragment they ship)
 		{"v419-cnv-fbc-on-push", "fbc-builds"},
 		{"my-fbc-pipeline", "fbc-builds"},
+		{"fbc-mtc-1-8-openshift-migration-operator", "fbc-builds"},
+		{"fbc-quay-3-16-quay-operator", "fbc-builds"},
+		{"fbc-acm-2-17-multiclusterhub-operator", "fbc-builds"},
+		{"fbc-quay-3-12-container-security-operator", "fbc-builds"},
 
 		// RPM builds
 		{"rpm-build-oci-ta", "rpm-builds"},
