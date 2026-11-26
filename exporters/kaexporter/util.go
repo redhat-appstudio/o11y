@@ -162,14 +162,17 @@ func extractBuildType(pipelineName string) string {
 		return "operator-bundle-builds"
 	}
 
+	// FBC builds. This must be tested before the operator check: FBC catalog
+	// pipelines are conventionally named after the operator they ship a
+	// fragment for, e.g. "fbc-quay-3-16-quay-operator", so an operator-first
+	// order silently files them under operator-builds.
+	if strings.Contains(pipelineName, "fbc") {
+		return "fbc-builds"
+	}
+
 	// Operator builds
 	if strings.Contains(pipelineName, "-operator") {
 		return "operator-builds"
-	}
-
-	// FBC builds
-	if strings.Contains(pipelineName, "fbc") {
-		return "fbc-builds"
 	}
 
 	// RPM builds
