@@ -1,0 +1,100 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: rhtap-konflux-30d-failure-rate-alerting-rules
+  labels:
+    tenant: rhtap
+spec:
+  groups:
+  - name: konflux-failure-rate-warning
+    # kaexporter refreshes the *_30d gauges every 5m, evaluating more often adds nothing
+    interval: 5m
+    rules:
+    # Integration tests that fail for a reason other than the test itself.
+    # Excluded on purpose (agreed with the integration team):
+    # - EC (Conforma) runs: a different part of the pipeline with its own policy outcomes
+    # - reason "Failed": the test ran and failed, which is the test doing its job
+    # - reason "Cancelled": superseded runs, not failures
+    # What remains is mostly CouldntGetPipeline/Task, timeouts, ParameterMissing,
+    # InvalidWorkspaceBindings and similar. On 14 days of prod data the highest
+    # value per cluster was 12.6% (stone-prod-p01), most clusters stay below 6%.
+    # The minimum volume guard avoids firing on a sparse window, e.g. right after a kaexporter restart.
+    # It sits in the denominator: '>= 100' filters the sample out below that, so the division finds
+    # no right-hand side and the cluster drops out. The parentheses are required — '/' binds tighter
+    # than '>=', so without them this would parse as (failures / total) >= 100.
+    - alert: KonfluxIntegrationUnexplainedFailureRate30dHigh
+      expr: |
+        (
+          sum by (source_cluster) (konflux_integration_failure_count_30d{test_type!="ec", reason!~"Failed|Cancelled"})
+          / on (source_cluster)
+          (sum by (source_cluster) (konflux_integration_total_count_30d{test_type!="ec"}) >= 100)
+        ) > 0.15
+      for: 1h
+      labels:
+        severity: warning
+        slo: "false"
+        component: konflux-integration
+      annotations:
+        summary: >-
+          High rate of unexplained integration test failures in cluster {{ $labels.source_cluster }}
+        description: >-
+          {{ $value | humanizePercentage }} of integration test PipelineRuns (excluding EC) on cluster {{ $labels.source_cluster }}
+          failed over the last 30 days for a reason other than the test itself failing or being cancelled, above the 15% threshold.
+          Check the failure reasons in konflux_integration_failure_count_30d.
+        team: konflux-spre
+        alert_routing_key: "<!subteam^S05M4AG8CJH> <!subteam^S06V06A36F5>"
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-KonfluxFailureRateAlerts.md
+
+    # Release failures that pass validation, rising sharply against the cluster's
+    # own baseline. Uses the release-service release_total counter instead of the
+    # kaexporter gauges: it carries validation_reason, so releases rejected by
+    # validation (usually misconfiguration) are excluded, as the release team does
+    # in their dashboard. A fixed threshold doesn't work here, the 7-day baseline
+    # differs a lot between clusters (1% to 35%).
+    # Fires when the 6h failure rate is 25 points above the 7-day one, with at least
+    # 50 releases in the 6h window, and the spike is not driven by a single tenant:
+    # the tenant with the most new failures (kaexporter, per exported_namespace) has
+    # less than half of them. release_total has no tenant label, hence the second
+    # source. Without the tenant condition, 14 days of prod data gave 11 episodes,
+    # mostly one or two tenants; with it, 3 (agreed with the release team and Ruben).
+    # The 50-release guard sits in the 6h denominator, which is the same expression it
+    # guards; below 50 the sample is filtered out and the cluster drops out of the ratio.
+    # The parentheses are required — '/' binds tighter than '>='. The single-tenant
+    # condition stays an 'and': it is a separate metric, not this denominator.
+    - alert: KonfluxReleaseFailureRateSpike
+      expr: |
+        (
+          (
+            sum by (source_cluster) (increase(release_total{validation_reason="Succeeded", release_reason="Failed"}[6h]))
+            / on (source_cluster)
+            (sum by (source_cluster) (increase(release_total[6h])) >= 50)
+          )
+          - on (source_cluster)
+          (
+            sum by (source_cluster) (increase(release_total{validation_reason="Succeeded", release_reason="Failed"}[7d]))
+            / on (source_cluster)
+            sum by (source_cluster) (increase(release_total[7d]))
+          )
+        ) > 0.25
+        and on (source_cluster)
+        (
+          max by (source_cluster) (
+            sum by (source_cluster, exported_namespace) (clamp_min(delta(konflux_release_cr_failure_count_30d[6h]), 0))
+          )
+          / on (source_cluster)
+          sum by (source_cluster) (clamp_min(delta(konflux_release_cr_failure_count_30d[6h]), 0))
+        ) < 0.5
+      for: 1h
+      labels:
+        severity: warning
+        slo: "false"
+        component: konflux-release
+      annotations:
+        summary: >-
+          Release failure rate spiked in cluster {{ $labels.source_cluster }}
+        description: >-
+          On cluster {{ $labels.source_cluster }}, the share of releases failing after validation over the last 6 hours
+          exceeds its 7-day average by {{ $value | humanizePercentage }} (percentage points).
+        team: konflux-spre
+        alert_routing_key: "<!subteam^S09N535GS4E> <!subteam^S06V06A36F5>"
+        runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-KonfluxFailureRateAlerts.md
