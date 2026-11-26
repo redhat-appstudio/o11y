@@ -19,15 +19,16 @@ spec:
     # InvalidWorkspaceBindings and similar. On 14 days of prod data the highest
     # value per cluster was 12.6% (stone-prod-p01), most clusters stay below 6%.
     # The minimum volume guard avoids firing on a sparse window, e.g. right after a kaexporter restart.
+    # It sits in the denominator: '>= 100' filters the sample out below that, so the division finds
+    # no right-hand side and the cluster drops out. The parentheses are required — '/' binds tighter
+    # than '>=', so without them this would parse as (failures / total) >= 100.
     - alert: KonfluxIntegrationUnexplainedFailureRate30dHigh
       expr: |
         (
           sum by (source_cluster) (konflux_integration_failure_count_30d{test_type!="ec", reason!~"Failed|Cancelled"})
           / on (source_cluster)
-          sum by (source_cluster) (konflux_integration_total_count_30d{test_type!="ec"})
+          (sum by (source_cluster) (konflux_integration_total_count_30d{test_type!="ec"}) >= 100)
         ) > 0.15
-        and on (source_cluster)
-        sum by (source_cluster) (konflux_integration_total_count_30d{test_type!="ec"}) >= 100
       for: 1h
       labels:
         severity: warning

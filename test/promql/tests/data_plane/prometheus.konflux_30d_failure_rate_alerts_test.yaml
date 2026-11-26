@@ -33,6 +33,11 @@ tests:
         values: '50x24'
       - series: 'konflux_integration_failure_count_30d{source_cluster="cluster-3", test_type="integration", reason="CouldntGetPipeline"}'
         values: '50x24'
+      # cluster-4: exactly 100 runs, 20% unexplained -> the guard is '>= 100', so this still alerts
+      - series: 'konflux_integration_total_count_30d{source_cluster="cluster-4", test_type="integration"}'
+        values: '100x24'
+      - series: 'konflux_integration_failure_count_30d{source_cluster="cluster-4", test_type="integration", reason="ParameterMissing"}'
+        values: '20x24'
     alert_rule_test:
       - eval_time: 30m
         alertname: KonfluxIntegrationUnexplainedFailureRate30dHigh
@@ -50,6 +55,21 @@ tests:
                 High rate of unexplained integration test failures in cluster cluster-1
               description: >-
                 20% of integration test PipelineRuns (excluding EC) on cluster cluster-1
+                failed over the last 30 days for a reason other than the test itself failing or being cancelled, above the 15% threshold.
+                Check the failure reasons in konflux_integration_failure_count_30d.
+              team: konflux-spre
+              alert_routing_key: "<!subteam^S05M4AG8CJH> <!subteam^S06V06A36F5>"
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-KonfluxFailureRateAlerts.md
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              component: konflux-integration
+              source_cluster: cluster-4
+            exp_annotations:
+              summary: >-
+                High rate of unexplained integration test failures in cluster cluster-4
+              description: >-
+                20% of integration test PipelineRuns (excluding EC) on cluster cluster-4
                 failed over the last 30 days for a reason other than the test itself failing or being cancelled, above the 15% threshold.
                 Check the failure reasons in konflux_integration_failure_count_30d.
               team: konflux-spre
