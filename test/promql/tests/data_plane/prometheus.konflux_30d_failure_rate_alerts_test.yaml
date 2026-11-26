@@ -136,6 +136,51 @@ tests:
         alertname: KonfluxReleaseFailureRateSpike
         exp_alerts: []
 
+  # Release: exactly 50 releases in the 6h window still fires, pinning '>= 50' against '> 50'.
+  # The interval is 7m12s on purpose: 6h holds exactly 50 steps, so a counter rising by 1 per
+  # step makes increase(release_total[6h]) land on exactly 50 with no extrapolation error.
+  # Baseline is 1400 steps (7 days) at 12.5% failures, then 100 steps (12h) at 62.5%.
+  # The per-step increments are deliberately dyadic (0.875/0.125 and 0.375/0.625) so that each
+  # pair sums to exactly 1.0 in float64. Round-looking values such as 0.9/0.1 or 0.4/0.6 do not,
+  # and the total drifts off 50 by ~4e-13, which would let the test pass against '> 50' too.
+  - interval: 7m12s
+    input_series:
+      - series: 'release_total{source_cluster="cluster-5", validation_reason="Succeeded", release_reason="Succeeded"}'
+        values: '0+0.875x1400 1225+0.375x100'
+      - series: 'release_total{source_cluster="cluster-5", validation_reason="Succeeded", release_reason="Failed"}'
+        values: '0+0.125x1400 175+0.625x100'
+      - series: 'konflux_release_cr_failure_count_30d{source_cluster="cluster-5", exported_namespace="tenant-a", reason="Failed"}'
+        values: '0x1400 0+2x100'
+      - series: 'konflux_release_cr_failure_count_30d{source_cluster="cluster-5", exported_namespace="tenant-b", reason="Failed"}'
+        values: '0x1400 0+2x100'
+      - series: 'konflux_release_cr_failure_count_30d{source_cluster="cluster-5", exported_namespace="tenant-c", reason="Failed"}'
+        values: '0x1400 0+2x100'
+    promql_expr_test:
+      # The guard is exercised at its boundary, not above it.
+      - expr: sum by (source_cluster) (increase(release_total[6h]))
+        eval_time: 10800m
+        exp_samples:
+          - labels: '{source_cluster="cluster-5"}'
+            value: 50
+    alert_rule_test:
+      - eval_time: 10800m
+        alertname: KonfluxReleaseFailureRateSpike
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              slo: "false"
+              component: konflux-release
+              source_cluster: cluster-5
+            exp_annotations:
+              summary: >-
+                Release failure rate spiked in cluster cluster-5
+              description: >-
+                On cluster cluster-5, the share of releases failing after validation over the last 6 hours
+                exceeds its 7-day average by 46.46% (percentage points).
+              team: konflux-spre
+              alert_routing_key: "<!subteam^S09N535GS4E> <!subteam^S06V06A36F5>"
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/o11y/alerting/alert-rules/alert-rule-KonfluxFailureRateAlerts.md
+
   # Release: the same spike driven by one tenant (5 of 6 new failures) does not fire.
   - interval: 5m
     input_series:

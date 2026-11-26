@@ -57,13 +57,17 @@ spec:
     # less than half of them. release_total has no tenant label, hence the second
     # source. Without the tenant condition, 14 days of prod data gave 11 episodes,
     # mostly one or two tenants; with it, 3 (agreed with the release team and Ruben).
+    # The 50-release guard sits in the 6h denominator, which is the same expression it
+    # guards; below 50 the sample is filtered out and the cluster drops out of the ratio.
+    # The parentheses are required — '/' binds tighter than '>='. The single-tenant
+    # condition stays an 'and': it is a separate metric, not this denominator.
     - alert: KonfluxReleaseFailureRateSpike
       expr: |
         (
           (
             sum by (source_cluster) (increase(release_total{validation_reason="Succeeded", release_reason="Failed"}[6h]))
             / on (source_cluster)
-            sum by (source_cluster) (increase(release_total[6h]))
+            (sum by (source_cluster) (increase(release_total[6h])) >= 50)
           )
           - on (source_cluster)
           (
@@ -72,8 +76,6 @@ spec:
             sum by (source_cluster) (increase(release_total[7d]))
           )
         ) > 0.25
-        and on (source_cluster)
-        sum by (source_cluster) (increase(release_total[6h])) >= 50
         and on (source_cluster)
         (
           max by (source_cluster) (
