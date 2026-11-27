@@ -409,3 +409,52 @@ tests:
               alert_team_handle: <!subteam^S04PYECHCCU>
               team: pipelines
               runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
+
+  # Operator-managed Tekton Results runs in openshift-pipelines rather than
+  # tekton-results. Guards against the alert silently matching nothing there.
+  - name: PipelinesAlertsFiringResultsOnOperator
+    interval: 1m
+    input_series:
+      - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-results-api", check="replicas-available", source_cluster="c_down"}'
+        values: '0 0 0 0 0 0'
+      - series: 'konflux_up{namespace="openshift-pipelines", service="tekton-results-watcher", check="replicas-available", source_cluster="c_down"}'
+        values: '0 0 0 0 0 0'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: TektonResultsAPIReaderDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              check: replicas-available
+              namespace: openshift-pipelines
+              service: tekton-results-api
+              slo: "true"
+              source_cluster: c_down
+              component: tekton-results
+            exp_annotations:
+              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.pipeline_alerts.yaml#L200
+              summary: Tekton Results API reader is down in cluster c_down
+              description: >
+                The Tekton Results API pod (reader instance) has been down for 5min in cluster c_down
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md
+      - eval_time: 5m
+        alertname: TektonResultsWatcherDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              check: replicas-available
+              namespace: openshift-pipelines
+              service: tekton-results-watcher
+              slo: "true"
+              source_cluster: c_down
+              component: tekton-results
+            exp_annotations:
+              html_url: https://github.com/redhat-appstudio/o11y/blob/main/rhobs/alerting/data_plane/prometheus.pipeline_alerts.yaml#L248
+              summary: Tekton Results watcher is down in cluster c_down
+              description: >
+                The Tekton Results watcher pod has been down for 5min in cluster c_down
+              alert_team_handle: <!subteam^S04PYECHCCU>
+              team: pipelines
+              runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/faq.md

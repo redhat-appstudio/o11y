@@ -48,6 +48,14 @@ tests:
         values: '1+1x780'
       - series: 'grpc_server_handled_total{job="tekton-results-api", grpc_service="tekton.results.v1alpha2.CreateResult", grpc_code="NotFound", source_cluster="cluster01"}'
         values: '0x780'
+      - series: 'grpc_server_handled_total{job="tekton-results-api-service", grpc_service="tekton.results.v1alpha2.CreateResult", grpc_code="OK", source_cluster="cluster01"}'
+        values: '2+2x780'
+      - series: 'grpc_server_handled_total{job="tekton-results-api-service", grpc_service="tekton.results.v1alpha2.CreateResult", grpc_code="Unavailable", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'grpc_server_handled_total{job="tekton-results-api-service", grpc_service="tekton.results.v1alpha2.CreateResult", grpc_code="Internal", source_cluster="cluster01"}'
+        values: '1+1x780'
+      - series: 'grpc_server_handled_total{job="tekton-results-api-service", grpc_service="tekton.results.v1alpha2.CreateResult", grpc_code="NotFound", source_cluster="cluster01"}'
+        values: '0x780'
 
     alert_rule_test:
       - eval_time: 85m

@@ -200,7 +200,7 @@ spec:
       - alert: TektonResultsAPIReaderDown
         expr: |
           konflux_up{
-            namespace="tekton-results",
+            namespace=~"openshift-pipelines|tekton-results",
             check="replicas-available",
             service="tekton-results-api",
           } != 1
@@ -248,7 +248,7 @@ spec:
       - alert: TektonResultsWatcherDown
         expr: |
           konflux_up{
-            namespace="tekton-results",
+            namespace=~"openshift-pipelines|tekton-results",
             check="replicas-available",
             service="tekton-results-watcher",
           } != 1
@@ -423,7 +423,7 @@ spec:
           expr: |
             sum by (source_cluster) (increase(tekton_pipelines_controller_pipelinerun_total[5m])) > 0
             and
-            sum by (source_cluster) (increase(grpc_server_handled_total{job='tekton-results-api', grpc_service=~'tekton.results.*'}[5m])) == 0
+            sum by (source_cluster) (increase(grpc_server_handled_total{job=~'tekton-results-api|tekton-results-api-service', grpc_service=~'tekton.results.*'}[5m])) == 0
           for: 75m
           labels:
             severity: critical
@@ -440,12 +440,12 @@ spec:
             runbook_url: https://gitlab.cee.redhat.com/konflux/docs/sop/-/blob/main/pipeline-service/sre/tekton-pipeline-related-deadlocks.md
         - alert: ResultsSuccessRateTooManyErrors
           expr: |
-            sum by (source_cluster) (increase(grpc_server_handled_total{job='tekton-results-api', grpc_service=~'tekton.results.*', grpc_code='OK'}[10m]))
+            sum by (source_cluster) (increase(grpc_server_handled_total{job=~'tekton-results-api|tekton-results-api-service', grpc_service=~'tekton.results.*', grpc_code='OK'}[10m]))
             /
-            sum by (source_cluster) (increase(grpc_server_handled_total{job='tekton-results-api', grpc_service=~'tekton.results.*'}[10m]))
+            sum by (source_cluster) (increase(grpc_server_handled_total{job=~'tekton-results-api|tekton-results-api-service', grpc_service=~'tekton.results.*'}[10m]))
             < 0.75
             and
-            sum by (source_cluster) (increase(grpc_server_handled_total{job='tekton-results-api', grpc_service=~'tekton.results.*'}[10m])) > 0
+            sum by (source_cluster) (increase(grpc_server_handled_total{job=~'tekton-results-api|tekton-results-api-service', grpc_service=~'tekton.results.*'}[10m])) > 0
           for: 75m
           labels:
             severity: critical

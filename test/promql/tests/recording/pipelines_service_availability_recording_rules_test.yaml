@@ -347,3 +347,23 @@ tests:
             value: 0
           - labels: konflux_up{statefulset='tekton-pipelines-remote-resolvers', service='tekton-pipelines-remote-resolvers', check='replicas-available', namespace='openshift-pipelines'}
             value: 0
+
+  - name: OperatorManagedTektonResultsComponentsUp
+    interval: 1m
+    input_series:
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="tekton-results-api"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="tekton-results-api"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_spec_replicas{namespace="openshift-pipelines", deployment="tekton-results-watcher"}'
+        values: '1 1 1 1 1'
+      - series: 'kube_deployment_status_replicas_available{namespace="openshift-pipelines", deployment="tekton-results-watcher"}'
+        values: '1 1 1 1 1'
+    promql_expr_test:
+      - expr: konflux_up
+        eval_time: 5m
+        exp_samples:
+          - labels: konflux_up{deployment='tekton-results-api', service='tekton-results-api', check='replicas-available', namespace='openshift-pipelines'}
+            value: 1
+          - labels: konflux_up{deployment='tekton-results-watcher', service='tekton-results-watcher', check='replicas-available', namespace='openshift-pipelines'}
+            value: 1
